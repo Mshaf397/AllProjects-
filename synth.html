@@ -77,10 +77,20 @@
   <div id="grid"></div>
 
   <script>
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const grid = document.getElementById('grid');
-    const playing = new Map();
-    let customScale = null;
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const grid = document.getElementById('grid');
+  const playing = new Map();
+
+  // Fix for mobile: resume AudioContext on first interaction
+  function unlockAudio() {
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    document.body.removeEventListener('touchstart', unlockAudio, true);
+    document.body.removeEventListener('mousedown', unlockAudio, true);
+  }
+  document.body.addEventListener('touchstart', unlockAudio, true);
+  document.body.addEventListener('mousedown', unlockAudio, true);
 
     document.getElementById('sclFile').addEventListener('change', async (e) => {
       const file = e.target.files[0];
