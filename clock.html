@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Clock & Countdown Timer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      gap: 40px;
+    }
+    .clock, .countdown {
+      font-size: 2em;
+      background: #222;
+      padding: 20px 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #0f0;
+    }
+    span.label {
+      color: #aaa;
+      font-size: 0.6em;
+      margin-left: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="clock" id="clock">Loading clock...</div>
+  <div class="countdown" id="countdown">Loading countdown...</div>
+
+  <script>
+    // --- Digital Clock ---
+    function updateClock() {
+      const now = new Date();
+      const days = now.toLocaleDateString(undefined, { weekday: 'long' });
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+
+      document.getElementById('clock').innerHTML =
+        `${days} ${hours}<span class="label">h</span> ` +
+        `${minutes}<span class="label">m</span> ` +
+        `${seconds}<span class="label">s</span>`;
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // --- Countdown Timer ---
+    const targetDate = new Date("2025-12-31T23:59:59"); // <-- Change this as needed
+
+    function updateCountdown() {
+      const now = new Date();
+      const diff = targetDate - now;
+
+      if (diff <= 0) {
+        document.getElementById('countdown').innerHTML = "Time's up!";
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+
+      document.getElementById('countdown').innerHTML =
+        `${days}<span class="label">d</span> ` +
+        `${hours.toString().padStart(2, '0')}<span class="label">h</span> ` +
+        `${minutes.toString().padStart(2, '0')}<span class="label">m</span> ` +
+        `${seconds.toString().padStart(2, '0')}<span class="label">s</span>`;
+    }
+
+    setInterval(updateCountdown, 1000);
+    updateCountdown();
+  </script>
+</body>
+</html>
