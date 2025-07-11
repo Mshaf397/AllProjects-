@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Web Synthesizer</title>
+  <style>
+    body {
+      background: #111;
+      color: #eee;
+      font-family: sans-serif;
+      text-align: center;
+    }
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1em;
+      margin: 1em auto;
+    }
+    input {
+      padding: 0.4em;
+      font-size: 1em;
+    }
+    #grid {
+      display: grid;
+      gap: 2px;
+      margin: 1em auto;
+    }
+    .key {
+      width: 70px;
+      height: 60px;
+      background: #333;
+      border: 1px solid #555;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.75em;
+      padding: 2px;
+      box-sizing: border-box;
+    }
+    .key:active {
+      background: #0f0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Web Synth</h1>
+  <div id="controls">
+    <label>Grid: 
+      <input id="cols" type="number" value="12" min="1" max="30"> x 
+      <input id="rows" type="number" value="4" min="1" max="30">
+    </label>
+    <label>Root Freq (Hz): 
+      <input id="rootFreq" type="number" value="261.63">
+    </label>
+    <label>Root Key #: 
+      <input id="rootKey" type="number" value="0">
+    </label>
+    <label>Tuning (XedY): 
+      <input id="tuning" type="text" value="12ed2">
+    </label>
+    <label>Subset (comma indices): 
+      <input id="subset" type="text" placeholder="e.g. 0,2,4,7,9">
+    </label>
+    <label>Note Names: 
+      <input id="noteNames" type="text" placeholder="C,D,E,F,G,A,B">
+    </label>
+    <label>Upload .scl: 
+      <input id="sclFile" type="file" accept=".scl">
+    </label>
+    <button onclick="updateGrid()">Apply</button>
+  </div>
+
+  <div id="grid"></div>
+
+  <script>
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const grid = document.getElementById('grid');
+    const playing = new Map();
+    let customScale = null;
+
+    document.getElementById('sclFile').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      customScale = parseSCL(text);
+      document.getElementById('tuning').value = '';
+      updateGrid();
+    });
+
+    function parseSCL(text) {
+      const lines = text.split(/\r?\n/).filter(line => line.trim() && !line.startsWith('!'));
+      const count = parseInt(lines[1]);
+      const scale = lines.slice(2, 2 + count).map(line => {
+        const val = line.trim();
+        if (val.includes('.')) return Math.pow(2, parseFloat(val) / 1200);
+        if (val.includes('/')) return eval(val);
+        return Math.pow(2, parseFloat(val) / 1200);
+      });
+      return scale;
+    }
+
+    function parseTuning(tuningStr) {
+      const match = tuningStr.match(/^(\d+)ed(\d+(\/\d+)?)$/);
+      if (!match) return null;
+      const steps = parseInt(match[1]);
+      const ratio = match[2].includes('/') ? eval(match[2]) : parseFloat(match[2]);
+      const stepRatio = Math.pow(ratio, 1 / steps);
+      return Array.from({ length: steps }, (_, i) => stepRatio ** i);
+    }
+
+    function getNoteName(index, names, rootKey) {
+      const N = names.length;
+      const rel = index - rootKey;
+      const mod = ((rel % N) + N) % N;
+      return names[mod];
+    }
+
+    function getCents(freq1, freq2) {
+      return (1200 * Math.log2(freq1 / freq2)).toFixed(1);
+    }
+
+    function updateGrid() {
+      grid.innerHTML = '';
+      const cols = +document.getElementById('cols').value;
+      const rows = +document.getElementById('rows').value;
+      const rootFreq = +document.getElementById('rootFreq').value;
+      const rootKey = +document.getElementById('rootKey').value;
+      const tuningStr = document.getElementById('tuning').value;
+      const subsetInput = document.getElementById('subset').value.trim();
+      const nameInput = document.getElementById('noteNames').value.trim();
+
+      let tuning = customScale || parseTuning(tuningStr);
+      if (!tuning) {
+        alert('Invalid tuning or no .scl uploaded.');
+        return;
+      }
+
+      if (subsetInput) {
+        try {
+          const indices = subsetInput.split(',').map(x => parseInt(x.trim()));
+          tuning = indices.map(i => tuning[i % tuning.length]);
+        } catch {
+          alert('Invalid subset.');
+          return;
+        }
+      }
+
+      const total = cols * rows;
+      const noteNames = nameInput ? nameInput.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+      const freqs = Array.from({ length: total }, (_, i) => {
+        const degree = i - rootKey;
+        const index = ((degree % tuning.length) + tuning.length) % tuning.length;
+        const octaves = Math.floor(degree / tuning.length);
+        return rootFreq * tuning[index] * (2 ** octaves);
+      });
+
+      grid.style.gridTemplateColumns = `repeat(${cols}, auto)`;
+
+      freqs.forEach((freq, i) => {
+        const key = document.createElement('div');
+        key.className = 'key';
+        let label = freq.toFixed(2) + ' Hz';
+        if (noteNames.length > 0) {
+          const name = getNoteName(i, noteNames, rootKey);
+          const cents = getCents(freq, rootFreq);
+          label = `${name}\n${freq.toFixed(1)} Hz\n${cents}¢`;
+        }
+        key.innerText = label;
+        key.onmousedown = () => playFreq(freq, i);
+        key.onmouseup = () => stopFreq(i);
+        key.onmouseleave = () => stopFreq(i);
+        key.ontouchstart = e => { e.preventDefault(); playFreq(freq, i); };
+        key.ontouchend = e => { e.preventDefault(); stopFreq(i); };
+        grid.appendChild(key);
+      });
+    }
+
+    function playFreq(freq, keyId) {
+      if (playing.has(keyId)) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.value = 0.2;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      playing.set(keyId, { osc, gain });
+    }
+
+    function stopFreq(keyId) {
+      const note = playing.get(keyId);
+      if (note) {
+        note.gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        note.osc.stop(ctx.currentTime + 0.5);
+        playing.delete(keyId);
+      }
+    }
+
+    updateGrid();
+  </script>
+</body>
+</html>
