@@ -192,6 +192,7 @@
 
     function playFreq(freq, keyId) {
       if (playing.has(keyId)) return;
+      if (ctx.state === 'suspended') ctx.resume();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
