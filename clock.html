@@ -1,7 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
 <head>
-  <meta charset="UTF-8">
   <title>Clock & Countdown Timer</title>
   <style>
     body {
@@ -52,9 +50,14 @@
     updateClock();
 
     // --- Countdown Timer ---
-    const targetDate = new Date("2025-12-31T23:59:59"); // <-- Change this as needed
+    let targetDate = null;
 
     function updateCountdown() {
+      if (!targetDate) {
+        document.getElementById('countdown').innerHTML = "Select an end time above.";
+        return;
+      }
+
       const now = new Date();
       const diff = targetDate - now;
 
@@ -77,6 +80,15 @@
 
     setInterval(updateCountdown, 1000);
     updateCountdown();
+
+    // --- Handle User Time Selection ---
+    document.getElementById('endTime').addEventListener('change', (e) => {
+      const selected = e.target.value;
+      if (selected) {
+        targetDate = new Date(selected);
+        updateCountdown();
+      }
+    });
   </script>
 </body>
 </html>
