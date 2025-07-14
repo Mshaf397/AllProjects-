@@ -94,5 +94,63 @@
       }
     });
   </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #e0f7fa;
+      padding: 30px;
+      text-align: center;
+    }
+
+    #weather {
+      display: inline-block;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      min-width: 250px;
+    }
+
+    .temp {
+      font-size: 2em;
+      font-weight: bold;
+    }
+
+    .label {
+      font-weight: bold;
+    }
+
+    .value {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Current Weather</h1>
+  <div id="weather">
+    <div class="value"><span class="label">Temperature:</span> <span id="temp"></span></div>
+    <div class="value"><span class="label">Feels Like:</span> <span id="feels"></span></div>
+    <div class="value"><span class="label">Humidity:</span> <span id="humidity"></span></div>
+    <div class="value"><span class="label">Wind:</span> <span id="wind"></span></div>
+    <div class="value"><span class="label">Cloud Cover:</span> <span id="clouds"></span></div>
+  </div>
+
+  <script>
+    fetch('forecast.json')
+      .then(response => response.json())
+      .then(data => {
+        const current = data.current;
+
+        document.getElementById('temp').textContent = current.temperature_2m + ' °C';
+        document.getElementById('feels').textContent = current.apparent_temperature + ' °C';
+        document.getElementById('humidity').textContent = current.relative_humidity_2m + ' %';
+        document.getElementById('wind').textContent = current.wind_speed_10m + ' km/h';
+        document.getElementById('clouds').textContent = current.cloud_cover + ' %';
+      })
+      .catch(err => {
+        console.error('Error loading weather data:', err);
+        document.getElementById('weather').textContent = "Failed to load weather data.";
+      });
+  </script>
 </body>
 </html>
