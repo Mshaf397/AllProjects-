@@ -9998,3 +9998,1955 @@
 		"codepoint": "U+E750",
 		"description": "Slide whistle"
 	},
+		"pictSlitDrum": {
+		"codepoint": "U+E6E0",
+		"description": "Slit drum"
+	},
+	"pictSnareDrum": {
+		"codepoint": "U+E6D1",
+		"description": "Snare drum"
+	},
+	"pictSnareDrumMilitary": {
+		"codepoint": "U+E6D3",
+		"description": "Military snare drum"
+	},
+	"pictSnareDrumSnaresOff": {
+		"codepoint": "U+E6D2",
+		"description": "Snare drum, snares off"
+	},
+	"pictSteelDrums": {
+		"codepoint": "U+E6AF",
+		"description": "Steel drums"
+	},
+	"pictStickShot": {
+		"codepoint": "U+E7F0",
+		"description": "Stick shot"
+	},
+	"pictSuperball": {
+		"codepoint": "U+E7B2",
+		"description": "Superball"
+	},
+	"pictSuspendedCymbal": {
+		"codepoint": "U+E721",
+		"description": "Suspended cymbal"
+	},
+	"pictSwishStem": {
+		"codepoint": "U+E808",
+		"description": "Combining swish for stem"
+	},
+	"pictTabla": {
+		"codepoint": "U+E6E3",
+		"description": "Indian tabla"
+	},
+	"pictTamTam": {
+		"codepoint": "U+E730",
+		"description": "Tam-tam"
+	},
+	"pictTamTamWithBeater": {
+		"codepoint": "U+E731",
+		"description": "Tam-tam with beater (Smith Brindle)"
+	},
+	"pictTambourine": {
+		"codepoint": "U+E6DB",
+		"description": "Tambourine"
+	},
+	"pictTempleBlocks": {
+		"codepoint": "U+E6F1",
+		"description": "Temple blocks"
+	},
+	"pictTenorDrum": {
+		"codepoint": "U+E6D6",
+		"description": "Tenor drum"
+	},
+	"pictThundersheet": {
+		"codepoint": "U+E744",
+		"description": "Thundersheet"
+	},
+	"pictTimbales": {
+		"codepoint": "U+E6DC",
+		"description": "Timbales"
+	},
+	"pictTimpani": {
+		"codepoint": "U+E6D0",
+		"description": "Timpani"
+	},
+	"pictTomTom": {
+		"codepoint": "U+E6D7",
+		"description": "Tom-tom"
+	},
+	"pictTomTomChinese": {
+		"codepoint": "U+E6D8",
+		"description": "Chinese tom-tom"
+	},
+	"pictTomTomIndoAmerican": {
+		"codepoint": "U+E6DA",
+		"description": "Indo-American tom tom"
+	},
+	"pictTomTomJapanese": {
+		"codepoint": "U+E6D9",
+		"description": "Japanese tom-tom"
+	},
+	"pictTriangle": {
+		"codepoint": "U+E700",
+		"description": "Triangle"
+	},
+	"pictTubaphone": {
+		"codepoint": "U+E6B2",
+		"description": "Tubaphone"
+	},
+	"pictTubularBells": {
+		"codepoint": "U+E6C0",
+		"description": "Tubular bells"
+	},
+	"pictTurnLeftStem": {
+		"codepoint": "U+E80A",
+		"description": "Combining turn left for stem"
+	},
+	"pictTurnRightLeftStem": {
+		"codepoint": "U+E80B",
+		"description": "Combining turn left or right for stem"
+	},
+	"pictTurnRightStem": {
+		"codepoint": "U+E809",
+		"description": "Combining turn right for stem"
+	},
+	"pictVib": {
+		"codepoint": "U+E6A7",
+		"description": "Vibraphone"
+	},
+	"pictVibMotorOff": {
+		"codepoint": "U+E6A8",
+		"description": "Metallophone (vibraphone motor off)"
+	},
+	"pictVibSmithBrindle": {
+		"codepoint": "U+E6AD",
+		"description": "Vibraphone (Smith Brindle)"
+	},
+	"pictVibraslap": {
+		"codepoint": "U+E745",
+		"description": "Vibraslap"
+	},
+	"pictVietnameseHat": {
+		"codepoint": "U+E725",
+		"description": "Vietnamese hat cymbal"
+	},
+	"pictWhip": {
+		"codepoint": "U+E6F6",
+		"description": "Whip"
+	},
+	"pictWindChimesGlass": {
+		"codepoint": "U+E6C1",
+		"description": "Wind chimes (glass)"
+	},
+	"pictWindMachine": {
+		"codepoint": "U+E754",
+		"description": "Wind machine"
+	},
+	"pictWindWhistle": {
+		"codepoint": "U+E758",
+		"description": "Wind whistle (or mouth siren)"
+	},
+	"pictWoodBlock": {
+		"codepoint": "U+E6F0",
+		"description": "Wood block"
+	},
+	"pictWoundHardDown": {
+		"codepoint": "U+E7B4",
+		"description": "Wound beater, hard core down"
+	},
+	"pictWoundHardLeft": {
+		"codepoint": "U+E7B6",
+		"description": "Wound beater, hard core left"
+	},
+	"pictWoundHardRight": {
+		"codepoint": "U+E7B5",
+		"description": "Wound beater, hard core right"
+	},
+	"pictWoundHardUp": {
+		"codepoint": "U+E7B3",
+		"description": "Wound beater, hard core up"
+	},
+	"pictWoundSoftDown": {
+		"codepoint": "U+E7B8",
+		"description": "Wound beater, soft core down"
+	},
+	"pictWoundSoftLeft": {
+		"codepoint": "U+E7BA",
+		"description": "Wound beater, soft core left"
+	},
+	"pictWoundSoftRight": {
+		"codepoint": "U+E7B9",
+		"description": "Wound beater, soft core right"
+	},
+	"pictWoundSoftUp": {
+		"codepoint": "U+E7B7",
+		"description": "Wound beater, soft core up"
+	},
+	"pictXyl": {
+		"codepoint": "U+E6A1",
+		"description": "Xylophone"
+	},
+	"pictXylBass": {
+		"codepoint": "U+E6A3",
+		"description": "Bass xylophone"
+	},
+	"pictXylSmithBrindle": {
+		"codepoint": "U+E6AB",
+		"description": "Xylophone (Smith Brindle)"
+	},
+	"pictXylTenor": {
+		"codepoint": "U+E6A2",
+		"description": "Tenor xylophone"
+	},
+	"pictXylTenorTrough": {
+		"codepoint": "U+E6A5",
+		"description": "Trough tenor xylophone"
+	},
+	"pictXylTrough": {
+		"codepoint": "U+E6A4",
+		"description": "Trough xylophone"
+	},
+	"pluckedBuzzPizzicato": {
+		"codepoint": "U+E632",
+		"description": "Buzz pizzicato"
+	},
+	"pluckedDamp": {
+		"alternateCodepoint": "U+1D1B4",
+		"codepoint": "U+E638",
+		"description": "Damp"
+	},
+	"pluckedDampAll": {
+		"alternateCodepoint": "U+1D1B5",
+		"codepoint": "U+E639",
+		"description": "Damp all"
+	},
+	"pluckedDampOnStem": {
+		"codepoint": "U+E63B",
+		"description": "Damp for stem"
+	},
+	"pluckedFingernailFlick": {
+		"codepoint": "U+E637",
+		"description": "Fingernail flick"
+	},
+	"pluckedLeftHandPizzicato": {
+		"codepoint": "U+E633",
+		"description": "Left-hand pizzicato"
+	},
+	"pluckedPlectrum": {
+		"codepoint": "U+E63A",
+		"description": "Plectrum"
+	},
+	"pluckedSnapPizzicatoAbove": {
+		"codepoint": "U+E631",
+		"description": "Snap pizzicato above"
+	},
+	"pluckedSnapPizzicatoBelow": {
+		"alternateCodepoint": "U+1D1AD",
+		"codepoint": "U+E630",
+		"description": "Snap pizzicato below"
+	},
+	"pluckedWithFingernails": {
+		"alternateCodepoint": "U+1D1B3",
+		"codepoint": "U+E636",
+		"description": "With fingernails"
+	},
+	"quindicesima": {
+		"codepoint": "U+E514",
+		"description": "Quindicesima"
+	},
+	"quindicesimaAlta": {
+		"codepoint": "U+E515",
+		"description": "Quindicesima alta"
+	},
+	"quindicesimaBassa": {
+		"alternateCodepoint": "U+1D139",
+		"codepoint": "U+E516",
+		"description": "Quindicesima bassa"
+	},
+	"quindicesimaBassaMb": {
+		"codepoint": "U+E51D",
+		"description": "Quindicesima bassa (mb)"
+	},
+	"repeat1Bar": {
+		"alternateCodepoint": "U+1D10E",
+		"codepoint": "U+E500",
+		"description": "Repeat last bar"
+	},
+	"repeat2Bars": {
+		"alternateCodepoint": "U+1D10F",
+		"codepoint": "U+E501",
+		"description": "Repeat last two bars"
+	},
+	"repeat4Bars": {
+		"codepoint": "U+E502",
+		"description": "Repeat last four bars"
+	},
+	"repeatBarLowerDot": {
+		"codepoint": "U+E505",
+		"description": "Repeat bar lower dot"
+	},
+	"repeatBarSlash": {
+		"codepoint": "U+E504",
+		"description": "Repeat bar slash"
+	},
+	"repeatBarUpperDot": {
+		"codepoint": "U+E503",
+		"description": "Repeat bar upper dot"
+	},
+	"repeatDot": {
+		"codepoint": "U+E044",
+		"description": "Single repeat dot"
+	},
+	"repeatDots": {
+		"alternateCodepoint": "U+1D108",
+		"codepoint": "U+E043",
+		"description": "Repeat dots"
+	},
+	"repeatLeft": {
+		"alternateCodepoint": "U+1D106",
+		"codepoint": "U+E040",
+		"description": "Left (start) repeat sign"
+	},
+	"repeatRight": {
+		"alternateCodepoint": "U+1D107",
+		"codepoint": "U+E041",
+		"description": "Right (end) repeat sign"
+	},
+	"repeatRightLeft": {
+		"codepoint": "U+E042",
+		"description": "Right and left repeat sign"
+	},
+	"rest1024th": {
+		"codepoint": "U+E4ED",
+		"description": "1024th rest"
+	},
+	"rest128th": {
+		"alternateCodepoint": "U+1D142",
+		"codepoint": "U+E4EA",
+		"description": "128th (semihemidemisemiquaver) rest"
+	},
+	"rest16th": {
+		"alternateCodepoint": "U+1D13F",
+		"codepoint": "U+E4E7",
+		"description": "16th (semiquaver) rest"
+	},
+	"rest256th": {
+		"codepoint": "U+E4EB",
+		"description": "256th rest"
+	},
+	"rest32nd": {
+		"alternateCodepoint": "U+1D140",
+		"codepoint": "U+E4E8",
+		"description": "32nd (demisemiquaver) rest"
+	},
+	"rest512th": {
+		"codepoint": "U+E4EC",
+		"description": "512th rest"
+	},
+	"rest64th": {
+		"alternateCodepoint": "U+1D141",
+		"codepoint": "U+E4E9",
+		"description": "64th (hemidemisemiquaver) rest"
+	},
+	"rest8th": {
+		"alternateCodepoint": "U+1D13E",
+		"codepoint": "U+E4E6",
+		"description": "Eighth (quaver) rest"
+	},
+	"restDoubleWhole": {
+		"alternateCodepoint": "U+1D13A",
+		"codepoint": "U+E4E2",
+		"description": "Double whole (breve) rest"
+	},
+	"restDoubleWholeLegerLine": {
+		"codepoint": "U+E4F3",
+		"description": "Double whole rest on leger lines"
+	},
+	"restHBar": {
+		"alternateCodepoint": "U+1D129",
+		"codepoint": "U+E4EE",
+		"description": "Multiple measure rest"
+	},
+	"restHBarLeft": {
+		"codepoint": "U+E4EF",
+		"description": "H-bar, left half"
+	},
+	"restHBarMiddle": {
+		"codepoint": "U+E4F0",
+		"description": "H-bar, middle"
+	},
+	"restHBarRight": {
+		"codepoint": "U+E4F1",
+		"description": "H-bar, right half"
+	},
+	"restHalf": {
+		"alternateCodepoint": "U+1D13C",
+		"codepoint": "U+E4E4",
+		"description": "Half (minim) rest"
+	},
+	"restHalfLegerLine": {
+		"codepoint": "U+E4F5",
+		"description": "Half rest on leger line"
+	},
+	"restLonga": {
+		"codepoint": "U+E4E1",
+		"description": "Longa rest"
+	},
+	"restMaxima": {
+		"codepoint": "U+E4E0",
+		"description": "Maxima rest"
+	},
+	"restQuarter": {
+		"alternateCodepoint": "U+1D13D",
+		"codepoint": "U+E4E5",
+		"description": "Quarter (crotchet) rest"
+	},
+	"restQuarterOld": {
+		"codepoint": "U+E4F2",
+		"description": "Old-style quarter (crotchet) rest"
+	},
+	"restQuarterZ": {
+		"codepoint": "U+E4F6",
+		"description": "Z-style quarter (crotchet) rest"
+	},
+	"restWhole": {
+		"alternateCodepoint": "U+1D13B",
+		"codepoint": "U+E4E3",
+		"description": "Whole (semibreve) rest"
+	},
+	"restWholeLegerLine": {
+		"codepoint": "U+E4F4",
+		"description": "Whole rest on leger line"
+	},
+	"reversedBrace": {
+		"codepoint": "U+E001",
+		"description": "Reversed brace"
+	},
+	"reversedBracketBottom": {
+		"codepoint": "U+E006",
+		"description": "Reversed bracket bottom"
+	},
+	"reversedBracketTop": {
+		"codepoint": "U+E005",
+		"description": "Reversed bracket top"
+	},
+	"rightRepeatSmall": {
+		"codepoint": "U+E04D",
+		"description": "Right repeat sign within bar"
+	},
+	"scaleDegree1": {
+		"codepoint": "U+EF00",
+		"description": "Scale degree 1"
+	},
+	"scaleDegree2": {
+		"codepoint": "U+EF01",
+		"description": "Scale degree 2"
+	},
+	"scaleDegree3": {
+		"codepoint": "U+EF02",
+		"description": "Scale degree 3"
+	},
+	"scaleDegree4": {
+		"codepoint": "U+EF03",
+		"description": "Scale degree 4"
+	},
+	"scaleDegree5": {
+		"codepoint": "U+EF04",
+		"description": "Scale degree 5"
+	},
+	"scaleDegree6": {
+		"codepoint": "U+EF05",
+		"description": "Scale degree 6"
+	},
+	"scaleDegree7": {
+		"codepoint": "U+EF06",
+		"description": "Scale degree 7"
+	},
+	"scaleDegree8": {
+		"codepoint": "U+EF07",
+		"description": "Scale degree 8"
+	},
+	"scaleDegree9": {
+		"codepoint": "U+EF08",
+		"description": "Scale degree 9"
+	},
+	"schaefferClef": {
+		"codepoint": "U+E06F",
+		"description": "Sch\u00e4ffer clef"
+	},
+	"schaefferFClefToGClef": {
+		"codepoint": "U+E072",
+		"description": "Sch\u00e4ffer F clef to G clef change"
+	},
+	"schaefferGClefToFClef": {
+		"codepoint": "U+E071",
+		"description": "Sch\u00e4ffer G clef to F clef change"
+	},
+	"schaefferPreviousClef": {
+		"codepoint": "U+E070",
+		"description": "Sch\u00e4ffer previous clef"
+	},
+	"segno": {
+		"alternateCodepoint": "U+1D10B",
+		"codepoint": "U+E047",
+		"description": "Segno"
+	},
+	"segnoSerpent1": {
+		"codepoint": "U+E04A",
+		"description": "Segno (serpent)"
+	},
+	"segnoSerpent2": {
+		"codepoint": "U+E04B",
+		"description": "Segno (serpent with vertical lines)"
+	},
+	"semipitchedPercussionClef1": {
+		"codepoint": "U+E06B",
+		"description": "Semi-pitched percussion clef 1"
+	},
+	"semipitchedPercussionClef2": {
+		"codepoint": "U+E06C",
+		"description": "Semi-pitched percussion clef 2"
+	},
+	"smnFlat": {
+		"codepoint": "U+EC52",
+		"description": "Flat"
+	},
+	"smnFlatWhite": {
+		"codepoint": "U+EC53",
+		"description": "Flat (white)"
+	},
+	"smnHistoryDoubleFlat": {
+		"codepoint": "U+EC57",
+		"description": "Double flat history sign"
+	},
+	"smnHistoryDoubleSharp": {
+		"codepoint": "U+EC55",
+		"description": "Double sharp history sign"
+	},
+	"smnHistoryFlat": {
+		"codepoint": "U+EC56",
+		"description": "Flat history sign"
+	},
+	"smnHistorySharp": {
+		"codepoint": "U+EC54",
+		"description": "Sharp history sign"
+	},
+	"smnNatural": {
+		"codepoint": "U+EC58",
+		"description": "Natural (N)"
+	},
+	"smnSharp": {
+		"codepoint": "U+EC50",
+		"description": "Sharp stem up"
+	},
+	"smnSharpDown": {
+		"codepoint": "U+EC59",
+		"description": "Sharp stem down"
+	},
+	"smnSharpWhite": {
+		"codepoint": "U+EC51",
+		"description": "Sharp (white) stem up"
+	},
+	"smnSharpWhiteDown": {
+		"codepoint": "U+EC5A",
+		"description": "Sharp (white) stem down"
+	},
+	"splitBarDivider": {
+		"codepoint": "U+E00A",
+		"description": "Split bar divider (bar spans a system break)"
+	},
+	"staff1Line": {
+		"alternateCodepoint": "U+1D116",
+		"codepoint": "U+E010",
+		"description": "1-line staff"
+	},
+	"staff1LineNarrow": {
+		"codepoint": "U+E01C",
+		"description": "1-line staff (narrow)"
+	},
+	"staff1LineWide": {
+		"codepoint": "U+E016",
+		"description": "1-line staff (wide)"
+	},
+	"staff2Lines": {
+		"alternateCodepoint": "U+1D117",
+		"codepoint": "U+E011",
+		"description": "2-line staff"
+	},
+	"staff2LinesNarrow": {
+		"codepoint": "U+E01D",
+		"description": "2-line staff (narrow)"
+	},
+	"staff2LinesWide": {
+		"codepoint": "U+E017",
+		"description": "2-line staff (wide)"
+	},
+	"staff3Lines": {
+		"alternateCodepoint": "U+1D118",
+		"codepoint": "U+E012",
+		"description": "3-line staff"
+	},
+	"staff3LinesNarrow": {
+		"codepoint": "U+E01E",
+		"description": "3-line staff (narrow)"
+	},
+	"staff3LinesWide": {
+		"codepoint": "U+E018",
+		"description": "3-line staff (wide)"
+	},
+	"staff4Lines": {
+		"alternateCodepoint": "U+1D119",
+		"codepoint": "U+E013",
+		"description": "4-line staff"
+	},
+	"staff4LinesNarrow": {
+		"codepoint": "U+E01F",
+		"description": "4-line staff (narrow)"
+	},
+	"staff4LinesWide": {
+		"codepoint": "U+E019",
+		"description": "4-line staff (wide)"
+	},
+	"staff5Lines": {
+		"alternateCodepoint": "U+1D11A",
+		"codepoint": "U+E014",
+		"description": "5-line staff"
+	},
+	"staff5LinesNarrow": {
+		"codepoint": "U+E020",
+		"description": "5-line staff (narrow)"
+	},
+	"staff5LinesWide": {
+		"codepoint": "U+E01A",
+		"description": "5-line staff (wide)"
+	},
+	"staff6Lines": {
+		"alternateCodepoint": "U+1D11B",
+		"codepoint": "U+E015",
+		"description": "6-line staff"
+	},
+	"staff6LinesNarrow": {
+		"codepoint": "U+E021",
+		"description": "6-line staff (narrow)"
+	},
+	"staff6LinesWide": {
+		"codepoint": "U+E01B",
+		"description": "6-line staff (wide)"
+	},
+	"staffDivideArrowDown": {
+		"codepoint": "U+E00B",
+		"description": "Staff divide arrow down"
+	},
+	"staffDivideArrowUp": {
+		"codepoint": "U+E00C",
+		"description": "Staff divide arrow up"
+	},
+	"staffDivideArrowUpDown": {
+		"codepoint": "U+E00D",
+		"description": "Staff divide arrows"
+	},
+	"staffPosLower1": {
+		"codepoint": "U+EB98",
+		"description": "Lower 1 staff position"
+	},
+	"staffPosLower2": {
+		"codepoint": "U+EB99",
+		"description": "Lower 2 staff positions"
+	},
+	"staffPosLower3": {
+		"codepoint": "U+EB9A",
+		"description": "Lower 3 staff positions"
+	},
+	"staffPosLower4": {
+		"codepoint": "U+EB9B",
+		"description": "Lower 4 staff positions"
+	},
+	"staffPosLower5": {
+		"codepoint": "U+EB9C",
+		"description": "Lower 5 staff positions"
+	},
+	"staffPosLower6": {
+		"codepoint": "U+EB9D",
+		"description": "Lower 6 staff positions"
+	},
+	"staffPosLower7": {
+		"codepoint": "U+EB9E",
+		"description": "Lower 7 staff positions"
+	},
+	"staffPosLower8": {
+		"codepoint": "U+EB9F",
+		"description": "Lower 8 staff positions"
+	},
+	"staffPosRaise1": {
+		"codepoint": "U+EB90",
+		"description": "Raise 1 staff position"
+	},
+	"staffPosRaise2": {
+		"codepoint": "U+EB91",
+		"description": "Raise 2 staff positions"
+	},
+	"staffPosRaise3": {
+		"codepoint": "U+EB92",
+		"description": "Raise 3 staff positions"
+	},
+	"staffPosRaise4": {
+		"codepoint": "U+EB93",
+		"description": "Raise 4 staff positions"
+	},
+	"staffPosRaise5": {
+		"codepoint": "U+EB94",
+		"description": "Raise 5 staff positions"
+	},
+	"staffPosRaise6": {
+		"codepoint": "U+EB95",
+		"description": "Raise 6 staff positions"
+	},
+	"staffPosRaise7": {
+		"codepoint": "U+EB96",
+		"description": "Raise 7 staff positions"
+	},
+	"staffPosRaise8": {
+		"codepoint": "U+EB97",
+		"description": "Raise 8 staff positions"
+	},
+	"stem": {
+		"alternateCodepoint": "U+1D165",
+		"codepoint": "U+E210",
+		"description": "Combining stem"
+	},
+	"stemBowOnBridge": {
+		"codepoint": "U+E215",
+		"description": "Combining bow on bridge stem"
+	},
+	"stemBowOnTailpiece": {
+		"codepoint": "U+E216",
+		"description": "Combining bow on tailpiece stem"
+	},
+	"stemBuzzRoll": {
+		"codepoint": "U+E217",
+		"description": "Combining buzz roll stem"
+	},
+	"stemDamp": {
+		"codepoint": "U+E218",
+		"description": "Combining damp stem"
+	},
+	"stemHarpStringNoise": {
+		"codepoint": "U+E21F",
+		"description": "Combining harp string noise stem"
+	},
+	"stemMultiphonicsBlack": {
+		"codepoint": "U+E21A",
+		"description": "Combining multiphonics (black) stem"
+	},
+	"stemMultiphonicsBlackWhite": {
+		"codepoint": "U+E21C",
+		"description": "Combining multiphonics (black and white) stem"
+	},
+	"stemMultiphonicsWhite": {
+		"codepoint": "U+E21B",
+		"description": "Combining multiphonics (white) stem"
+	},
+	"stemPendereckiTremolo": {
+		"codepoint": "U+E213",
+		"description": "Combining Penderecki unmeasured tremolo stem"
+	},
+	"stemRimShot": {
+		"codepoint": "U+E21E",
+		"description": "Combining rim shot stem"
+	},
+	"stemSprechgesang": {
+		"alternateCodepoint": "U+1D166",
+		"codepoint": "U+E211",
+		"description": "Combining sprechgesang stem"
+	},
+	"stemSulPonticello": {
+		"codepoint": "U+E214",
+		"description": "Combining sul ponticello (bow behind bridge) stem"
+	},
+	"stemSussurando": {
+		"codepoint": "U+E21D",
+		"description": "Combining sussurando stem"
+	},
+	"stemSwished": {
+		"codepoint": "U+E212",
+		"description": "Combining swished stem"
+	},
+	"stemVibratoPulse": {
+		"codepoint": "U+E219",
+		"description": "Combining vibrato pulse accent (Saunders) stem"
+	},
+	"stockhausenTremolo": {
+		"codepoint": "U+E232",
+		"description": "Stockhausen irregular tremolo (\"Morsen\", like Morse code)"
+	},
+	"stringsBowBehindBridge": {
+		"codepoint": "U+E618",
+		"description": "Bow behind bridge (sul ponticello)"
+	},
+	"stringsBowBehindBridgeFourStrings": {
+		"codepoint": "U+E62A",
+		"description": "Bow behind bridge on four strings"
+	},
+	"stringsBowBehindBridgeOneString": {
+		"codepoint": "U+E627",
+		"description": "Bow behind bridge on one string"
+	},
+	"stringsBowBehindBridgeThreeStrings": {
+		"codepoint": "U+E629",
+		"description": "Bow behind bridge on three strings"
+	},
+	"stringsBowBehindBridgeTwoStrings": {
+		"codepoint": "U+E628",
+		"description": "Bow behind bridge on two strings"
+	},
+	"stringsBowOnBridge": {
+		"codepoint": "U+E619",
+		"description": "Bow on top of bridge"
+	},
+	"stringsBowOnTailpiece": {
+		"codepoint": "U+E61A",
+		"description": "Bow on tailpiece"
+	},
+	"stringsChangeBowDirection": {
+		"codepoint": "U+E626",
+		"description": "Change bow direction, indeterminate"
+	},
+	"stringsDownBow": {
+		"alternateCodepoint": "U+1D1AA",
+		"codepoint": "U+E610",
+		"description": "Down bow"
+	},
+	"stringsDownBowAwayFromBody": {
+		"codepoint": "U+EE82",
+		"description": "Down bow, away from body"
+	},
+	"stringsDownBowBeyondBridge": {
+		"codepoint": "U+EE84",
+		"description": "Down bow, beyond bridge"
+	},
+	"stringsDownBowTowardsBody": {
+		"codepoint": "U+EE80",
+		"description": "Down bow, towards body"
+	},
+	"stringsDownBowTurned": {
+		"codepoint": "U+E611",
+		"description": "Turned down bow"
+	},
+	"stringsFouette": {
+		"codepoint": "U+E622",
+		"description": "Fouett\u00e9"
+	},
+	"stringsHalfHarmonic": {
+		"codepoint": "U+E615",
+		"description": "Half-harmonic"
+	},
+	"stringsHarmonic": {
+		"alternateCodepoint": "U+1D1AC",
+		"codepoint": "U+E614",
+		"description": "Harmonic"
+	},
+	"stringsJeteAbove": {
+		"codepoint": "U+E620",
+		"description": "Jet\u00e9 (gettato) above"
+	},
+	"stringsJeteBelow": {
+		"codepoint": "U+E621",
+		"description": "Jet\u00e9 (gettato) below"
+	},
+	"stringsMuteOff": {
+		"codepoint": "U+E617",
+		"description": "Mute off"
+	},
+	"stringsMuteOn": {
+		"codepoint": "U+E616",
+		"description": "Mute on"
+	},
+	"stringsOverpressureDownBow": {
+		"codepoint": "U+E61B",
+		"description": "Overpressure, down bow"
+	},
+	"stringsOverpressureNoDirection": {
+		"codepoint": "U+E61F",
+		"description": "Overpressure, no bow direction"
+	},
+	"stringsOverpressurePossibileDownBow": {
+		"codepoint": "U+E61D",
+		"description": "Overpressure possibile, down bow"
+	},
+	"stringsOverpressurePossibileUpBow": {
+		"codepoint": "U+E61E",
+		"description": "Overpressure possibile, up bow"
+	},
+	"stringsOverpressureUpBow": {
+		"codepoint": "U+E61C",
+		"description": "Overpressure, up bow"
+	},
+	"stringsScrapeCircularClockwise": {
+		"codepoint": "U+EE88",
+		"description": "Scrape, circular clockwise"
+	},
+	"stringsScrapeCircularCounterclockwise": {
+		"codepoint": "U+EE89",
+		"description": "Scrape, circular counter-clockwise"
+	},
+	"stringsScrapeParallelInward": {
+		"codepoint": "U+EE86",
+		"description": "Scrape, parallel inward"
+	},
+	"stringsScrapeParallelOutward": {
+		"codepoint": "U+EE87",
+		"description": "Scrape, parallel outward"
+	},
+	"stringsThumbPosition": {
+		"codepoint": "U+E624",
+		"description": "Thumb position"
+	},
+	"stringsThumbPositionTurned": {
+		"codepoint": "U+E625",
+		"description": "Turned thumb position"
+	},
+	"stringsTripleChopInward": {
+		"codepoint": "U+EE8A",
+		"description": "Triple chop, inward"
+	},
+	"stringsTripleChopOutward": {
+		"codepoint": "U+EE8B",
+		"description": "Triple chop, outward"
+	},
+	"stringsUpBow": {
+		"alternateCodepoint": "U+1D1AB",
+		"codepoint": "U+E612",
+		"description": "Up bow"
+	},
+	"stringsUpBowAwayFromBody": {
+		"codepoint": "U+EE83",
+		"description": "Up bow, away from body"
+	},
+	"stringsUpBowBeyondBridge": {
+		"codepoint": "U+EE85",
+		"description": "Up bow, beyond bridge"
+	},
+	"stringsUpBowTowardsBody": {
+		"codepoint": "U+EE81",
+		"description": "Up bow, towards body"
+	},
+	"stringsUpBowTurned": {
+		"codepoint": "U+E613",
+		"description": "Turned up bow"
+	},
+	"stringsVibratoPulse": {
+		"codepoint": "U+E623",
+		"description": "Vibrato pulse accent (Saunders) for stem"
+	},
+	"swissRudimentsNoteheadBlackDouble": {
+		"codepoint": "U+EE72",
+		"description": "Swiss rudiments doubl\u00e9 black notehead"
+	},
+	"swissRudimentsNoteheadBlackFlam": {
+		"codepoint": "U+EE70",
+		"description": "Swiss rudiments flam black notehead"
+	},
+	"swissRudimentsNoteheadHalfDouble": {
+		"codepoint": "U+EE73",
+		"description": "Swiss rudiments doubl\u00e9 half (minim) notehead"
+	},
+	"swissRudimentsNoteheadHalfFlam": {
+		"codepoint": "U+EE71",
+		"description": "Swiss rudiments flam half (minim) notehead"
+	},
+	"systemDivider": {
+		"codepoint": "U+E007",
+		"description": "System divider"
+	},
+	"systemDividerExtraLong": {
+		"codepoint": "U+E009",
+		"description": "Extra long system divider"
+	},
+	"systemDividerLong": {
+		"codepoint": "U+E008",
+		"description": "Long system divider"
+	},
+	"textAugmentationDot": {
+		"codepoint": "U+E1FC",
+		"description": "Augmentation dot"
+	},
+	"textBlackNoteFrac16thLongStem": {
+		"codepoint": "U+E1F5",
+		"description": "Black note, fractional 16th beam, long stem"
+	},
+	"textBlackNoteFrac16thShortStem": {
+		"codepoint": "U+E1F4",
+		"description": "Black note, fractional 16th beam, short stem"
+	},
+	"textBlackNoteFrac32ndLongStem": {
+		"codepoint": "U+E1F6",
+		"description": "Black note, fractional 32nd beam, long stem"
+	},
+	"textBlackNoteFrac8thLongStem": {
+		"codepoint": "U+E1F3",
+		"description": "Black note, fractional 8th beam, long stem"
+	},
+	"textBlackNoteFrac8thShortStem": {
+		"codepoint": "U+E1F2",
+		"description": "Black note, fractional 8th beam, short stem"
+	},
+	"textBlackNoteLongStem": {
+		"codepoint": "U+E1F1",
+		"description": "Black note, long stem"
+	},
+	"textBlackNoteShortStem": {
+		"codepoint": "U+E1F0",
+		"description": "Black note, short stem"
+	},
+	"textCont16thBeamLongStem": {
+		"codepoint": "U+E1FA",
+		"description": "Continuing 16th beam for long stem"
+	},
+	"textCont16thBeamShortStem": {
+		"codepoint": "U+E1F9",
+		"description": "Continuing 16th beam for short stem"
+	},
+	"textCont32ndBeamLongStem": {
+		"codepoint": "U+E1FB",
+		"description": "Continuing 32nd beam for long stem"
+	},
+	"textCont8thBeamLongStem": {
+		"codepoint": "U+E1F8",
+		"description": "Continuing 8th beam for long stem"
+	},
+	"textCont8thBeamShortStem": {
+		"codepoint": "U+E1F7",
+		"description": "Continuing 8th beam for short stem"
+	},
+	"textHeadlessBlackNoteFrac16thLongStem": {
+		"codepoint": "U+E209",
+		"description": "Headless black note, fractional 16th beam, long stem"
+	},
+	"textHeadlessBlackNoteFrac16thShortStem": {
+		"codepoint": "U+E208",
+		"description": "Headless black note, fractional 16th beam, short stem"
+	},
+	"textHeadlessBlackNoteFrac32ndLongStem": {
+		"codepoint": "U+E20A",
+		"description": "Headless black note, fractional 32nd beam, long stem"
+	},
+	"textHeadlessBlackNoteFrac8thLongStem": {
+		"codepoint": "U+E207",
+		"description": "Headless black note, fractional 8th beam, long stem"
+	},
+	"textHeadlessBlackNoteFrac8thShortStem": {
+		"codepoint": "U+E206",
+		"description": "Headless black note, fractional 8th beam, short stem"
+	},
+	"textHeadlessBlackNoteLongStem": {
+		"codepoint": "U+E205",
+		"description": "Headless black note, long stem"
+	},
+	"textHeadlessBlackNoteShortStem": {
+		"codepoint": "U+E204",
+		"description": "Headless black note, short stem"
+	},
+	"textTie": {
+		"codepoint": "U+E1FD",
+		"description": "Tie"
+	},
+	"textTuplet3LongStem": {
+		"codepoint": "U+E202",
+		"description": "Tuplet number 3 for long stem"
+	},
+	"textTuplet3ShortStem": {
+		"codepoint": "U+E1FF",
+		"description": "Tuplet number 3 for short stem"
+	},
+	"textTupletBracketEndLongStem": {
+		"codepoint": "U+E203",
+		"description": "Tuplet bracket end for long stem"
+	},
+	"textTupletBracketEndShortStem": {
+		"codepoint": "U+E200",
+		"description": "Tuplet bracket end for short stem"
+	},
+	"textTupletBracketStartLongStem": {
+		"codepoint": "U+E201",
+		"description": "Tuplet bracket start for long stem"
+	},
+	"textTupletBracketStartShortStem": {
+		"codepoint": "U+E1FE",
+		"description": "Tuplet bracket start for short stem"
+	},
+	"timeSig0": {
+		"codepoint": "U+E080",
+		"description": "Time signature 0"
+	},
+	"timeSig0Reversed": {
+		"codepoint": "U+ECF0",
+		"description": "Reversed time signature 0"
+	},
+	"timeSig0Turned": {
+		"codepoint": "U+ECE0",
+		"description": "Turned time signature 0"
+	},
+	"timeSig1": {
+		"codepoint": "U+E081",
+		"description": "Time signature 1"
+	},
+	"timeSig1Reversed": {
+		"codepoint": "U+ECF1",
+		"description": "Reversed time signature 1"
+	},
+	"timeSig1Turned": {
+		"codepoint": "U+ECE1",
+		"description": "Turned time signature 1"
+	},
+	"timeSig2": {
+		"codepoint": "U+E082",
+		"description": "Time signature 2"
+	},
+	"timeSig2Reversed": {
+		"codepoint": "U+ECF2",
+		"description": "Reversed time signature 2"
+	},
+	"timeSig2Turned": {
+		"codepoint": "U+ECE2",
+		"description": "Turned time signature 2"
+	},
+	"timeSig3": {
+		"codepoint": "U+E083",
+		"description": "Time signature 3"
+	},
+	"timeSig3Reversed": {
+		"codepoint": "U+ECF3",
+		"description": "Reversed time signature 3"
+	},
+	"timeSig3Turned": {
+		"codepoint": "U+ECE3",
+		"description": "Turned time signature 3"
+	},
+	"timeSig4": {
+		"codepoint": "U+E084",
+		"description": "Time signature 4"
+	},
+	"timeSig4Reversed": {
+		"codepoint": "U+ECF4",
+		"description": "Reversed time signature 4"
+	},
+	"timeSig4Turned": {
+		"codepoint": "U+ECE4",
+		"description": "Turned time signature 4"
+	},
+	"timeSig5": {
+		"codepoint": "U+E085",
+		"description": "Time signature 5"
+	},
+	"timeSig5Reversed": {
+		"codepoint": "U+ECF5",
+		"description": "Reversed time signature 5"
+	},
+	"timeSig5Turned": {
+		"codepoint": "U+ECE5",
+		"description": "Turned time signature 5"
+	},
+	"timeSig6": {
+		"codepoint": "U+E086",
+		"description": "Time signature 6"
+	},
+	"timeSig6Reversed": {
+		"codepoint": "U+ECF6",
+		"description": "Reversed time signature 6"
+	},
+	"timeSig6Turned": {
+		"codepoint": "U+ECE6",
+		"description": "Turned time signature 6"
+	},
+	"timeSig7": {
+		"codepoint": "U+E087",
+		"description": "Time signature 7"
+	},
+	"timeSig7Reversed": {
+		"codepoint": "U+ECF7",
+		"description": "Reversed time signature 7"
+	},
+	"timeSig7Turned": {
+		"codepoint": "U+ECE7",
+		"description": "Turned time signature 7"
+	},
+	"timeSig8": {
+		"codepoint": "U+E088",
+		"description": "Time signature 8"
+	},
+	"timeSig8Reversed": {
+		"codepoint": "U+ECF8",
+		"description": "Reversed time signature 8"
+	},
+	"timeSig8Turned": {
+		"codepoint": "U+ECE8",
+		"description": "Turned time signature 8"
+	},
+	"timeSig9": {
+		"codepoint": "U+E089",
+		"description": "Time signature 9"
+	},
+	"timeSig9Reversed": {
+		"codepoint": "U+ECF9",
+		"description": "Reversed time signature 9"
+	},
+	"timeSig9Turned": {
+		"codepoint": "U+ECE9",
+		"description": "Turned time signature 9"
+	},
+	"timeSigBracketLeft": {
+		"codepoint": "U+EC80",
+		"description": "Left bracket for whole time signature"
+	},
+	"timeSigBracketLeftSmall": {
+		"codepoint": "U+EC82",
+		"description": "Left bracket for numerator only"
+	},
+	"timeSigBracketRight": {
+		"codepoint": "U+EC81",
+		"description": "Right bracket for whole time signature"
+	},
+	"timeSigBracketRightSmall": {
+		"codepoint": "U+EC83",
+		"description": "Right bracket for numerator only"
+	},
+	"timeSigCombDenominator": {
+		"codepoint": "U+E09F",
+		"description": "Control character for denominator digit"
+	},
+	"timeSigCombNumerator": {
+		"codepoint": "U+E09E",
+		"description": "Control character for numerator digit"
+	},
+	"timeSigComma": {
+		"codepoint": "U+E096",
+		"description": "Time signature comma"
+	},
+	"timeSigCommon": {
+		"alternateCodepoint": "U+1D134",
+		"codepoint": "U+E08A",
+		"description": "Common time"
+	},
+	"timeSigCommonReversed": {
+		"codepoint": "U+ECFA",
+		"description": "Reversed common time"
+	},
+	"timeSigCommonTurned": {
+		"codepoint": "U+ECEA",
+		"description": "Turned common time"
+	},
+	"timeSigCut2": {
+		"codepoint": "U+EC85",
+		"description": "Cut time (Bach)"
+	},
+	"timeSigCut3": {
+		"codepoint": "U+EC86",
+		"description": "Cut triple time (9/8)"
+	},
+	"timeSigCutCommon": {
+		"alternateCodepoint": "U+1D135",
+		"codepoint": "U+E08B",
+		"description": "Cut time"
+	},
+	"timeSigCutCommonReversed": {
+		"codepoint": "U+ECFB",
+		"description": "Reversed cut time"
+	},
+	"timeSigCutCommonTurned": {
+		"codepoint": "U+ECEB",
+		"description": "Turned cut time"
+	},
+	"timeSigEquals": {
+		"codepoint": "U+E08F",
+		"description": "Time signature equals"
+	},
+	"timeSigFractionHalf": {
+		"codepoint": "U+E098",
+		"description": "Time signature fraction \u00bd"
+	},
+	"timeSigFractionOneThird": {
+		"codepoint": "U+E09A",
+		"description": "Time signature fraction \u2153"
+	},
+	"timeSigFractionQuarter": {
+		"codepoint": "U+E097",
+		"description": "Time signature fraction \u00bc"
+	},
+	"timeSigFractionThreeQuarters": {
+		"codepoint": "U+E099",
+		"description": "Time signature fraction \u00be"
+	},
+	"timeSigFractionTwoThirds": {
+		"codepoint": "U+E09B",
+		"description": "Time signature fraction \u2154"
+	},
+	"timeSigFractionalSlash": {
+		"codepoint": "U+E08E",
+		"description": "Time signature fraction slash"
+	},
+	"timeSigMinus": {
+		"codepoint": "U+E090",
+		"description": "Time signature minus"
+	},
+	"timeSigMultiply": {
+		"codepoint": "U+E091",
+		"description": "Time signature multiply"
+	},
+	"timeSigOpenPenderecki": {
+		"codepoint": "U+E09D",
+		"description": "Open time signature (Penderecki)"
+	},
+	"timeSigParensLeft": {
+		"codepoint": "U+E094",
+		"description": "Left parenthesis for whole time signature"
+	},
+	"timeSigParensLeftSmall": {
+		"codepoint": "U+E092",
+		"description": "Left parenthesis for numerator only"
+	},
+	"timeSigParensRight": {
+		"codepoint": "U+E095",
+		"description": "Right parenthesis for whole time signature"
+	},
+	"timeSigParensRightSmall": {
+		"codepoint": "U+E093",
+		"description": "Right parenthesis for numerator only"
+	},
+	"timeSigPlus": {
+		"codepoint": "U+E08C",
+		"description": "Time signature +"
+	},
+	"timeSigPlusSmall": {
+		"codepoint": "U+E08D",
+		"description": "Time signature + (for numerators)"
+	},
+	"timeSigSlash": {
+		"codepoint": "U+EC84",
+		"description": "Time signature slash separator"
+	},
+	"timeSigX": {
+		"codepoint": "U+E09C",
+		"description": "Open time signature"
+	},
+	"tremolo1": {
+		"alternateCodepoint": "U+1D167",
+		"codepoint": "U+E220",
+		"description": "Combining tremolo 1"
+	},
+	"tremolo2": {
+		"alternateCodepoint": "U+1D168",
+		"codepoint": "U+E221",
+		"description": "Combining tremolo 2"
+	},
+	"tremolo3": {
+		"alternateCodepoint": "U+1D169",
+		"codepoint": "U+E222",
+		"description": "Combining tremolo 3"
+	},
+	"tremolo4": {
+		"codepoint": "U+E223",
+		"description": "Combining tremolo 4"
+	},
+	"tremolo5": {
+		"codepoint": "U+E224",
+		"description": "Combining tremolo 5"
+	},
+	"tremoloDivisiDots2": {
+		"codepoint": "U+E22E",
+		"description": "Divide measured tremolo by 2"
+	},
+	"tremoloDivisiDots3": {
+		"codepoint": "U+E22F",
+		"description": "Divide measured tremolo by 3"
+	},
+	"tremoloDivisiDots4": {
+		"codepoint": "U+E230",
+		"description": "Divide measured tremolo by 4"
+	},
+	"tremoloDivisiDots6": {
+		"codepoint": "U+E231",
+		"description": "Divide measured tremolo by 6"
+	},
+	"tremoloFingered1": {
+		"alternateCodepoint": "U+1D16A",
+		"codepoint": "U+E225",
+		"description": "Fingered tremolo 1"
+	},
+	"tremoloFingered2": {
+		"alternateCodepoint": "U+1D16B",
+		"codepoint": "U+E226",
+		"description": "Fingered tremolo 2"
+	},
+	"tremoloFingered3": {
+		"alternateCodepoint": "U+1D16C",
+		"codepoint": "U+E227",
+		"description": "Fingered tremolo 3"
+	},
+	"tremoloFingered4": {
+		"codepoint": "U+E228",
+		"description": "Fingered tremolo 4"
+	},
+	"tremoloFingered5": {
+		"codepoint": "U+E229",
+		"description": "Fingered tremolo 5"
+	},
+	"tripleTongueAbove": {
+		"alternateCodepoint": "U+1D18B",
+		"codepoint": "U+E5F2",
+		"description": "Triple-tongue above"
+	},
+	"tripleTongueBelow": {
+		"codepoint": "U+E5F3",
+		"description": "Triple-tongue below"
+	},
+	"tuplet0": {
+		"codepoint": "U+E880",
+		"description": "Tuplet 0"
+	},
+	"tuplet1": {
+		"codepoint": "U+E881",
+		"description": "Tuplet 1"
+	},
+	"tuplet2": {
+		"codepoint": "U+E882",
+		"description": "Tuplet 2"
+	},
+	"tuplet3": {
+		"codepoint": "U+E883",
+		"description": "Tuplet 3"
+	},
+	"tuplet4": {
+		"codepoint": "U+E884",
+		"description": "Tuplet 4"
+	},
+	"tuplet5": {
+		"codepoint": "U+E885",
+		"description": "Tuplet 5"
+	},
+	"tuplet6": {
+		"codepoint": "U+E886",
+		"description": "Tuplet 6"
+	},
+	"tuplet7": {
+		"codepoint": "U+E887",
+		"description": "Tuplet 7"
+	},
+	"tuplet8": {
+		"codepoint": "U+E888",
+		"description": "Tuplet 8"
+	},
+	"tuplet9": {
+		"codepoint": "U+E889",
+		"description": "Tuplet 9"
+	},
+	"tupletColon": {
+		"codepoint": "U+E88A",
+		"description": "Tuplet colon"
+	},
+	"unmeasuredTremolo": {
+		"codepoint": "U+E22C",
+		"description": "Wieniawski unmeasured tremolo"
+	},
+	"unmeasuredTremoloSimple": {
+		"codepoint": "U+E22D",
+		"description": "Wieniawski unmeasured tremolo (simpler)"
+	},
+	"unpitchedPercussionClef1": {
+		"alternateCodepoint": "U+1D125",
+		"codepoint": "U+E069",
+		"description": "Unpitched percussion clef 1"
+	},
+	"unpitchedPercussionClef2": {
+		"alternateCodepoint": "U+1D126",
+		"codepoint": "U+E06A",
+		"description": "Unpitched percussion clef 2"
+	},
+	"ventiduesima": {
+		"codepoint": "U+E517",
+		"description": "Ventiduesima"
+	},
+	"ventiduesimaAlta": {
+		"codepoint": "U+E518",
+		"description": "Ventiduesima alta"
+	},
+	"ventiduesimaBassa": {
+		"codepoint": "U+E519",
+		"description": "Ventiduesima bassa"
+	},
+	"ventiduesimaBassaMb": {
+		"codepoint": "U+E51E",
+		"description": "Ventiduesima bassa (mb)"
+	},
+	"vocalFingerClickStockhausen": {
+		"codepoint": "U+E649",
+		"description": "Finger click (Stockhausen)"
+	},
+	"vocalHalbGesungen": {
+		"codepoint": "U+E64B",
+		"description": "Halb gesungen (semi-sprechgesang)"
+	},
+	"vocalMouthClosed": {
+		"codepoint": "U+E640",
+		"description": "Mouth closed"
+	},
+	"vocalMouthOpen": {
+		"codepoint": "U+E642",
+		"description": "Mouth open"
+	},
+	"vocalMouthPursed": {
+		"codepoint": "U+E644",
+		"description": "Mouth pursed"
+	},
+	"vocalMouthSlightlyOpen": {
+		"codepoint": "U+E641",
+		"description": "Mouth slightly open"
+	},
+	"vocalMouthWideOpen": {
+		"codepoint": "U+E643",
+		"description": "Mouth wide open"
+	},
+	"vocalNasalVoice": {
+		"codepoint": "U+E647",
+		"description": "Nasal voice"
+	},
+	"vocalSprechgesang": {
+		"codepoint": "U+E645",
+		"description": "Sprechgesang"
+	},
+	"vocalTongueClickStockhausen": {
+		"codepoint": "U+E648",
+		"description": "Tongue click (Stockhausen)"
+	},
+	"vocalTongueFingerClickStockhausen": {
+		"codepoint": "U+E64A",
+		"description": "Tongue and finger click (Stockhausen)"
+	},
+	"vocalsSussurando": {
+		"codepoint": "U+E646",
+		"description": "Combining sussurando for stem"
+	},
+	"wiggleArpeggiatoDown": {
+		"codepoint": "U+EAAA",
+		"description": "Arpeggiato wiggle segment, downwards"
+	},
+	"wiggleArpeggiatoDownArrow": {
+		"codepoint": "U+EAAE",
+		"description": "Arpeggiato arrowhead down"
+	},
+	"wiggleArpeggiatoDownSwash": {
+		"codepoint": "U+EAAC",
+		"description": "Arpeggiato downward swash"
+	},
+	"wiggleArpeggiatoUp": {
+		"codepoint": "U+EAA9",
+		"description": "Arpeggiato wiggle segment, upwards"
+	},
+	"wiggleArpeggiatoUpArrow": {
+		"codepoint": "U+EAAD",
+		"description": "Arpeggiato arrowhead up"
+	},
+	"wiggleArpeggiatoUpSwash": {
+		"codepoint": "U+EAAB",
+		"description": "Arpeggiato upward swash"
+	},
+	"wiggleCircular": {
+		"codepoint": "U+EAC9",
+		"description": "Circular motion segment"
+	},
+	"wiggleCircularConstant": {
+		"codepoint": "U+EAC0",
+		"description": "Constant circular motion segment"
+	},
+	"wiggleCircularConstantFlipped": {
+		"codepoint": "U+EAC1",
+		"description": "Constant circular motion segment (flipped)"
+	},
+	"wiggleCircularConstantFlippedLarge": {
+		"codepoint": "U+EAC3",
+		"description": "Constant circular motion segment (flipped, large)"
+	},
+	"wiggleCircularConstantLarge": {
+		"codepoint": "U+EAC2",
+		"description": "Constant circular motion segment (large)"
+	},
+	"wiggleCircularEnd": {
+		"codepoint": "U+EACB",
+		"description": "Circular motion end"
+	},
+	"wiggleCircularLarge": {
+		"codepoint": "U+EAC8",
+		"description": "Circular motion segment, large"
+	},
+	"wiggleCircularLarger": {
+		"codepoint": "U+EAC7",
+		"description": "Circular motion segment, larger"
+	},
+	"wiggleCircularLargerStill": {
+		"codepoint": "U+EAC6",
+		"description": "Circular motion segment, larger still"
+	},
+	"wiggleCircularLargest": {
+		"codepoint": "U+EAC5",
+		"description": "Circular motion segment, largest"
+	},
+	"wiggleCircularSmall": {
+		"codepoint": "U+EACA",
+		"description": "Circular motion segment, small"
+	},
+	"wiggleCircularStart": {
+		"codepoint": "U+EAC4",
+		"description": "Circular motion start"
+	},
+	"wiggleGlissando": {
+		"codepoint": "U+EAAF",
+		"description": "Glissando wiggle segment"
+	},
+	"wiggleGlissandoGroup1": {
+		"codepoint": "U+EABD",
+		"description": "Group glissando 1"
+	},
+	"wiggleGlissandoGroup2": {
+		"codepoint": "U+EABE",
+		"description": "Group glissando 2"
+	},
+	"wiggleGlissandoGroup3": {
+		"codepoint": "U+EABF",
+		"description": "Group glissando 3"
+	},
+	"wiggleRandom1": {
+		"codepoint": "U+EAF0",
+		"description": "Quasi-random squiggle 1"
+	},
+	"wiggleRandom2": {
+		"codepoint": "U+EAF1",
+		"description": "Quasi-random squiggle 2"
+	},
+	"wiggleRandom3": {
+		"codepoint": "U+EAF2",
+		"description": "Quasi-random squiggle 3"
+	},
+	"wiggleRandom4": {
+		"codepoint": "U+EAF3",
+		"description": "Quasi-random squiggle 4"
+	},
+	"wiggleSawtooth": {
+		"codepoint": "U+EABB",
+		"description": "Sawtooth line segment"
+	},
+	"wiggleSawtoothNarrow": {
+		"codepoint": "U+EABA",
+		"description": "Narrow sawtooth line segment"
+	},
+	"wiggleSawtoothWide": {
+		"codepoint": "U+EABC",
+		"description": "Wide sawtooth line segment"
+	},
+	"wiggleSquareWave": {
+		"codepoint": "U+EAB8",
+		"description": "Square wave line segment"
+	},
+	"wiggleSquareWaveNarrow": {
+		"codepoint": "U+EAB7",
+		"description": "Narrow square wave line segment"
+	},
+	"wiggleSquareWaveWide": {
+		"codepoint": "U+EAB9",
+		"description": "Wide square wave line segment"
+	},
+	"wiggleTrill": {
+		"codepoint": "U+EAA4",
+		"description": "Trill wiggle segment"
+	},
+	"wiggleTrillFast": {
+		"codepoint": "U+EAA3",
+		"description": "Trill wiggle segment, fast"
+	},
+	"wiggleTrillFaster": {
+		"codepoint": "U+EAA2",
+		"description": "Trill wiggle segment, faster"
+	},
+	"wiggleTrillFasterStill": {
+		"codepoint": "U+EAA1",
+		"description": "Trill wiggle segment, faster still"
+	},
+	"wiggleTrillFastest": {
+		"codepoint": "U+EAA0",
+		"description": "Trill wiggle segment, fastest"
+	},
+	"wiggleTrillSlow": {
+		"codepoint": "U+EAA5",
+		"description": "Trill wiggle segment, slow"
+	},
+	"wiggleTrillSlower": {
+		"codepoint": "U+EAA6",
+		"description": "Trill wiggle segment, slower"
+	},
+	"wiggleTrillSlowerStill": {
+		"codepoint": "U+EAA7",
+		"description": "Trill wiggle segment, slower still"
+	},
+	"wiggleTrillSlowest": {
+		"codepoint": "U+EAA8",
+		"description": "Trill wiggle segment, slowest"
+	},
+	"wiggleVIbratoLargestSlower": {
+		"codepoint": "U+EAEE",
+		"description": "Vibrato largest, slower"
+	},
+	"wiggleVIbratoMediumSlower": {
+		"codepoint": "U+EAE0",
+		"description": "Vibrato medium, slower"
+	},
+	"wiggleVibrato": {
+		"codepoint": "U+EAB0",
+		"description": "Vibrato / shake wiggle segment"
+	},
+	"wiggleVibratoLargeFast": {
+		"codepoint": "U+EAE5",
+		"description": "Vibrato large, fast"
+	},
+	"wiggleVibratoLargeFaster": {
+		"codepoint": "U+EAE4",
+		"description": "Vibrato large, faster"
+	},
+	"wiggleVibratoLargeFasterStill": {
+		"codepoint": "U+EAE3",
+		"description": "Vibrato large, faster still"
+	},
+	"wiggleVibratoLargeFastest": {
+		"codepoint": "U+EAE2",
+		"description": "Vibrato large, fastest"
+	},
+	"wiggleVibratoLargeSlow": {
+		"codepoint": "U+EAE6",
+		"description": "Vibrato large, slow"
+	},
+	"wiggleVibratoLargeSlower": {
+		"codepoint": "U+EAE7",
+		"description": "Vibrato large, slower"
+	},
+	"wiggleVibratoLargeSlowest": {
+		"codepoint": "U+EAE8",
+		"description": "Vibrato large, slowest"
+	},
+	"wiggleVibratoLargestFast": {
+		"codepoint": "U+EAEC",
+		"description": "Vibrato largest, fast"
+	},
+	"wiggleVibratoLargestFaster": {
+		"codepoint": "U+EAEB",
+		"description": "Vibrato largest, faster"
+	},
+	"wiggleVibratoLargestFasterStill": {
+		"codepoint": "U+EAEA",
+		"description": "Vibrato largest, faster still"
+	},
+	"wiggleVibratoLargestFastest": {
+		"codepoint": "U+EAE9",
+		"description": "Vibrato largest, fastest"
+	},
+	"wiggleVibratoLargestSlow": {
+		"codepoint": "U+EAED",
+		"description": "Vibrato largest, slow"
+	},
+	"wiggleVibratoLargestSlowest": {
+		"codepoint": "U+EAEF",
+		"description": "Vibrato largest, slowest"
+	},
+	"wiggleVibratoMediumFast": {
+		"codepoint": "U+EADE",
+		"description": "Vibrato medium, fast"
+	},
+	"wiggleVibratoMediumFaster": {
+		"codepoint": "U+EADD",
+		"description": "Vibrato medium, faster"
+	},
+	"wiggleVibratoMediumFasterStill": {
+		"codepoint": "U+EADC",
+		"description": "Vibrato medium, faster still"
+	},
+	"wiggleVibratoMediumFastest": {
+		"codepoint": "U+EADB",
+		"description": "Vibrato medium, fastest"
+	},
+	"wiggleVibratoMediumSlow": {
+		"codepoint": "U+EADF",
+		"description": "Vibrato medium, slow"
+	},
+	"wiggleVibratoMediumSlowest": {
+		"codepoint": "U+EAE1",
+		"description": "Vibrato medium, slowest"
+	},
+	"wiggleVibratoSmallFast": {
+		"codepoint": "U+EAD7",
+		"description": "Vibrato small, fast"
+	},
+	"wiggleVibratoSmallFaster": {
+		"codepoint": "U+EAD6",
+		"description": "Vibrato small, faster"
+	},
+	"wiggleVibratoSmallFasterStill": {
+		"codepoint": "U+EAD5",
+		"description": "Vibrato small, faster still"
+	},
+	"wiggleVibratoSmallFastest": {
+		"codepoint": "U+EAD4",
+		"description": "Vibrato small, fastest"
+	},
+	"wiggleVibratoSmallSlow": {
+		"codepoint": "U+EAD8",
+		"description": "Vibrato small, slow"
+	},
+	"wiggleVibratoSmallSlower": {
+		"codepoint": "U+EAD9",
+		"description": "Vibrato small, slower"
+	},
+	"wiggleVibratoSmallSlowest": {
+		"codepoint": "U+EADA",
+		"description": "Vibrato small, slowest"
+	},
+	"wiggleVibratoSmallestFast": {
+		"codepoint": "U+EAD0",
+		"description": "Vibrato smallest, fast"
+	},
+	"wiggleVibratoSmallestFaster": {
+		"codepoint": "U+EACF",
+		"description": "Vibrato smallest, faster"
+	},
+	"wiggleVibratoSmallestFasterStill": {
+		"codepoint": "U+EACE",
+		"description": "Vibrato smallest, faster still"
+	},
+	"wiggleVibratoSmallestFastest": {
+		"codepoint": "U+EACD",
+		"description": "Vibrato smallest, fastest"
+	},
+	"wiggleVibratoSmallestSlow": {
+		"codepoint": "U+EAD1",
+		"description": "Vibrato smallest, slow"
+	},
+	"wiggleVibratoSmallestSlower": {
+		"codepoint": "U+EAD2",
+		"description": "Vibrato smallest, slower"
+	},
+	"wiggleVibratoSmallestSlowest": {
+		"codepoint": "U+EAD3",
+		"description": "Vibrato smallest, slowest"
+	},
+	"wiggleVibratoStart": {
+		"codepoint": "U+EACC",
+		"description": "Vibrato start"
+	},
+	"wiggleVibratoWide": {
+		"codepoint": "U+EAB1",
+		"description": "Wide vibrato / shake wiggle segment"
+	},
+	"wiggleWavy": {
+		"codepoint": "U+EAB5",
+		"description": "Wavy line segment"
+	},
+	"wiggleWavyNarrow": {
+		"codepoint": "U+EAB4",
+		"description": "Narrow wavy line segment"
+	},
+	"wiggleWavyWide": {
+		"codepoint": "U+EAB6",
+		"description": "Wide wavy line segment"
+	},
+	"windClosedHole": {
+		"codepoint": "U+E5F4",
+		"description": "Closed hole"
+	},
+	"windFlatEmbouchure": {
+		"codepoint": "U+E5FB",
+		"description": "Flatter embouchure"
+	},
+	"windHalfClosedHole1": {
+		"codepoint": "U+E5F6",
+		"description": "Half-closed hole"
+	},
+	"windHalfClosedHole2": {
+		"codepoint": "U+E5F7",
+		"description": "Half-closed hole 2"
+	},
+	"windHalfClosedHole3": {
+		"codepoint": "U+E5F8",
+		"description": "Half-open hole"
+	},
+	"windLessRelaxedEmbouchure": {
+		"codepoint": "U+E5FE",
+		"description": "Somewhat relaxed embouchure"
+	},
+	"windLessTightEmbouchure": {
+		"codepoint": "U+E600",
+		"description": "Somewhat tight embouchure"
+	},
+	"windMouthpiecePop": {
+		"codepoint": "U+E60A",
+		"description": "Mouthpiece or hand pop"
+	},
+	"windMultiphonicsBlackStem": {
+		"codepoint": "U+E607",
+		"description": "Combining multiphonics (black) for stem"
+	},
+	"windMultiphonicsBlackWhiteStem": {
+		"codepoint": "U+E609",
+		"description": "Combining multiphonics (black and white) for stem"
+	},
+	"windMultiphonicsWhiteStem": {
+		"codepoint": "U+E608",
+		"description": "Combining multiphonics (white) for stem"
+	},
+	"windOpenHole": {
+		"codepoint": "U+E5F9",
+		"description": "Open hole"
+	},
+	"windReedPositionIn": {
+		"codepoint": "U+E606",
+		"description": "Much more reed (push inwards)"
+	},
+	"windReedPositionNormal": {
+		"codepoint": "U+E604",
+		"description": "Normal reed position"
+	},
+	"windReedPositionOut": {
+		"codepoint": "U+E605",
+		"description": "Very little reed (pull outwards)"
+	},
+	"windRelaxedEmbouchure": {
+		"codepoint": "U+E5FD",
+		"description": "Relaxed embouchure"
+	},
+	"windRimOnly": {
+		"codepoint": "U+E60B",
+		"description": "Rim only"
+	},
+	"windSharpEmbouchure": {
+		"codepoint": "U+E5FC",
+		"description": "Sharper embouchure"
+	},
+	"windStrongAirPressure": {
+		"codepoint": "U+E603",
+		"description": "Very tight embouchure / strong air pressure"
+	},
+	"windThreeQuartersClosedHole": {
+		"codepoint": "U+E5F5",
+		"description": "Three-quarters closed hole"
+	},
+	"windTightEmbouchure": {
+		"codepoint": "U+E5FF",
+		"description": "Tight embouchure"
+	},
+	"windTrillKey": {
+		"codepoint": "U+E5FA",
+		"description": "Trill key"
+	},
+	"windVeryTightEmbouchure": {
+		"codepoint": "U+E601",
+		"description": "Very tight embouchure"
+	},
+	"windWeakAirPressure": {
+		"codepoint": "U+E602",
+		"description": "Very relaxed embouchure / weak air-pressure"
+	}
+}
