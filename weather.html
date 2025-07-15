@@ -52,6 +52,23 @@
       .then(data => {
         const container = document.getElementById('weather');
         const current = data.current || {};
+
+        if (Object.keys(current).length === 0) {
+          container.innerHTML = "<p>No current weather data available.</p>";
+          return;
+        }
+
+        container.innerHTML = '';
+        for (const [key, value] of Object.entries(current)) {
+          const item = document.createElement('div');
+          item.className = 'data-item';
+          item.innerHTML = `<span>${formatKey(key)}:</span> ${value}`;
+          container.appendChild(item);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('weather').innerHTML = "<p>Failed to load weather data.</p>";
       });
   </script>
 </body>
