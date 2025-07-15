@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dynamic Weather Widget</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f8ff;
+      margin: 0;
+      padding: 40px;
+      text-align: center;
+    }
+
+    #weather {
+      display: inline-block;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      min-width: 300px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .data-item {
+      margin: 10px 0;
+      text-align: left;
+    }
+
+    .data-item span {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Current Weather</h1>
+  <div id="weather">Loading...</div>
+
+  <script>
+    function formatKey(key) {
+      return key
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    fetch('forecast1.json')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('weather');
+        const current = data.current || {};
+
+        if (Object.keys(current).length === 0) {
+          container.innerHTML = "<p>No current weather data available.</p>";
+          return;
+        }
+
+        container.innerHTML = '';
+        for (const [key, value] of Object.entries(current)) {
+          const item = document.createElement('div');
+          item.className = 'data-item';
+          item.innerHTML = `<span>${formatKey(key)}:</span> ${value}`;
+          container.appendChild(item);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('weather').innerHTML = "<p>Failed to load weather data.</p>";
+      });
+  </script>
+</body>
+</html>
