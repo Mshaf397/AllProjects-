@@ -147,9 +147,6 @@
         document.getElementById('wind').textContent = current.wind_speed_10m + ' km/h';
         document.getElementById('clouds').textContent = current.cloud_cover + ' %';
       })
-      .catch(err => {
-        console.error('Error loading weather data:', err);
-        document.getElementById('weather').textContent = "Failed to load weather data.";
       });
   </script>
 </body>
