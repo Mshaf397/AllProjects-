@@ -4,4 +4,62 @@
 <title>Song of the Day</title>
 </head>
 <body>
+<h1>Daily Song Title</h1>
+<p id="songTitle"></p>
+<h2>Past Titles</h2>
+<ul id="pastTitles"></ul>
+
+<script>
+  const titles = ["Daled Bavos", "Mitteler Rebbe's Kapeyla", "Nigun Chassidei Tzemach Tzedek", "Yemin Hashem", "Lechatchilo Ariber", "Nigun Rostov"];
+
+  function seededRandom(seed) {
+    let x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  }
+
+  function getSeededItem(arr, seed) {
+    return arr[Math.floor(seededRandom(seed) * arr.length)];
+  }
+
+  function generateTitleForDate(date) {
+    const seed = date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+    const style = Math.floor(seededRandom(seed) * 3);
+    let title = "";
+
+    if (style === 0) {
+      title = `${getSeededItem(adjectives, seed + 1)} ${getSeededItem(nouns, seed + 2)}`;
+    } else if (style === 1) {
+      title = `${getSeededItem(nouns, seed + 3)} ${getSeededItem(prepositions, seed + 4)} ${getSeededItem(extras, seed + 5)}`;
+    } else {
+      title = `The ${getSeededItem(adjectives, seed + 6)} ${getSeededItem(nouns, seed + 7)}`;
+    }
+
+    return title;
+  }
+
+  function generateAndStoreDailyTitle() {
+    const today = new Date();
+    const dateKey = today.toISOString().split("T")[0]; // e.g., "2025-07-17"
+    let stored = JSON.parse(localStorage.getItem("songTitles")) || {};
+
+    if (!stored[dateKey]) {
+      const title = generateTitleForDate(today);
+      stored[dateKey] = title;
+      localStorage.setItem("songTitles", JSON.stringify(stored));
+    }
+
+    document.getElementById("songTitle").innerText = `"${stored[dateKey]}"`;
+
+    // Populate past titles
+    const pastList = document.getElementById("pastTitles");
+    pastList.innerHTML = "";
+    Object.entries(stored).sort().forEach(([date, title]) => {
+      const li = document.createElement("li");
+      li.textContent = `${date}: "${title}"`;
+      pastList.appendChild(li);
+    });
+  }
+
+  generateAndStoreDailyTitle();
+</script>
 </body>
