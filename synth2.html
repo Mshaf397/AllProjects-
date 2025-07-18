@@ -66,29 +66,44 @@
 
   // Drag scrolling
   let isDragging = false, startX, startY, scrollLeft, scrollTop;
-  wrapper.addEventListener("mousedown", e => {
-    isDragging = true;
-    startX = e.pageX - wrapper.offsetLeft;
-    startY = e.pageY - wrapper.offsetTop;
-    scrollLeft = wrapper.scrollLeft;
-    scrollTop = wrapper.scrollTop;
-    wrapper.style.cursor = "grabbing";
-  });
-  wrapper.addEventListener("mouseleave", () => isDragging = false);
-  wrapper.addEventListener("mouseup", () => {
-    isDragging = false;
-    wrapper.style.cursor = "grab";
-  });
-  wrapper.addEventListener("mousemove", e => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const x = e.pageX - wrapper.offsetLeft;
-    const y = e.pageY - wrapper.offsetTop;
-    const walkX = (x - startX);
-    const walkY = (y - startY);
-    wrapper.scrollLeft = scrollLeft - walkX;
-    wrapper.scrollTop = scrollTop - walkY;
-  });
+
+function startDrag(e) {
+  isDragging = true;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  startX = clientX - wrapper.offsetLeft;
+  startY = clientY - wrapper.offsetTop;
+  scrollLeft = wrapper.scrollLeft;
+  scrollTop = wrapper.scrollTop;
+  wrapper.style.cursor = "grabbing";
+}
+
+function dragMove(e) {
+  if (!isDragging) return;
+  e.preventDefault();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const x = clientX - wrapper.offsetLeft;
+  const y = clientY - wrapper.offsetTop;
+  const walkX = x - startX;
+  const walkY = y - startY;
+  wrapper.scrollLeft = scrollLeft - walkX;
+  wrapper.scrollTop = scrollTop - walkY;
+}
+
+function endDrag() {
+  isDragging = false;
+  wrapper.style.cursor = "grab";
+}
+
+wrapper.addEventListener("mousedown", startDrag);
+wrapper.addEventListener("mousemove", dragMove);
+wrapper.addEventListener("mouseup", endDrag);
+wrapper.addEventListener("mouseleave", endDrag);
+
+wrapper.addEventListener("touchstart", startDrag, { passive: false });
+wrapper.addEventListener("touchmove", dragMove, { passive: false });
+wrapper.addEventListener("touchend", endDrag);
 
   // UI toggling
   document.getElementById("tuningType").addEventListener("change", () => {
