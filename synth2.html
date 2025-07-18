@@ -206,18 +206,35 @@ function playTone(freq) {
       div.className = "key";
       const cents = (1200 * Math.log2(freq / rootFreq)).toFixed(2);
       div.innerHTML = `${freq.toFixed(2)} Hz<br>${cents}¢`;
-        let osc;
+          let osc = null;
+  let isPlaying = false;
+
   div.addEventListener("pointerdown", e => {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
-    osc = audioCtx.createOscillator();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    osc.connect(audioCtx.destination);
-    osc.start();
+    if (!isPlaying) {
+      osc = audioCtx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      osc.connect(audioCtx.destination);
+      osc.start();
+      isPlaying = true;
+    }
   });
 
+  const stopOscillator = () => {
+    if (isPlaying && osc) {
+      osc.stop();
+      osc.disconnect();
+      osc = null;
+      isPlaying = false;
+    }
+  };
+
+  div.addEventListener("pointerup", stopOscillator);
+  div.addEventListener("pointerleave", stopOscillator);
+  div.addEventListener("pointercancel", stopOscillator);
   div.addEventListener("pointerup", () => {
     if (osc) {
       osc.stop();
