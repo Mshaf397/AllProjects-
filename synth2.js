@@ -25,7 +25,7 @@ presetSelect.addEventListener("change", (e) => {
 
 customInput.addEventListener("input", () => {
     const input = customInput.value.trim();
-    const customMatch = input.match(/^(\d+)-ed(\d+\/\d+|\d+)$/);
+    const customMatch = input.match(/^(\d+)ed(\d+\/\d+|\d+)$/);
 
     if (customMatch) {
         currentEDO = parseInt(customMatch[1]);
