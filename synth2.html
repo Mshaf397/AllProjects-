@@ -235,10 +235,9 @@ function playTone(freq) {
   div.addEventListener("pointerup", stopOscillator);
   div.addEventListener("pointerleave", stopOscillator);
   div.addEventListener("pointercancel", stopOscillator);
-  div.addEventListener("pointerup", () => {
-    
-
-
+      keyboard.appendChild(div);
+  });
+}
   renderKeyboard(); // Initial load
 </script>
 </body>
