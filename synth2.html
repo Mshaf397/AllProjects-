@@ -9,20 +9,32 @@
 </head>
 <body>
     <div class="controls">
-        <label for="preset-select">Select Tuning:</label>
-        <select id="preset-select">
-            <option value="12">12 EDO</option>
-            <option value="19">19 EDO</option>
-            <option value="24">24 EDO</option>
-            <option value="31">31 EDO</option>
-            <option value="53">53 EDO</option>
-            <option value="custom">Custom</option>
-        </select>
-        <input type="text" id="custom-tuning" placeholder="Enter custom tuning (e.g., 17ed3/2)" style="display: none;">
-    </div>
-    <div class="synth-container">
-        <div id="key-grid" class="key-grid"></div>
-    </div>
+  <label>Rows: <input type="number" id="rows" value="24" min="1"></label>
+  <label>Columns: <input type="number" id="cols" value="24" min="1"></label>
+  <label>Root Key Index: <input type="number" id="rootKey" value="288" min="0"></label><br>
+  
+  <label>Root Frequency (Hz): <input type="number" id="rootHz" value="440" step="0.01"></label>
+  <label>or MIDI: <input type="number" id="rootMidi" value="69"></label><br>
+  
+  <label>Tuning: 
+    <select id="tuningType">
+      <option value="edo">Equal-step (xedY)</option>
+      <option value="ji">Just Intonation (JI)</option>
+    </select>
+  </label>
+  
+  <span id="edoControls">
+    <label>Steps per Octave: <input type="number" id="steps" value="24" min="1"></label>
+  </span>
+  
+  <span id="jiControls" style="display:none;">
+    <label>Prime Limit: <input type="number" id="primeLimit" value="7" min="2"></label>
+  </span>
+
+  <button onclick="renderKeyboard()">Render</button>
+</div>
+
+<div id="keyboard" class="grid"></div>
     <script src="synth2.js"></script>
 </body>
 </html>
