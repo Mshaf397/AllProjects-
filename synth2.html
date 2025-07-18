@@ -243,21 +243,6 @@ function playTone(freq) {
     }
   });
 
-  div.addEventListener("pointerleave", () => {
-    if (osc) {
-      osc.stop();
-      osc.disconnect();
-      osc = null;
-    }
-  });
-
-  div.addEventListener("pointercancel", () => {
-    if (osc) {
-      osc.stop();
-      osc.disconnect();
-      osc = null;
-    }
-  });
 
   renderKeyboard(); // Initial load
 </script>
