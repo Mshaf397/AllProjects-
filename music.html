@@ -131,7 +131,6 @@ function playChordFrom(freqs) {
     function getJIIntervals(primeLimit, count) {
       const primes = getPrimesUpTo(primeLimit);
       const ratios = new Set();
-
       const range = [-3, -2, -1, 0, 1, 2, 3];
       function generate(powers = [], depth = 0) {
         if (depth === primes.length) {
@@ -191,50 +190,50 @@ function playChordFrom(freqs) {
 };
 
     function findChord() {
-      const root = parseFloat(document.getElementById("rootFreq").value);
-      const results = document.getElementById("results");
-      currentFreqs = [];
-      let cents = [];
+  const root = parseFloat(document.getElementById("rootFreq").value);
+  const tuningType = document.getElementById("tuningType").value;
+  const chordType = document.getElementById("chordType").value;
+  const results = document.getElementById("results");
+  const count = getChordNoteCount(chordType);
 
-      if (tuningType.value === "ji") {
-        const limit = parseInt(document.getElementById("primeLimit").value);
-        const count = parseInt(document.getElementById("noteCount").value);
-        const ratios = getJIIntervals(limit, count);
-        cents = ratios.map(r => 1200 * Math.log2(r));
-      } else if (tuningType.value === "ed") {
-        const xed = parseXedY(document.getElementById("xedYInput").value);
-        const count = parseInt(document.getElementById("edNoteCount").value);
-        if (!xed) {
-          results.innerHTML = "❌ Invalid XedY format.";
-          return;
-        }
-        cents = getEDIntervals(xed, count);
-      } else {
-        cents = document.getElementById("customCents").value
-          .split(",").map(s => parseFloat(s.trim())).filter(x => !isNaN(x));
-      }
-      
-      cents.forEach((cent, i) => {
-  for (const [key, val] of Object.entries(intervalRanges)) {
-    if (cent >= val.range[0] && cent <= val.range[1]) {
-      console.log(`Note ${i + 1}: ${cent.toFixed(2)} cents is in the range of a ${val.name}`);
+  let cents = [];
+
+  // Get tuning data
+  if (tuningType === "ji") {
+    const limit = parseInt(document.getElementById("primeLimit").value);
+    const ratios = getJIIntervals(limit, count + 6); // allow extra intervals for chords
+    cents = ratios.map(r => 1200 * Math.log2(r));
+  } else if (tuningType === "ed") {
+    const xed = parseXedY(document.getElementById("xedYInput").value);
+    if (!xed) {
+      results.innerHTML = "❌ Invalid XedY format.";
+      return;
     }
+    const totalNotes = parseInt(document.getElementById("edNoteCount").value);
+    cents = getEDIntervals(xed, totalNotes);
+  } else {
+    // Custom cents
+    cents = document.getElementById("customCents").value
+      .split(",").map(s => parseFloat(s.trim())).filter(x => !isNaN(x));
   }
-});
 
-      currentFreqs = cents.map(c => centsToFreq(c, root));
-      results.innerHTML = `<h3>${combos.length} Unique ${count}-Note Chords</h3>` + combos.map((combo, i) => {
-  const freqs = combo.map(c => centsToFreq(c, root));
-  const freqArrayStr = JSON.stringify(freqs);
+  // Generate all ascending, unique chords
+  const combos = getUniqueAscendingCombinations(cents, count);
 
-  return `
-    <div style="margin-bottom:1em;">
-      <strong>Chord ${i + 1}</strong>
-      <ol>${freqs.map((f, j) => `<li>${f.toFixed(2)} Hz (${combo[j].toFixed(2)} cents)</li>`).join("")}</ol>
-      <button onclick='playChordFrom(${freqArrayStr})'>Play Chord</button>
-    </div>
-  `;
-}).join("<hr>");
+  // Render results
+  results.innerHTML = `<h3>${combos.length} Unique ${count}-Note Chords</h3>` + combos.map((combo, i) => {
+    const freqs = combo.map(c => centsToFreq(c, root));
+    const freqArrayStr = JSON.stringify(freqs);
+
+    return `
+      <div style="margin-bottom:1em;">
+        <strong>Chord ${i + 1}</strong>
+        <ol>${freqs.map((f, j) => `<li>${f.toFixed(2)} Hz (${combo[j].toFixed(2)} cents)</li>`).join("")}</ol>
+        <button onclick='playChordFrom(${freqArrayStr})'>Play Chord</button>
+      </div>
+    `;
+  }).join("<hr>");
+}
 
     function playChord() {
       if (currentFreqs.length === 0) return;
