@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tefillah Scores</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    h1 {
+      font-size: 1.8em;
+    }
+    input[type="file"] {
+      margin-bottom: 1em;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 0.5em;
+    }
+    a {
+      text-decoration: none;
+      color: blue;
+    }
+  </style>
+</head>
+<body>
+  <h1>Upload Music Scores</h1>
+  <input type="file" id="fileInput" accept=".pdf,.xml,.musicxml" />
+  <ul id="fileList"></ul>
+
+  <script>
+    const dbName = 'scoreUploaderDB';
+    const storeName = 'scores';
+    const fileList = document.getElementById('fileList');
+    const fileInput = document.getElementById('fileInput');
+
+    let db;
+
+    // Open (or create) the IndexedDB database
+    const request = indexedDB.open(dbName, 1);
+    request.onupgradeneeded = function (event) {
+      db = event.target.result;
+      if (!db.objectStoreNames.contains(storeName)) {
+        db.createObjectStore(storeName);
+      }
+    };
+
+    request.onsuccess = function (event) {
+      db = event.target.result;
+      displaySavedFiles();
+    };
+
+    request.onerror = function () {
+      alert('Error opening database');
+    };
+
+    fileInput.addEventListener('change', function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function () {
+          const transaction = db.transaction([storeName], 'readwrite');
+          const store = transaction.objectStore(storeName);
+          store.put(file, file.name);
+
+          // Update metadata in localStorage
+          let savedFiles = JSON.parse(localStorage.getItem('savedFiles') || '[]');
+          if (!savedFiles.includes(file.name)) {
+            savedFiles.push(file.name);
+            localStorage.setItem('savedFiles', JSON.stringify(savedFiles));
+          }
+
+          displaySavedFiles();
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    });
+
+    function displaySavedFiles() {
+      fileList.innerHTML = '';
+      const savedFiles = JSON.parse(localStorage.getItem('savedFiles') || '[]');
+      savedFiles.forEach(name => {
+        const transaction = db.transaction([storeName], 'readonly');
+        const store = transaction.objectStore(storeName);
+        const getRequest = store.get(name);
+        getRequest.onsuccess = function () {
+          const file = getRequest.result;
+          if (file) {
+            const blob = new Blob([file], { type: file.type || 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+
+            const li = document.createElement('li');
+            li.innerHTML = `<a href="${url}" target="_blank" download="${name}">${name}</a>`;
+            fileList.appendChild(li);
+          }
+        };
+      });
+    }
+  </script>
+</body>
+</html>
