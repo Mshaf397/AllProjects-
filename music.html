@@ -158,10 +158,10 @@ function playChordFrom(freqs) {
       return { steps, interval: num / den };
     }
 
-    function getEDIntervals(xed, count) {
-      const centsPerStep = 1200 * Math.log2(xed.interval) / xed.steps;
-      return Array.from({ length: count }, (_, i) => i * centsPerStep);
-    }
+    function getEDIntervals(xed) {
+  const centsPerStep = 1200 * Math.log2(xed.interval) / xed.steps;
+  return Array.from({ length: xed.steps }, (_, i) => i * centsPerStep);
+}
 
     function centsToFreq(cents, root) {
       return root * Math.pow(2, cents / 1200);
@@ -210,8 +210,9 @@ function playChordFrom(freqs) {
       return;
     }
     const totalNotes = parseInt(document.getElementById("edNoteCount").value);
-    cents = getEDIntervals(xed, totalNotes);
-  } else {
+    cents = getEDIntervals(xed); // get the whole scale
+  } 
+  else {
     // Custom cents
     cents = document.getElementById("customCents").value
       .split(",").map(s => parseFloat(s.trim())).filter(x => !isNaN(x));
