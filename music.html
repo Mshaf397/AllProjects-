@@ -77,9 +77,82 @@
       if (tuningType.value === "custom") document.getElementById("customOptions").style.display = "block";
     });
     
-    function getUniqueAscendingCombinations(cents, k) {
+    const intervalFiltersByChordType = {
+  triad: [
+    { min: 0, max: 0 },      // root (always 0)
+    { min: 267, max: 435 },  // 3rd
+    { min: 603, max: 795 }   // 5th
+  ],
+  tetrad: [
+    { min: 0, max: 0 },
+    { min: 267, max: 435 },
+    { min: 603, max: 795 },
+    { min: 933, max: 1137 }  // 7th
+  ],
+  pentad: [
+    { min: 0, max: 0 },
+    { min: 267, max: 435 },
+    { min: 603, max: 795 },
+    { min: 933, max: 1137 },
+    { min: 1253, max: 1488 } // 9th
+  ],
+  hexad: [
+    { min: 0, max: 0 },
+    { min: 267, max: 435 },
+    { min: 603, max: 795 },
+    { min: 933, max: 1137 },
+    { min: 1253, max: 1488 },
+    { min: 1664, max: 1797 } // 11th
+  ],
+  septad: [
+    { min: 0, max: 0 },
+    { min: 267, max: 435 },
+    { min: 603, max: 795 },
+    { min: 933, max: 1137 },
+    { min: 1253, max: 1488 },
+    { min: 1664, max: 1797 },
+    { min: 2014, max: 2169 } // 13th
+  ]
+};
+    
+    function getUniqueAscendingCombinations(cents, k, filterRanges = null) {
   const results = [];
   const seen = new Set();
+
+  function roundCombo(combo) {
+    return combo.map(x => Math.round(x * 1000) / 1000).join(',');
+  }
+
+  function combine(start, combo) {
+    if (combo.length === k) {
+      // Normalize to root at 0 cents
+      const root = combo[0];
+      const normalized = combo.map(c => c - root);
+
+      // Apply range filtering
+      if (filterRanges) {
+        const isValid = normalized.every((v, i) => v >= filterRanges[i].min && v <= filterRanges[i].max);
+        if (!isValid) return;
+      }
+
+      const rounded = roundCombo(normalized);
+      if (!seen.has(rounded)) {
+        seen.add(rounded);
+        results.push(normalized);
+      }
+      return;
+    }
+
+    for (let i = start; i < cents.length; i++) {
+      if (combo.length === 0 || cents[i] > combo[combo.length - 1]) {
+        combine(i + 1, [...combo, cents[i]]);
+      }
+    }
+  }
+
+  combine(0, []);
+  return results;
+}
 
   function roundCombo(combo) {
     return combo.map(x => Math.round(x * 1000) / 1000).join(',');
@@ -193,6 +266,7 @@ function playChordFrom(freqs) {
   const root = parseFloat(document.getElementById("rootFreq").value);
   const tuningType = document.getElementById("tuningType").value;
   const chordType = document.getElementById("chordType").value;
+  const filterRanges = intervalFiltersByChordType[chordType];
   const results = document.getElementById("results");
   const count = getChordNoteCount(chordType);
 
@@ -219,7 +293,7 @@ function playChordFrom(freqs) {
   }
 
   // Generate all ascending, unique chords
-  const combos = getUniqueAscendingCombinations(cents, count);
+  const combos = getUniqueAscendingCombinations(cents, count, filterRanges);
 
   // Render results
   results.innerHTML = `<h3>${combos.length} Unique ${count}-Note Chords</h3>` + combos.map((combo, i) => {
