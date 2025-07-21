@@ -266,16 +266,16 @@ function playChordFrom(freqs) {
   const root = parseFloat(document.getElementById("rootFreq").value);
   const tuningType = document.getElementById("tuningType").value;
   const chordType = document.getElementById("chordType").value;
-  const filterRanges = intervalFiltersByChordType[chordType];
   const results = document.getElementById("results");
   const count = getChordNoteCount(chordType);
+  const filterRanges = intervalFiltersByChordType[chordType];
 
   let cents = [];
 
   // Get tuning data
   if (tuningType === "ji") {
     const limit = parseInt(document.getElementById("primeLimit").value);
-    const ratios = getJIIntervals(limit, count + 6); // allow extra intervals for chords
+    const ratios = getJIIntervals(limit, 50); // generate a lot of intervals
     cents = ratios.map(r => 1200 * Math.log2(r));
   } else if (tuningType === "ed") {
     const xed = parseXedY(document.getElementById("xedYInput").value);
@@ -283,16 +283,14 @@ function playChordFrom(freqs) {
       results.innerHTML = "❌ Invalid XedY format.";
       return;
     }
-    const totalNotes = parseInt(document.getElementById("edNoteCount").value);
-    cents = getEDIntervals(xed); // get the whole scale
-  } 
-  else {
-    // Custom cents
+    cents = getEDIntervals(xed); // full scale
+  } else {
+    // Custom tuning
     cents = document.getElementById("customCents").value
       .split(",").map(s => parseFloat(s.trim())).filter(x => !isNaN(x));
   }
 
-  // Generate all ascending, unique chords
+  // Get unique ascending chords with 0-cent root and per-note cent ranges
   const combos = getUniqueAscendingCombinations(cents, count, filterRanges);
 
   // Render results
