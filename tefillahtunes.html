@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Tefillah Scores</title>
+  <title>Music Score Viewer</title>
   <style>
     body {
       font-family: sans-serif;
       padding: 20px;
-      max-width: 600px;
+      max-width: 800px;
       margin: auto;
     }
     h1 {
@@ -16,32 +16,33 @@
     input[type="file"] {
       margin-bottom: 1em;
     }
-    ul {
-      padding-left: 20px;
+    .score {
+      margin-bottom: 2em;
     }
-    li {
+    embed, iframe {
+      width: 100%;
+      height: 500px;
+      border: 1px solid #ccc;
+    }
+    .file-label {
+      font-weight: bold;
       margin-bottom: 0.5em;
-    }
-    a {
-      text-decoration: none;
-      color: blue;
     }
   </style>
 </head>
 <body>
-  <h1>Upload Music Scores</h1>
+  <h1>Upload and View Music Scores</h1>
   <input type="file" id="fileInput" accept=".pdf,.xml,.musicxml" />
-  <ul id="fileList"></ul>
+  <div id="fileList"></div>
 
   <script>
-    const dbName = 'scoreUploaderDB';
+    const dbName = 'scoreViewerDB';
     const storeName = 'scores';
     const fileList = document.getElementById('fileList');
     const fileInput = document.getElementById('fileInput');
 
     let db;
 
-    // Open (or create) the IndexedDB database
     const request = indexedDB.open(dbName, 1);
     request.onupgradeneeded = function (event) {
       db = event.target.result;
@@ -68,7 +69,6 @@
           const store = transaction.objectStore(storeName);
           store.put(file, file.name);
 
-          // Update metadata in localStorage
           let savedFiles = JSON.parse(localStorage.getItem('savedFiles') || '[]');
           if (!savedFiles.includes(file.name)) {
             savedFiles.push(file.name);
@@ -94,9 +94,28 @@
             const blob = new Blob([file], { type: file.type || 'application/octet-stream' });
             const url = URL.createObjectURL(blob);
 
-            const li = document.createElement('li');
-            li.innerHTML = `<a href="${url}" target="_blank" download="${name}">${name}</a>`;
-            fileList.appendChild(li);
+            const container = document.createElement('div');
+            container.className = 'score';
+
+            const label = document.createElement('div');
+            label.className = 'file-label';
+            label.textContent = name;
+            container.appendChild(label);
+
+            if (name.toLowerCase().endsWith('.pdf')) {
+              const viewer = document.createElement('embed');
+              viewer.src = url;
+              viewer.type = 'application/pdf';
+              container.appendChild(viewer);
+            } else {
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = name;
+              link.textContent = 'Download/View';
+              container.appendChild(link);
+            }
+
+            fileList.appendChild(container);
           }
         };
       });
