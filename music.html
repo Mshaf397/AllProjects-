@@ -76,6 +76,49 @@
       if (tuningType.value === "ed") document.getElementById("edOptions").style.display = "block";
       if (tuningType.value === "custom") document.getElementById("customOptions").style.display = "block";
     });
+    
+    function getUniqueAscendingCombinations(cents, k) {
+  const results = [];
+  const seen = new Set();
+
+  function roundCombo(combo) {
+    return combo.map(x => Math.round(x * 1000) / 1000).join(',');
+  }
+
+  function combine(start, combo) {
+    if (combo.length === k) {
+      const rounded = roundCombo(combo);
+      if (!seen.has(rounded)) {
+        seen.add(rounded);
+        results.push([...combo]);
+      }
+      return;
+    }
+
+    for (let i = start; i < cents.length; i++) {
+      if (combo.length === 0 || cents[i] > combo[combo.length - 1]) {
+        combine(i + 1, [...combo, cents[i]]);
+      }
+    }
+  }
+
+  combine(0, []);
+  return results;
+}
+
+function playChordFrom(freqs) {
+  const context = new (window.AudioContext || window.webkitAudioContext)();
+  freqs.forEach(freq => {
+    const osc = context.createOscillator();
+    const gain = context.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.value = 0.2;
+    osc.connect(gain).connect(context.destination);
+    osc.start(context.currentTime);
+    osc.stop(context.currentTime + 2);
+  });
+}
 
     function getPrimesUpTo(n) {
       const primes = [];
@@ -180,11 +223,18 @@
 });
 
       currentFreqs = cents.map(c => centsToFreq(c, root));
-      results.innerHTML = `<h3>Chord Tones</h3><ol>` +
-        currentFreqs.map((f, i) => 
-          `<li>${f.toFixed(2)} Hz (${cents[i].toFixed(2)} cents)</li>`
-        ).join("") + "</ol>";
-    }
+      results.innerHTML = `<h3>${combos.length} Unique ${count}-Note Chords</h3>` + combos.map((combo, i) => {
+  const freqs = combo.map(c => centsToFreq(c, root));
+  const freqArrayStr = JSON.stringify(freqs);
+
+  return `
+    <div style="margin-bottom:1em;">
+      <strong>Chord ${i + 1}</strong>
+      <ol>${freqs.map((f, j) => `<li>${f.toFixed(2)} Hz (${combo[j].toFixed(2)} cents)</li>`).join("")}</ol>
+      <button onclick='playChordFrom(${freqArrayStr})'>Play Chord</button>
+    </div>
+  `;
+}).join("<hr>");
 
     function playChord() {
       if (currentFreqs.length === 0) return;
