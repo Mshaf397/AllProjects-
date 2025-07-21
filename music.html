@@ -50,6 +50,16 @@
       <textarea id="customCents">0,300,700</textarea>
     </label>
   </div>
+  
+  <label>Chord Type:
+  <select id="chordType">
+    <option value="triad">Triad (Root + 3rd + 5th)</option>
+    <option value="tetrad">Tetrad (Adds 7th)</option>
+    <option value="pentad">Pentad (Adds 9th)</option>
+    <option value="hexad">Hexad (Adds 11th)</option>
+    <option value="septad">Septad (Adds 13th)</option>
+  </select>
+</label>
 
   <button onclick="findChord()">Find Chord</button>
   <button onclick="playChord()">Play Chord</button>
@@ -114,8 +124,28 @@
     function centsToFreq(cents, root) {
       return root * Math.pow(2, cents / 1200);
     }
+    
+    function getChordNoteCount(type) {
+  const types = {
+    triad: 3,
+    tetrad: 4,
+    pentad: 5,
+    hexad: 6,
+    septad: 7
+  };
+  return types[type] || 3;
+}
 
     let currentFreqs = [];
+    
+    const intervalRanges = {
+  third:  { name: "3rd",  range: [267, 435] },   // Broad range for 3rds (minor to major)
+  fifth:  { name: "5th",  range: [603, 795] },   // Just perfect fifth: 702 cents
+  seventh:{ name: "7th",  range: [933, 1137] },  // For minor to major 7ths
+  ninth:  { name: "9th",  range: [1253, 1488] }, // Minor/major 9ths
+  eleventh:{ name: "11th", range: [1664, 1797] },
+  thirteenth:{ name: "13th", range: [2013, 2169] }
+};
 
     function findChord() {
       const root = parseFloat(document.getElementById("rootFreq").value);
@@ -140,6 +170,14 @@
         cents = document.getElementById("customCents").value
           .split(",").map(s => parseFloat(s.trim())).filter(x => !isNaN(x));
       }
+      
+      cents.forEach((cent, i) => {
+  for (const [key, val] of Object.entries(intervalRanges)) {
+    if (cent >= val.range[0] && cent <= val.range[1]) {
+      console.log(`Note ${i + 1}: ${cent.toFixed(2)} cents is in the range of a ${val.name}`);
+    }
+  }
+});
 
       currentFreqs = cents.map(c => centsToFreq(c, root));
       results.innerHTML = `<h3>Chord Tones</h3><ol>` +
