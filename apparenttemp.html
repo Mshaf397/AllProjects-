@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Australian Apparent Temperature with Solar Radiation</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 2em auto;
+      padding: 1em;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+    label {
+      display: block;
+      margin-top: 1em;
+    }
+    input, select {
+      width: 100%;
+      padding: 0.5em;
+      font-size: 1em;
+    }
+    button {
+      margin-top: 1.5em;
+      padding: 0.8em;
+      font-size: 1em;
+      width: 100%;
+    }
+    #result {
+      margin-top: 2em;
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Australian Apparent Temperature Calculator</h1>
+
+  <label>Air Temperature (°C):</label>
+  <input type="number" id="temp" step="0.1">
+
+  <label>Relative Humidity (%):</label>
+  <input type="number" id="rh" step="0.1">
+
+  <label>Wind Speed (m/s):</label>
+  <input type="number" id="wind" step="0.1">
+
+  <label>Date:</label>
+  <input type="date" id="date">
+
+  <label>Time (local hour, 0–23):</label>
+  <input type="number" id="hour" min="0" max="23">
+
+  <label>Latitude (°):</label>
+  <input type="number" id="lat" step="0.01">
+
+  <label>Longitude (°):</label>
+  <input type="number" id="lon" step="0.01">
+
+  <label>Cloud Cover (%):</label>
+  <input type="number" id="cloud" step="1" min="0" max="100">
+
+  <label>Ground Albedo (default 0.2):</label>
+  <input type="number" id="albedo" step="0.01" placeholder="0.2">
+
+  <label>Body Orientation:</label>
+  <select id="orientation">
+    <option value="1">Facing Sun (cosθ = 1)</option>
+    <option value="0.5">Perpendicular (cosθ = 0.5)</option>
+    <option value="0.2">Back to Sun (cosθ = 0.2)</option>
+  </select>
+
+  <button onclick="calculateAll()">Calculate Apparent Temperature</button>
+
+  <div id="result"></div>
+
+  <script>
+    function solarDeclination(dayOfYear) {
+      return 23.45 * Math.sin((360 / 365) * (dayOfYear - 81) * Math.PI / 180);
+    }
+
+    function calcSolarElevation(lat, decl, hour) {
+      const h = (hour - 12) * 15; // Hour angle
+      const latRad = lat * Math.PI / 180;
+      const declRad = decl * Math.PI / 180;
+      const hRad = h * Math.PI / 180;
+      return Math.asin(
+        Math.sin(latRad) * Math.sin(declRad) +
+        Math.cos(latRad) * Math.cos(declRad) * Math.cos(hRad)
+      );
+    }
+
+    function calculateAll() {
+      const T = parseFloat(document.getElementById("temp").value);
+      const RH = parseFloat(document.getElementById("rh").value);
+      const v = parseFloat(document.getElementById("wind").value);
+      const date = new Date(document.getElementById("date").value);
+      const hour = parseFloat(document.getElementById("hour").value);
+      const lat = parseFloat(document.getElementById("lat").value);
+      const lon = parseFloat(document.getElementById("lon").value);
+      const cloud = parseFloat(document.getElementById("cloud").value);
+      const albedo = parseFloat(document.getElementById("albedo").value) || 0.2;
+      const orientationFactor = parseFloat(document.getElementById("orientation").value);
+      const f_eff = 0.7; // effective body projection ratio
+      const absorptivity = 0.7; // clothing/skin absorption
+
+      if ([T, RH, v, hour, lat, lon, cloud].some(isNaN)) {
+        document.getElementById("result").innerText = "Please fill all required fields.";
+        return;
+      }
+
+      const dayOfYear = Math.floor((date - new Date(date.getFullYear(), 0, 0)) / 86400000);
+
+      // Step 1: Estimate solar elevation angle
+      const decl = solarDeclination(dayOfYear);
+      const solarElevRad = calcSolarElevation(lat, decl, hour);
+      const sinElev = Math.max(0, Math.sin(solarElevRad)); // No sun below horizon
+
+      // Step 2: Estimate radiation components
+      const S_max = 1367 * sinElev; // TOA irradiance
+      const S_dir = S_max * (1 - cloud / 100); // Direct component
+      const S_diff = S_max * 0.1 * (cloud / 100); // Empirical diffuse component
+      const S_ref = (S_dir + S_diff) * albedo * 0.5;
+
+      // Step 3: Estimate total net absorbed radiation per m²
+      const R_abs = absorptivity * f_eff * (
+        S_dir * orientationFactor + S_diff + S_ref
+      );
+
+      // Step 4: Water vapor pressure
+      const e = RH * 6.105 * Math.exp((17.27 * T) / (237.7 + T)) / 100;
+
+      // Step 5: Apparent temperature
+      const AT = T + 0.33 * e - 0.70 * v - 4.00 + 0.007 * R_abs;
+
+      document.getElementById("result").innerText =
+        `Solar Elevation: ${(sinElev * 90).toFixed(1)}°\n` +
+        `Net Radiation Absorbed: ${R_abs.toFixed(1)} W/m²\n` +
+        `Apparent Temperature: ${AT.toFixed(2)} °C`;
+    }
+  </script>
+</body>
+</html>
