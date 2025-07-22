@@ -24,7 +24,7 @@
   <script>
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    function playFreq(freq, duration = 0.5) {
+    function playFreq(freq, duration = 0.25) {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = "sine";
