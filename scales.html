@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Microtonal Scale Explorer</title>
+  <style>
+    body { font-family: sans-serif; padding: 1em; background: #f8f8f8; }
+    h1 { font-size: 1.5em; }
+    input, button { padding: 0.5em; margin: 0.3em; font-size: 1em; }
+    .note { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>Microtonal Scale Explorer</h1>
+
+  <label>EDO: <input type="number" id="edo" value="19"></label>
+  <label>Scale Size: <input type="number" id="scaleSize" value="7"></label>
+  <label>Generator Step: <input type="number" id="generator" value="3"></label>
+  <label>Base Frequency (Hz): <input type="number" id="baseFreq" value="440"></label>
+  <button onclick="generateScale()">Generate Scale</button>
+
+  <div id="scaleDisplay"></div>
+
+  <script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playFreq(freq, duration = 0.5) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function mod(a, n) {
+      return ((a % n) + n) % n;
+    }
+
+    function generateScale() {
+      const edo = parseInt(document.getElementById("edo").value);
+      const scaleSize = parseInt(document.getElementById("scaleSize").value);
+      const generator = parseInt(document.getElementById("generator").value);
+      const baseFreq = parseFloat(document.getElementById("baseFreq").value);
+
+      const steps = new Set();
+      let current = 0;
+      for (let i = 0; steps.size < scaleSize; i++) {
+        steps.add(mod(i * generator, edo));
+      }
+
+      const stepArray = Array.from(steps).sort((a, b) => a - b);
+      const display = document.getElementById("scaleDisplay");
+      display.innerHTML = '';
+
+      stepArray.forEach(step => {
+        const cents = (step / edo) * 1200;
+        const freq = baseFreq * Math.pow(2, cents / 1200);
+        const div = document.createElement("div");
+        div.className = "note";
+        div.innerHTML = `Step ${step}: ${cents.toFixed(2)} cents — ${freq.toFixed(2)} Hz
+          <button onclick="playFreq(${freq})">Play</button>`;
+        display.appendChild(div);
+      });
+    }
+
+    generateScale(); // initial render
+  </script>
+</body>
+</html>
