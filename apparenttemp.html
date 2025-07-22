@@ -37,6 +37,64 @@
 </head>
 <body>
   <h1>Australian Apparent Temperature Calculator</h1>
+  <p><strong>How to calculate Australian Apparent Temperature by hand:</strong></p>
+<ol>
+  <li><strong>Measure or obtain the following:</strong>
+    <ul>
+      <li>Air Temperature (T) in degrees Celsius (°C)</li>
+      <li>Relative Humidity (RH) as a percentage (%)</li>
+      <li>Wind Speed (v) in meters per second (m/s)</li>
+      <li>(Optional) Net radiation absorbed by the body (R) in watts per square meter (W/m²)</li>
+    </ul>
+  </li>
+  <li><strong>Calculate the water vapor pressure (e) in hPa:</strong><br>
+    \( e = RH \times 6.105 \times e^{\frac{17.27 \cdot T}{237.7 + T}} \div 100 \)
+  </li>
+  <li><strong>Use the Apparent Temperature (AT) formula:</strong><br>
+    Without solar radiation:<br>
+    \( \text{AT} = T + 0.33 \cdot e - 0.70 \cdot v - 4.00 \)<br><br>
+    With solar radiation:<br>
+    \( \text{AT} = T + 0.33 \cdot e - 0.70 \cdot v - 4.00 + 0.007 \cdot R \)
+  </li>
+  <li><strong>(Optional) How to calculate net solar radiation absorbed by the body (R):</strong><br>
+Net radiation is the total solar energy absorbed by the human body. It includes direct sunlight, diffuse sky radiation, and reflected radiation from the ground.
+You can estimate it using:
+<br><br>
+<em>Step-by-step:</em>
+<ol>
+  <li><strong>Estimate direct solar radiation (S<sub>dir</sub>):</strong><br>
+    Use weather data or estimate with:
+    <br>
+    \( S_{\text{dir}} \approx 1367 \cdot \sin(\text{solar elevation}) \cdot (1 - \text{cloud fraction}) \)
+  </li>
+  <li><strong>Estimate diffuse solar radiation (S<sub>diff</sub>):</strong><br>
+    Empirical estimate:
+    <br>
+    \( S_{\text{diff}} \approx 1367 \cdot \sin(\text{solar elevation}) \cdot 0.1 \cdot \text{cloud fraction} \)
+  </li>
+  <li><strong>Estimate reflected radiation from the ground (S<sub>ref</sub>):</strong><br>
+    <br>
+    \( S_{\text{ref}} = (S_{\text{dir}} + S_{\text{diff}}) \cdot \text{ground albedo} \cdot f_{\text{gnd}} \)
+    <br>
+    where \( f_{\text{gnd}} \approx 0.5 \) for typical exposure
+  </li>
+  <li><strong>Estimate angle of body to sun (cos θ):</strong><br>
+    Use 1 if facing the sun, ~0.5 if perpendicular, ~0.2 if facing away.
+  </li>
+  <li><strong>Apply the absorption formula:</strong><br>
+    <br>
+    \( R = \alpha \cdot f_{\text{eff}} \cdot (S_{\text{dir}} \cdot \cos\theta + S_{\text{diff}} + S_{\text{ref}}) \)
+    <br>
+    where:
+    <ul>
+      <li>α = absorptivity of clothing/skin (typical: 0.7)</li>
+      <li>f<sub>eff</sub> = projected body area ratio (typical: 0.7)</li>
+    </ul>
+  </li>
+</ol>
+<p><strong>Summary:</strong> Net radiation absorbed depends on sun angle, clothing, cloud cover, and surroundings. It can range from 0 (night/shade) up to ~150 W/m² or more in full sun.</p>
+  <li><strong>Result:</strong> The Apparent Temperature is the 'feels like' temperature considering humidity, wind, and solar heating.</li>
+</ol>
 
   <label>Air Temperature (°C):</label>
   <input type="number" id="temp" step="0.1">
