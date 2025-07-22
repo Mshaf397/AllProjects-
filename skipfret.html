@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Optimal Skip-Fret Tuning & Visualizer</title>
+  <style>
+    body { font-family: sans-serif; padding: 1em; }
+    input, button { padding: 5px; margin: 5px; }
+    table { border-collapse: collapse; margin-top: 1em; }
+    td, th {
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+      text-align: center;
+      min-width: 60px;
+      cursor: pointer;
+    }
+    .chord-note { background: #aef; font-weight: bold; }
+    .header { background: #ddd; font-weight: bold; cursor: default; }
+    .selected { background-color: #faa !important; }
+    .info { margin-top: 1em; }
+    .info div { margin: 4px 0; }
+  </style>
+</head>
+<body>
+  <h2>Optimal Skip-Fret Tuning & Visualizer</h2>
+
+  <label>EDO: <input type="number" id="edo" value="31" min="1"></label><br>
+  <label>Open Chord (cents, comma-separated): <input id="chord" value="0,386,702"></label><br>
+  <label>Number of Strings: <input type="number" id="strings" value="6" min="1"></label><br>
+  <label>Standard Tuning (cents from root, comma-separated):<br>
+    <input id="standardTuning" value="0,200,400,500,700,900">
+  </label><br>
+  <label>Root Frequency (Hz): <input id="baseHz" value="55"></label><br>
+
+  <button onclick="generateAll()">Generate Optimal Tuning & Visualizer</button>
+  <button onclick="playChord()">Play Selected Frets</button>
+
+  <div class="info" id="info"></div>
+  <div id="output"></div>
+
+  <script>
+    let selectedFrets = [];
+    let stringTuningsHz = [];
+    let edo = 31;
+    let stepSize = 1200 / edo;
+    let fretCentsArray = [];
+    let numStrings = 6;
+
+    function mod(a, b) {
+      return ((a % b) + b) % b;
+    }
+
+    function generateAll() {
+      edo = parseInt(document.getElementById("edo").value);
+      stepSize = 1200 / edo;
+      const chordCents = document.getElementById("chord").value
+        .split(",").map(x => mod(parseFloat(x.trim()), 1200));
+      numStrings = parseInt(document.getElementById("strings").value);
+      const stdTuning = document.getElementById("standardTuning").value
+        .split(",").map(x => mod(parseFloat(x.trim()), 1200));
+      const rootHz = parseFloat(document.getElementById("baseHz").value);
+
+      selectedFrets = Array(numStrings).fill(null);
+      const info = document.getElementById("info");
+      const output = document.getElementById("output");
+      output.innerHTML = "";
+      info.innerHTML = "";
+
+      // Find best open string tuning for each string
+      const isChordTone = (c) => chordCents.some(ch =>
+        Math.abs(mod(c - ch + 600, 1200) - 600) < 10);
+
+      const optionsPerString = [];
+      for (let s = 0; s < numStrings; s++) {
+        const options = [];
+        for (let step = 0; step < edo; step++) {
+          const cents = step * stepSize;
+          if (isChordTone(cents)) {
+            const deviation = Math.abs(cents - stdTuning[s]);
+            options.push({ step, cents, deviation });
+          }
+        }
+        optionsPerString.push(options);
+      }
+
+      // Pick best combination: lowest total deviation
+      let bestCombo = null;
+      let bestError = Infinity;
+      function search(depth = 0, combo = [], error = 0) {
+        if (depth === numStrings) {
+          if (error < bestError) {
+            bestError = error;
+            bestCombo = [...combo];
+          }
+          return;
+        }
+        for (const opt of optionsPerString[depth]) {
+          search(depth + 1, [...combo, opt], error + opt.deviation);
+        }
+      }
+      search();
+
+      if (!bestCombo) {
+        info.innerHTML = "<b>No valid tuning found.</b>";
+        return;
+      }
+
+      stringTuningsHz = bestCombo.map(opt => rootHz * Math.pow(2, opt.cents / 1200));
+
+      const table = document.createElement("table");
+      const header = document.createElement("tr");
+      header.appendChild(document.createElement("th"));
+      const frets = [];
+      let pos = 0;
+      while (pos <= 1200) {
+        frets.push(pos);
+        pos += stepSize;
+      }
+      fretCentsArray = frets;
+
+      for (let f = 0; f < frets.length; f++) {
+        const th = document.createElement("th");
+        th.className = "header";
+        th.textContent = f;
+        header.appendChild(th);
+      }
+      table.appendChild(header);
+
+      for (let s = 0; s < numStrings; s++) {
+        const row = document.createElement("tr");
+        const th = document.createElement("th");
+        th.className = "header";
+        th.textContent = `S${s + 1}`;
+        row.appendChild(th);
+
+        for (let f = 0; f < frets.length; f++) {
+          const td = document.createElement("td");
+          const stepOffset = f;
+          const totalCents = stepOffset * stepSize;
+          const centsMod = mod(totalCents, 1200);
+          const isChord = isChordTone(centsMod);
+
+          td.textContent = `${stepOffset} st`;
+
+          if (isChord) td.classList.add("chord-note");
+
+          td.dataset.string = s;
+          td.dataset.fret = f;
+
+          td.onclick = function () {
+            const prev = selectedFrets[s];
+            if (prev !== null) {
+              const old = document.querySelector(`td[data-string="${s}"][data-fret="${prev}"]`);
+              if (old) old.classList.remove("selected");
+            }
+            selectedFrets[s] = f;
+            td.classList.add("selected");
+          };
+
+          row.appendChild(td);
+        }
+        table.appendChild(row);
+      }
+
+      output.appendChild(table);
+
+      // Display tuning summary
+      const summary = `<h3>Open String Tunings</h3><div>Total Deviation: ${bestError.toFixed(2)} cents</div>` +
+        bestCombo.map((opt, i) =>
+          `<div>String ${i + 1}: Step ${opt.step} → ${opt.cents.toFixed(2)} cents → ${stringTuningsHz[i].toFixed(2)} Hz (Dev: ${opt.deviation.toFixed(2)}¢)</div>`
+        ).join("");
+      info.innerHTML = summary;
+    }
+
+    function playChord() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      for (let s = 0; s < selectedFrets.length; s++) {
+        const f = selectedFrets[s];
+        if (f === null) continue;
+
+        const base = stringTuningsHz[s];
+        const cents = f * stepSize;
+        const freq = base * Math.pow(2, cents / 1200);
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        gain.gain.value = 0.2;
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 1.5);
+      }
+    }
+  </script>
+</body>
+</html>
