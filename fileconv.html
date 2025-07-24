@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MP4 to AMV Converter</title>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 2em; }
+    input, button { margin-top: 1em; display: block; }
+  </style>
+</head>
+<body>
+  <h1>MP4 to AMV Converter</h1>
+  <input type="file" id="uploader" accept="video/mp4">
+  <button id="convertBtn">Convert to AMV</button>
+  <p id="status"></p>
+  <a id="downloadLink" style="display:none;" download="output.amv">Download AMV</a>
+
+  <script>
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+
+    document.getElementById('convertBtn').addEventListener('click', async () => {
+      const fileInput = document.getElementById('uploader');
+      const status = document.getElementById('status');
+      const downloadLink = document.getElementById('downloadLink');
+
+      if (!fileInput.files[0]) {
+        alert("Please select an MP4 file first.");
+        return;
+      }
+
+      status.textContent = "Loading FFmpeg...";
+      if (!ffmpeg.isLoaded()) await ffmpeg.load();
+
+      const mp4File = fileInput.files[0];
+      const mp4Name = "input.mp4";
+      const amvName = "output.amv";
+
+      status.textContent = "Writing file to memory...";
+      ffmpeg.FS('writeFile', mp4Name, await fetchFile(mp4File));
+
+      status.textContent = "Converting to AMV (this might take a while)...";
+
+      try {
+        await ffmpeg.run(
+          '-i', mp4Name,
+          '-vf', 'scale=160:120',
+          '-r', '16',
+          '-b:v', '100k',
+          '-f', 'amv',
+          amvName
+        );
+      } catch (err) {
+        status.textContent = "Conversion failed. AMV codec may not be supported.";
+        console.error(err);
+        return;
+      }
+
+      const data = ffmpeg.FS('readFile', amvName);
+      const blob = new Blob([data.buffer], { type: 'video/x-amv' });
+      downloadLink.href = URL.createObjectURL(blob);
+      downloadLink.style.display = 'inline';
+      status.textContent = "Conversion complete!";
+    });
+  </script>
+</body>
+</html>
