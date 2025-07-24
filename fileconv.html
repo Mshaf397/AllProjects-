@@ -12,46 +12,7 @@
   <a id="downloadLink" style="display:none">Download result</a>
 
 
-  <script>
-  src = "https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/ffmpeg.min.js"
-    const { createFFmpeg, fetchFile } = FFmpeg;
-    const ffmpeg = createFFmpeg({ log: true });
-    const statusEl = document.getElementById('status');
-    const linkEl = document.getElementById('downloadLink');
-
-    document.getElementById('uploader').addEventListener('change', async e => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      statusEl.textContent = 'Loading FFmpeg…';
-      await ffmpeg.load();
-      statusEl.textContent = 'Converting…';
-
-      // Write file to WASM FS
-      ffmpeg.FS('writeFile', file.name, await fetchFile(file));
-
-      // Run conversion with AGPTEK-friendly settings
-      await ffmpeg.run(
-        '-i', file.name,
-        '-vf', 'scale=160:128',
-        '-r', '16',
-        '-b:v', '256k',
-        '-b:a', '64k',
-        '-ar', '22050',
-        '-ac', '1',
-        '-f', 'avi',
-        'output.avi'
-      );
-
-      statusEl.textContent = 'Preparing download…';
-      const data = ffmpeg.FS('readFile', 'output.avi');
-      const blob = new Blob([data.buffer], { type: 'video/avi' });
-      linkEl.href = URL.createObjectURL(blob);
-      linkEl.download = file.name.replace('.mp4', '.amv');
-      linkEl.style.display = 'block';
-      linkEl.textContent = 'Download your AMV file';
-      statusEl.textContent = 'Done!';
-    });
+  <script src = "https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/ffmpeg.min.js">
   </script>
 </body>
 </html>
