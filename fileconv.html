@@ -2,66 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>MP4 to AMV Converter</title>
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
-  <style>
-    body { font-family: sans-serif; padding: 2em; }
-    input, button { margin-top: 1em; display: block; }
-  </style>
+  <title>MP4 ➜ AMV Converter</title>
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/ffmpeg.min.js"></script>
 </head>
 <body>
-  <h1>MP4 to AMV Converter</h1>
-  <input type="file" id="uploader" accept="video/mp4">
-  <button id="convertBtn">Convert to AMV</button>
-  <p id="status"></p>
-  <a id="downloadLink" style="display:none;" download="output.amv">Download AMV</a>
+  <h2>MP4 ➜ AMV-Compatible AVI Converter</h2>
+  <input type="file" id="uploader" accept="video/mp4" />
+  <p id="status">No file selected.</p>
+  <a id="downloadLink" style="display:none">Download result</a>
 
   <script>
     const { createFFmpeg, fetchFile } = FFmpeg;
     const ffmpeg = createFFmpeg({ log: true });
+    const statusEl = document.getElementById('status');
+    const linkEl = document.getElementById('downloadLink');
 
-    document.getElementById('convertBtn').addEventListener('click', async () => {
-      const fileInput = document.getElementById('uploader');
-      const status = document.getElementById('status');
-      const downloadLink = document.getElementById('downloadLink');
+    document.getElementById('uploader').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
 
-      if (!fileInput.files[0]) {
-        alert("Please select an MP4 file first.");
-        return;
-      }
+      statusEl.textContent = 'Loading FFmpeg…';
+      await ffmpeg.load();
+      statusEl.textContent = 'Converting…';
 
-      status.textContent = "Loading FFmpeg...";
-      if (!ffmpeg.isLoaded()) await ffmpeg.load();
+      // Write file to WASM FS
+      ffmpeg.FS('writeFile', file.name, await fetchFile(file));
 
-      const mp4File = fileInput.files[0];
-      const mp4Name = "input.mp4";
-      const amvName = "output.amv";
+      // Run conversion with AGPTEK-friendly settings
+      await ffmpeg.run(
+        '-i', file.name,
+        '-vf', 'scale=160:128',
+        '-r', '16',
+        '-b:v', '256k',
+        '-b:a', '64k',
+        '-ar', '22050',
+        '-ac', '1',
+        '-f', 'avi',
+        'output.avi'
+      );
 
-      status.textContent = "Writing file to memory...";
-      ffmpeg.FS('writeFile', mp4Name, await fetchFile(mp4File));
-
-      status.textContent = "Converting to AMV (this might take a while)...";
-
-      try {
-        await ffmpeg.run(
-          '-i', mp4Name,
-          '-vf', 'scale=160:120',
-          '-r', '16',
-          '-b:v', '100k',
-          '-f', 'amv',
-          amvName
-        );
-      } catch (err) {
-        status.textContent = "Conversion failed. AMV codec may not be supported.";
-        console.error(err);
-        return;
-      }
-
-      const data = ffmpeg.FS('readFile', amvName);
-      const blob = new Blob([data.buffer], { type: 'video/x-amv' });
-      downloadLink.href = URL.createObjectURL(blob);
-      downloadLink.style.display = 'inline';
-      status.textContent = "Conversion complete!";
+      statusEl.textContent = 'Preparing download…';
+      const data = ffmpeg.FS('readFile', 'output.avi');
+      const blob = new Blob([data.buffer], { type: 'video/avi' });
+      linkEl.href = URL.createObjectURL(blob);
+      linkEl.download = file.name.replace('.mp4', '.amv');
+      linkEl.style.display = 'block';
+      linkEl.textContent = 'Download your AMV file';
+      statusEl.textContent = 'Done!';
     });
   </script>
 </body>
