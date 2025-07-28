@@ -2,71 +2,158 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Microtonal Scale Explorer</title>
+  <title>Microtonal Circle-of-"Fifths" Generator</title>
   <style>
-    body { font-family: sans-serif; padding: 1em; background: #f8f8f8; }
-    h1 { font-size: 1.5em; }
-    input, button { padding: 0.5em; margin: 0.3em; font-size: 1em; }
-    .note { margin: 5px 0; }
+    body { font-family: sans-serif; padding: 1em; max-width: 700px; }
+    input, button { padding: 0.5em; margin: 0.5em 0.2em; font-size: 1em; }
+    table { border-collapse: collapse; margin-top: 1em; width: 100%; }
+    th, td { border: 1px solid #aaa; padding: 0.4em; text-align: right; }
+    th { background-color: #f0f0f0; }
   </style>
 </head>
 <body>
-  <h1>Microtonal Scale Explorer</h1>
+  <h1>Microtonal Circle-of-"Fifths" Generator</h1>
 
-  <label>EDO: <input type="number" id="edo" value="19"></label>
-  <label>Scale Size: <input type="number" id="scaleSize" value="7"></label>
-  <label>Generator Step: <input type="number" id="generator" value="3"></label>
-  <label>Base Frequency (Hz): <input type="number" id="baseFreq" value="440"></label>
+  <label>Generator: <input id="generator" value="3/2"></label><br>
+  <label>Period: <input id="period" value="2/1"></label><br>
+  <label>UDP (e.g. 4u3d1p): <input id="udp" value="4u3d1p"></label><br>
+  <label>Decimal places: <input id="decimals" type="number" value="4" min="0" max="10"></label><br>
   <button onclick="generateScale()">Generate Scale</button>
+  <button onclick="playScale()">Play Scale</button>
 
-  <div id="scaleDisplay"></div>
+  <table id="output" style="display:none">
+    <thead>
+      <tr><th>#</th><th>Cents</th><th>Ratio (approx.)</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <script>
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let currentScaleCents = [];
 
-    function playFreq(freq, duration = 0.25) {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-      osc.connect(gain).connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + duration);
+    function parseInterval(input) {
+      input = input.trim();
+      if (input.includes('\\')) {
+        const [steps, edo] = input.split('\\').map(Number);
+        return 1200 * (steps / edo);
+      } else if (input.includes('/')) {
+        const [num, den] = input.split('/').map(Number);
+        return 1200 * Math.log2(num / den);
+      } else {
+        return parseFloat(input); // assume cents
+      }
     }
 
-    function mod(a, n) {
-      return ((a % n) + n) % n;
+    function parseUDP(udpStr) {
+      const match = udpStr.match(/(\d+)u(\d+)d(\d+)p/i);
+      if (!match) return null;
+      return {
+        up: parseInt(match[1]),
+        down: parseInt(match[2]),
+        periods: parseInt(match[3])
+      };
+    }
+
+    function mod(a, b) {
+      return ((a % b) + b) % b;
+    }
+
+    function ratioFromCents(cents) {
+      const ratio = Math.pow(2, cents / 1200);
+      const fraction = approximateFraction(ratio);
+      return fraction.num + "/" + fraction.den;
+    }
+
+    function approximateFraction(x, maxDen = 1000) {
+      let a = Math.floor(x), h1 = 1, k1 = 0, h = a, k = 1;
+      while (Math.abs(h / k - x) > 1e-10 && k < maxDen) {
+        x = 1 / (x - a);
+        a = Math.floor(x);
+        const h2 = h1, k2 = k1;
+        h1 = h; k1 = k;
+        h = a * h1 + h2;
+        k = a * k1 + k2;
+      }
+      return { num: h, den: k };
     }
 
     function generateScale() {
-      const edo = parseInt(document.getElementById("edo").value);
-      const scaleSize = parseInt(document.getElementById("scaleSize").value);
-      const generator = parseInt(document.getElementById("generator").value);
-      const baseFreq = parseFloat(document.getElementById("baseFreq").value);
+      const generatorStr = document.getElementById("generator").value;
+      const periodStr = document.getElementById("period").value;
+      const udpStr = document.getElementById("udp").value;
+      const decimals = parseInt(document.getElementById("decimals").value);
 
-      const steps = new Set();
-      let current = 0;
-      for (let i = 0; steps.size < scaleSize; i++) {
-        steps.add(mod(i * generator, edo));
+      const generator = parseInterval(generatorStr);
+      const period = parseInterval(periodStr);
+      const udp = parseUDP(udpStr);
+
+      if (!udp) {
+        alert("Invalid UDP format. Use format like '4u3d1p'.");
+        return;
       }
 
-      const stepArray = Array.from(steps).sort((a, b) => a - b);
-      const display = document.getElementById("scaleDisplay");
-      display.innerHTML = '';
+      const notes = new Set();
+      for (let i = -udp.down; i <= udp.up; i++) {
+        const cent = i * generator;
+        const wrapped = mod(cent, period);
+        notes.add(wrapped);
+      }
 
-      stepArray.forEach(step => {
-        const cents = (step / edo) * 1200;
-        const freq = baseFreq * Math.pow(2, cents / 1200);
-        const div = document.createElement("div");
-        div.className = "note";
-        div.innerHTML = `Step ${step}: ${cents.toFixed(2)} cents — ${freq.toFixed(2)} Hz
-          <button onclick="playFreq(${freq})">Play</button>`;
-        display.appendChild(div);
+      const sorted = Array.from(notes).sort((a, b) => a - b);
+
+      // Add final note = period * P
+      sorted.push(period * udp.periods);
+
+      const tbody = document.querySelector("#output tbody");
+      tbody.innerHTML = "";
+      currentScaleCents = sorted; // for playback
+
+      sorted.forEach((cent, i) => {
+        const row = document.createElement("tr");
+
+        const td1 = document.createElement("td");
+        td1.textContent = i;
+
+        const td2 = document.createElement("td");
+        td2.textContent = cent.toFixed(decimals);
+
+        const td3 = document.createElement("td");
+        td3.textContent = ratioFromCents(cent);
+
+        row.appendChild(td1);
+        row.appendChild(td2);
+        row.appendChild(td3);
+        tbody.appendChild(row);
       });
+
+      document.getElementById("output").style.display = "table";
     }
 
-    generateScale(); // initial render
+    function playScale() {
+      if (!currentScaleCents.length) {
+        alert("Generate a scale first!");
+        return;
+      }
+
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const baseFreq = 440; // A4
+
+      currentScaleCents.forEach((cents, i) => {
+        const freq = baseFreq * Math.pow(2, cents / 1200);
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        gain.gain.value = 0.3;
+
+        osc.connect(gain).connect(audioCtx.destination);
+        const start = audioCtx.currentTime + i * 0.5;
+        const stop = start + 0.45;
+        osc.start(start);
+        osc.stop(stop);
+      });
+    }
   </script>
 </body>
 </html>
