@@ -23,7 +23,7 @@
 
   <table id="output" style="display:none">
     <thead>
-      <tr><th>#</th><th>Cents</th><th>Ratio (approx.)</th></tr>
+      <tr><th>#</th><th>Cents</th></tr>
     </thead>
     <tbody></tbody>
   </table>
@@ -58,7 +58,6 @@
       return ((a % b) + b) % b;
     }
 
-
     function generateScale() {
       const generatorStr = document.getElementById("generator").value;
       const periodStr = document.getElementById("period").value;
@@ -74,7 +73,7 @@
         return;
       }
 
-      // Generate scale within one period
+      // Generate notes in a single period
       const pitches = new Set();
       for (let i = -udp.down; i <= udp.up; i++) {
         const cents = i * generator;
@@ -83,9 +82,9 @@
       }
 
       let scale = Array.from(pitches).sort((a, b) => a - b);
-      scale.push(period * udp.periods); // Add final note P periods above base
+      scale.push(period * udp.periods); // Add final note
 
-      // If period < octave, tile scale to reach full octave (1200 cents)
+      // Extend to full octave
       const fullScale = [];
       const octave = 1200;
       const repeats = Math.ceil(octave / period);
@@ -108,11 +107,8 @@
         td1.textContent = i;
         const td2 = document.createElement("td");
         td2.textContent = cent.toFixed(decimals);
-        const td3 = document.createElement("td");
-        td3.textContent = ratioFromCents(cent);
         row.appendChild(td1);
         row.appendChild(td2);
-        row.appendChild(td3);
         tbody.appendChild(row);
       });
 
