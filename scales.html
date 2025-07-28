@@ -58,25 +58,6 @@
       return ((a % b) + b) % b;
     }
 
-    function ratioFromCents(cents) {
-  const ratio = Math.pow(2, cents / 1200);
-  const fraction = approximateFraction(ratio, 1000, primeLimit);
-  return fraction.num + "/" + fraction.den;
-}
-
-    function approximateFraction(x, maxDen = 1000, primeLimit = 7) {
-  let a = Math.floor(x), h1 = 1, k1 = 0, h = a, k = 1;
-  while (Math.abs(h / k - x) > 1e-10 && k < maxDen) {
-    x = 1 / (x - a);
-    a = Math.floor(x);
-    const h2 = h1, k2 = k1;
-    h1 = h; k1 = k;
-    h = a * h1 + h2;
-    k = a * k1 + k2;
-  }
-  return { num: h, den: k };
-}
-
 
     function generateScale() {
       const generatorStr = document.getElementById("generator").value;
