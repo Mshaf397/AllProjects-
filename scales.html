@@ -60,7 +60,6 @@
 
     function ratioFromCents(cents) {
   const ratio = Math.pow(2, cents / 1200);
-  const primeLimit = parseInt(document.getElementById("primeLimit").value);
   const fraction = approximateFraction(ratio, 1000, primeLimit);
   return fraction.num + "/" + fraction.den;
 }
@@ -68,11 +67,6 @@
     function approximateFraction(x, maxDen = 1000, primeLimit = 7) {
   let a = Math.floor(x), h1 = 1, k1 = 0, h = a, k = 1;
   while (Math.abs(h / k - x) > 1e-10 && k < maxDen) {
-    if (areFactorsWithinLimit(h, k, primeLimit)) {
-      if (Math.abs(h / k - x) < 1e-4) {
-        return { num: h, den: k };
-      }
-    }
     x = 1 / (x - a);
     a = Math.floor(x);
     const h2 = h1, k2 = k1;
