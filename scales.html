@@ -16,7 +16,7 @@
 
   <label>Generator: <input id="generator" value="3/2"></label><br>
   <label>Period: <input id="period" value="2/1"></label><br>
-  <label>UDP (e.g. 4u3d1p): <input id="udp" value="4u3d1p"></label><br>
+  <label>UDP (e.g. 3|3(1)): <input id="udp" value="3|3(1)"></label><br>
   <label>Decimal places: <input id="decimals" type="number" value="4" min="0" max="10"></label><br>
   <button onclick="generateScale()">Generate Scale</button>
   <button onclick="playScale()">Play Scale</button>
@@ -45,7 +45,7 @@
     }
 
     function parseUDP(udpStr) {
-      const match = udpStr.match(/(\d+)u(\d+)d(\d+)p/i);
+      const match = udpStr.match(/(\d+)\|(\d+)\((\d+)\)/);
       if (!match) return null;
       return {
         up: parseInt(match[1]),
@@ -88,38 +88,46 @@
       const udp = parseUDP(udpStr);
 
       if (!udp) {
-        alert("Invalid UDP format. Use format like '4u3d1p'.");
+        alert("Invalid UDP format. Use format like '3|3(1)'.");
         return;
       }
 
-      const notes = new Set();
+      // Generate scale within one period
+      const pitches = new Set();
       for (let i = -udp.down; i <= udp.up; i++) {
-        const cent = i * generator;
-        const wrapped = mod(cent, period);
-        notes.add(wrapped);
+        const cents = i * generator;
+        const wrapped = mod(cents, period);
+        pitches.add(wrapped);
       }
 
-      const sorted = Array.from(notes).sort((a, b) => a - b);
+      let scale = Array.from(pitches).sort((a, b) => a - b);
+      scale.push(period * udp.periods); // Add final note P periods above base
 
-      // Add final note = period * P
-      sorted.push(period * udp.periods);
+      // If period < octave, tile scale to reach full octave (1200 cents)
+      const fullScale = [];
+      const octave = 1200;
+      const repeats = Math.ceil(octave / period);
+
+      for (let i = 0; i < repeats; i++) {
+        const offset = i * period;
+        for (let j = 0; j < scale.length; j++) {
+          const note = scale[j] + offset;
+          if (note <= octave) fullScale.push(note);
+        }
+      }
+
+      currentScaleCents = fullScale;
 
       const tbody = document.querySelector("#output tbody");
       tbody.innerHTML = "";
-      currentScaleCents = sorted; // for playback
-
-      sorted.forEach((cent, i) => {
+      fullScale.forEach((cent, i) => {
         const row = document.createElement("tr");
-
         const td1 = document.createElement("td");
         td1.textContent = i;
-
         const td2 = document.createElement("td");
         td2.textContent = cent.toFixed(decimals);
-
         const td3 = document.createElement("td");
         td3.textContent = ratioFromCents(cent);
-
         row.appendChild(td1);
         row.appendChild(td2);
         row.appendChild(td3);
