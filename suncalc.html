@@ -2,73 +2,81 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Precise Sun Elevation Calculator</title>
+  <title>Ultra-Accurate Sun Elevation Calculator</title>
   <style>
-    body { font-family: sans-serif; margin: 2em; }
-    input { margin: 0.3em; padding: 0.3em; }
+    body { font-family: sans-serif; padding: 2em; line-height: 1.6; }
+    input { margin: 0.3em; padding: 0.3em; width: 200px; }
     button { padding: 0.5em; margin-top: 1em; }
-    .result { margin-top: 1em; font-weight: bold; }
+    .result { margin-top: 1em; font-weight: bold; font-size: 1.2em; }
   </style>
 </head>
 <body>
   <h1>Sun Elevation Calculator (±0.0005°)</h1>
   <label>Latitude (°): <input id="lat" type="number" step="0.000001"></label><br>
   <label>Longitude (°): <input id="lon" type="number" step="0.000001"></label><br>
-  <label>Timezone Offset (hours from UTC): <input id="tz" type="number" step="0.1"></label><br>
-  <label>Date/Time (local): <input id="datetime" type="datetime-local"></label><br>
-  <button onclick="compute()">Calculate Sun Elevation</button>
+  <label>Timezone Offset from UTC (e.g. -4): <input id="tz" type="number" step="0.1"></label><br>
+  <label>Local Date & Time: <input id="datetime" type="datetime-local"></label><br>
+  <button onclick="calculateElevation()">Calculate</button>
 
-  <div class="result" id="result"></div>
+  <div class="result" id="output"></div>
 
   <script>
-    function compute() {
+    function toRadians(deg) { return deg * Math.PI / 180; }
+    function toDegrees(rad) { return rad * 180 / Math.PI; }
+
+    function calculateElevation() {
       const lat = parseFloat(document.getElementById("lat").value);
       const lon = parseFloat(document.getElementById("lon").value);
       const tz = parseFloat(document.getElementById("tz").value);
-      const localDateTime = new Date(document.getElementById("datetime").value);
-      if (!localDateTime || isNaN(lat) || isNaN(lon) || isNaN(tz)) {
-        document.getElementById("result").innerText = "Please fill all fields.";
+      const localDate = new Date(document.getElementById("datetime").value);
+
+      if (isNaN(lat) || isNaN(lon) || isNaN(tz) || !localDate) {
+        document.getElementById("output").innerText = "Please fill all fields correctly.";
         return;
       }
 
-      const rad = x => x * Math.PI / 180;
-      const deg = x => x * 180 / Math.PI;
+      const utcDate = new Date(localDate.getTime() - tz * 60 * 60 * 1000);
+      const JD = utcDate.getTime() / 86400000 + 2440587.5;
+      const T = (JD - 2451545.0) / 36525;
 
-      // Convert to UTC
-      const utcDate = new Date(localDateTime.getTime() - tz * 3600 * 1000);
-      const jd = (utcDate / 86400000) + 2440587.5; // Julian date
-      const t = (jd - 2451545.0) / 36525; // Julian centuries since J2000.0
-
-      // Solar coordinates
-      const L0 = (280.46646 + 36000.76983 * t + 0.0003032 * t**2) % 360;
-      const M = 357.52911 + 35999.05029 * t - 0.0001537 * t**2;
-      const e = 0.016708634 - 0.000042037 * t - 0.0000001267 * t**2;
-      const C = (1.914602 - 0.004817 * t - 0.000014 * t**2) * Math.sin(rad(M))
-              + (0.019993 - 0.000101 * t) * Math.sin(rad(2*M))
-              + 0.000289 * Math.sin(rad(3*M));
+      // Mean longitude, mean anomaly, ecliptic longitude (apparent)
+      const L0 = (280.46646 + 36000.76983 * T) % 360;
+      const M = (357.52911 + 35999.05029 * T) % 360;
+      const e = 0.016708634 - T * (0.000042037 + 0.0000001267 * T);
+      const C = (1.914602 - 0.004817 * T - 0.000014 * T) * Math.sin(toRadians(M)) +
+                (0.019993 - 0.000101 * T) * Math.sin(toRadians(2*M)) +
+                0.000289 * Math.sin(toRadians(3*M));
       const trueLong = L0 + C;
-      const omega = 125.04 - 1934.136 * t;
-      const lambda = trueLong - 0.00569 - 0.00478 * Math.sin(rad(omega));
-      const epsilon0 = 23 + (26 + (21.448 - t*(46.815 + t*(0.00059 - t*0.001813)))/60)/60;
-      const epsilon = epsilon0 + 0.00256 * Math.cos(rad(omega));
+      const omega = 125.04 - 1934.136 * T;
+      const lambda = trueLong - 0.00569 - 0.00478 * Math.sin(toRadians(omega));
 
-      const alpha = deg(Math.atan2(Math.cos(rad(epsilon)) * Math.sin(rad(lambda)), Math.cos(rad(lambda))));
-      const delta = deg(Math.asin(Math.sin(rad(epsilon)) * Math.sin(rad(lambda))));
+      // Mean obliquity of the ecliptic and corrected obliquity
+      const epsilon0 = 23 + (26 + (21.448 - T*(46.815 + T*(0.00059 - T*0.001813)))/60)/60;
+      const epsilon = epsilon0 + 0.00256 * Math.cos(toRadians(omega));
 
-      // Greenwich Mean Sidereal Time
-      const JD0 = Math.floor(jd - 0.5) + 0.5;
-      const H = (jd - JD0) * 24;
-      const D = jd - 2451545.0;
-      const GMST = (6.697374558 + 0.06570982441908 * D + 1.00273790935 * H) % 24;
-      const LMST = (GMST + lon / 15) % 24 * 15; // degrees
+      // Sun's right ascension and declination
+      const alpha = toDegrees(Math.atan2(Math.cos(toRadians(epsilon)) * Math.sin(toRadians(lambda)), Math.cos(toRadians(lambda))));
+      const delta = toDegrees(Math.asin(Math.sin(toRadians(epsilon)) * Math.sin(toRadians(lambda))));
 
-      const Hangle = (LMST - alpha + 360) % 360;
-      const h = deg(Math.asin(
-        Math.sin(rad(lat)) * Math.sin(rad(delta)) +
-        Math.cos(rad(lat)) * Math.cos(rad(delta)) * Math.cos(rad(Hangle))
-      ));
+      // GMST
+      const JD0 = Math.floor(JD - 0.5) + 0.5;
+      const H = (JD - JD0) * 24; // UTC hours past midnight
+      const D = JD - 2451545.0;
+      const GMST = (280.46061837 + 360.98564736629 * D) % 360;
+      const LST = (GMST + lon + 360) % 360;
 
-      document.getElementById("result").innerText = `Sun Elevation: ${h.toFixed(6)}°`;
+      // Hour angle
+      const Hangle = (LST - alpha + 360) % 360;
+
+      // Elevation
+      const h = Math.asin(
+        Math.sin(toRadians(lat)) * Math.sin(toRadians(delta)) +
+        Math.cos(toRadians(lat)) * Math.cos(toRadians(delta)) * Math.cos(toRadians(Hangle))
+      );
+
+      const elevation = toDegrees(h);
+
+      document.getElementById("output").innerText = `Sun Elevation: ${elevation.toFixed(6)}°`;
     }
   </script>
 </body>
