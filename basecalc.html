@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Custom Base Converter</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    label, input, button { display: block; margin-top: 10px; font-size: 1rem; }
+    #result { margin-top: 15px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Decimal to Any Base Converter</h1>
+
+  <label for="decimal">Decimal Number:</label>
+  <input type="number" id="decimal" placeholder="Enter a decimal number" />
+
+  <label for="base">Target Base (2–36):</label>
+  <input type="number" id="base" placeholder="Enter base" min="2" max="36"/>
+
+  <button onclick="convertBase()">Convert</button>
+
+  <div id="result"></div>
+
+  <script>
+    function convertBase() {
+      const decimal = parseInt(document.getElementById("decimal").value, 10);
+      const base = parseInt(document.getElementById("base").value, 10);
+      const resultDiv = document.getElementById("result");
+
+      if (isNaN(decimal) || isNaN(base) || base < 2 || base > 36) {
+        resultDiv.textContent = "Please enter a valid decimal and base (2–36).";
+        return;
+      }
+
+      const converted = decimal.toString(base).toUpperCase();
+      resultDiv.textContent = `Result: ${converted} (Base ${base})`;
+    }
+  </script>
+</body>
+</html>
