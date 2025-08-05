@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Surface Area Calculator</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+    label, select, input { display: block; margin-top: 10px; }
+    .inputs { margin-top: 10px; }
+    .inputs label { margin-top: 5px; }
+    #result { margin-top: 20px; font-weight: bold; }
+    #formula { font-style: italic; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+  <h2>Surface Area Calculator</h2>
+
+  <label for="shape">Select a shape:</label>
+  <select id="shape">
+    <option value="">--Choose a shape--</option>
+    <option value="cube">Cube</option>
+    <option value="rectPrism">Rectangular Prism</option>
+    <option value="sphere">Sphere</option>
+    <option value="cylinder">Cylinder</option>
+    <option value="cone">Cone</option>
+    <option value="squarePyramid">Square Pyramid</option>
+    <option value="triPrism">Triangular Prism</option>
+  </select>
+
+  <div class="inputs" id="inputFields"></div>
+  <div id="formula"></div>
+  <button onclick="calculate()">Calculate Surface Area</button>
+  <div id="result"></div>
+
+  <script>
+    const inputFields = document.getElementById('inputFields');
+    const formulaDiv = document.getElementById('formula');
+    const resultDiv = document.getElementById('result');
+
+    const shapes = {
+      cube: {
+        inputs: ['side'],
+        formula: '6 × side²',
+        calc: ({ side }) => 6 * side * side
+      },
+      rectPrism: {
+        inputs: ['length', 'width', 'height'],
+        formula: '2 × (lw + lh + wh)',
+        calc: ({ length, width, height }) =>
+          2 * (length * width + length * height + width * height)
+      },
+      sphere: {
+        inputs: ['radius'],
+        formula: '4 × π × r²',
+        calc: ({ radius }) => 4 * Math.PI * radius * radius
+      },
+      cylinder: {
+        inputs: ['radius', 'height'],
+        formula: '2πr² + 2πrh',
+        calc: ({ radius, height }) =>
+          2 * Math.PI * radius * radius + 2 * Math.PI * radius * height
+      },
+      cone: {
+        inputs: ['radius', 'slantHeight'],
+        formula: 'πr² + πrl',
+        calc: ({ radius, slantHeight }) =>
+          Math.PI * radius * radius + Math.PI * radius * slantHeight
+      },
+      squarePyramid: {
+        inputs: ['base', 'slantHeight'],
+        formula: 'base² + 2 × base × slantHeight',
+        calc: ({ base, slantHeight }) =>
+          base * base + 2 * base * slantHeight
+      },
+      triPrism: {
+        inputs: ['base', 'height', 'length', 'sideA', 'sideB'],
+        formula: 'bh + l(a + b + base)',
+        calc: ({ base, height, length, sideA, sideB }) =>
+          base * height + length * (base + sideA + sideB)
+      }
+    };
+
+    document.getElementById('shape').addEventListener('change', function () {
+      const shape = this.value;
+      inputFields.innerHTML = '';
+      resultDiv.textContent = '';
+      if (!shapes[shape]) {
+        formulaDiv.textContent = '';
+        return;
+      }
+
+      shapes[shape].inputs.forEach(varName => {
+        const label = document.createElement('label');
+        label.textContent = `${varName}:`;
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.step = 'any';
+        input.id = varName;
+        input.required = true;
+        inputFields.appendChild(label);
+        inputFields.appendChild(input);
+      });
+
+      formulaDiv.textContent = 'Formula: ' + shapes[shape].formula;
+    });
+
+    function calculate() {
+      const shape = document.getElementById('shape').value;
+      if (!shapes[shape]) return;
+
+      const values = {};
+      try {
+        shapes[shape].inputs.forEach(varName => {
+          const val = parseFloat(document.getElementById(varName).value);
+          if (isNaN(val)) throw new Error('Invalid input');
+          values[varName] = val;
+        });
+
+        const area = shapes[shape].calc(values);
+        resultDiv.textContent = `Surface Area: ${area.toFixed(4)}`;
+      } catch (err) {
+        resultDiv.textContent = 'Please enter valid numbers.';
+      }
+    }
+  </script>
+
+</body>
+</html>
