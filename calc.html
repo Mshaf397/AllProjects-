@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scientific Big Number Calculator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.3/decimal.min.js"></script>
+  <style>
+    body {
+      font-family: monospace;
+      margin: 30px;
+      background: #f0f0f0;
+      color: #333;
+    }
+    input, select, button {
+      font-size: 1.1em;
+      padding: 10px;
+      margin: 5px;
+      width: 90%;
+    }
+    #result {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      background: white;
+      padding: 15px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <h2>🧮 Big Scientific Calculator</h2>
+  <input type="text" id="expression" placeholder="Enter expression (e.g. sin(3.14), 2^300, log(1e+50))">
+  <button onclick="calculate()">Calculate</button>
+  <div id="result"></div>
+
+  <script>
+    Decimal.set({ precision: 3000 }); // Allow up to 3000 digits internally
+
+    function calculate() {
+      const input = document.getElementById('expression').value;
+      let resultField = document.getElementById('result');
+      try {
+        const result = evaluateExpression(input);
+        const resultStr = result.toString();
+        const trimmed = resultStr.length > 2500 ? resultStr.slice(0, 2500) + '... [truncated]' : resultStr;
+        resultField.textContent = 'Result:\n' + trimmed;
+      } catch (e) {
+        resultField.textContent = 'Error: ' + e.message;
+      }
+    }
+
+    function evaluateExpression(expr) {
+      // Safe math expression evaluation
+      const scope = {
+        sin: (x) => Decimal.sin(Decimal(x)),
+        cos: (x) => Decimal.cos(Decimal(x)),
+        tan: (x) => Decimal.tan(Decimal(x)),
+        asin: (x) => Decimal.asin(Decimal(x)),
+        acos: (x) => Decimal.acos(Decimal(x)),
+        atan: (x) => Decimal.atan(Decimal(x)),
+        log: (x) => Decimal.log(Decimal(x)), // natural log
+        log10: (x) => Decimal.log10(Decimal(x)),
+        exp: (x) => Decimal.exp(Decimal(x)),
+        sqrt: (x) => Decimal.sqrt(Decimal(x)),
+        abs: (x) => Decimal.abs(Decimal(x)),
+        pow: (a, b) => Decimal(a).pow(Decimal(b)),
+        factorial: (x) => factorial(Decimal(x)),
+        pi: Decimal.acos(-1),
+        e: Decimal.exp(1)
+      };
+
+      const replacedExpr = expr
+        .replace(/([0-9.]+)([a-zA-Z]+)/g, '$1*$2')  // 2pi -> 2*pi
+        .replace(/([a-zA-Z]+)([0-9.]+)/g, '$1($2)'); // sin30 -> sin(30)
+
+      const func = new Function(...Object.keys(scope), "return " +
+        replacedExpr.replace(/\^/g, '**') + ";");
+
+      return new Decimal(func(...Object.values(scope)));
+    }
+
+    function factorial(n) {
+      if (!n.isInteger() || n.isNegative()) throw new Error("Factorial only for non-negative integers");
+      let result = Decimal(1);
+      for (let i = Decimal(2); i.lte(n); i = i.plus(1)) {
+        result = result.mul(i);
+      }
+      return result;
+    }
+  </script>
+</body>
+</html>
