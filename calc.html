@@ -1,94 +1,263 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Scientific Big Number Calculator</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.3/decimal.min.js"></script>
-  <style>
-    body {
-      font-family: monospace;
-      margin: 30px;
-      background: #f0f0f0;
-      color: #333;
-    }
-    input, select, button {
-      font-size: 1.1em;
-      padding: 10px;
-      margin: 5px;
-      width: 90%;
-    }
-    #result {
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      background: white;
-      padding: 15px;
-      margin-top: 10px;
-      border: 1px solid #ccc;
-      max-height: 400px;
-      overflow-y: auto;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Calculator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the calculator */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 20px;
+            border-radius: 15px;
+            background-color: #333; /* Dark background for the calculator body */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            max-width: 350px; /* Limit max width for better mobile view */
+            width: 90%; /* Responsive width */
+        }
+        .output {
+            grid-column: 1 / -1;
+            background-color: #222; /* Darker background for output */
+            color: #fff;
+            padding: 20px;
+            text-align: right;
+            font-size: 2.5em; /* Larger font for output */
+            border-radius: 10px;
+            margin-bottom: 10px;
+            word-wrap: break-word; /* Prevent overflow */
+            overflow: hidden; /* Hide overflow */
+            min-height: 60px; /* Ensure minimum height */
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+        }
+        .calculator-grid > button {
+            background-color: #555; /* Darker gray for buttons */
+            color: #fff;
+            border: none;
+            padding: 20px;
+            font-size: 1.5em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .calculator-grid > button:hover {
+            background-color: #777; /* Lighter on hover */
+            transform: translateY(-2px);
+        }
+        .calculator-grid > button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+        }
+        .operator {
+            background-color: #ff9500 !important; /* Orange for operators */
+        }
+        .operator:hover {
+            background-color: #ffa520 !important;
+        }
+        .equals {
+            background-color: #4CAF50 !important; /* Green for equals */
+            grid-column: span 2; /* Make equals button span two columns */
+        }
+        .equals:hover {
+            background-color: #5cb85c !important;
+        }
+        .clear {
+            background-color: #d9534f !important; /* Red for clear */
+        }
+        .clear:hover {
+            background-color: #e0635f !important;
+        }
+        .decimal {
+            background-color: #555 !important; /* Same as numbers */
+        }
+        .decimal:hover {
+            background-color: #777 !important;
+        }
+    </style>
 </head>
 <body>
-  <h2>🧮 Big Scientific Calculator</h2>
-  <input type="text" id="expression" placeholder="Enter expression (e.g. sin(3.14), 2^300, log(1e+50))">
-  <button onclick="calculate()">Calculate</button>
-  <div id="result"></div>
+    <div class="calculator-grid">
+        <!-- Calculator display -->
+        <div class="output" id="display">0</div>
 
-  <script>
-    Decimal.set({ precision: 3000 }); // Allow up to 3000 digits internally
+        <!-- Calculator buttons -->
+        <button class="clear" data-type="clear">AC</button>
+        <button class="operator" data-type="operator" data-value="%">%</button>
+        <button class="operator" data-type="operator" data-value="/">&divide;</button>
+        <button data-type="number" data-value="7">7</button>
+        <button data-type="number" data-value="8">8</button>
+        <button data-type="number" data-value="9">9</button>
+        <button class="operator" data-type="operator" data-value="*">&times;</button>
+        <button data-type="number" data-value="4">4</button>
+        <button data-type="number" data-value="5">5</button>
+        <button data-type="number" data-value="6">6</button>
+        <button class="operator" data-type="operator" data-value="-">-</button>
+        <button data-type="number" data-value="1">1</button>
+        <button data-type="number" data-value="2">2</button>
+        <button data-type="number" data-value="3">3</button>
+        <button class="operator" data-type="operator" data-value="+">+</button>
+        <button data-type="number" data-value="0">0</button>
+        <button class="decimal" data-type="decimal" data-value=".">.</button>
+        <button class="equals" data-type="equals">=</button>
+    </div>
 
-    function calculate() {
-      const input = document.getElementById('expression').value;
-      let resultField = document.getElementById('result');
-      try {
-        const result = evaluateExpression(input);
-        const resultStr = result.toString();
-        const trimmed = resultStr.length > 2500 ? resultStr.slice(0, 2500) + '... [truncated]' : resultStr;
-        resultField.textContent = 'Result:\n' + trimmed;
-      } catch (e) {
-        resultField.textContent = 'Error: ' + e.message;
-      }
-    }
+    <script>
+        // Get the display element
+        const display = document.getElementById('display');
+        // Get all calculator buttons
+        const buttons = document.querySelectorAll('.calculator-grid button');
 
-    function evaluateExpression(expr) {
-      // Safe math expression evaluation
-      const scope = {
-        sin: (x) => Decimal.sin(Decimal(x)),
-        cos: (x) => Decimal.cos(Decimal(x)),
-        tan: (x) => Decimal.tan(Decimal(x)),
-        asin: (x) => Decimal.asin(Decimal(x)),
-        acos: (x) => Decimal.acos(Decimal(x)),
-        atan: (x) => Decimal.atan(Decimal(x)),
-        log: (x) => Decimal.log(Decimal(x)), // natural log
-        log10: (x) => Decimal.log10(Decimal(x)),
-        exp: (x) => Decimal.exp(Decimal(x)),
-        sqrt: (x) => Decimal.sqrt(Decimal(x)),
-        abs: (x) => Decimal.abs(Decimal(x)),
-        pow: (a, b) => Decimal(a).pow(Decimal(b)),
-        factorial: (x) => factorial(Decimal(x)),
-        pi: Decimal.acos(-1),
-        e: Decimal.exp(1)
-      };
+        // Variables to store calculator state
+        let currentInput = '0'; // The number currently being entered
+        let firstOperand = null; // The first number in an operation
+        let operator = null; // The selected operator (+, -, *, /)
+        let waitingForSecondOperand = false; // Flag to indicate if we're ready for the second number
 
-      const replacedExpr = expr
-        .replace(/([0-9.]+)([a-zA-Z]+)/g, '$1*$2')  // 2pi -> 2*pi
-        .replace(/([a-zA-Z]+)([0-9.]+)/g, '$1($2)'); // sin30 -> sin(30)
+        /**
+         * Updates the display with the current input.
+         */
+        function updateDisplay() {
+            display.textContent = currentInput;
+        }
 
-      const func = new Function(...Object.keys(scope), "return " +
-        replacedExpr.replace(/\^/g, '**') + ";");
+        /**
+         * Handles number button clicks.
+         * @param {string} number - The number string (e.g., '7', '0').
+         */
+        function inputNumber(number) {
+            if (waitingForSecondOperand) {
+                currentInput = number;
+                waitingForSecondOperand = false;
+            } else {
+                // If current input is '0', replace it; otherwise, append the number
+                currentInput = currentInput === '0' ? number : currentInput + number;
+            }
+            updateDisplay();
+        }
 
-      return new Decimal(func(...Object.values(scope)));
-    }
+        /**
+         * Handles decimal point button clicks.
+         */
+        function inputDecimal() {
+            // If waiting for second operand, start a new number with '0.'
+            if (waitingForSecondOperand) {
+                currentInput = '0.';
+                waitingForSecondOperand = false;
+                updateDisplay();
+                return;
+            }
+            // Only add a decimal if one doesn't already exist
+            if (!currentInput.includes('.')) {
+                currentInput += '.';
+            }
+            updateDisplay();
+        }
 
-    function factorial(n) {
-      if (!n.isInteger() || n.isNegative()) throw new Error("Factorial only for non-negative integers");
-      let result = Decimal(1);
-      for (let i = Decimal(2); i.lte(n); i = i.plus(1)) {
-        result = result.mul(i);
-      }
-      return result;
-    }
-  </script>
+        /**
+         * Handles operator button clicks.
+         * @param {string} nextOperator - The operator string (e.g., '+', '-').
+         */
+        function handleOperator(nextOperator) {
+            const inputValue = parseFloat(currentInput);
+
+            // If an operator has already been entered and we're waiting for the second operand,
+            // update the operator without performing a calculation yet.
+            if (operator && waitingForSecondOperand) {
+                operator = nextOperator;
+                return;
+            }
+
+            // If firstOperand is null, store the current input as the first operand
+            if (firstOperand === null) {
+                firstOperand = inputValue;
+            } else if (operator) {
+                // If an operator exists and we have a first operand, perform the calculation
+                const result = performCalculation[operator](firstOperand, inputValue);
+                currentInput = String(result);
+                firstOperand = result;
+            }
+
+            waitingForSecondOperand = true;
+            operator = nextOperator;
+            updateDisplay();
+        }
+
+        /**
+         * Object containing functions for performing calculations based on the operator.
+         */
+        const performCalculation = {
+            '/': (firstOperand, secondOperand) => secondOperand === 0 ? 'Error' : firstOperand / secondOperand,
+            '*': (firstOperand, secondOperand) => firstOperand * secondOperand,
+            '+': (firstOperand, secondOperand) => firstOperand + secondOperand,
+            '-': (firstOperand, secondOperand) => firstOperand - secondOperand,
+            '%': (firstOperand, secondOperand) => firstOperand % secondOperand, // Modulo operator
+        };
+
+        /**
+         * Resets the calculator to its initial state.
+         */
+        function clearCalculator() {
+            currentInput = '0';
+            firstOperand = null;
+            operator = null;
+            waitingForSecondOperand = false;
+            updateDisplay();
+        }
+
+        // Add event listeners to all buttons
+        buttons.forEach(button => {
+            button.addEventListener('click', (event) => {
+                const { type, value } = event.target.dataset;
+
+                switch (type) {
+                    case 'number':
+                        inputNumber(value);
+                        break;
+                    case 'operator':
+                        handleOperator(value);
+                        break;
+                    case 'decimal':
+                        inputDecimal();
+                        break;
+                    case 'clear':
+                        clearCalculator();
+                        break;
+                    case 'equals':
+                        // If there's a first operand and an operator, perform the final calculation
+                        if (firstOperand !== null && operator !== null) {
+                            const inputValue = parseFloat(currentInput);
+                            const result = performCalculation[operator](firstOperand, inputValue);
+                            currentInput = String(result);
+                            firstOperand = null; // Reset for next calculation
+                            operator = null; // Reset operator
+                            waitingForSecondOperand = false;
+                            updateDisplay();
+                        }
+                        break;
+                    default:
+                        // Do nothing for unrecognized button types
+                        break;
+                }
+            });
+        });
+
+        // Initial display update
+        updateDisplay();
+    </script>
 </body>
 </html>
