@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tip Calculator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the Inter font and overall body */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px; /* Add some padding for smaller screens */
+            box-sizing: border-box; /* Include padding in element's total width and height */
+        }
+        /* Styling for the main calculator container */
+        .calculator-container {
+            background-color: #ffffff; /* White background for the card */
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            max-width: 400px; /* Limit max width for better readability */
+            width: 100%; /* Responsive width */
+            text-align: center;
+        }
+        /* Styling for input fields */
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1.1em;
+            box-sizing: border-box; /* Ensure padding doesn't expand the input width */
+        }
+        /* Styling for the calculate button */
+        .calculate-button {
+            background-color: #4CAF50; /* Green button */
+            color: white;
+            padding: 14px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            width: 100%; /* Full width button */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .calculate-button:hover {
+            background-color: #5cb85c; /* Darker green on hover */
+            transform: translateY(-2px);
+        }
+        .calculate-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+        }
+        /* Styling for result display areas */
+        .results {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: left;
+        }
+        .results p {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #555;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .results p span {
+            font-weight: 700;
+            color: #333;
+            font-size: 1.3em;
+        }
+        /* Error message styling */
+        .error-message {
+            color: #d9534f; /* Red for errors */
+            margin-top: -10px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            text-align: left;
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Tip Calculator</h1>
+
+        <div class="input-group">
+            <label for="billAmount">Bill Amount ($)</label>
+            <input type="number" id="billAmount" placeholder="e.g., 50.00" step="0.01">
+        </div>
+
+        <div class="input-group">
+            <label for="tipPercentage">Tip Percentage (%)</label>
+            <input type="number" id="tipPercentage" placeholder="e.g., 15" step="1">
+        </div>
+
+        <p id="errorMessage" class="error-message">Please enter valid numbers for both fields.</p>
+
+        <button class="calculate-button" id="calculateBtn">Calculate Tip</button>
+
+        <div class="results">
+            <p>Tip Amount: <span id="tipAmount">$0.00</span></p>
+            <p>Total Bill: <span id="totalBill">$0.00</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Get references to HTML elements
+        const billAmountInput = document.getElementById('billAmount');
+        const tipPercentageInput = document.getElementById('tipPercentage');
+        const calculateButton = document.getElementById('calculateBtn');
+        const tipAmountSpan = document.getElementById('tipAmount');
+        const totalBillSpan = document.getElementById('totalBill');
+        const errorMessageDiv = document.getElementById('errorMessage');
+
+        /**
+         * Calculates the tip and total bill based on user input.
+         */
+        function calculateTip() {
+            // Hide any previous error messages
+            errorMessageDiv.style.display = 'none';
+
+            // Get values from input fields and convert to numbers
+            const billAmount = parseFloat(billAmountInput.value);
+            const tipPercentage = parseFloat(tipPercentageInput.value);
+
+            // Validate inputs
+            if (isNaN(billAmount) || isNaN(tipPercentage) || billAmount < 0 || tipPercentage < 0) {
+                errorMessageDiv.style.display = 'block'; // Show error message
+                tipAmountSpan.textContent = '$0.00';
+                totalBillSpan.textContent = '$0.00';
+                return; // Stop execution if inputs are invalid
+            }
+
+            // Calculate tip amount
+            const tipAmount = billAmount * (tipPercentage / 100);
+
+            // Calculate total bill
+            const totalBill = billAmount + tipAmount;
+
+            // Display results, formatted to two decimal places
+            tipAmountSpan.textContent = `$${tipAmount.toFixed(2)}`;
+            totalBillSpan.textContent = `$${totalBill.toFixed(2)}`;
+        }
+
+        // Add event listener to the calculate button
+        calculateButton.addEventListener('click', calculateTip);
+
+        // Optional: Allow calculation on 'Enter' key press in input fields
+        billAmountInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                calculateTip();
+            }
+        });
+        tipPercentageInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                calculateTip();
+            }
+        });
+
+        // Initialize display on load
+        calculateTip();
+    </script>
+</body>
+</html>
