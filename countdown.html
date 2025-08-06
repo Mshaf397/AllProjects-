@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown Timer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the Inter font and overall body */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #4f102a; /* Dark blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        /* Styling for the main container */
+        .timer-container {
+            background-color: #1e295b; /* Slightly lighter dark background for the card */
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #e2e8f0; /* Light text color */
+        }
+        /* Styling for input fields */
+        .input-group {
+            margin-bottom: 25px;
+            text-align: left;
+            width: 100%;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #cbd5e0;
+            font-size: 1.1em;
+        }
+        .input-group input[type="datetime-local"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #475569; /* Darker border */
+            border-radius: 10px;
+            font-size: 1.1em;
+            box-sizing: border-box;
+            background-color: #334155; /* Darker input background */
+            color: #e2e8f0; /* Light text color for input */
+            /* Style for date/time picker icon (browser default) */
+            filter: invert(1); /* Invert colors for dark theme compatibility */
+        }
+
+        /* Styling for the start button */
+        .start-button {
+            background-color: #22c55e; /* Green button */
+            color: white;
+            padding: 14px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            width: 100%;
+            max-width: 200px; /* Limit button width */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+        }
+        .start-button:hover {
+            background-color: #16a34a; /* Darker green on hover */
+            transform: translateY(-2px);
+        }
+        .start-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Styling for the countdown display */
+        .countdown-display {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+        }
+        .time-segment {
+            background-color: #334155; /* Darker segment background */
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin: 10px; /* Spacing between segments */
+            min-width: 90px; /* Minimum width for segments */
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+        }
+        .time-segment .value {
+            font-family: 'SF Mono', 'Roboto Mono', monospace;
+            font-size: 3em; /* Large number size */
+            font-weight: 700;
+            color: #60a5fa; /* Blueish color for values */
+            display: block;
+            line-height: 1; /* Adjust line height */
+        }
+        .time-segment .label {
+            font-size: 0.9em;
+            color: #94a3b8; /* Lighter gray for labels */
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Message display */
+        #message {
+            margin-top: 25px;
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #facc15; /* Yellow for messages */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .timer-container {
+                padding: 20px;
+            }
+            .time-segment {
+                min-width: 70px;
+                padding: 10px 15px;
+                margin: 8px;
+            }
+            .time-segment .value {
+                font-size: 2.5em;
+            }
+            .time-segment .label {
+                font-size: 0.8em;
+            }
+            .start-button {
+                padding: 12px 20px;
+                font-size: 1.1em;
+            }
+            .input-group input[type="datetime-local"] {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="timer-container">
+        <h1 class="text-4xl font-bold mb-8 text-white">Countdown Timer</h1>
+
+        <div class="input-group">
+            <label for="targetDateTime">Set Target Date and Time:</label>
+            <input type="datetime-local" id="targetDateTime">
+        </div>
+
+        <button class="start-button" id="startButton">Start Countdown</button>
+
+        <div class="countdown-display">
+            <div class="time-segment">
+                <span class="value" id="days">00</span>
+                <span class="label">Days</span>
+            </div>
+            <div class="time-segment">
+                <span class="value" id="hours">00</span>
+                <span class="label">Hours</span>
+            </div>
+            <div class="time-segment">
+                <span class="value" id="minutes">00</span>
+                <span class="label">Minutes</span>
+            </div>
+            <div class="time-segment">
+                <span class="value" id="seconds">00</span>
+                <span class="label">Seconds</span>
+            </div>
+        </div>
+
+        <div id="message" class="text-yellow-400 mt-6 text-xl font-semibold"></div>
+    </div>
+
+    <script>
+        // Get references to HTML elements
+        const targetDateTimeInput = document.getElementById('targetDateTime');
+        const startButton = document.getElementById('startButton');
+        const daysSpan = document.getElementById('days');
+        const hoursSpan = document.getElementById('hours');
+        const minutesSpan = document.getElementById('minutes');
+        const secondsSpan = document.getElementById('seconds');
+        const messageDiv = document.getElementById('message');
+
+        let countdownInterval; // Variable to hold the interval ID
+
+        /**
+         * Formats a number to always have two digits (e.g., 5 becomes "05").
+         * @param {number} num - The number to format.
+         * @returns {string} The formatted two-digit string.
+         */
+        function formatTwoDigits(num) {
+            return num < 10 ? '0' + num : String(num);
+        }
+
+        /**
+         * Updates the countdown display based on the remaining time.
+         * @param {number} distance - The remaining time in milliseconds.
+         */
+        function updateCountdownDisplay(distance) {
+            // Calculate time components
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            // Update the display spans
+            daysSpan.textContent = formatTwoDigits(days);
+            hoursSpan.textContent = formatTwoDigits(hours);
+            minutesSpan.textContent = formatTwoDigits(minutes);
+            secondsSpan.textContent = formatTwoDigits(seconds);
+        }
+
+        /**
+         * Starts the countdown timer.
+         */
+        function startCountdown() {
+            // Clear any existing interval to prevent multiple timers running
+            clearInterval(countdownInterval);
+            messageDiv.textContent = ''; // Clear any previous messages
+
+            const targetDateString = targetDateTimeInput.value;
+            if (!targetDateString) {
+                messageDiv.textContent = 'Please set a target date and time.';
+                // Reset display if no date is set
+                updateCountdownDisplay(0);
+                return;
+            }
+
+            const targetDate = new Date(targetDateString).getTime();
+
+            // Check if the target date is valid
+            if (isNaN(targetDate)) {
+                messageDiv.textContent = 'Invalid date and time. Please use the picker.';
+                updateCountdownDisplay(0);
+                return;
+            }
+
+            // Update the countdown every 1 second
+            countdownInterval = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = targetDate - now;
+
+                if (distance < 0) {
+                    // Countdown has finished
+                    clearInterval(countdownInterval);
+                    updateCountdownDisplay(0); // Set all to 00
+                    messageDiv.textContent = 'Countdown Finished!';
+                } else {
+                    // Update the display with remaining time
+                    updateCountdownDisplay(distance);
+                }
+            }, 1000); // Update every 1000 milliseconds (1 second)
+        }
+
+        // Add event listener to the start button
+        startButton.addEventListener('click', startCountdown);
+
+        // Optional: Initialize display to 00s when page loads
+        updateCountdownDisplay(0);
+    </script>
+</body>
+</html>
