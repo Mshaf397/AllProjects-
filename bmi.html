@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMI Calculator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the Inter font and overall body */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e2e8f0; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        /* Styling for the main calculator container */
+        .bmi-container {
+            background-color: #ffffff; /* White background for the card */
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            max-width: 450px; /* Limit max width for better readability */
+            width: 100%; /* Responsive width */
+            text-align: center;
+        }
+        /* Styling for input groups */
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        .input-group input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1.1em;
+            box-sizing: border-box;
+        }
+        /* Styling for unit selectors */
+        .unit-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .unit-selector button {
+            flex: 1;
+            padding: 8px 15px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            background-color: #f8fafc;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        .unit-selector button.active {
+            background-color: #4299e1; /* Blue for active unit */
+            color: white;
+            border-color: #4299e1;
+            box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);
+        }
+        .unit-selector button:hover:not(.active) {
+            background-color: #e2e8f0;
+        }
+
+        /* Styling for the calculate button */
+        .calculate-button {
+            background-color: #4CAF50; /* Green button */
+            color: white;
+            padding: 14px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-weight: 600;
+        }
+        .calculate-button:hover {
+            background-color: #5cb85c; /* Darker green on hover */
+            transform: translateY(-2px);
+        }
+        .calculate-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Styling for results display */
+        .results {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: left;
+        }
+        .results p {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #555;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .results p span {
+            font-weight: 700;
+            color: #333;
+            font-size: 1.3em;
+        }
+        #bmiValue {
+            color: #2b6cb0; /* Blue for BMI value */
+        }
+        #bmiCategory {
+            color: #d69e2e; /* Orange for category */
+        }
+
+        /* Error message styling */
+        .error-message {
+            color: #d9534f; /* Red for errors */
+            margin-top: -10px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            text-align: left;
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body>
+    <div class="bmi-container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">BMI Calculator</h1>
+
+        <div class="input-group">
+            <label for="weight">Weight</label>
+            <input type="number" id="weight" placeholder="e.g., 70" step="0.1">
+            <div class="unit-selector" id="weightUnits">
+                <button class="active" data-unit="kg">kg</button>
+                <button data-unit="lbs">lbs</button>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="height">Height</label>
+            <input type="number" id="height" placeholder="e.g., 175" step="0.1">
+            <div class="unit-selector" id="heightUnits">
+                <button class="active" data-unit="cm">cm</button>
+                <button data-unit="inches">inches</button>
+            </div>
+        </div>
+
+        <p id="errorMessage" class="error-message">Please enter valid positive numbers for weight and height.</p>
+
+        <button class="calculate-button" id="calculateBtn">Calculate BMI</button>
+
+        <div class="results">
+            <p>Your BMI: <span id="bmiValue">0.00</span></p>
+            <p>Category: <span id="bmiCategory">N/A</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Get references to HTML elements
+        const weightInput = document.getElementById('weight');
+        const heightInput = document.getElementById('height');
+        const weightUnitsDiv = document.getElementById('weightUnits');
+        const heightUnitsDiv = document.getElementById('heightUnits');
+        const calculateButton = document.getElementById('calculateBtn');
+        const bmiValueSpan = document.getElementById('bmiValue');
+        const bmiCategorySpan = document.getElementById('bmiCategory');
+        const errorMessageDiv = document.getElementById('errorMessage');
+
+        // State variables for units
+        let currentWeightUnit = 'kg';
+        let currentHeightUnit = 'cm';
+
+        /**
+         * Updates the active unit button in a unit selector group.
+         * @param {HTMLElement} unitGroupDiv - The div containing the unit buttons.
+         * @param {string} activeUnit - The unit to set as active.
+         */
+        function updateActiveUnitButton(unitGroupDiv, activeUnit) {
+            Array.from(unitGroupDiv.children).forEach(button => {
+                if (button.dataset.unit === activeUnit) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+        }
+
+        // Event listeners for unit selection
+        weightUnitsDiv.addEventListener('click', (event) => {
+            if (event.target.tagName === 'BUTTON') {
+                currentWeightUnit = event.target.dataset.unit;
+                updateActiveUnitButton(weightUnitsDiv, currentWeightUnit);
+            }
+        });
+
+        heightUnitsDiv.addEventListener('click', (event) => {
+            if (event.target.tagName === 'BUTTON') {
+                currentHeightUnit = event.target.dataset.unit;
+                updateActiveUnitButton(heightUnitsDiv, currentHeightUnit);
+            }
+        });
+
+        /**
+         * Calculates the BMI and determines its category.
+         */
+        function calculateBMI() {
+            // Hide any previous error messages
+            errorMessageDiv.style.display = 'none';
+
+            let weight = parseFloat(weightInput.value);
+            let height = parseFloat(heightInput.value);
+
+            // Validate inputs
+            if (isNaN(weight) || isNaN(height) || weight <= 0 || height <= 0) {
+                errorMessageDiv.style.display = 'block';
+                bmiValueSpan.textContent = '0.00';
+                bmiCategorySpan.textContent = 'N/A';
+                return;
+            }
+
+            // Convert weight to kilograms if in pounds
+            if (currentWeightUnit === 'lbs') {
+                weight *= 0.453592; // 1 lb = 0.453592 kg
+            }
+
+            // Convert height to meters if in centimeters or inches
+            if (currentHeightUnit === 'cm') {
+                height /= 100; // 1 m = 100 cm
+            } else if (currentHeightUnit === 'inches') {
+                height *= 0.0254; // 1 inch = 0.0254 m
+            }
+
+            // Calculate BMI: weight (kg) / (height (m) * height (m))
+            const bmi = weight / (height * height);
+
+            // Determine BMI category
+            let category = '';
+            if (bmi < 18.5) {
+                category = 'Underweight';
+            } else if (bmi >= 18.5 && bmi < 24.9) {
+                category = 'Normal weight';
+            } else if (bmi >= 25 && bmi < 29.9) {
+                category = 'Overweight';
+            } else {
+                category = 'Obesity';
+            }
+
+            // Display results, formatted to two decimal places
+            bmiValueSpan.textContent = bmi.toFixed(2);
+            bmiCategorySpan.textContent = category;
+
+            // Update category color based on result (optional visual feedback)
+            if (category === 'Normal weight') {
+                bmiCategorySpan.style.color = '#22c55e'; // Green
+            } else if (category === 'Underweight' || category === 'Overweight') {
+                bmiCategorySpan.style.color = '#f59e0b'; // Yellow/Orange
+            } else { // Obesity
+                bmiCategorySpan.style.color = '#ef4444'; // Red
+            }
+        }
+
+        // Add event listener to the calculate button
+        calculateButton.addEventListener('click', calculateBMI);
+
+        // Optional: Allow calculation on 'Enter' key press in input fields
+        weightInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                calculateBMI();
+            }
+        });
+        heightInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                calculateBMI();
+            }
+        });
+
+        // Initialize display on load
+        calculateBMI();
+    </script>
+</body>
+</html>
