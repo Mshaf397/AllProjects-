@@ -1,98 +1,136 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>Clock & Countdown Timer</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #0f0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      gap: 40px;
-    }
-    .clock, .countdown {
-      font-size: 2em;
-      background: #222;
-      padding: 20px 40px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px #0f0;
-    }
-    span.label {
-      color: #aaa;
-      font-size: 0.6em;
-      margin-left: 5px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Clock</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the Inter font and overall body */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a2dfc; /* Dark background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        /* Styling for the clock container */
+        .clock-container {
+            background-color: #5d3f48; /* Slightly lighter dark background for the clock */
+            padding: 40px 60px;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            max-width: 600px; /* Limit max width */
+            width: 100%; /* Responsive width */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        /* Styling for the time display */
+        #digitalClock {
+            font-family: 'SF Mono', 'Roboto Mono', monospace; /* Monospaced font for consistent digit width */
+            font-size: 5em; /* Large font size for visibility */
+            color: #18fb78; /* Greenish color for the time */
+            text-shadow: 0 0 15px rgba(72, 187, 120, 0.7); /* Subtle glow effect */
+            margin-bottom: 15px;
+            white-space: nowrap; /* Prevent time from wrapping */
+            overflow: hidden; /* Hide overflow if it happens */
+            text-overflow: ellipsis; /* Add ellipsis if text overflows */
+        }
+        /* Styling for the date display */
+        #digitalDate {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.5em;
+            color: #cbd5e0; /* Light gray for the date */
+            margin-top: 10px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .clock-container {
+                padding: 30px 40px;
+            }
+            #digitalClock {
+                font-size: 3.5em; /* Adjust font size for smaller screens */
+            }
+            #digitalDate {
+                font-size: 1.2em;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .clock-container {
+                padding: 20px 30px;
+            }
+            #digitalClock {
+                font-size: 2.5em; /* Further adjust for very small screens */
+            }
+            #digitalDate {
+                font-size: 1em;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="clock" id="clock">Loading clock...</div>
-   <div class="picker">
-    <label for="endTime">Select countdown end time:</label>
-    <input type="datetime-local" id="endTime">
-  </div>
-  <div class="countdown" id="countdown">Loading countdown...</div>
+    <div class="clock-container">
+        <!-- Display for the digital clock -->
+        <div id="digitalClock" class="font-extrabold"></div>
+        <!-- Display for the current date -->
+        <div id="digitalDate" class="font-semibold"></div>
+    </div>
 
-  <script>
-    // --- Digital Clock ---
-    function updateClock() {
-      const now = new Date();
-      const days = now.toLocaleDateString(undefined, { weekday: 'long' });
-      const hours = now.getHours().toString().padStart(2, '0');
-      const minutes = now.getMinutes().toString().padStart(2, '0');
-      const seconds = now.getSeconds().toString().padStart(2, '0');
+    <script>
+        // Get references to the display elements
+        const digitalClockDisplay = document.getElementById('digitalClock');
+        const digitalDateDisplay = document.getElementById('digitalDate');
 
-      document.getElementById('clock').innerHTML =
-        `${days} ${hours}<span class="label">h</span> ` +
-        `${minutes}<span class="label">m</span> ` +
-        `${seconds}<span class="label">s</span>`;
-    }
+        /**
+         * Formats a number to always have two digits (e.g., 5 becomes "05").
+         * @param {number} num - The number to format.
+         * @returns {string} The formatted two-digit string.
+         */
+        function formatTwoDigits(num) {
+            return num < 10 ? '0' + num : num;
+        }
 
-    setInterval(updateClock, 1000);
-    updateClock();
+        /**
+         * Updates the digital clock and date display.
+         */
+        function updateClock() {
+            const now = new Date(); // Get the current date and time
 
-    // --- Countdown Timer ---
-    let targetDate = null;
+            // --- Time Formatting ---
+            let hours = now.getHours();
+            const minutes = formatTwoDigits(now.getMinutes());
+            const seconds = formatTwoDigits(now.getSeconds());
+            const ampm = hours >= 12 ? 'PM' : 'AM';
 
-    function updateCountdown() {
-      if (!targetDate) {
-        document.getElementById('countdown').innerHTML = "Select an end time above.";
-        return;
-      }
+            // Convert to 12-hour format
+            hours = hours % 12;
+            hours = hours ? hours : 12; // The hour '0' should be '12'
+            const formattedHours = formatTwoDigits(hours);
 
-      const now = new Date();
-      const diff = targetDate - now;
+            // Set the time text content
+            digitalClockDisplay.textContent = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
 
-      if (diff <= 0) {
-        document.getElementById('countdown').innerHTML = "Time's up!";
-        return;
-      }
+            // --- Date Formatting ---
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const formattedDate = now.toLocaleDateString('en-US', options); // Format date based on locale
+            digitalDateDisplay.textContent = formattedDate;
+        }
 
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / (1000 * 60)) % 60);
-      const seconds = Math.floor((diff / 1000) % 60);
+        // Call updateClock once immediately to show the time when the page loads
+        updateClock();
 
-      document.getElementById('countdown').innerHTML =
-        `${days}<span class="label">d</span> ` +
-        `${hours.toString().padStart(2, '0')}<span class="label">h</span> ` +
-        `${minutes.toString().padStart(2, '0')}<span class="label">m</span> ` +
-        `${seconds.toString().padStart(2, '0')}<span class="label">s</span>`;
-    }
-
-    setInterval(updateCountdown, 1000);
-    updateCountdown();
-
-    // --- Handle User Time Selection ---
-    document.getElementById('endTime').addEventListener('change', (e) => {
-      const selected = e.target.value;
-      if (selected) {
-        targetDate = new Date(selected);
-        updateCountdown();
-      }
-    });
-  </script>
+        // Update the clock every second (1000 milliseconds)
+        setInterval(updateClock, 1000);
+    </script>
 </body>
 </html>
