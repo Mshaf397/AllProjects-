@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Probability Calculator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+    }
+    .calculator {
+      background: white;
+      padding: 20px;
+      max-width: 400px;
+      margin: auto;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #ccc;
+    }
+    label, select, input {
+      display: block;
+      margin: 10px 0;
+      width: 100%;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 15px;
+      background: #007bff;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Probability Calculator</h1>
+  <div class="calculator">
+    <label for="type">Type:</label>
+    <select id="type">
+      <option value="combination">Combination</option>
+      <option value="permutation">Permutation</option>
+    </select>
+
+    <label for="n">Total Elements (n):</label>
+    <input type="number" id="n" min="0">
+
+    <label for="r">Chosen Elements (r):</label>
+    <input type="number" id="r" min="0">
+
+    <label for="favorable">Favorable Outcomes:</label>
+    <input type="number" id="favorable" min="0">
+
+    <button onclick="calculate()">Calculate Probability</button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function factorial(num) {
+      if (num < 0) return NaN;
+      let result = 1;
+      for (let i = 2; i <= num; i++) {
+        result *= i;
+      }
+      return result;
+    }
+
+    function combination(n, r) {
+      return factorial(n) / (factorial(r) * factorial(n - r));
+    }
+
+    function permutation(n, r) {
+      return factorial(n) / factorial(n - r);
+    }
+
+    function calculate() {
+      const type = document.getElementById('type').value;
+      const n = parseInt(document.getElementById('n').value);
+      const r = parseInt(document.getElementById('r').value);
+      const favorable = parseInt(document.getElementById('favorable').value);
+      let totalOutcomes;
+
+      if (isNaN(n) || isNaN(r) || isNaN(favorable) || r > n) {
+        document.getElementById('result').innerText = "Please enter valid numbers.";
+        return;
+      }
+
+      if (type === 'combination') {
+        totalOutcomes = combination(n, r);
+      } else {
+        totalOutcomes = permutation(n, r);
+      }
+
+      const probability = favorable / totalOutcomes;
+      document.getElementById('result').innerText =
+        `Total ${type}s: ${totalOutcomes.toFixed(2)}\nProbability: ${probability.toFixed(4)}`;
+    }
+  </script>
+</body>
+</html>
