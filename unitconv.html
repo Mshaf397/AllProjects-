@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Unit Converter</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the Inter font and overall body */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        /* Styling for the main converter container */
+        .converter-container {
+            background-color: #ffffff; /* White background for the card */
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            max-width: 600px; /* Limit max width */
+            width: 100%; /* Responsive width */
+            text-align: center;
+        }
+        /* Styling for input groups */
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.05em;
+        }
+        .input-group input[type="number"],
+        .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 1.1em;
+            box-sizing: border-box;
+            background-color: #f8fafc;
+            color: #333;
+            appearance: none; /* Remove default select arrow */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%234a5568%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.293%207.293a1%201%200%20011.414%200L10%2010.586l3.293-3.293a1%201%200%20111.414%201.414l-4%204a1%201%200%2001-1.414%200l-4-4a1%201%200%20010-1.414z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 0.7em top 50%;
+            background-size: 0.8em auto;
+        }
+        .input-group select:focus,
+        .input-group input[type="number"]:focus {
+            outline: none;
+            border-color: #4299e1; /* Blue border on focus */
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.3);
+        }
+
+        /* Styling for the result display */
+        .result-display {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e0f2fe; /* Light blue background for result */
+            border-radius: 10px;
+            border: 1px solid #bfdbfe;
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #2b6cb0; /* Darker blue text */
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-wrap: break-word; /* Allow long results to wrap */
+            overflow-wrap: break-word;
+            text-align: center;
+        }
+        /* Styling for error message */
+        .error-message {
+            color: #ef4444; /* Red for errors */
+            margin-top: 15px;
+            font-size: 0.95em;
+            font-weight: 500;
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body>
+    <div class="converter-container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">Advanced Unit Converter</h1>
+
+        <div class="input-group">
+            <label for="categorySelect">Select Category:</label>
+            <select id="categorySelect"></select>
+        </div>
+
+        <div class="input-group">
+            <label for="inputValue">Value:</label>
+            <input type="number" id="inputValue" placeholder="Enter value">
+        </div>
+
+        <div class="input-group flex gap-4">
+            <div class="flex-1">
+                <label for="fromUnitSelect">From Unit:</label>
+                <select id="fromUnitSelect"></select>
+            </div>
+            <div class="flex-1">
+                <label for="toUnitSelect">To Unit:</label>
+                <select id="toUnitSelect"></select>
+            </div>
+        </div>
+
+        <div class="result-display" id="resultDisplay">
+            Enter values to convert
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+    </div>
+
+    <script>
+        // Data structure for units and their conversion factors.
+        // Each category has a base unit (conversion factor 1) and other units
+        // defined by their factor relative to the base unit.
+        // For temperature, conversion is more complex, so specific functions are used.
+        const unitsData = {
+            "Length": {
+                baseUnit: "meter",
+                units: {
+                    "meter": { name: "Meter", factor: 1 },
+                    "kilometer": { name: "Kilometer", factor: 1000 },
+                    "centimeter": { name: "Centimeter", factor: 0.01 },
+                    "millimeter": { name: "Millimeter", factor: 0.001 },
+                    "micrometer": { name: "Micrometer", factor: 0.000001 },
+                    "nanometer": { name: "Nanometer", factor: 0.000000001 },
+                    "mile": { name: "Mile", factor: 1609.34 },
+                    "yard": { name: "Yard", factor: 0.9144 },
+                    "foot": { name: "Foot", factor: 0.3048 },
+                    "inch": { name: "Inch", factor: 0.0254 },
+                    "nautical mile": { name: "Nautical Mile", factor: 1852 }
+                }
+            },
+            "Mass": {
+                baseUnit: "kilogram",
+                units: {
+                    "kilogram": { name: "Kilogram", factor: 1 },
+                    "gram": { name: "Gram", factor: 0.001 },
+                    "milligram": { name: "Milligram", factor: 0.000001 },
+                    "microgram": { name: "Microgram", factor: 0.000000001 },
+                    "metric ton": { name: "Metric Ton", factor: 1000 },
+                    "pound": { name: "Pound", factor: 0.453592 },
+                    "ounce": { name: "Ounce", factor: 0.0283495 }
+                }
+            },
+            "Volume": {
+                baseUnit: "liter",
+                units: {
+                    "liter": { name: "Liter", factor: 1 },
+                    "milliliter": { name: "Milliliter", factor: 0.001 },
+                    "cubic meter": { name: "Cubic Meter", factor: 1000 },
+                    "cubic centimeter": { name: "Cubic Centimeter", factor: 0.001 },
+                    "gallon (US)": { name: "Gallon (US)", factor: 3.78541 },
+                    "quart (US)": { name: "Quart (US)", factor: 0.946353 },
+                    "pint (US)": { name: "Pint (US)", factor: 0.473176 },
+                    "fluid ounce (US)": { name: "Fluid Ounce (US)", factor: 0.0295735 }
+                }
+            },
+            "Temperature": {
+                baseUnit: "celsius", // Celsius is chosen as the base for internal calculations
+                units: {
+                    "celsius": { name: "Celsius" },
+                    "fahrenheit": { name: "Fahrenheit" },
+                    "kelvin": { name: "Kelvin" }
+                },
+                // Special functions for temperature conversions
+                toBase: (value, unit) => {
+                    if (unit === "fahrenheit") return (value - 32) * 5/9;
+                    if (unit === "kelvin") return value - 273.15;
+                    return value; // Already Celsius
+                },
+                fromBase: (value, unit) => {
+                    if (unit === "fahrenheit") return (value * 9/5) + 32;
+                    if (unit === "kelvin") return value + 273.15;
+                    return value; // Already Celsius
+                }
+            },
+            "Time": {
+                baseUnit: "second",
+                units: {
+                    "second": { name: "Second", factor: 1 },
+                    "millisecond": { name: "Millisecond", factor: 0.001 },
+                    "minute": { name: "Minute", factor: 60 },
+                    "hour": { name: "Hour", factor: 3600 },
+                    "day": { name: "Day", factor: 86400 },
+                    "week": { name: "Week", factor: 604800 },
+                    "year": { name: "Year", factor: 31536000 } // Approximate year
+                }
+            }
+            // Add more categories and units here!
+            // Example for a new category (e.g., Area):
+            /*
+            "Area": {
+                baseUnit: "square meter",
+                units: {
+                    "square meter": { name: "Square Meter", factor: 1 },
+                    "square kilometer": { name: "Square Kilometer", factor: 1000000 },
+                    "square mile": { name: "Square Mile", factor: 2589988.11 }
+                }
+            }
+            */
+        };
+
+        // Get references to HTML elements
+        const categorySelect = document.getElementById('categorySelect');
+        const inputValueInput = document.getElementById('inputValue');
+        const fromUnitSelect = document.getElementById('fromUnitSelect');
+        const toUnitSelect = document.getElementById('toUnitSelect');
+        const resultDisplay = document.getElementById('resultDisplay');
+        const errorMessageDiv = document.getElementById('errorMessage');
+
+        let currentCategory = '';
+
+        /**
+         * Populates a select dropdown with options from an array.
+         * @param {HTMLSelectElement} selectElement - The select element to populate.
+         * @param {Array<string>} options - An array of option values (keys from unitsData or unit names).
+         * @param {string} [contextCategory] - Optional: The current category if populating units.
+         */
+        function populateSelect(selectElement, options, contextCategory = null) {
+            selectElement.innerHTML = ''; // Clear existing options
+            options.forEach(optionValue => {
+                const option = document.createElement('option');
+                option.value = optionValue;
+                if (contextCategory && unitsData[contextCategory] && unitsData[contextCategory].units[optionValue]) {
+                    // This path is for populating units (e.g., "Meter", "Kilometer")
+                    option.textContent = unitsData[contextCategory].units[optionValue].name;
+                } else {
+                    // This path is for populating categories (e.g., "Length", "Mass")
+                    option.textContent = optionValue;
+                }
+                selectElement.appendChild(option);
+            });
+        }
+
+        /**
+         * Populates the category dropdown.
+         */
+        function populateCategories() {
+            const categories = Object.keys(unitsData);
+            populateSelect(categorySelect, categories); // No contextCategory needed for categories
+            // Set initial category and populate unit dropdowns
+            currentCategory = categories[0];
+            populateUnits();
+        }
+
+        /**
+         * Populates the "From Unit" and "To Unit" dropdowns based on the selected category.
+         */
+        function populateUnits() {
+            const selectedCategory = categorySelect.value;
+            currentCategory = selectedCategory;
+            const units = Object.keys(unitsData[selectedCategory].units);
+            populateSelect(fromUnitSelect, units, currentCategory); // Pass currentCategory for units
+            populateSelect(toUnitSelect, units, currentCategory);   // Pass currentCategory for units
+            // Set default selections (e.g., first unit in list)
+            fromUnitSelect.value = units[0];
+            toUnitSelect.value = units[1] || units[0]; // Select second unit if available, else first
+            convertUnits(); // Perform initial conversion
+        }
+
+        /**
+         * Displays an error message.
+         * @param {string} message - The error message to display.
+         */
+        function showErrorMessage(message) {
+            errorMessageDiv.textContent = message;
+            errorMessageDiv.style.display = 'block';
+            resultDisplay.textContent = 'Error';
+            resultDisplay.style.color = '#ef4444'; /* Red for error text */
+        }
+
+        /**
+         * Clears any displayed error messages.
+         */
+        function clearErrorMessage() {
+            errorMessageDiv.textContent = '';
+            errorMessageDiv.style.display = 'none';
+            resultDisplay.style.color = '#2b6cb0'; /* Reset to normal result color */
+        }
+
+        /**
+         * Performs the unit conversion.
+         */
+        function convertUnits() {
+            clearErrorMessage();
+
+            const inputValue = parseFloat(inputValueInput.value);
+            const fromUnit = fromUnitSelect.value;
+            const toUnit = toUnitSelect.value;
+            const category = unitsData[currentCategory];
+
+            if (isNaN(inputValue)) {
+                showErrorMessage('Please enter a valid number.');
+                return;
+            }
+
+            if (fromUnit === toUnit) {
+                resultDisplay.textContent = `${inputValue} ${category.units[toUnit].name}`;
+                return;
+            }
+
+            let convertedValue;
+
+            if (currentCategory === "Temperature") {
+                // Temperature requires special handling
+                const valueInBase = category.toBase(inputValue, fromUnit);
+                convertedValue = category.fromBase(valueInBase, toUnit);
+            } else {
+                // For other categories, use direct factor conversion
+                const fromFactor = category.units[fromUnit].factor;
+                const toFactor = category.units[toUnit].factor;
+
+                // Convert input value to the category's base unit
+                const valueInBaseUnit = inputValue * fromFactor;
+                // Convert from base unit to the target unit
+                convertedValue = valueInBaseUnit / toFactor;
+            }
+
+            // Display the result, formatted to a reasonable number of decimal places
+            // Use toPrecision for better handling of very small/large numbers
+            const formattedResult = convertedValue.toPrecision(8);
+            resultDisplay.textContent = `${formattedResult} ${category.units[toUnit].name}`;
+        }
+
+        // Add event listeners
+        categorySelect.addEventListener('change', populateUnits);
+        inputValueInput.addEventListener('input', convertUnits);
+        fromUnitSelect.addEventListener('change', convertUnits);
+        toUnitSelect.addEventListener('change', convertUnits);
+
+        // Initial setup when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            populateCategories();
+        });
+    </script>
+</body>
+</html>
