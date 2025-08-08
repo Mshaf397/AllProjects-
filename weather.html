@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dynamic Weather App</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- We need the timezone library to handle different timezones -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.33/moment-timezone-with-data.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
@@ -192,6 +194,7 @@
 
                 const currentWeather = data.current;
                 const hourlyData = data.hourly;
+                const timezone = data.timezone;
                 
                 // Find the closest hourly data point to the current time
                 const currentTime = moment.utc(currentWeather.time);
@@ -202,7 +205,8 @@
                 } : null;
 
                 document.getElementById('current-city').textContent = `${city}, ${country}`;
-                document.getElementById('current-date').textContent = moment(currentWeather.time).format('MMMM Do');
+                // Use the location's timezone for the current date
+                document.getElementById('current-date').textContent = moment.tz(currentWeather.time, timezone).format('MMMM Do');
                 document.getElementById('current-temp').textContent = Math.round(currentWeather.temperature_2m);
                 document.getElementById('feels-like').textContent = `${Math.round(currentWeather.apparent_temperature)}°C`;
                 document.getElementById('humidity').textContent = `${currentWeather.relative_humidity_2m}%`;
@@ -222,15 +226,15 @@
             }
 
             // Displays the 72-hour forecast starting from the next full hour
-            function displayHourlyForecast(hourlyData) {
+            function displayHourlyForecast(hourlyData, timezone) {
                 const hourlyForecastContainer = document.getElementById('hourly-forecast');
                 hourlyForecastContainer.innerHTML = '';
                 
-                // Get the current local moment
-                const currentMoment = moment();
+                // Get the current moment in the selected location's timezone
+                const currentMoment = moment.tz(timezone);
 
                 // Find the index of the first hour that is strictly *after* the current moment
-                let startIndex = hourlyData.time.findIndex(time => moment(time).isAfter(currentMoment));
+                let startIndex = hourlyData.time.findIndex(time => moment(time).tz(timezone).isAfter(currentMoment));
                 
                 // Fallback in case no future hours are found, though this is unlikely with a 72-hour forecast
                 if (startIndex === -1) {
@@ -245,7 +249,8 @@
                     const cloudCover = hourlyData.cloud_cover[i];
                     const uvIndex = hourlyData.uv_index[i];
 
-                    const forecastTime = moment.utc(time);
+                    // Use the location's timezone to format the time
+                    const forecastTime = moment.tz(time, timezone);
                     const card = document.createElement('div');
                     card.className = 'flex flex-col items-center bg-gray-50 rounded-xl p-4 shadow-sm w-32 flex-shrink-0';
                     card.innerHTML = `
@@ -260,7 +265,7 @@
             }
 
             // Displays the 16-day daily forecast
-            function displayDailyForecast(dailyData) {
+            function displayDailyForecast(dailyData, timezone) {
                 const dailyForecastContainer = document.getElementById('daily-forecast');
                 dailyForecastContainer.innerHTML = '';
 
@@ -272,13 +277,13 @@
                     const weatherCode = dailyData.weather_code[i];
                     const uvIndexMax = dailyData.uv_index_max[i];
                     // Retrieve sunrise and sunset times
-                    const sunriseTime = moment(dailyData.sunrise[i]).format('h:mm A');
-                    const sunsetTime = moment(dailyData.sunset[i]).format('h:mm A');
+                    const sunriseTime = moment.tz(dailyData.sunrise[i], timezone).format('h:mm A');
+                    const sunsetTime = moment.tz(dailyData.sunset[i], timezone).format('h:mm A');
 
                     const card = document.createElement('div');
                     card.className = 'flex items-center justify-between bg-gray-50 rounded-xl p-4 shadow-sm';
                     card.innerHTML = `
-                        <p class="font-medium text-gray-700 w-24">${moment(time).format('ddd, MMM D')}</p>
+                        <p class="font-medium text-gray-700 w-24">${moment.tz(time, timezone).format('ddd, MMM D')}</p>
                         <img src="${getWeatherIcon(weatherCode)}" alt="weather icon" class="w-10 h-10">
                         <div class="flex flex-col items-center w-24 text-sm text-gray-500">
                           <p>UV Max: ${uvIndexMax.toFixed(1)}</p>
@@ -406,9 +411,10 @@
                 const weatherData = await fetchWeather(latitude, longitude);
 
                 if (weatherData) {
+                    const timezone = weatherData.timezone;
                     displayCurrentWeather(weatherData, city, country);
-                    displayHourlyForecast(weatherData.hourly);
-                    displayDailyForecast(weatherData.daily);
+                    displayHourlyForecast(weatherData.hourly, timezone);
+                    displayDailyForecast(weatherData.daily, timezone);
                     forecastContainer.classList.remove('hidden');
                 } else {
                     errorMessage.textContent = 'Failed to fetch weather data. Please try again later.';
