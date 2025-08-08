@@ -221,14 +221,24 @@
                 currentWeatherCard.classList.remove('hidden');
             }
 
-            // Displays the 72-hour forecast
+            // Displays the 72-hour forecast starting from the next full hour
             function displayHourlyForecast(hourlyData) {
                 const hourlyForecastContainer = document.getElementById('hourly-forecast');
                 hourlyForecastContainer.innerHTML = '';
-                const currentHour = moment().startOf('hour');
+                
+                // Get the current local moment
+                const currentMoment = moment();
 
-                // Loop for 72 hours
-                for (let i = 0; i < 72; i++) {
+                // Find the index of the first hour that is strictly *after* the current moment
+                let startIndex = hourlyData.time.findIndex(time => moment(time).isAfter(currentMoment));
+                
+                // Fallback in case no future hours are found, though this is unlikely with a 72-hour forecast
+                if (startIndex === -1) {
+                    startIndex = hourlyData.time.length - 1;
+                }
+
+                // Loop for 72 hours starting from the found index
+                for (let i = startIndex; i < startIndex + 72 && i < hourlyData.time.length; i++) {
                     const time = hourlyData.time[i];
                     const temp = Math.round(hourlyData.temperature_2m[i]);
                     const weatherCode = hourlyData.weather_code[i];
@@ -236,18 +246,16 @@
                     const uvIndex = hourlyData.uv_index[i];
 
                     const forecastTime = moment.utc(time);
-                    if (forecastTime.isSameOrAfter(currentHour)) {
-                        const card = document.createElement('div');
-                        card.className = 'flex flex-col items-center bg-gray-50 rounded-xl p-4 shadow-sm w-32 flex-shrink-0';
-                        card.innerHTML = `
-                            <p class="font-medium text-gray-700">${forecastTime.format('ha')}</p>
-                            <img src="${getWeatherIcon(weatherCode)}" alt="weather icon" class="w-10 h-10 my-2">
-                            <p class="text-xl font-bold">${temp}°C</p>
-                            <p class="text-xs text-gray-500 mt-1">Clouds: ${cloudCover}%</p>
-                            <p class="text-xs text-gray-500">UV: ${uvIndex.toFixed(1)}</p>
-                        `;
-                        hourlyForecastContainer.appendChild(card);
-                    }
+                    const card = document.createElement('div');
+                    card.className = 'flex flex-col items-center bg-gray-50 rounded-xl p-4 shadow-sm w-32 flex-shrink-0';
+                    card.innerHTML = `
+                        <p class="font-medium text-gray-700">${forecastTime.format('ha')}</p>
+                        <img src="${getWeatherIcon(weatherCode)}" alt="weather icon" class="w-10 h-10 my-2">
+                        <p class="text-xl font-bold">${temp}°C</p>
+                        <p class="text-xs text-gray-500 mt-1">Clouds: ${cloudCover}%</p>
+                        <p class="text-xs text-gray-500">UV: ${uvIndex.toFixed(1)}</p>
+                    `;
+                    hourlyForecastContainer.appendChild(card);
                 }
             }
 
@@ -347,7 +355,7 @@
                     85: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
                     86: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
                     95: 'https://placehold.co/40x40/5c6ac4/ffffff?text=⛈️',
-                    96: 'httpshold.co/40x40/5c6ac4/ffffff?text=⛈️',
+                    96: 'https://placehold.co/40x40/5c6ac4/ffffff?text=⛈️',
                     99: 'https://placehold.co/40x40/5c6ac4/ffffff?text=⛈️'
                 };
                 return icons[code] || 'https://placehold.co/40x40/5c6ac4/ffffff?text=❓';
