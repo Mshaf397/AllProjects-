@@ -117,9 +117,8 @@
 
             // Fetches weather data from the Open-Meteo API
             async function fetchWeather(latitude, longitude) {
-                // The daily forecast is extended to 16 days, which is the maximum supported.
-                // The hourly forecast is extended to 72 hours.
-                const url = `${API_BASE_URL}?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,relative_humidity_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max&timezone=auto&forecast_days=16`;
+                // Now also includes sunrise and sunset times
+                const url = `${API_BASE_URL}?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,relative_humidity_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,sunrise,sunset&timezone=auto&forecast_days=16`;
                 
                 try {
                     const response = await fetch(url);
@@ -237,13 +236,20 @@
                     const minTemp = Math.round(dailyData.temperature_2m_min[i]);
                     const weatherCode = dailyData.weather_code[i];
                     const uvIndexMax = dailyData.uv_index_max[i];
+                    // Retrieve sunrise and sunset times
+                    const sunriseTime = moment(dailyData.sunrise[i]).format('h:mm A');
+                    const sunsetTime = moment(dailyData.sunset[i]).format('h:mm A');
 
                     const card = document.createElement('div');
                     card.className = 'flex items-center justify-between bg-gray-50 rounded-xl p-4 shadow-sm';
                     card.innerHTML = `
                         <p class="font-medium text-gray-700 w-24">${moment(time).format('ddd, MMM D')}</p>
                         <img src="${getWeatherIcon(weatherCode)}" alt="weather icon" class="w-10 h-10">
-                        <p class="text-gray-500 w-24 text-center text-sm">UV Max: ${uvIndexMax.toFixed(1)}</p>
+                        <div class="flex flex-col items-center w-24 text-sm text-gray-500">
+                          <p>UV Max: ${uvIndexMax.toFixed(1)}</p>
+                          <p>☀️ ${sunriseTime}</p>
+                          <p>🌙 ${sunsetTime}</p>
+                        </div>
                         <p class="font-bold text-gray-800 text-right w-24">${maxTemp}°C / <span class="text-gray-500">${minTemp}°C</span></p>
                     `;
                     dailyForecastContainer.appendChild(card);
