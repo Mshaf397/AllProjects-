@@ -3,346 +3,351 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Weather App</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Dynamic Weather App</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <style>
-        /* Custom styles for the Inter font and overall body */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #1a202c; /* Dark blue-gray background */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
+            background-color: #f3f4f6;
+            color: #374151;
         }
-        /* Styling for the main weather container */
-        .weather-container {
-            background-color: #2d3748; /* Slightly lighter dark background for the card */
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
-            max-width: 600px;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #e2e8f0; /* Light text color */
-            text-align: center;
+        .container {
+            max-width: 1280px;
         }
-        /* Styling for current weather section */
-        .current-weather {
-            margin-bottom: 30px;
-        }
-        .current-weather h2 {
-            font-size: 2.5em;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: #63b3ed; /* Blue for city name */
-        }
-        .current-weather p {
-            font-size: 1.2em;
-            margin-bottom: 5px;
-        }
-        .temperature {
-            font-size: 4em;
-            font-weight: 800;
-            color: #48bb78; /* Green for temperature */
-            text-shadow: 0 0 10px rgba(72, 187, 120, 0.5);
-        }
-        .description {
-            font-size: 1.5em;
-            font-style: italic;
-            color: #cbd5e0;
-        }
-
-        /* Styling for sunrise/sunset/elevation section */
-        .astronomy-data {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 20px;
-            width: 100%;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #4a5568; /* Separator line */
-        }
-        .astronomy-item {
-            background-color: #334155; /* Darker background for items */
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-        }
-        .astronomy-item .label {
-            font-size: 0.9em;
-            color: #a0aec0; /* Light gray for labels */
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .astronomy-item .value {
-            font-size: 1.8em;
-            font-weight: 700;
-            color: #ecc94b; /* Yellow for values */
-        }
-
-        /* Styling for loading and error messages */
-        .message {
-            font-size: 1.2em;
-            color: #f6e05e; /* Yellow for messages */
-            margin-top: 20px;
-        }
-        .error {
-            color: #ef4444; /* Red for errors */
-        }
-
-        /* Geolocation button styling */
-        .get-location-button {
-            background-color: #4299e1; /* Blue button */
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-            margin-top: 20px;
+        .card {
+            background-color: #ffffff;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            font-weight: 600;
         }
-        .get-location-button:hover {
-            background-color: #3182ce; /* Darker blue on hover */
-            transform: translateY(-2px);
+        .scroll-container {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
         }
-        .get-location-button:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+        .scroll-container::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
         }
     </style>
 </head>
-<body>
-    <div class="weather-container">
-        <h1 class="text-4xl font-bold mb-8 text-white">Advanced Weather</h1>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="container mx-auto p-4 md:p-8">
+        <!-- Search and Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">Weather Forecast</h1>
+            <div class="mt-4 flex flex-col sm:flex-row justify-center items-center gap-4">
+                <input type="text" id="location-input" placeholder="Enter city or zip code" class="p-3 w-full sm:w-80 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 shadow-sm">
+                <button id="search-button" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 transition-colors duration-200 shadow-md">Get Weather</button>
+            </div>
+            <p id="error-message" class="text-red-500 mt-2 hidden">Please enter a valid location.</p>
+        </header>
 
-        <button id="getLocationBtn" class="get-location-button">Get My Location Weather</button>
-
-        <div id="weatherDisplay" class="hidden">
-            <div class="current-weather">
-                <h2 id="locationName"></h2>
-                <p class="temperature" id="temperature"></p>
-                <p class="description" id="weatherDescription"></p>
-                <p>Humidity: <span id="humidity"></span>%</p>
-                <p>Wind Speed: <span id="windSpeed"></span> km/h</p>
+        <!-- Main Weather Display -->
+        <main class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Current Weather Card -->
+            <div id="current-weather-card" class="md:col-span-1 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-2xl p-6 shadow-xl transform transition-transform hover:scale-105 duration-300 hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="current-city" class="text-3xl font-semibold"></h2>
+                    <span id="current-date" class="text-lg opacity-80"></span>
+                </div>
+                <div class="flex justify-center items-center flex-col my-8">
+                    <div class="text-7xl font-bold mb-2">
+                        <span id="current-temp"></span><span class="text-4xl align-top">°C</span>
+                    </div>
+                    <p id="current-description" class="text-xl capitalize"></p>
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-sm opacity-90">
+                    <div class="flex flex-col items-start">
+                        <span class="font-medium">Feels Like:</span>
+                        <span id="feels-like" class="font-light"></span>
+                    </div>
+                    <div class="flex flex-col items-end">
+                        <span class="font-medium">Humidity:</span>
+                        <span id="humidity" class="font-light"></span>
+                    </div>
+                    <div class="flex flex-col items-start">
+                        <span class="font-medium">Wind Speed:</span>
+                        <span id="wind-speed" class="font-light"></span>
+                    </div>
+                    <div class="flex flex-col items-end">
+                        <span class="font-medium">Precipitation:</span>
+                        <span id="precipitation" class="font-light"></span>
+                    </div>
+                    <!-- New Fields -->
+                    <div class="flex flex-col items-start">
+                        <span class="font-medium">Cloud Cover:</span>
+                        <span id="cloud-cover" class="font-light"></span>
+                    </div>
+                    <div class="flex flex-col items-end">
+                        <span class="font-medium">UV Index:</span>
+                        <span id="uv-index" class="font-light"></span>
+                    </div>
+                </div>
             </div>
 
-            <div class="astronomy-data">
-                <div class="astronomy-item">
-                    <div class="label">Sunrise</div>
-                    <div class="value" id="sunriseTime"></div>
-                </div>
-                <div class="astronomy-item">
-                    <div class="label">Sunset</div>
-                    <div class="value" id="sunsetTime"></div>
-                </div>
-                <div class="astronomy-item">
-                    <div class="label">Sun Elevation</div>
-                    <div class="value" id="sunElevation"></div>
-                </div>
+            <!-- Hourly and Daily Forecasts -->
+            <div id="forecast-container" class="md:col-span-2 space-y-8 hidden">
+                <!-- Hourly Forecast -->
+                <section class="card rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">24-Hour Forecast</h3>
+                    <div id="hourly-forecast" class="flex overflow-x-auto gap-4 py-2 scroll-container">
+                        <!-- Hourly cards will be inserted here by JavaScript -->
+                    </div>
+                </section>
+                <!-- Daily Forecast -->
+                <section class="card rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">7-Day Forecast</h3>
+                    <div id="daily-forecast" class="space-y-4">
+                        <!-- Daily cards will be inserted here by JavaScript -->
+                    </div>
+                </section>
             </div>
-        </div>
-
-        <div id="message" class="message"></div>
+        </main>
     </div>
 
     <script>
-        // Get references to HTML elements
-        const getLocationBtn = document.getElementById('getLocationBtn');
-        const weatherDisplay = document.getElementById('weatherDisplay');
-        const locationNameElem = document.getElementById('locationName');
-        const temperatureElem = document.getElementById('temperature');
-        const weatherDescriptionElem = document.getElementById('weatherDescription');
-        const humidityElem = document.getElementById('humidity');
-        const windSpeedElem = document.getElementById('windSpeed');
-        const sunriseTimeElem = document.getElementById('sunriseTime');
-        const sunsetTimeElem = document.getElementById('sunsetTime');
-        const sunElevationElem = document.getElementById('sunElevation');
-        const messageElem = document.getElementById('message');
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchButton = document.getElementById('search-button');
+            const locationInput = document.getElementById('location-input');
+            const errorMessage = document.getElementById('error-message');
+            const currentWeatherCard = document.getElementById('current-weather-card');
+            const forecastContainer = document.getElementById('forecast-container');
 
-        /**
-         * Displays a message to the user.
-         * @param {string} msg - The message to display.
-         * @param {boolean} isError - True if it's an error message, false otherwise.
-         */
-        function displayMessage(msg, isError = false) {
-            messageElem.textContent = msg;
-            messageElem.classList.toggle('error', isError);
-            weatherDisplay.classList.add('hidden'); // Hide weather data when message is shown
-        }
+            const API_BASE_URL = 'https://api.open-meteo.com/v1/forecast';
 
-        /**
-         * Clears messages and shows the weather display.
-         */
-        function showWeatherDisplay() {
-            messageElem.textContent = '';
-            messageElem.classList.remove('error');
-            weatherDisplay.classList.remove('hidden');
-        }
-
-        /**
-         * Simulates fetching weather data from an API.
-         * In a real application, you would replace this with an actual fetch() call to a weather API.
-         * Recommended APIs: OpenWeatherMap, Visual Crossing, WeatherAPI.com, Meteomatics
-         *
-         * @param {number} latitude - The latitude of the location.
-         * @param {number} longitude - The longitude of the location.
-         * @returns {Promise<Object>} A promise that resolves with simulated weather data.
-         */
-        async function fetchWeatherData(latitude, longitude) {
-            displayMessage('Fetching weather data...');
-
-            // --- START: Replace this simulated data with actual API call ---
-            // Example of a real API call structure (requires an API key):
-            /*
-            const apiKey = 'YOUR_WEATHER_API_KEY'; // Get this from your chosen weather API provider
-            const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`;
-            try {
-                const response = await fetch(apiUrl);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+            // Fetches weather data from the Open-Meteo API
+            async function fetchWeather(latitude, longitude) {
+                const url = `${API_BASE_URL}?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,relative_humidity_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max&timezone=auto`;
+                
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    console.error('Failed to fetch weather data:', error);
+                    return null;
                 }
-                const data = await response.json();
+            }
 
-                // You would then parse the 'data' object to extract:
-                // - data.name (city name)
-                // - data.main.temp (temperature)
-                // - data.weather[0].description (weather description)
-                // - data.main.humidity (humidity)
-                // - data.wind.speed (wind speed)
-                // - data.sys.sunrise * 1000 (sunrise timestamp, convert to milliseconds)
-                // - data.sys.sunset * 1000 (sunset timestamp, convert to milliseconds)
-                // Sun elevation is often not directly in basic weather APIs, you might need a separate astronomy API
-                // or calculate it using a library based on lat/lon/time.
+            // Fetches location data from the GeoCoding API
+            async function fetchLocation(location) {
+                const url = `https://geocoding-api.open-meteo.com/v1/search?name=${location}&count=1&language=en&format=json`;
 
-                // For now, returning simulated data:
-                return {
-                    location: data.name || 'Your Location',
-                    temperature: data.main.temp,
-                    description: data.weather[0].description,
-                    humidity: data.main.humidity,
-                    windSpeed: data.wind.speed,
-                    sunrise: new Date(data.sys.sunrise * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    sunset: new Date(data.sys.sunset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    sunElevation: 'Varies' // Placeholder, as it's complex to calculate client-side without a library
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    if (data.results && data.results.length > 0) {
+                        return data.results[0];
+                    }
+                    return null;
+                } catch (error) {
+                    console.error('Failed to fetch location data:', error);
+                    return null;
+                }
+            }
+
+            // Displays the current weather
+            function displayCurrentWeather(data, city, country) {
+                if (!data || !data.current || !data.hourly) {
+                    errorMessage.textContent = 'Weather data not available for this location.';
+                    errorMessage.classList.remove('hidden');
+                    currentWeatherCard.classList.add('hidden');
+                    forecastContainer.classList.add('hidden');
+                    return;
+                }
+
+                const currentWeather = data.current;
+                const hourlyData = data.hourly;
+                
+                // Find the closest hourly data point to the current time
+                const currentTime = moment.utc(currentWeather.time);
+                const currentHourIndex = hourlyData.time.findIndex(time => moment.utc(time).isSameOrAfter(currentTime));
+                const currentHourlyPoint = hourlyData.time[currentHourIndex] ? {
+                    cloud_cover: hourlyData.cloud_cover[currentHourIndex],
+                    uv_index: hourlyData.uv_index[currentHourIndex]
+                } : null;
+
+                document.getElementById('current-city').textContent = `${city}, ${country}`;
+                document.getElementById('current-date').textContent = moment(currentWeather.time).format('MMMM Do');
+                document.getElementById('current-temp').textContent = Math.round(currentWeather.temperature_2m);
+                document.getElementById('feels-like').textContent = `${Math.round(currentWeather.apparent_temperature)}°C`;
+                document.getElementById('humidity').textContent = `${currentWeather.relative_humidity_2m}%`;
+                document.getElementById('wind-speed').textContent = `${currentWeather.wind_speed_10m} km/h`;
+                document.getElementById('precipitation').textContent = `${currentWeather.precipitation || 0} mm`;
+                
+                if (currentHourlyPoint) {
+                    document.getElementById('cloud-cover').textContent = `${currentHourlyPoint.cloud_cover}%`;
+                    document.getElementById('uv-index').textContent = currentHourlyPoint.uv_index.toFixed(1);
+                }
+
+                // Get a simple description from the weather code
+                const weatherDescription = getWeatherDescription(currentWeather.weather_code);
+                document.getElementById('current-description').textContent = weatherDescription;
+
+                currentWeatherCard.classList.remove('hidden');
+            }
+
+            // Displays the 24-hour forecast
+            function displayHourlyForecast(hourlyData) {
+                const hourlyForecastContainer = document.getElementById('hourly-forecast');
+                hourlyForecastContainer.innerHTML = '';
+                const currentHour = moment().startOf('hour');
+
+                for (let i = 0; i < 24; i++) {
+                    const time = hourlyData.time[i];
+                    const temp = Math.round(hourlyData.temperature_2m[i]);
+                    const weatherCode = hourlyData.weather_code[i];
+                    const cloudCover = hourlyData.cloud_cover[i];
+                    const uvIndex = hourlyData.uv_index[i];
+
+                    const forecastTime = moment.utc(time);
+                    if (forecastTime.isSameOrAfter(currentHour)) {
+                        const card = document.createElement('div');
+                        card.className = 'flex flex-col items-center bg-gray-50 rounded-xl p-4 shadow-sm w-32 flex-shrink-0';
+                        card.innerHTML = `
+                            <p class="font-medium text-gray-700">${forecastTime.format('ha')}</p>
+                            <img src="${getWeatherIcon(weatherCode)}" alt="weather icon" class="w-10 h-10 my-2">
+                            <p class="text-xl font-bold">${temp}°C</p>
+                            <p class="text-xs text-gray-500 mt-1">Clouds: ${cloudCover}%</p>
+                            <p class="text-xs text-gray-500">UV: ${uvIndex.toFixed(1)}</p>
+                        `;
+                        hourlyForecastContainer.appendChild(card);
+                    }
+                }
+            }
+
+            // Displays the 7-day forecast
+            function displayDailyForecast(dailyData) {
+                const dailyForecastContainer = document.getElementById('daily-forecast');
+                dailyForecastContainer.innerHTML = '';
+
+                for (let i = 0; i < dailyData.time.length; i++) {
+                    const time = dailyData.time[i];
+                    const maxTemp = Math.round(dailyData.temperature_2m_max[i]);
+                    const minTemp = Math.round(dailyData.temperature_2m_min[i]);
+                    const weatherCode = dailyData.weather_code[i];
+                    const uvIndexMax = dailyData.uv_index_max[i];
+
+                    const card = document.createElement('div');
+                    card.className = 'flex items-center justify-between bg-gray-50 rounded-xl p-4 shadow-sm';
+                    card.innerHTML = `
+                        <p class="font-medium text-gray-700 w-24">${moment(time).format('ddd, MMM D')}</p>
+                        <img src="${getWeatherIcon(weatherCode)}" alt="weather icon" class="w-10 h-10">
+                        <p class="text-gray-500 w-24 text-center text-sm">UV Max: ${uvIndexMax.toFixed(1)}</p>
+                        <p class="font-bold text-gray-800 text-right w-24">${maxTemp}°C / <span class="text-gray-500">${minTemp}°C</span></p>
+                    `;
+                    dailyForecastContainer.appendChild(card);
+                }
+            }
+
+            // Maps weather codes to simple descriptions
+            function getWeatherDescription(code) {
+                const descriptions = {
+                    0: 'Clear sky',
+                    1: 'Mainly clear',
+                    2: 'Partly cloudy',
+                    3: 'Overcast',
+                    45: 'Fog',
+                    48: 'Depositing rime fog',
+                    51: 'Light drizzle',
+                    53: 'Moderate drizzle',
+                    55: 'Dense drizzle',
+                    56: 'Light freezing drizzle',
+                    57: 'Dense freezing drizzle',
+                    61: 'Slight rain',
+                    63: 'Moderate rain',
+                    65: 'Heavy rain',
+                    66: 'Light freezing rain',
+                    67: 'Heavy freezing rain',
+                    71: 'Slight snow fall',
+                    73: 'Moderate snow fall',
+                    75: 'Heavy snow fall',
+                    77: 'Snow grains',
+                    80: 'Slight rain showers',
+                    81: 'Moderate rain showers',
+                    82: 'Violent rain showers',
+                    85: 'Slight snow showers',
+                    86: 'Heavy snow showers',
+                    95: 'Thunderstorm',
+                    96: 'Thunderstorm with slight hail',
+                    99: 'Thunderstorm with heavy hail'
                 };
-
-            } catch (error) {
-                console.error('Error fetching weather data:', error);
-                throw new Error('Could not fetch weather data. Please try again.');
+                return descriptions[code] || 'N/A';
             }
-            */
 
-            // Simulated data for demonstration purposes
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    const simulatedData = {
-                        location: `Lat: ${latitude.toFixed(2)}, Lon: ${longitude.toFixed(2)}`,
-                        temperature: (Math.random() * 20 + 10).toFixed(1), // Temp between 10-30 C
-                        description: ['Clear Sky', 'Partly Cloudy', 'Overcast', 'Light Rain'][Math.floor(Math.random() * 4)],
-                        humidity: Math.floor(Math.random() * 50) + 50, // Humidity between 50-100%
-                        windSpeed: (Math.random() * 15 + 5).toFixed(1), // Wind between 5-20 km/h
-                        sunrise: '06:30 AM', // Simulated
-                        sunset: '07:45 PM',   // Simulated
-                        sunElevation: (Math.random() * 90).toFixed(1) + '°' // Simulated angle
-                    };
-                    resolve(simulatedData);
-                }, 1500); // Simulate network delay
+            // Maps weather codes to icons (placeholder image)
+            function getWeatherIcon(code) {
+                const icons = {
+                    0: 'https://placehold.co/40x40/5c6ac4/ffffff?text=☀️',
+                    1: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌤️',
+                    2: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌥️',
+                    3: 'https://placehold.co/40x40/5c6ac4/ffffff?text=☁️',
+                    45: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌫️',
+                    48: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌫️',
+                    51: 'https://placehold.co/40x40/5c6ac4/ffffff?text=💧',
+                    53: 'https://placehold.co/40x40/5c6ac4/ffffff?text=💧',
+                    55: 'https://placehold.co/40x40/5c6ac4/ffffff?text=💧',
+                    56: 'https://placehold.co/40x40/5c6ac4/ffffff?text=❄️',
+                    57: 'https://placehold.co/40x40/5c6ac4/ffffff?text=❄️',
+                    61: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌧️',
+                    63: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌧️',
+                    65: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌧️',
+                    66: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌧️',
+                    67: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌧️',
+                    71: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
+                    73: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
+                    75: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
+                    77: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
+                    80: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌦️',
+                    81: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌦️',
+                    82: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌦️',
+                    85: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
+                    86: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
+                    95: 'https://placehold.co/40x40/5c6ac4/ffffff?text=⛈️',
+                    96: 'https://placehold.co/40x40/5c6ac4/ffffff?text=⛈️',
+                    99: 'https://placehold.co/40x40/5c6ac4/ffffff?text=⛈️'
+                };
+                return icons[code] || 'https://placehold.co/40x40/5c6ac4/ffffff?text=❓';
+            }
+
+            searchButton.addEventListener('click', async () => {
+                const location = locationInput.value.trim();
+                if (location === '') {
+                    errorMessage.textContent = 'Please enter a valid location.';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+
+                errorMessage.classList.add('hidden');
+                
+                const locationData = await fetchLocation(location);
+                if (!locationData) {
+                    errorMessage.textContent = 'Location not found. Please try again.';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+
+                const { latitude, longitude, name, country } = locationData;
+                const weatherData = await fetchWeather(latitude, longitude);
+
+                if (weatherData) {
+                    displayCurrentWeather(weatherData, name, country);
+                    displayHourlyForecast(weatherData.hourly);
+                    displayDailyForecast(weatherData.daily);
+                    forecastContainer.classList.remove('hidden');
+                } else {
+                    errorMessage.textContent = 'Failed to fetch weather data. Please try again later.';
+                    errorMessage.classList.remove('hidden');
+                }
             });
-            // --- END: Replace this simulated data with actual API call ---
-        }
-
-        /**
-         * Updates the UI with weather data.
-         * @param {Object} data - The weather data object.
-         */
-        function updateWeatherUI(data) {
-            locationNameElem.textContent = data.location;
-            temperatureElem.textContent = `${data.temperature}°C`;
-            weatherDescriptionElem.textContent = data.description;
-            humidityElem.textContent = data.humidity;
-            windSpeedElem.textContent = data.windSpeed;
-            sunriseTimeElem.textContent = data.sunrise;
-            sunsetTimeElem.textContent = data.sunset;
-            sunElevationElem.textContent = data.sunElevation;
-            showWeatherDisplay();
-        }
-
-        /**
-         * Handles successful geolocation retrieval.
-         * @param {GeolocationPosition} position - The geolocation position object.
-         */
-        async function geolocationSuccess(position) {
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
-            displayMessage('Location found. Getting weather...');
-
-            try {
-                const weatherData = await fetchWeatherData(latitude, longitude);
-                updateWeatherUI(weatherData);
-            } catch (error) {
-                displayMessage(error.message, true);
-                console.error('Error in weather data process:', error);
-            }
-        }
-
-        /**
-         * Handles geolocation errors.
-         * @param {GeolocationPositionError} error - The geolocation error object.
-         */
-        function geolocationError(error) {
-            let errorMessage = 'Unable to retrieve your location.';
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    errorMessage = 'Location access denied. Please enable location services for this site.';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    errorMessage = 'Location information is unavailable.';
-                    break;
-                case error.TIMEOUT:
-                    errorMessage = 'The request to get user location timed out.';
-                    break;
-                case error.UNKNOWN_ERROR:
-                    errorMessage = 'An unknown error occurred.';
-                    break;
-            }
-            displayMessage(errorMessage, true);
-            // Log the error code and message for more specific debugging
-            console.error('Geolocation error - Code:', error.code, 'Message:', error.message);
-        }
-
-        /**
-         * Initiates the geolocation process.
-         */
-        function getGeolocation() {
-            if (navigator.geolocation) {
-                displayMessage('Requesting location...');
-                navigator.geolocation.getCurrentPosition(geolocationSuccess, geolocationError, {
-                    enableHighAccuracy: true,
-                    timeout: 10000, // 10 seconds
-                    maximumAge: 0 // Don't use cached position
-                });
-            } else {
-                displayMessage('Geolocation is not supported by your browser.', true);
-            }
-        }
-
-        // Add event listener to the button
-        getLocationBtn.addEventListener('click', getGeolocation);
-
-        // Initial message on load
-        displayMessage('Click "Get My Location Weather" to start.');
+        });
     </script>
 </body>
 </html>
