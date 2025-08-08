@@ -40,7 +40,11 @@
                 <input type="text" id="location-input" placeholder="Enter city or zip code" class="p-3 w-full sm:w-80 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 shadow-sm">
                 <button id="search-button" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 transition-colors duration-200 shadow-md">Get Weather</button>
             </div>
-            <p id="error-message" class="text-red-500 mt-2 hidden">Please enter a valid location.</p>
+            <div class="mt-2 flex flex-col sm:flex-row justify-center items-center gap-2">
+                <input type="number" id="lat-input" placeholder="Latitude" class="p-3 w-full sm:w-40 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 shadow-sm">
+                <input type="number" id="lon-input" placeholder="Longitude" class="p-3 w-full sm:w-40 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 shadow-sm">
+            </div>
+            <p id="error-message" class="text-red-500 mt-2 hidden">Please enter a valid location or valid coordinates.</p>
         </header>
 
         <!-- Main Weather Display -->
@@ -109,6 +113,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             const searchButton = document.getElementById('search-button');
             const locationInput = document.getElementById('location-input');
+            const latInput = document.getElementById('lat-input');
+            const lonInput = document.getElementById('lon-input');
             const errorMessage = document.getElementById('error-message');
             const currentWeatherCard = document.getElementById('current-weather-card');
             const forecastContainer = document.getElementById('forecast-container');
@@ -117,7 +123,6 @@
 
             // Fetches weather data from the Open-Meteo API
             async function fetchWeather(latitude, longitude) {
-                // Now also includes sunrise and sunset times
                 const url = `${API_BASE_URL}?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,relative_humidity_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,sunrise,sunset&timezone=auto&forecast_days=16`;
                 
                 try {
@@ -133,7 +138,7 @@
                 }
             }
 
-            // Fetches location data from the GeoCoding API
+            // Fetches location data from the GeoCoding API (for city name search)
             async function fetchLocation(location) {
                 const url = `https://geocoding-api.open-meteo.com/v1/search?name=${location}&count=1&language=en&format=json`;
 
@@ -152,6 +157,28 @@
                     return null;
                 }
             }
+            
+            // Fetches location name from coordinates (reverse geocoding)
+            async function fetchLocationName(latitude, longitude) {
+                const url = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${latitude}&longitude=${longitude}&count=1&language=en&format=json`;
+
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    if (data.results && data.results.length > 0) {
+                        const { name, country } = data.results[0];
+                        return { name, country };
+                    }
+                    return { name: `Lat: ${latitude}, Lon: ${longitude}`, country: '' };
+                } catch (error) {
+                    console.error('Failed to fetch location name:', error);
+                    return { name: `Lat: ${latitude}, Lon: ${longitude}`, country: '' };
+                }
+            }
+
 
             // Displays the current weather
             function displayCurrentWeather(data, city, country) {
@@ -320,34 +347,58 @@
                     85: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
                     86: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
                     95: 'https://placehold.co/40x40/5c6ac4/ffffff?text=⛈️',
-                    96: 'https://placehold.co/40x40/5c6ac4/ffffff?text=⛈️',
+                    96: 'httpshold.co/40x40/5c6ac4/ffffff?text=⛈️',
                     99: 'https://placehold.co/40x40/5c6ac4/ffffff?text=⛈️'
                 };
                 return icons[code] || 'https://placehold.co/40x40/5c6ac4/ffffff?text=❓';
             }
 
             searchButton.addEventListener('click', async () => {
-                const location = locationInput.value.trim();
-                if (location === '') {
-                    errorMessage.textContent = 'Please enter a valid location.';
-                    errorMessage.classList.remove('hidden');
-                    return;
-                }
-
                 errorMessage.classList.add('hidden');
                 
-                const locationData = await fetchLocation(location);
-                if (!locationData) {
-                    errorMessage.textContent = 'Location not found. Please try again.';
+                const location = locationInput.value.trim();
+                const lat = latInput.value.trim();
+                const lon = lonInput.value.trim();
+
+                let latitude, longitude, city, country;
+
+                if (lat && lon) {
+                    // Search by coordinates
+                    latitude = parseFloat(lat);
+                    longitude = parseFloat(lon);
+
+                    if (isNaN(latitude) || isNaN(longitude)) {
+                        errorMessage.textContent = 'Please enter valid numerical coordinates.';
+                        errorMessage.classList.remove('hidden');
+                        return;
+                    }
+                    
+                    const locationNameData = await fetchLocationName(latitude, longitude);
+                    city = locationNameData.name;
+                    country = locationNameData.country;
+
+                } else if (location) {
+                    // Search by city/zip code
+                    const locationData = await fetchLocation(location);
+                    if (!locationData) {
+                        errorMessage.textContent = 'Location not found. Please try again.';
+                        errorMessage.classList.remove('hidden');
+                        return;
+                    }
+                    latitude = locationData.latitude;
+                    longitude = locationData.longitude;
+                    city = locationData.name;
+                    country = locationData.country;
+                } else {
+                    errorMessage.textContent = 'Please enter a location or coordinates.';
                     errorMessage.classList.remove('hidden');
                     return;
                 }
 
-                const { latitude, longitude, name, country } = locationData;
                 const weatherData = await fetchWeather(latitude, longitude);
 
                 if (weatherData) {
-                    displayCurrentWeather(weatherData, name, country);
+                    displayCurrentWeather(weatherData, city, country);
                     displayHourlyForecast(weatherData.hourly);
                     displayDailyForecast(weatherData.daily);
                     forecastContainer.classList.remove('hidden');
