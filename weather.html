@@ -74,7 +74,6 @@
                         <span class="font-medium">Precipitation:</span>
                         <span id="precipitation" class="font-light"></span>
                     </div>
-                    <!-- New Fields -->
                     <div class="flex flex-col items-start">
                         <span class="font-medium">Cloud Cover:</span>
                         <span id="cloud-cover" class="font-light"></span>
@@ -90,14 +89,14 @@
             <div id="forecast-container" class="md:col-span-2 space-y-8 hidden">
                 <!-- Hourly Forecast -->
                 <section class="card rounded-2xl p-6 shadow-xl">
-                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">24-Hour Forecast</h3>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">72-Hour Forecast</h3>
                     <div id="hourly-forecast" class="flex overflow-x-auto gap-4 py-2 scroll-container">
                         <!-- Hourly cards will be inserted here by JavaScript -->
                     </div>
                 </section>
                 <!-- Daily Forecast -->
                 <section class="card rounded-2xl p-6 shadow-xl">
-                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">7-Day Forecast</h3>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">16-Day Forecast</h3>
                     <div id="daily-forecast" class="space-y-4">
                         <!-- Daily cards will be inserted here by JavaScript -->
                     </div>
@@ -118,7 +117,9 @@
 
             // Fetches weather data from the Open-Meteo API
             async function fetchWeather(latitude, longitude) {
-                const url = `${API_BASE_URL}?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,relative_humidity_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max&timezone=auto`;
+                // The daily forecast is extended to 16 days, which is the maximum supported.
+                // The hourly forecast is extended to 72 hours.
+                const url = `${API_BASE_URL}?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,relative_humidity_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max&timezone=auto&forecast_days=16`;
                 
                 try {
                     const response = await fetch(url);
@@ -194,13 +195,14 @@
                 currentWeatherCard.classList.remove('hidden');
             }
 
-            // Displays the 24-hour forecast
+            // Displays the 72-hour forecast
             function displayHourlyForecast(hourlyData) {
                 const hourlyForecastContainer = document.getElementById('hourly-forecast');
                 hourlyForecastContainer.innerHTML = '';
                 const currentHour = moment().startOf('hour');
 
-                for (let i = 0; i < 24; i++) {
+                // Loop for 72 hours
+                for (let i = 0; i < 72; i++) {
                     const time = hourlyData.time[i];
                     const temp = Math.round(hourlyData.temperature_2m[i]);
                     const weatherCode = hourlyData.weather_code[i];
@@ -223,11 +225,12 @@
                 }
             }
 
-            // Displays the 7-day forecast
+            // Displays the 16-day daily forecast
             function displayDailyForecast(dailyData) {
                 const dailyForecastContainer = document.getElementById('daily-forecast');
                 dailyForecastContainer.innerHTML = '';
 
+                // Loop for the entire daily forecast length (up to 16 days)
                 for (let i = 0; i < dailyData.time.length; i++) {
                     const time = dailyData.time[i];
                     const maxTemp = Math.round(dailyData.temperature_2m_max[i]);
