@@ -225,23 +225,23 @@
                 currentWeatherCard.classList.remove('hidden');
             }
 
-            // Displays the 72-hour forecast starting from the next full hour
+            // Displays the 72-hour forecast starting from the current hour
             function displayHourlyForecast(hourlyData, timezone) {
                 const hourlyForecastContainer = document.getElementById('hourly-forecast');
                 hourlyForecastContainer.innerHTML = '';
                 
                 // Get the current moment in the selected location's timezone
                 const currentMoment = moment.tz(timezone);
-
-                // Find the index of the first hour that is strictly *after* the current moment
-                let startIndex = hourlyData.time.findIndex(time => moment(time).tz(timezone).isAfter(currentMoment));
                 
-                // Fallback in case no future hours are found, though this is unlikely with a 72-hour forecast
+                // Find the index of the first hour that is on or after the current moment
+                let startIndex = hourlyData.time.findIndex(time => moment.tz(time, timezone).isSameOrAfter(currentMoment));
+
+                // If no hours are found (unlikely), default to the first element
                 if (startIndex === -1) {
-                    startIndex = hourlyData.time.length - 1;
+                    startIndex = 0;
                 }
 
-                // Loop for 72 hours starting from the found index
+                // Loop for 72 hours, starting from the found index
                 for (let i = startIndex; i < startIndex + 72 && i < hourlyData.time.length; i++) {
                     const time = hourlyData.time[i];
                     const temp = Math.round(hourlyData.temperature_2m[i]);
@@ -249,7 +249,6 @@
                     const cloudCover = hourlyData.cloud_cover[i];
                     const uvIndex = hourlyData.uv_index[i];
 
-                    // Use the location's timezone to format the time
                     const forecastTime = moment.tz(time, timezone);
                     const card = document.createElement('div');
                     card.className = 'flex flex-col items-center bg-gray-50 rounded-xl p-4 shadow-sm w-32 flex-shrink-0';
