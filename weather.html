@@ -1,426 +1,802 @@
-<!DOCTYPE html>
+<!-- Save as weather-map.html and open in your browser -->
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Weather App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- We need the timezone library to handle different timezones -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.33/moment-timezone-with-data.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            color: #374151;
-        }
-        .container {
-            max-width: 1280px;
-        }
-        .card {
-            background-color: #ffffff;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .scroll-container {
-            -ms-overflow-style: none; /* IE and Edge */
-            scrollbar-width: none; /* Firefox */
-        }
-        .scroll-container::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
-        }
-    </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Open-Meteo — Full Forecast + OSM Location Picker</title>
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha512-sA+q5fQ1h3YgO9j2g6YwN6q3wFJfQ3xQ9gYw6u2t2c2y6n0Yz5z+f1dK/8XkYFv5Q6s1f9z+J4fY6k5xg==" crossorigin=""/>
+
+<style>
+  :root{
+    --bg:#071428; --card:#0c1722; --muted:#9fb0c3; --accent:#52b6ff;
+    --glass: rgba(255,255,255,0.03);
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    background: linear-gradient(180deg,#051025 0%, #071a2a 60%);
+    color:#e8f4ff; min-height:100vh; padding:18px;
+  }
+  .wrap{ max-width:1150px; margin:0 auto; }
+  header{ display:flex; gap:12px; align-items:center; margin-bottom:16px; }
+  h1{ margin:0; font-size:20px; font-weight:700; letter-spacing:0.2px; }
+  .search{ margin-left:auto; display:flex; gap:8px; align-items:center; }
+  input[type="search"], .map-search{
+    background:var(--glass); border:1px solid rgba(255,255,255,0.04); padding:8px 10px; color:inherit;
+    border-radius:8px; width:260px; outline:none;
+  }
+  button{ background:var(--accent); border:none; color:#05202b; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:700; }
+  .card{ background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:14px; border-radius:12px; box-shadow: 0 8px 40px rgba(2,6,23,0.55); margin-bottom:12px;}
+  .top-row{ display:flex; gap:12px; align-items:center; }
+  .loc{ font-size:18px; font-weight:800; }
+  .muted{ color:var(--muted); font-size:13px; }
+  .tabs{ display:flex; gap:8px; margin-top:12px; }
+  .tab{ padding:8px 12px; border-radius:10px; cursor:pointer; background:transparent; border:1px solid transparent; color:var(--muted); }
+  .tab.active{ background:rgba(255,255,255,0.03); color:#e8f4ff; border-color:rgba(255,255,255,0.03); font-weight:700; }
+  .pane{ display:none; margin-top:12px; }
+  .pane.active{ display:block; }
+  .current-grid{ display:grid; grid-template-columns: 1fr 340px; gap:12px; align-items:start; }
+  .bigtemp{ font-size:52px; font-weight:900; line-height:1; }
+  .small{ font-size:13px; color:var(--muted); }
+  .hourly-table, .daily-table{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:13px; }
+  .hourly-table th, .hourly-table td, .daily-table th, .daily-table td { padding:6px 8px; border-bottom:1px dashed rgba(255,255,255,0.03); text-align:center; }
+  .table-wrap{ overflow:auto; max-height:520px; border-radius:8px; margin-top:8px; background: rgba(255,255,255,0.01); padding:8px; }
+  .controls{ display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;}
+  .pill{ background:rgba(255,255,255,0.02); padding:6px 8px; border-radius:8px; font-weight:600; color:var(--muted); cursor:pointer;}
+  .pill.active{ background:var(--accent); color:#042631; }
+  .legend{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .error{ color:#ffb4b4; background:rgba(255,0,0,0.04); padding:8px; border-radius:8px; margin-top:8px;}
+  footer{ margin-top:8px; color:var(--muted); font-size:12px; text-align:center;}
+  /* map container inside current pane */
+  #map { width:100%; height:320px; border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,0.04); margin-bottom:8px; }
+  .map-controls{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+  .search-results{ background:rgba(0,0,0,0.25); border-radius:8px; padding:6px; max-height:180px; overflow:auto; margin-top:6px; }
+  .sr-item{ padding:6px; cursor:pointer; border-radius:6px; }
+  .sr-item:hover{ background:rgba(255,255,255,0.03); }
+  @media (max-width:900px){
+    .current-grid{ grid-template-columns: 1fr; }
+    input[type="search"]{ width:160px; }
+    .bigtemp{ font-size:40px; }
+  }
+</style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-    <div class="container mx-auto p-4 md:p-8">
-        <!-- Search and Header -->
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800">Weather Forecast</h1>
-            <div class="mt-4 flex flex-col sm:flex-row justify-center items-center gap-4">
-                <input type="text" id="location-input" placeholder="Enter city or zip code" class="p-3 w-full sm:w-80 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 shadow-sm">
-                <button id="search-button" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 transition-colors duration-200 shadow-md">Get Weather</button>
-            </div>
-            <div class="mt-2 flex flex-col sm:flex-row justify-center items-center gap-2">
-                <input type="number" id="lat-input" placeholder="Latitude" class="p-3 w-full sm:w-40 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 shadow-sm">
-                <input type="number" id="lon-input" placeholder="Longitude" class="p-3 w-full sm:w-40 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 shadow-sm">
-            </div>
-            <p id="error-message" class="text-red-500 mt-2 hidden">Please enter a valid location or valid coordinates.</p>
-        </header>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Open-Meteo — Full Forecast + Map Picker</h1>
+        <div class="small muted">Click the map or drag the marker to pick a spot. Reverse geocoded via Nominatim.</div>
+      </div>
 
-        <!-- Main Weather Display -->
-        <main class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- Current Weather Card -->
-            <div id="current-weather-card" class="md:col-span-1 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-2xl p-6 shadow-xl transform transition-transform hover:scale-105 duration-300 hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 id="current-city" class="text-3xl font-semibold"></h2>
-                    <span id="current-date" class="text-lg opacity-80"></span>
+      <div class="search">
+        <input id="q" type="search" placeholder="City, town, or ZIP (e.g. 'Tel Aviv' or '10001')" />
+        <button id="searchBtn">Search</button>
+        <button id="locBtn" title="Use browser location">Use My Location</button>
+      </div>
+    </header>
+
+    <div id="main" class="card">
+      <div id="placeholder" class="muted">Search or pick a location on the map to load the full forecast.</div>
+
+      <div id="error" style="display:none" class="error"></div>
+
+      <div id="content" style="display:none">
+        <div class="top-row">
+          <div>
+            <div id="locLabel" class="loc">—</div>
+            <div id="tzLabel" class="muted">Timezone: —</div>
+            <div id="coords" class="small muted"></div>
+          </div>
+
+          <div style="margin-left:auto; text-align:right">
+            <div id="updated" class="small muted">Updated: —</div>
+            <div style="margin-top:8px">
+              <button id="unitBtn" class="pill">°C</button>
+              <button id="downloadCsv" class="pill">Download CSV</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <div class="current-grid">
+            <div>
+              <!-- MAP + Map controls go here -->
+              <div class="map-controls">
+                <input id="mapSearch" class="map-search" placeholder="Search places on map (e.g. 'Brooklyn, NY')" />
+                <button id="mapSearchBtn" class="pill">Find</button>
+                <button id="mapClearBtn" class="pill">Clear</button>
+              </div>
+              <div id="map"></div>
+              <div id="mapResults" class="search-results" style="display:none"></div>
+
+              <div style="margin-top:10px">
+                <div id="nowSummary" class="small">—</div>
+                <div id="nowDetails" class="small muted" style="margin-top:6px;"></div>
+                <div class="legend" style="margin-top:8px;">
+                  <div id="nowWind" class="small muted">Wind: —</div>
+                  <div id="nowHum" class="small muted">RH: —</div>
+                  <div id="nowPrec" class="small muted">Precip: —</div>
+                  <div id="nowUV" class="small muted">UV: —</div>
                 </div>
-                <div class="flex justify-center items-center flex-col my-8">
-                    <div class="text-7xl font-bold mb-2">
-                        <span id="current-temp"></span><span class="text-4xl align-top">°C</span>
-                    </div>
-                    <p id="current-description" class="text-xl capitalize"></p>
-                </div>
-                <div class="grid grid-cols-2 gap-4 text-sm opacity-90">
-                    <div class="flex flex-col items-start">
-                        <span class="font-medium">Feels Like:</span>
-                        <span id="feels-like" class="font-light"></span>
-                    </div>
-                    <div class="flex flex-col items-end">
-                        <span class="font-medium">Humidity:</span>
-                        <span id="humidity" class="font-light"></span>
-                    </div>
-                    <div class="flex flex-col items-start">
-                        <span class="font-medium">Wind Speed:</span>
-                        <span id="wind-speed" class="font-light"></span>
-                    </div>
-                    <div class="flex flex-col items-end">
-                        <span class="font-medium">Precipitation:</span>
-                        <span id="precipitation" class="font-light"></span>
-                    </div>
-                    <div class="flex flex-col items-start">
-                        <span class="font-medium">Cloud Cover:</span>
-                        <span id="cloud-cover" class="font-light"></span>
-                    </div>
-                    <div class="flex flex-col items-end">
-                        <span class="font-medium">UV Index:</span>
-                        <span id="uv-index" class="font-light"></span>
-                    </div>
-                </div>
+              </div>
             </div>
 
-            <!-- Hourly and Daily Forecasts -->
-            <div id="forecast-container" class="md:col-span-2 space-y-8 hidden">
-                <!-- Hourly Forecast -->
-                <section class="card rounded-2xl p-6 shadow-xl">
-                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">72-Hour Forecast</h3>
-                    <div id="hourly-forecast" class="flex overflow-x-auto gap-4 py-2 scroll-container">
-                        <!-- Hourly cards will be inserted here by JavaScript -->
-                    </div>
-                </section>
-                <!-- Daily Forecast -->
-                <section class="card rounded-2xl p-6 shadow-xl">
-                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">16-Day Forecast</h3>
-                    <div id="daily-forecast" class="space-y-4">
-                        <!-- Daily cards will be inserted here by JavaScript -->
-                    </div>
-                </section>
+            <div>
+              <div class="bigtemp" id="nowTemp">--°</div>
+              <div style="margin-top:10px" class="small muted">Current weather variables</div>
+              <pre id="currentVars" class="small muted" style="white-space:pre-wrap; max-height:220px; overflow:auto; background:rgba(255,255,255,0.01); padding:8px; border-radius:8px;">—</pre>
             </div>
-        </main>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <div class="tab active" data-tab="current">Current</div>
+          <div class="tab" data-tab="hourly">Hourly</div>
+          <div class="tab" data-tab="daily">Daily</div>
+        </div>
+
+        <!-- CURRENT PANE -->
+        <div id="pane-current" class="pane active">
+          <div class="small muted" style="margin-top:8px;">Click anywhere on the map to set location; drag the marker to fine-tune. Search uses Nominatim (OpenStreetMap).</div>
+        </div>
+
+        <!-- HOURLY PANE -->
+        <div id="pane-hourly" class="pane">
+          <div class="controls">
+            <!-- same pills as previous dump (abbreviated here for brevity) -->
+            <div class="pill active" data-col="time">Time</div>
+            <div class="pill active" data-col="temperature_2m">Temp</div>
+            <div class="pill active" data-col="apparent_temperature">Feels</div>
+            <div class="pill active" data-col="relativehumidity_2m">RH</div>
+            <div class="pill active" data-col="windgusts_10m">Gust</div>
+            <div class="pill active" data-col="windspeed_10m">Wind</div>
+            <div class="pill active" data-col="pressure_msl">MSL</div>
+            <div class="pill active" data-col="precipitation">Precip</div>
+            <div class="pill active" data-col="snowfall">Snow</div>
+            <div class="pill active" data-col="cloudcover">Cloud%</div>
+            <div class="pill active" data-col="visibility">Vis</div>
+            <div class="pill active" data-col="uv_index">UV</div>
+            <div class="pill active" data-col="shortwave_radiation">SWR</div>
+            <div class="pill active" data-col="weathercode">WCode</div>
+            <div class="pill" id="showAllCols">Toggle All</div>
+          </div>
+
+          <div class="table-wrap">
+            <table id="hourlyTable" class="hourly-table">
+              <thead id="hourlyHead"></thead>
+              <tbody id="hourlyBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- DAILY PANE -->
+        <div id="pane-daily" class="pane">
+          <div class="controls">
+            <div class="pill active" data-dcol="time">Date</div>
+            <div class="pill active" data-dcol="temperature_2m_max">Tmax</div>
+            <div class="pill active" data-dcol="temperature_2m_min">Tmin</div>
+            <div class="pill active" data-dcol="precipitation_sum">PrecipSum</div>
+            <div class="pill active" data-dcol="rain_sum">Rain</div>
+            <div class="pill active" data-dcol="snowfall_sum">Snow</div>
+            <div class="pill active" data-dcol="sunrise">Sunrise</div>
+            <div class="pill active" data-dcol="sunset">Sunset</div>
+            <div class="pill active" data-dcol="uv_index_max">UVmax</div>
+            <div class="pill" id="showAllDaily">Toggle All</div>
+          </div>
+
+          <div class="table-wrap">
+            <table id="dailyTable" class="daily-table">
+              <thead id="dailyHead"></thead>
+              <tbody id="dailyBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="loading" style="display:none" class="muted">Loading…</div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const searchButton = document.getElementById('search-button');
-            const locationInput = document.getElementById('location-input');
-            const latInput = document.getElementById('lat-input');
-            const lonInput = document.getElementById('lon-input');
-            const errorMessage = document.getElementById('error-message');
-            const currentWeatherCard = document.getElementById('current-weather-card');
-            const forecastContainer = document.getElementById('forecast-container');
+    <footer>
+      Data by Open-Meteo • Reverse/forward geocode by Nominatim (OpenStreetMap). Respect usage limits. No API keys required.
+    </footer>
+  </div>
 
-            const API_BASE_URL = 'https://api.open-meteo.com/v1/forecast';
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha512-+d6Lz3JwQ9+Nf4kq0Q5uJZh6r4y+QK7t0vS9kq0a6w9lYpD3Pb0m3LZ1f2V3b1pX6Z8y2x2a==" crossorigin=""></script>
 
-            // Fetches weather data from the Open-Meteo API
-            async function fetchWeather(latitude, longitude) {
-                const url = `${API_BASE_URL}?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,relative_humidity_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,sunrise,sunset&timezone=auto&forecast_days=16`;
-                
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const data = await response.json();
-                    return data;
-                } catch (error) {
-                    console.error('Failed to fetch weather data:', error);
-                    return null;
-                }
-            }
+<script>
+/*
+  weather-map.html
+  - Integrates previous full Open-Meteo app (hourly/daily) with an OSM/Leaflet map picker.
+  - Uses Nominatim for forward and reverse geocoding.
+  - Marker is draggable; clicking the map places/moves the marker.
+  - When a location is chosen, the app reverse-geocodes the name (if any) and fetches forecast.
+*/
 
-            // Fetches location data from the GeoCoding API (for city name search)
-            async function fetchLocation(location) {
-                const url = `https://geocoding-api.open-meteo.com/v1/search?name=${location}&count=1&language=en&format=json`;
+/* ---------- Config / Globals ---------- */
+const geocodeBase = 'https://geocoding-api.open-meteo.com/v1/search';
+const forecastBase = 'https://api.open-meteo.com/v1/forecast';
+const nominatimReverse = 'https://nominatim.openstreetmap.org/reverse';
+const nominatimSearch = 'https://nominatim.openstreetmap.org/search';
 
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const data = await response.json();
-                    if (data.results && data.results.length > 0) {
-                        return data.results[0];
-                    }
-                    return null;
-                } catch (error) {
-                    console.error('Failed to fetch location data:', error);
-                    return null;
-                }
-            }
-            
-            // Fetches location name from coordinates (reverse geocoding)
-            async function fetchLocationName(latitude, longitude) {
-                const url = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${latitude}&longitude=${longitude}&count=1&language=en&format=json`;
+let map, marker;
+let currentData = null;
+let unit = 'C';
+let selectedHourCols = new Set();
+let selectedDailyCols = new Set();
 
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const data = await response.json();
-                    if (data.results && data.results.length > 0) {
-                        const { name, country } = data.results[0];
-                        return { name, country };
-                    }
-                    return { name: `Lat: ${latitude}, Lon: ${longitude}`, country: '' };
-                } catch (error) {
-                    console.error('Failed to fetch location name:', error);
-                    return { name: `Lat: ${latitude}, Lon: ${longitude}`, country: '' };
-                }
-            }
+/* ---------- Elements ---------- */
+const q = document.getElementById('q');
+const searchBtn = document.getElementById('searchBtn');
+const locBtn = document.getElementById('locBtn');
+const content = document.getElementById('content');
+const placeholder = document.getElementById('placeholder');
+const errorEl = document.getElementById('error');
+const updatedEl = document.getElementById('updated');
+const tzLabel = document.getElementById('tzLabel');
+const locLabel = document.getElementById('locLabel');
+const coordsEl = document.getElementById('coords');
+const nowTemp = document.getElementById('nowTemp');
+const nowSummary = document.getElementById('nowSummary');
+const nowDetails = document.getElementById('nowDetails');
+const nowWind = document.getElementById('nowWind');
+const nowHum = document.getElementById('nowHum');
+const nowPrec = document.getElementById('nowPrec');
+const nowUV = document.getElementById('nowUV');
+const currentVars = document.getElementById('currentVars');
 
+const unitBtn = document.getElementById('unitBtn');
+const downloadCsv = document.getElementById('downloadCsv');
 
-            // Displays the current weather
-            function displayCurrentWeather(data, city, country) {
-                if (!data || !data.current || !data.hourly) {
-                    errorMessage.textContent = 'Weather data not available for this location.';
-                    errorMessage.classList.remove('hidden');
-                    currentWeatherCard.classList.add('hidden');
-                    forecastContainer.classList.add('hidden');
-                    return;
-                }
+const hourlyHead = document.getElementById('hourlyHead');
+const hourlyBody = document.getElementById('hourlyBody');
+const dailyHead = document.getElementById('dailyHead');
+const dailyBody = document.getElementById('dailyBody');
 
-                const currentWeather = data.current;
-                const hourlyData = data.hourly;
-                const timezone = data.timezone;
-                
-                // Find the closest hourly data point to the current time
-                const currentTime = moment.utc(currentWeather.time);
-                const currentHourIndex = hourlyData.time.findIndex(time => moment.utc(time).isSameOrAfter(currentTime));
-                const currentHourlyPoint = hourlyData.time[currentHourIndex] ? {
-                    cloud_cover: hourlyData.cloud_cover[currentHourIndex],
-                    uv_index: hourlyData.uv_index[currentHourIndex]
-                } : null;
+const tabs = document.querySelectorAll('.tab');
+const panes = document.querySelectorAll('.pane');
+const hourPills = document.querySelectorAll('#pane-hourly .pill[data-col]');
+const dailyPills = document.querySelectorAll('#pane-daily .pill[data-dcol]');
+const showAllCols = document.getElementById('showAllCols');
+const showAllDaily = document.getElementById('showAllDaily');
 
-                document.getElementById('current-city').textContent = `${city}, ${country}`;
-                // Use the location's timezone for the current date
-                document.getElementById('current-date').textContent = moment.tz(currentWeather.time, timezone).format('MMMM Do');
-                document.getElementById('current-temp').textContent = Math.round(currentWeather.temperature_2m);
-                document.getElementById('feels-like').textContent = `${Math.round(currentWeather.apparent_temperature)}°C`;
-                document.getElementById('humidity').textContent = `${currentWeather.relative_humidity_2m}%`;
-                document.getElementById('wind-speed').textContent = `${currentWeather.wind_speed_10m} km/h`;
-                document.getElementById('precipitation').textContent = `${currentWeather.precipitation || 0} mm`;
-                
-                if (currentHourlyPoint) {
-                    document.getElementById('cloud-cover').textContent = `${currentHourlyPoint.cloud_cover}%`;
-                    document.getElementById('uv-index').textContent = currentHourlyPoint.uv_index.toFixed(1);
-                }
+const mapDiv = document.getElementById('map');
+const mapSearch = document.getElementById('mapSearch');
+const mapSearchBtn = document.getElementById('mapSearchBtn');
+const mapClearBtn = document.getElementById('mapClearBtn');
+const mapResults = document.getElementById('mapResults');
 
-                // Get a simple description from the weather code
-                const weatherDescription = getWeatherDescription(currentWeather.weather_code);
-                document.getElementById('current-description').textContent = weatherDescription;
+/* ---------- Variable sets (same as previous full app but slightly pruned) ---------- */
+const allHourly = [
+  'temperature_2m','apparent_temperature','relativehumidity_2m','dewpoint_2m',
+  'pressure_msl','surface_pressure',
+  'precipitation','rain','showers','snowfall','snow_depth',
+  'cloudcover','cloudcover_low','cloudcover_mid','cloudcover_high',
+  'visibility',
+  'windspeed_10m','winddirection_10m','windgusts_10m',
+  'shortwave_radiation','direct_radiation','diffuse_radiation',
+  'uv_index',
+  'weathercode',
+  'soil_temperature_0cm','soil_temperature_7cm','soil_temperature_28cm',
+  'soil_moisture_0_1cm','soil_moisture_1_3cm','soil_moisture_3_9cm',
+  'et0_fao_evapotranspiration',
+  'precipitation_probability'
+];
+const allDaily = [
+  'weathercode',
+  'temperature_2m_max','temperature_2m_min',
+  'apparent_temperature_max','apparent_temperature_min',
+  'sunrise','sunset','sunshine_duration',
+  'shortwave_radiation_sum',
+  'precipitation_sum','rain_sum','showers_sum','snowfall_sum',
+  'precipitation_hours','precipitation_probability_max',
+  'windspeed_10m_max','windgusts_10m_max','winddirection_10m_dominant',
+  'uv_index_max',
+  'et0_fao_evapotranspiration',
+  'soil_temperature_0cm','soil_moisture_0_1cm'
+];
 
-                currentWeatherCard.classList.remove('hidden');
-            }
+/* default visible cols */
+document.querySelectorAll('#pane-hourly .pill[data-col]').forEach(p => selectedHourCols.add(p.dataset.col));
+document.querySelectorAll('#pane-daily .pill[data-dcol]').forEach(p => selectedDailyCols.add(p.dataset.dcol));
 
-            // Displays the 72-hour forecast starting from the current hour
-            function displayHourlyForecast(hourlyData, timezone) {
-                const hourlyForecastContainer = document.getElementById('hourly-forecast');
-                hourlyForecastContainer.innerHTML = '';
-                
-                // Get the current moment in the selected location's timezone
-                const currentMoment = moment.tz(timezone);
-                
-                // Find the index of the first hour that is on or after the current moment
-                let startIndex = hourlyData.time.findIndex(time => moment.tz(time, timezone).isSameOrAfter(currentMoment));
+/* ---------- UI event wiring ---------- */
+searchBtn.addEventListener('click', () => doSearch(q.value));
+q.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(q.value); });
+locBtn.addEventListener('click', useBrowserLocation);
+unitBtn.addEventListener('click', toggleUnit);
+downloadCsv.addEventListener('click', downloadCurrentCsv);
+tabs.forEach(t => t.addEventListener('click', () => {
+  tabs.forEach(x => x.classList.remove('active'));
+  panes.forEach(p => p.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('pane-' + t.dataset.tab).classList.add('active');
+}));
 
-                // If no hours are found (unlikely), default to the first element
-                if (startIndex === -1) {
-                    startIndex = 0;
-                }
+hourPills.forEach(p => p.addEventListener('click', () => {
+  const col = p.dataset.col;
+  if (selectedHourCols.has(col)){ selectedHourCols.delete(col); p.classList.remove('active'); }
+  else { selectedHourCols.add(col); p.classList.add('active'); }
+  renderHourlyTable(currentData);
+}));
+dailyPills.forEach(p => p.addEventListener('click', () => {
+  const col = p.dataset.dcol;
+  if (selectedDailyCols.has(col)){ selectedDailyCols.delete(col); p.classList.remove('active'); }
+  else { selectedDailyCols.add(col); p.classList.add('active'); }
+  renderDailyTable(currentData);
+}));
+showAllCols.addEventListener('click', () => {
+  const all = Array.from(document.querySelectorAll('#pane-hourly .pill[data-col]'));
+  const enable = all.some(el=> !el.classList.contains('active'));
+  all.forEach(el => {
+    if (enable){ el.classList.add('active'); selectedHourCols.add(el.dataset.col); }
+    else { el.classList.remove('active'); selectedHourCols.delete(el.dataset.col); }
+  });
+  renderHourlyTable(currentData);
+});
+showAllDaily.addEventListener('click', () => {
+  const all = Array.from(document.querySelectorAll('#pane-daily .pill[data-dcol]'));
+  const enable = all.some(el=> !el.classList.contains('active'));
+  all.forEach(el => {
+    if (enable){ el.classList.add('active'); selectedDailyCols.add(el.dataset.dcol); }
+    else { el.classList.remove('active'); selectedDailyCols.delete(el.dataset.dcol); }
+  });
+  renderDailyTable(currentData);
+});
 
-                // Loop for 72 hours, starting from the found index
-                for (let i = startIndex; i < startIndex + 72 && i < hourlyData.time.length; i++) {
-                    const time = hourlyData.time[i];
-                    const temp = Math.round(hourlyData.temperature_2m[i]);
-                    const weatherCode = hourlyData.weather_code[i];
-                    const cloudCover = hourlyData.cloud_cover[i];
-                    const uvIndex = hourlyData.uv_index[i];
+/* Map search UI */
+mapSearchBtn.addEventListener('click', () => forwardSearch(mapSearch.value));
+mapSearch.addEventListener('keydown', (e) => { if (e.key === 'Enter') forwardSearch(mapSearch.value); });
+mapClearBtn.addEventListener('click', () => { mapSearch.value=''; mapResults.style.display='none'; mapResults.innerHTML=''; });
 
-                    const forecastTime = moment.tz(time, timezone);
-                    const card = document.createElement('div');
-                    card.className = 'flex flex-col items-center bg-gray-50 rounded-xl p-4 shadow-sm w-32 flex-shrink-0';
-                    card.innerHTML = `
-                        <p class="font-medium text-gray-700">${forecastTime.format('ha')}</p>
-                        <img src="${getWeatherIcon(weatherCode)}" alt="weather icon" class="w-10 h-10 my-2">
-                        <p class="text-xl font-bold">${temp}°C</p>
-                        <p class="text-xs text-gray-500 mt-1">Clouds: ${cloudCover}%</p>
-                        <p class="text-xs text-gray-500">UV: ${uvIndex.toFixed(1)}</p>
-                    `;
-                    hourlyForecastContainer.appendChild(card);
-                }
-            }
+/* ---------- Simple helpers ---------- */
+function showError(msg){
+  errorEl.style.display = 'block';
+  errorEl.textContent = msg;
+  content.style.display = 'none';
+  placeholder.style.display = 'none';
+}
+function clearError(){
+  errorEl.style.display = 'none';
+  errorEl.textContent = '';
+}
+function showLoader(msg='Loading…'){
+  placeholder.style.display = 'block';
+  placeholder.textContent = msg;
+  content.style.display = 'none';
+  clearError();
+}
+function hideLoader(){
+  placeholder.style.display = 'none';
+  content.style.display = 'block';
+}
 
-            // Displays the 16-day daily forecast
-            function displayDailyForecast(dailyData, timezone) {
-                const dailyForecastContainer = document.getElementById('daily-forecast');
-                dailyForecastContainer.innerHTML = '';
+/* formatting helpers */
+function formatTempRaw(val){
+  if (val === null || val === undefined || isNaN(val)) return '—';
+  if (unit === 'C') return Math.round(val) + '°C';
+  return Math.round((val * 9/5) + 32) + '°F';
+}
+function formatHour(iso, tz){
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', timeZone: tz});
+}
+function formatDay(iso, tz){
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString([], {weekday:'short', month:'short', day:'numeric', timeZone: tz});
+}
+function weatherCodeDesc(code){
+  const m = {
+    0:'Clear',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',
+    45:'Fog',48:'Depositing rime fog',
+    51:'Light drizzle',53:'Moderate drizzle',55:'Dense drizzle',
+    56:'Freezing drizzle',57:'Dense freezing drizzle',
+    61:'Slight rain',63:'Moderate rain',65:'Heavy rain',
+    66:'Freezing rain',67:'Heavy freezing rain',
+    71:'Slight snow',73:'Moderate snow',75:'Heavy snow',
+    77:'Snow grains',80:'Slight rain showers',81:'Moderate rain showers',
+    82:'Violent rain showers',85:'Slight snow showers',86:'Heavy snow showers',
+    95:'Thunderstorm',96:'Thunderstorm w/ slight hail',99:'Thunderstorm w/ heavy hail'
+  };
+  return m[code] || ('Code ' + code);
+}
+function weatherCodeEmoji(code){
+  if (code === 0) return '☀️';
+  if (code <= 3) return '⛅';
+  if (code >=45 && code <=48) return '🌫️';
+  if (code >=51 && code <=67) return '🌧️';
+  if (code >=71 && code <=86) return '❄️';
+  if (code >=95) return '⛈️';
+  return '🌤️';
+}
 
-                // Loop for the entire daily forecast length (up to 16 days)
-                for (let i = 0; i < dailyData.time.length; i++) {
-                    const time = dailyData.time[i];
-                    const maxTemp = Math.round(dailyData.temperature_2m_max[i]);
-                    const minTemp = Math.round(dailyData.temperature_2m_min[i]);
-                    const weatherCode = dailyData.weather_code[i];
-                    const uvIndexMax = dailyData.uv_index_max[i];
-                    // Retrieve sunrise and sunset times
-                    const sunriseTime = moment.tz(dailyData.sunrise[i], timezone).format('h:mm A');
-                    const sunsetTime = moment.tz(dailyData.sunset[i], timezone).format('h:mm A');
+/* ---------- Map initialization ---------- */
+function initMap(){
+  // default center if geolocation denied
+  const defaultLat = 40.7128, defaultLon = -74.0060; // New York city
+  map = L.map('map', { attributionControl: true }).setView([defaultLat, defaultLon], 6);
 
-                    const card = document.createElement('div');
-                    card.className = 'flex items-center justify-between bg-gray-50 rounded-xl p-4 shadow-sm';
-                    card.innerHTML = `
-                        <p class="font-medium text-gray-700 w-24">${moment.tz(time, timezone).format('ddd, MMM D')}</p>
-                        <img src="${getWeatherIcon(weatherCode)}" alt="weather icon" class="w-10 h-10">
-                        <div class="flex flex-col items-center w-24 text-sm text-gray-500">
-                          <p>UV Max: ${uvIndexMax.toFixed(1)}</p>
-                          <p>☀️ ${sunriseTime}</p>
-                          <p>🌙 ${sunsetTime}</p>
-                        </div>
-                        <p class="font-bold text-gray-800 text-right w-24">${maxTemp}°C / <span class="text-gray-500">${minTemp}°C</span></p>
-                    `;
-                    dailyForecastContainer.appendChild(card);
-                }
-            }
+  // OpenStreetMap tiles (standard)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
 
-            // Maps weather codes to simple descriptions
-            function getWeatherDescription(code) {
-                const descriptions = {
-                    0: 'Clear sky',
-                    1: 'Mainly clear',
-                    2: 'Partly cloudy',
-                    3: 'Overcast',
-                    45: 'Fog',
-                    48: 'Depositing rime fog',
-                    51: 'Light drizzle',
-                    53: 'Moderate drizzle',
-                    55: 'Dense drizzle',
-                    56: 'Light freezing drizzle',
-                    57: 'Dense freezing drizzle',
-                    61: 'Slight rain',
-                    63: 'Moderate rain',
-                    65: 'Heavy rain',
-                    66: 'Light freezing rain',
-                    67: 'Heavy freezing rain',
-                    71: 'Slight snow fall',
-                    73: 'Moderate snow fall',
-                    75: 'Heavy snow fall',
-                    77: 'Snow grains',
-                    80: 'Slight rain showers',
-                    81: 'Moderate rain showers',
-                    82: 'Violent rain showers',
-                    85: 'Slight snow showers',
-                    86: 'Heavy snow showers',
-                    95: 'Thunderstorm',
-                    96: 'Thunderstorm with slight hail',
-                    99: 'Thunderstorm with heavy hail'
-                };
-                return descriptions[code] || 'N/A';
-            }
+  // add marker (hidden until placed)
+  marker = L.marker([defaultLat, defaultLon], { draggable: true }).addTo(map);
+  marker.on('dragend', async (e) => {
+    const p = marker.getLatLng();
+    // reverse geocode and fetch forecast
+    await handlePick(p.lat, p.lng);
+  });
 
-            // Maps weather codes to icons (placeholder image)
-            function getWeatherIcon(code) {
-                const icons = {
-                    0: 'https://placehold.co/40x40/5c6ac4/ffffff?text=☀️',
-                    1: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌤️',
-                    2: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌥️',
-                    3: 'https://placehold.co/40x40/5c6ac4/ffffff?text=☁️',
-                    45: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌫️',
-                    48: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌫️',
-                    51: 'https://placehold.co/40x40/5c6ac4/ffffff?text=💧',
-                    53: 'https://placehold.co/40x40/5c6ac4/ffffff?text=💧',
-                    55: 'https://placehold.co/40x40/5c6ac4/ffffff?text=💧',
-                    56: 'https://placehold.co/40x40/5c6ac4/ffffff?text=❄️',
-                    57: 'https://placehold.co/40x40/5c6ac4/ffffff?text=❄️',
-                    61: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌧️',
-                    63: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌧️',
-                    65: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌧️',
-                    66: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌧️',
-                    67: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌧️',
-                    71: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
-                    73: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
-                    75: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
-                    77: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
-                    80: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌦️',
-                    81: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌦️',
-                    82: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌦️',
-                    85: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
-                    86: 'https://placehold.co/40x40/5c6ac4/ffffff?text=🌨️',
-                    95: 'https://placehold.co/40x40/5c6ac4/ffffff?text=⛈️',
-                    96: 'https://placehold.co/40x40/5c6ac4/ffffff?text=⛈️',
-                    99: 'https://placehold.co/40x40/5c6ac4/ffffff?text=⛈️'
-                };
-                return icons[code] || 'https://placehold.co/40x40/5c6ac4/ffffff?text=❓';
-            }
+  // click to place/move marker
+  map.on('click', async (e) => {
+    const {lat, lng} = e.latlng;
+    marker.setLatLng([lat, lng]);
+    await handlePick(lat, lng);
+  });
 
-            searchButton.addEventListener('click', async () => {
-                errorMessage.classList.add('hidden');
-                
-                const location = locationInput.value.trim();
-                const lat = latInput.value.trim();
-                const lon = lonInput.value.trim();
+  // try to center map on browser geolocation (optional)
+  if (navigator.geolocation){
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const lat = pos.coords.latitude, lon = pos.coords.longitude;
+      map.setView([lat, lon], 9);
+      marker.setLatLng([lat, lon]);
+      // do initial fetch automatically
+      handlePick(lat, lon);
+    }, (err) => {
+      // if denied, we keep default
+      console.warn('Geolocation denied or unavailable. Using default map center.');
+    }, { timeout: 8000 });
+  }
+}
 
-                let latitude, longitude, city, country;
+/* ---------- Nominatim reverse & forward functions ---------- */
+/*
+ Nominatim recommends identifying via an email or application string for heavy use.
+ For light personal use this is fine; avoid heavy automatic scraping.
+*/
+async function reverseGeocode(lat, lon){
+  try {
+    const url = `${nominatimReverse}?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=10&addressdetails=1`;
+    const r = await fetch(url, { headers: { 'Accept-Language': 'en' }});
+    if (!r.ok) throw new Error('Reverse geocode failed');
+    const body = await r.json();
+    // build a reasonable label
+    if (body && body.address){
+      const a = body.address;
+      // prefer city/town/village -> county -> state -> country
+      const place = a.city || a.town || a.village || a.hamlet || a.county || a.state || a.country;
+      const country = a.country;
+      if (place && country) return `${place}, ${country}`;
+      if (body.display_name) return body.display_name;
+    }
+    // fallback to display_name or coords
+    if (body && body.display_name) return body.display_name;
+    return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  } catch (e){
+    console.warn('Reverse geocode error', e);
+    return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  }
+}
 
-                if (lat && lon) {
-                    // Search by coordinates
-                    latitude = parseFloat(lat);
-                    longitude = parseFloat(lon);
+async function forwardSearch(query){
+  if (!query || !query.trim()) return;
+  mapResults.style.display = 'none';
+  mapResults.innerHTML = '';
+  try {
+    const url = `${nominatimSearch}?format=jsonv1&q=${encodeURIComponent(query)}&limit=6&addressdetails=1`;
+    const r = await fetch(url, { headers: { 'Accept-Language': 'en' }});
+    if (!r.ok) throw new Error('Search failed');
+    const items = await r.json();
+    if (!items || items.length === 0){ mapResults.style.display='none'; return; }
+    mapResults.innerHTML = '';
+    items.forEach(it => {
+      const li = document.createElement('div');
+      li.className = 'sr-item';
+      li.textContent = it.display_name;
+      li.addEventListener('click', async () => {
+        mapResults.style.display = 'none';
+        mapResults.innerHTML = '';
+        const lat = parseFloat(it.lat), lon = parseFloat(it.lon);
+        map.setView([lat, lon], 10);
+        marker.setLatLng([lat, lon]);
+        await handlePick(lat, lon);
+      });
+      mapResults.appendChild(li);
+    });
+    mapResults.style.display = 'block';
+  } catch (e){
+    console.warn('Forward search error', e);
+  }
+}
 
-                    if (isNaN(latitude) || isNaN(longitude)) {
-                        errorMessage.textContent = 'Please enter valid numerical coordinates.';
-                        errorMessage.classList.remove('hidden');
-                        return;
-                    }
-                    
-                    const locationNameData = await fetchLocationName(latitude, longitude);
-                    city = locationNameData.name;
-                    country = locationNameData.country;
+/* ---------- Handle picking location (click or drag) ---------- */
+async function handlePick(lat, lon){
+  // 1) reverse geocode for name
+  const label = await reverseGeocode(lat, lon);
+  // update UI immediately
+  locLabel.textContent = label;
+  coordsEl.textContent = `Lat ${lat.toFixed(4)} • Lon ${lon.toFixed(4)}`;
+  // 2) fetch forecast for this lat/lon
+  await fetchForecast(lat, lon, label);
+}
 
-                } else if (location) {
-                    // Search by city/zip code
-                    const locationData = await fetchLocation(location);
-                    if (!locationData) {
-                        errorMessage.textContent = 'Location not found. Please try again.';
-                        errorMessage.classList.remove('hidden');
-                        return;
-                    }
-                    latitude = locationData.latitude;
-                    longitude = locationData.longitude;
-                    city = locationData.name;
-                    country = locationData.country;
-                } else {
-                    errorMessage.textContent = 'Please enter a location or coordinates.';
-                    errorMessage.classList.remove('hidden');
-                    return;
-                }
+/* ---------- Geocoding & Forecast functions (Open-Meteo) ---------- */
+async function doSearch(query){
+  clearError();
+  if (!query || !query.trim()) { showError('Please enter a place name or ZIP.'); return; }
+  showLoader('Looking up location…');
+  try {
+    const url = `${geocodeBase}?name=${encodeURIComponent(query)}&count=6&language=en&format=json`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('Geocoding failed');
+    const body = await r.json();
+    if (!body.results || body.results.length === 0) throw new Error('No results found');
+    const place = body.results[0];
+    const label = `${place.name}${place.admin1 ? ', '+place.admin1 : ''}${place.country ? ', '+place.country : ''}`;
+    // center map and place marker
+    map.setView([place.latitude, place.longitude], 10);
+    marker.setLatLng([place.latitude, place.longitude]);
+    fetchForecast(place.latitude, place.longitude, label);
+  } catch (e){
+    showError(e.message || 'Location search failed');
+  }
+}
 
-                const weatherData = await fetchWeather(latitude, longitude);
+async function useBrowserLocation(){
+  clearError();
+  if (!navigator.geolocation) { showError('Geolocation not supported'); return; }
+  showLoader('Getting your location…');
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const lat = pos.coords.latitude; const lon = pos.coords.longitude;
+    map.setView([lat, lon], 10);
+    marker.setLatLng([lat, lon]);
+    const label = await reverseGeocode(lat, lon);
+    fetchForecast(lat, lon, label);
+  }, (err) => {
+    showError('Location permission denied or failed');
+  }, {timeout:10000});
+}
 
-                if (weatherData) {
-                    const timezone = weatherData.timezone;
-                    displayCurrentWeather(weatherData, city, country);
-                    displayHourlyForecast(weatherData.hourly, timezone);
-                    displayDailyForecast(weatherData.daily, timezone);
-                    forecastContainer.classList.remove('hidden');
-                } else {
-                    errorMessage.textContent = 'Failed to fetch weather data. Please try again later.';
-                    errorMessage.classList.remove('hidden');
-                }
-            });
-        });
-    </script>
+async function fetchForecast(lat, lon, label){
+  showLoader('Fetching forecast data (this may take a moment)…');
+  try {
+    const hourly = Array.from(new Set(allHourly)).join(',');
+    const daily = Array.from(new Set(allDaily)).join(',');
+    const params = new URLSearchParams({
+      latitude: lat,
+      longitude: lon,
+      hourly,
+      daily,
+      current_weather: 'true',
+      timezone: 'auto',
+      forecast_days: '16'
+    });
+    const url = `${forecastBase}?${params.toString()}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('Forecast fetch failed');
+    const data = await r.json();
+    data._label = label;
+    data._lat = lat; data._lon = lon;
+    currentData = data;
+    renderAll(data);
+  } catch (e){
+    showError(e.message || 'Forecast fetch failed');
+  }
+}
+
+/* ---------- Rendering (re-using previous render functions) ---------- */
+function renderAll(data){
+  hideLoader();
+  if (!data) { showError('No data'); return; }
+  locLabel.textContent = data._label || locLabel.textContent;
+  tzLabel.textContent = 'Timezone: ' + (data.timezone || 'auto');
+  coordsEl.textContent = `Lat ${Number(data.latitude).toFixed(4)} • Lon ${Number(data.longitude).toFixed(4)}`;
+  updatedEl.textContent = 'Updated: ' + (new Date().toLocaleString());
+  // Current
+  const cw = data.current_weather || {};
+  const firstHour = data.hourly?.time?.[0];
+  const nowTime = cw.time || firstHour;
+  const nowTempVal = cw.temperature ?? (data.hourly?.temperature_2m?.[0] ?? null);
+  nowTemp.textContent = nowTempVal !== null ? formatTempRaw(nowTempVal) : '—';
+  const wcode = cw.weathercode ?? (data.hourly?.weathercode?.[0]);
+  nowSummary.textContent = `${weatherCodeEmoji(wcode)} ${weatherCodeDesc(wcode)}`;
+  nowDetails.textContent = nowTime ? `Local time: ${new Date(nowTime).toLocaleString()}` : '';
+  nowWind.textContent = `Wind: ${cw.windspeed ?? (data.hourly?.windspeed_10m?.[0] ?? '—')} m/s • ${cw.winddirection ?? (data.hourly?.winddirection_10m?.[0] ?? '—')}°`;
+  nowHum.textContent = `RH: ${cw.relativehumidity ?? (data.hourly?.relativehumidity_2m?.[0] ?? '—')}%`;
+  nowPrec.textContent = `Precip (h): ${cw.precipitation ?? (data.hourly?.precipitation?.[0] ?? '—')}`;
+  nowUV.textContent = `UV: ${ (data.hourly?.uv_index?.[0] ?? '—') }`;
+  currentVars.textContent = JSON.stringify(cw, null, 2);
+
+  // hourly & daily tables
+  renderHourlyTable(data);
+  renderDailyTable(data);
+
+  content.style.display = 'block';
+}
+
+/* Hourly table rendering (simplified formatting for clarity) */
+function renderHourlyTable(data){
+  hourlyHead.innerHTML = '';
+  hourlyBody.innerHTML = '';
+  if (!data || !data.hourly || !data.hourly.time){ hourlyHead.innerHTML = '<tr><th>No hourly data</th></tr>'; return; }
+  const tz = data.timezone || 'UTC';
+  const columns = ['time'].concat(Array.from(selectedHourCols).filter(c=> c !== 'time'));
+  const ths = columns.map(c => `<th>${c}</th>`).join('');
+  hourlyHead.innerHTML = `<tr>${ths}</tr>`;
+  const n = data.hourly.time.length;
+  for (let i=0;i<n;i++){
+    const time = data.hourly.time[i];
+    const cells = columns.map(col => `<td>${formatHourlyCell(col, data, i, tz)}</td>`).join('');
+    hourlyBody.insertAdjacentHTML('beforeend', `<tr>${cells}</tr>`);
+  }
+}
+
+function formatHourlyCell(col, data, idx, tz){
+  const h = data.hourly;
+  try {
+    switch(col){
+      case 'time': return formatHour(h.time[idx], tz);
+      case 'temperature_2m': return formatTempRaw(h.temperature_2m?.[idx]);
+      case 'apparent_temperature': return formatTempRaw(h.apparent_temperature?.[idx]);
+      case 'relativehumidity_2m': return (h.relativehumidity_2m?.[idx] ?? '—') + '%';
+      case 'dewpoint_2m': return formatTempRaw(h.dewpoint_2m?.[idx]);
+      case 'pressure_msl': return (h.pressure_msl?.[idx] ?? '—') + ' hPa';
+      case 'surface_pressure': return (h.surface_pressure?.[idx] ?? '—') + ' hPa';
+      case 'precipitation': return (h.precipitation?.[idx] ?? '—') + ' mm';
+      case 'rain': return (h.rain?.[idx] ?? '—') + ' mm';
+      case 'showers': return (h.showers?.[idx] ?? '—') + ' mm';
+      case 'snowfall': return (h.snowfall?.[idx] ?? '—') + ' cm';
+      case 'snow_depth': return (h.snow_depth?.[idx] ?? '—') + ' cm';
+      case 'cloudcover': return (h.cloudcover?.[idx] ?? '—') + '%';
+      case 'visibility': return (h.visibility?.[idx] ?? '—') + ' m';
+      case 'windspeed_10m': return (h.windspeed_10m?.[idx] ?? '—') + ' m/s';
+      case 'winddirection_10m': return (h.winddirection_10m?.[idx] ?? '—') + '°';
+      case 'windgusts_10m': return (h.windgusts_10m?.[idx] ?? '—') + ' m/s';
+      case 'uv_index': return (h.uv_index?.[idx] ?? '—');
+      case 'shortwave_radiation': return (h.shortwave_radiation?.[idx] ?? '—') + ' W/m²';
+      case 'direct_radiation': return (h.direct_radiation?.[idx] ?? '—') + ' W/m²';
+      case 'diffuse_radiation': return (h.diffuse_radiation?.[idx] ?? '—') + ' W/m²';
+      case 'precipitation_probability': return (h.precipitation_probability?.[idx] ?? '—') + '%';
+      case 'soil_temperature_0cm': return formatTempRaw(h.soil_temperature_0cm?.[idx]);
+      case 'soil_temperature_7cm': return formatTempRaw(h.soil_temperature_7cm?.[idx]);
+      case 'soil_temperature_28cm': return formatTempRaw(h.soil_temperature_28cm?.[idx]);
+      case 'soil_moisture_0_1cm': return (h.soil_moisture_0_1cm?.[idx] ?? '—');
+      case 'et0_fao_evapotranspiration': return (h.et0_fao_evapotranspiration?.[idx] ?? '—');
+      case 'weathercode': {
+        const code = h.weathercode?.[idx];
+        return `${weatherCodeEmoji(code)} ${weatherCodeDesc(code)}`;
+      }
+      default:
+        return (h[col]?.[idx] ?? '—');
+    }
+  } catch(e){
+    return '—';
+  }
+}
+
+/* Daily table */
+function renderDailyTable(data){
+  dailyHead.innerHTML = '';
+  dailyBody.innerHTML = '';
+  if (!data || !data.daily || !data.daily.time){ dailyHead.innerHTML = '<tr><th>No daily data</th></tr>'; return; }
+  const tz = data.timezone || 'UTC';
+  const columns = Array.from(selectedDailyCols);
+  const ths = columns.map(c => `<th>${c}</th>`).join('');
+  dailyHead.innerHTML = `<tr>${ths}</tr>`;
+  const n = data.daily.time.length;
+  for (let i=0;i<n;i++){
+    const cells = columns.map(col => `<td>${formatDailyCell(col, data, i, tz)}</td>`).join('');
+    dailyBody.insertAdjacentHTML('beforeend', `<tr>${cells}</tr>`);
+  }
+}
+function formatDailyCell(col, data, idx, tz){
+  const d = data.daily;
+  switch(col){
+    case 'time': return formatDay(d.time[idx], tz);
+    case 'temperature_2m_max': return formatTempRaw(d.temperature_2m_max?.[idx]);
+    case 'temperature_2m_min': return formatTempRaw(d.temperature_2m_min?.[idx]);
+    case 'apparent_temperature_max': return formatTempRaw(d.apparent_temperature_max?.[idx]);
+    case 'apparent_temperature_min': return formatTempRaw(d.apparent_temperature_min?.[idx]);
+    case 'sunrise': return new Date(d.sunrise?.[idx]).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    case 'sunset': return new Date(d.sunset?.[idx]).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    case 'precipitation_sum': return (d.precipitation_sum?.[idx] ?? '—') + ' mm';
+    case 'rain_sum': return (d.rain_sum?.[idx] ?? '—') + ' mm';
+    case 'showers_sum': return (d.showers_sum?.[idx] ?? '—') + ' mm';
+    case 'snowfall_sum': return (d.snowfall_sum?.[idx] ?? '—') + ' cm';
+    case 'precipitation_hours': return (d.precipitation_hours?.[idx] ?? '—') + ' h';
+    case 'precipitation_probability_max': return (d.precipitation_probability_max?.[idx] ?? '—') + '%';
+    case 'windspeed_10m_max': return (d.windspeed_10m_max?.[idx] ?? '—') + ' m/s';
+    case 'windgusts_10m_max': return (d.windgusts_10m_max?.[idx] ?? '—') + ' m/s';
+    case 'winddirection_10m_dominant': return (d.winddirection_10m_dominant?.[idx] ?? '—') + '°';
+    case 'uv_index_max': return (d.uv_index_max?.[idx] ?? '—');
+    case 'shortwave_radiation_sum': return (d.shortwave_radiation_sum?.[idx] ?? '—') + ' W/m²h';
+    case 'et0_fao_evapotranspiration': return (d.et0_fao_evapotranspiration?.[idx] ?? '—');
+    case 'soil_temperature_0cm': return formatTempRaw(d.soil_temperature_0cm?.[idx]);
+    case 'soil_moisture_0_1cm': return (d.soil_moisture_0_1cm?.[idx] ?? '—');
+    case 'weathercode': {
+      const code = d.weathercode?.[idx];
+      return `${weatherCodeEmoji(code)} ${weatherCodeDesc(code)}`;
+    }
+    default: return (d[col]?.[idx] ?? '—');
+  }
+}
+
+/* ---------- CSV Export (current visible) ---------- */
+function downloadCurrentCsv(){
+  if (!currentData) return;
+  const activeTab = document.querySelector('.tab.active').dataset.tab;
+  if (activeTab === 'hourly') downloadHourlyCsv();
+  else if (activeTab === 'daily') downloadDailyCsv();
+  else {
+    const cw = currentData.current_weather || {};
+    const lines = ['key,value', ...Object.keys(cw).map(k => `${k},${JSON.stringify(cw[k])}`)];
+    const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'current_weather.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+}
+function downloadHourlyCsv(){
+  const data = currentData;
+  const cols = ['time', ...Array.from(selectedHourCols).filter(c=>c!=='time')];
+  const rows = [];
+  const n = data.hourly.time.length;
+  for (let i=0;i<n;i++){
+    const row = cols.map(c => {
+      const v = currentData.hourly[c]?.[i];
+      return v === undefined ? '' : (`"${String(v).replace(/"/g,'""')}"`);
+    });
+    rows.push(row.join(','));
+  }
+  const csv = [cols.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'hourly.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+function downloadDailyCsv(){
+  const data = currentData;
+  const cols = Array.from(selectedDailyCols);
+  const rows = [];
+  const n = data.daily.time.length;
+  for (let i=0;i<n;i++){
+    const row = cols.map(c => {
+      const v = currentData.daily[c]?.[i];
+      return v === undefined ? '' : (`"${String(v).replace(/"/g,'""')}"`);
+    });
+    rows.push(row.join(','));
+  }
+  const csv = [cols.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'daily.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- Unit toggle ---------- */
+function toggleUnit(){
+  unit = (unit === 'C') ? 'F' : 'C';
+  unitBtn.textContent = (unit === 'C') ? '°C' : '°F';
+  if (currentData) { renderAll(currentData); }
+}
+
+/* ---------- On load: initialize map and UI ---------- */
+window.addEventListener('load', () => {
+  initMap();
+  q.focus();
+});
+</script>
 </body>
 </html>
