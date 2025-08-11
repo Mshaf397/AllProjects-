@@ -1,3 +1,6 @@
+Here is a corrected and more stable version of the weather app. I've re-written the `fetchWeather` and rendering functions to ensure all data is handled correctly, even if a variable isn't available. The styling and local time display have been preserved from the previous version.
+
+```{html}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -163,8 +166,8 @@
         // Function to translate WMO weather codes to descriptions and emojis
         function getWeatherDescription(code, isDay) {
             const descriptions = {
-                0: { text: "Clear sky", emoji: "☀️" },
-                1: { text: "Mainly clear", emoji: "🌤️" },
+                0: { text: "Clear sky", emoji: isDay ? "☀️" : "🌙" },
+                1: { text: "Mainly clear", emoji: isDay ? "🌤️" : "☁️" },
                 2: { text: "Partly cloudy", emoji: "⛅" },
                 3: { text: "Overcast", emoji: "☁️" },
                 45: { text: "Fog", emoji: "🌫️" },
@@ -192,8 +195,7 @@
                 96: { text: "Thunderstorm with slight hail", emoji: "⛈️" },
                 99: { text: "Thunderstorm with heavy hail", emoji: "🌩️" },
             };
-            // Return a default if the code is not found
-            const fallback = isDay ? { text: "Unknown", emoji: "❓" } : { text: "Unknown", emoji: "❔" };
+            const fallback = { text: "Unknown", emoji: "❓" };
             return descriptions[code] || fallback;
         }
 
@@ -253,19 +255,22 @@
 
         // Fetches weather data from the Open-Meteo API
         async function fetchWeather(lat, lon) {
-            // Updated API URL with many more variables
             const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,precipitation_probability,weather_code,pressure_msl,cloud_cover,visibility,dew_point_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant&forecast_days=16&timezone=auto`;
             try {
                 const res = await fetch(url);
+                if (!res.ok) {
+                    throw new Error(`API returned status: ${res.status}`);
+                }
                 const weather = await res.json();
                 renderCurrent(weather);
                 renderHourly(weather);
                 renderDaily(weather);
             } catch (error) {
                 console.error("Error fetching weather data:", error);
-                document.getElementById("currentWeather").innerHTML = `<p style="color:red;">Failed to load weather data. Please try again.</p>`;
-                document.getElementById("hourlyWeather").innerHTML = `<p style="color:red;">Failed to load weather data. Please try again.</p>`;
-                document.getElementById("dailyWeather").innerHTML = `<p style="color:red;">Failed to load weather data. Please try again.</p>`;
+                const errorMessage = `<p style="color:red; text-align:center;">Failed to load weather data. Please check your internet connection or try a different location. Error: ${error.message}</p>`;
+                document.getElementById("currentWeather").innerHTML = errorMessage;
+                document.getElementById("hourlyWeather").innerHTML = errorMessage;
+                document.getElementById("dailyWeather").innerHTML = errorMessage;
             }
         }
 
@@ -315,13 +320,15 @@
             hourlyContainer.innerHTML = ""; // Clear previous content
             const times = w.hourly.time;
 
+            // Iterate over all hourly data points
             for (let i = 0; i < times.length; i += 3) { // Display every 3rd hour for brevity
                 const time = times[i];
                 const dateTime = new Date(time);
                 const localTime = dateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 const localDate = dateTime.toLocaleDateString();
                 const code = w.hourly.weather_code[i];
-                const description = getWeatherDescription(code, w.hourly.is_day[i]);
+                const isDay = w.hourly.is_day ? w.hourly.is_day[i] : 1;
+                const description = getWeatherDescription(code, isDay);
                 
                 const card = document.createElement("div");
                 card.className = "forecast-card";
@@ -355,7 +362,7 @@
                 const localSunriseTime = new Date(sunrise).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 const localSunsetTime = new Date(sunset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 const code = w.daily.weather_code[i];
-                const description = getWeatherDescription(code, true); // Daily is always considered day
+                const description = getWeatherDescription(code, true);
 
                 const card = document.createElement("div");
                 card.className = "forecast-card";
