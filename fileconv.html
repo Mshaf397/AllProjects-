@@ -1,18 +1,251 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>MP4 ➜ AMV Converter</title>
-  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/ffmpeg.min.js"></script>
+  <meta charset="utf-8" />
+  <title>MP4 → AMV Converter (FFmpeg.wasm)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    fieldset { border: 1px solid #ccc; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+    label { display: block; margin: 0.5rem 0 0.25rem; font-weight: 600; }
+    select, input[type="number"], input[type="file"], button { font: inherit; padding: 0.5rem; }
+    .row { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    progress { width: 100%; height: 1rem; }
+    .muted { opacity: 0.8; font-size: 0.9rem; }
+    .error { color: #b00020; }
+    .ok { color: #066a2c; }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
-  <h2>MP4 ➜ AMV-Compatible AVI Converter</h2>
-  <input type="file" id="uploader" accept="video/mp4" />
-  <p id="status">No file selected.</p>
-  <a id="downloadLink" style="display:none">Download result</a>
+  <h1>MP4 → AMV Converter (FFmpeg.wasm)</h1>
+  <p class="muted">All processing happens locally in your browser. AMV is a legacy, low‑res format—expect small files and retro vibes.</p>
 
+  <fieldset>
+    <legend>Source video</legend>
+    <label for="file">Choose MP4 (or any video FFmpeg can read)</label>
+    <input id="file" type="file" accept="video/*" />
+  </fieldset>
 
-  <script src = "https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/ffmpeg.min.js">
+  <fieldset>
+    <legend>AMV settings</legend>
+    <div class="row">
+      <div>
+        <label for="preset">Resolution preset</label>
+        <select id="preset">
+          <option value="160x120">160×120 (classic)</option>
+          <option value="176x144">176×144 (QCIF)</option>
+          <option value="208x176">208×176</option>
+          <option value="220x176">220×176</option>
+          <option value="320x240" selected>320×240 (max-ish)</option>
+        </select>
+      </div>
+      <div>
+        <label for="fps">Frame rate</label>
+        <select id="fps">
+          <option value="12">12 fps</option>
+          <option value="16" selected>16 fps</option>
+          <option value="20">20 fps</option>
+          <option value="24">24 fps</option>
+        </select>
+      </div>
+      <div>
+        <label for="vbitrate">Video bitrate (kbps)</label>
+        <input id="vbitrate" type="number" min="64" max="2000" step="32" value="384" />
+      </div>
+      <div>
+        <label>Audio</label>
+        <div class="muted">Mono, 22050 Hz, ADPCM IMA (AMV standard)</div>
+      </div>
+    </div>
+  </fieldset>
+
+  <div class="row">
+    <button id="convert" disabled>Loading FFmpeg…</button>
+    <button id="reset" class="hidden">Reset</button>
+  </div>
+
+  <div id="status" class="muted">Initializing…</div>
+  <progress id="progress" max="1" value="0"></progress>
+
+  <p id="compat" class="muted"></p>
+  <p id="error" class="error hidden"></p>
+  <p id="success" class="ok hidden"></p>
+  <a id="download" class="hidden" download="output.amv">Download AMV</a>
+
+  <script type="module">
+    import { FFmpeg } from 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg.min.js';
+    import { toBlobURL, fetchFile } from 'https://unpkg.com/@ffmpeg/util@0.12.1/dist/util.min.js';
+
+    const ui = {
+      file: document.getElementById('file'),
+      preset: document.getElementById('preset'),
+      fps: document.getElementById('fps'),
+      vbitrate: document.getElementById('vbitrate'),
+      convert: document.getElementById('convert'),
+      reset: document.getElementById('reset'),
+      status: document.getElementById('status'),
+      progress: document.getElementById('progress'),
+      compat: document.getElementById('compat'),
+      error: document.getElementById('error'),
+      success: document.getElementById('success'),
+      download: document.getElementById('download'),
+    };
+
+    const ffmpeg = new FFmpeg();
+    let logs = '';
+
+    function setStatus(text) { ui.status.textContent = text; }
+    function show(el, show = true) { el.classList.toggle('hidden', !show); }
+    function setError(text) { ui.error.textContent = text; show(ui.error, !!text); }
+
+    // Load FFmpeg core (multi-threaded for speed)
+    async function loadFFmpeg() {
+      setStatus('Fetching FFmpeg core…');
+      ffmpeg.on('log', ({ message }) => {
+        logs += message + '\n';
+        // optional: console.log(message);
+      });
+      ffmpeg.on('progress', ({ progress, time }) => {
+        if (Number.isFinite(progress)) ui.progress.value = progress;
+      });
+
+      const base = 'https://unpkg.com/@ffmpeg/core-mt@0.12.7/dist/umd';
+      await ffmpeg.load({
+        // Blob URLs avoid cross-origin and COOP/COEP headaches
+        coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, 'application/wasm'),
+        workerURL: await toBlobURL(`${base}/ffmpeg-core.worker.js`, 'text/javascript'),
+      });
+
+      // Check AMV encode support
+      setStatus('Checking AMV encoder support…');
+      logs = '';
+      try {
+        await ffmpeg.exec(['-hide_banner', '-codecs']);
+      } catch (_) {
+        // some cores return error code; logs still collected
+      }
+      const hasAMV = /\bEV(?:\.\S*)?\s+amv\b/i.test(logs);
+      const hasADPCM = /\bEA(?:\.\S*)?\s+adpcm_ima_amv\b/i.test(logs);
+
+      if (hasAMV && hasADPCM) {
+        ui.compat.textContent = 'AMV encoder detected.';
+        ui.compat.className = 'ok';
+        setStatus('Ready.');
+        ui.convert.disabled = false;
+        ui.convert.textContent = 'Convert to AMV';
+      } else {
+        ui.compat.textContent = 'AMV encoder not found in this FFmpeg build.';
+        ui.compat.className = 'error';
+        setStatus('AMV not supported by current core.');
+        ui.convert.disabled = true;
+        ui.convert.textContent = 'AMV not available';
+        setError(
+          'This FFmpeg.wasm core does not include the AMV encoder (amv) and/or audio codec (adpcm_ima_amv). ' +
+          'Use a core built with those codecs enabled.'
+        );
+      }
+    }
+
+    async function convert() {
+      setError('');
+      ui.success.textContent = '';
+      show(ui.success, false);
+      show(ui.download, false);
+      ui.convert.disabled = true;
+      ui.reset.disabled = true;
+      setStatus('Preparing…');
+      ui.progress.value = 0;
+
+      const file = ui.file.files?.[0];
+      if (!file) {
+        setError('Please choose a video file first.');
+        ui.convert.disabled = false;
+        return;
+      }
+
+      const preset = ui.preset.value; // e.g., "320x240"
+      const fps = parseInt(ui.fps.value, 10);
+      const vkbps = Math.max(64, Math.min(2000, parseInt(ui.vbitrate.value || '384', 10)));
+      const outName = file.name.replace(/\.[^/.]+$/, '') + '.amv';
+
+      // Write input
+      const inName = 'input.' + (file.name.split('.').pop() || 'mp4');
+      await ffmpeg.writeFile(inName, await fetchFile(file));
+
+      // Build filter chain
+      // - scale to preset with Lanczos, pad to exact size if needed, enforce fps
+      const [w, h] = preset.split('x').map(Number);
+      const vf = [
+        `scale=${w}:${h}:flags=lanczos`,
+        `fps=${fps}`,
+      ].join(',');
+
+      // Construct args
+      const args = [
+        '-i', inName,
+        '-y',
+        '-vf', vf,
+        '-pix_fmt', 'yuv420p',
+        '-c:v', 'amv',
+        '-b:v', `${vkbps}k`,
+        '-c:a', 'adpcm_ima_amv',
+        '-ac', '1',
+        '-ar', '22050',
+        '-f', 'amv',
+        'output.amv'
+      ];
+
+      setStatus('Converting… (this can take a while for large files)');
+      try {
+        await ffmpeg.exec(args);
+      } catch (err) {
+        setError('Conversion failed. Try a smaller resolution/bitrate or a shorter clip.');
+        ui.convert.disabled = false;
+        ui.reset.disabled = false;
+        return;
+      }
+
+      setStatus('Finalizing…');
+      const data = await ffmpeg.readFile('output.amv');
+      const blob = new Blob([data.buffer], { type: 'video/x-amv' });
+      const url = URL.createObjectURL(blob);
+
+      ui.download.href = url;
+      ui.download.download = outName;
+      ui.download.textContent = `Download ${outName}`;
+      show(ui.download, true);
+      ui.success.textContent = 'Done!';
+      show(ui.success, true);
+      setStatus('Ready.');
+      ui.convert.disabled = false;
+      ui.reset.disabled = false;
+    }
+
+    function resetUI() {
+      ui.file.value = '';
+      ui.progress.value = 0;
+      setError('');
+      ui.success.textContent = '';
+      show(ui.success, false);
+      show(ui.download, false);
+      setStatus('Ready.');
+    }
+
+    ui.convert.addEventListener('click', convert);
+    ui.reset.addEventListener('click', resetUI);
+
+    // Kick off
+    loadFFmpeg().catch(err => {
+      setError('Failed to load FFmpeg. Try reloading the page or using a different browser.');
+      ui.convert.disabled = true;
+      ui.convert.textContent = 'Unavailable';
+      setStatus('Error.');
+      console.error(err);
+    });
   </script>
 </body>
 </html>
