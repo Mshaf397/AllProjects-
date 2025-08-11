@@ -101,6 +101,49 @@
             </div>
           </div>
         </div>
+        
+        <!-- Map container -->
+<div id="map" style="height: 300px; margin-bottom: 15px;"></div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Create the map
+    const map = L.map('map').setView([40.7128, -74.0060], 6); // Default: NYC
+
+    // Add OSM tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Marker
+    let marker = L.marker([40.7128, -74.0060], { draggable: true }).addTo(map);
+
+    // When map is clicked
+    map.on('click', async function(e) {
+        marker.setLatLng(e.latlng);
+        await updateWeatherFromMap(e.latlng.lat, e.latlng.lng);
+    });
+
+    // When marker is dragged
+    marker.on('dragend', async function(e) {
+        const pos = marker.getLatLng();
+        await updateWeatherFromMap(pos.lat, pos.lng);
+    });
+
+    async function updateWeatherFromMap(lat, lon) {
+        // Reverse geocode to get name
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+        const data = await res.json();
+        const placeName = data.display_name || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+
+        document.getElementById("locationName").textContent = placeName;
+
+        // Fetch new weather data
+        fetchWeather(lat, lon);
+    }
+});
+</script>
 
         <div class="card" style="margin-top:12px;">
           <div class="current-grid">
