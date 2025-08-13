@@ -75,13 +75,31 @@ function initMap(){
 }
 function renderKV(cur){const kv=$("#currentKV");kv.innerHTML="";for(const[k,v]of Object.entries(cur)){const d=document.createElement("div");d.innerHTML=`<b>${k}</b><br>${fmt(v)}`;kv.appendChild(d)}}
 function renderTable(id,time,obj){const thead=$(id+" thead"),tbody=$(id+" tbody"),keys=Object.keys(obj).filter(k=>k!=="time");thead.innerHTML="<tr><th>time</th>"+keys.map(k=>`<th>${k}</th>`).join("")+"</tr>";tbody.innerHTML=time.map((t,i)=>"<tr><td>"+t+"</td>"+keys.map(k=>`<td>${fmt(obj[k][i])}</td>`).join("")+"</tr>").join("")}
-async function fetchWeather(){
- const lat=$("#lat").value,lon=$("#lon").value;
- const url="https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&timezone=auto&forecast_days=16&current="+CURRENT+"&hourly="+HOURLY+"&daily="+DAILY;
- const r=await fetch(url);const j=await r.json();
- $("#tz").textContent="TZ: "+j.timezone;$("#place").textContent=`Selected: ${lat}, ${lon}`;
- if(j.current)renderKV(j.current);if(j.hourly)renderTable("#hourlyTable",j.hourly.time,j.hourly);if(j.daily)renderTable("#dailyTable",j.daily.time,j.daily);
+async function fetchWeather() {
+  const lat = $("#lat").value;
+  const lon = $("#lon").value;
+
+  const currentParams = CURRENT.join(",");
+  const hourlyParams = HOURLY.join(",");
+  const dailyParams = DAILY.join(",");
+
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&timezone=auto&forecast_days=16&current=${currentParams}&hourly=${hourlyParams}&daily=${dailyParams}`;
+
+  try {
+    const r = await fetch(url);
+    const j = await r.json();
+
+    $("#tz").textContent = "TZ: " + j.timezone;
+    $("#place").textContent = `Selected: ${lat}, ${lon}`;
+
+    if (j.current) renderKV(j.current);
+    if (j.hourly) renderTable("#hourlyTable", j.hourly.time, j.hourly);
+    if (j.daily) renderTable("#dailyTable", j.daily.time, j.daily);
+  } catch (err) {
+    console.error("Failed to fetch weather data:", err);
+  }
 }
+
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));b.classList.add("active");$("#"+b.dataset.t).classList.add("active");if(b.dataset.t==="now")setTimeout(()=>map.invalidateSize(),50)});
 $("#go").onclick=fetchWeather;
 $("#geo").onclick=()=>navigator.geolocation.getCurrentPosition(p=>{$("#lat").value=p.coords.latitude.toFixed(5);$("#lon").value=p.coords.longitude.toFixed(5);marker.setLatLng([p.coords.latitude,p.coords.longitude]);map.setView([p.coords.latitude,p.coords.longitude],9);fetchWeather()});
