@@ -1,389 +1,264 @@
-Here is a corrected and more stable version of the weather app. I've re-written the `fetchWeather` and rendering functions to ensure all data is handled correctly, even if a variable isn't available. The styling and local time display have been preserved from the previous version.
-
-```{html}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Weather App</title>
-    <!-- Leaflet CSS for the map -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Custom styles for a polished look -->
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f7f6;
-            color: #333;
-        }
-        .container {
-            max-width: 900px;
-            margin: 20px auto;
-            padding: 0 10px;
-        }
-        .tabs {
-            display: flex;
-            background: #2c3e50;
-            color: #fff;
-            border-radius: 5px 5px 0 0;
-        }
-        .tab-button {
-            flex: 1;
-            padding: 15px 20px;
-            background: none;
-            color: #eee;
-            cursor: pointer;
-            text-align: center;
-            border: none;
-            transition: background-color 0.3s ease;
-        }
-        .tab-button.active {
-            background-color: #34495e;
-        }
-        .tab-button:hover {
-            background-color: #34495e;
-        }
-        .tab-content {
-            display: none;
-            padding: 20px;
-            background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            border-radius: 0 0 5px 5px;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        h2, h3 {
-            color: #2c3e50;
-            margin-top: 0;
-        }
-        #locationName {
-            margin-bottom: 15px;
-            font-size: 1.5rem;
-        }
-        #map {
-            height: 350px;
-            margin-bottom: 20px;
-            border-radius: 5px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        .weather-item {
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .weather-item:last-child {
-            border-bottom: none;
-        }
-        .weather-item strong {
-            font-weight: bold;
-            color: #34495e;
-            margin-right: 10px;
-        }
-        .weather-emoji {
-            font-size: 2em;
-            margin-left: 15px;
-        }
-        .forecast-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-        }
-        .forecast-card {
-            background-color: #f9f9f9;
-            padding: 15px;
-            border-radius: 5px;
-            border: 1px solid #eee;
-            text-align: center;
-        }
-        .forecast-card .date {
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-        .forecast-card .details {
-            font-size: 0.9em;
-            color: #666;
-        }
-        /* Responsive adjustments */
-        @media (max-width: 600px) {
-            .tabs {
-                flex-direction: column;
-            }
-            .tab-button {
-                padding: 10px;
-            }
-        }
-    </style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>All-in Weather (Open-Meteo + OSM)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+:root{--bg:#0b0e11;--fg:#e9eef3;--mut:#9fb0bf;--card:#13171c;--acc:#3aa0ff;--ok:#19c37d}
+@media (prefers-color-scheme: light){:root{--bg:#f6f7fb;--fg:#0d1b2a;--mut:#495867;--card:#ffffff;--acc:#0066ff;--ok:#0a8f5a}}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px system-ui,Segoe UI,Roboto,Helvetica,Arial}
+header{padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--card);position:sticky;top:0;z-index:2;border-bottom:1px solid #0003}
+h1{font-size:16px;margin:0;font-weight:600}
+small{color:var(--mut)}
+#tabs{display:flex;gap:6px}
+.tab{border:1px solid #0003;background:transparent;color:var(--fg);padding:6px 10px;border-radius:8px;cursor:pointer}
+.tab.active{background:var(--acc);border-color:transparent;color:#fff}
+main{padding:12px}
+.panel{display:none} .panel.active{display:block}
+.card{background:var(--card);border:1px solid #0003;border-radius:12px;padding:10px;margin-bottom:12px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+input[type="text"]{padding:7px 9px;border-radius:8px;border:1px solid #0003;background:transparent;color:var(--fg);min-width:220px}
+button{padding:7px 10px;border-radius:8px;border:1px solid #0003;background:transparent;color:var(--fg);cursor:pointer}
+button.primary{background:var(--ok);color:#fff;border-color:transparent}
+#map{height:320px;border-radius:12px;overflow:hidden}
+.grid{width:100%;overflow:auto;border-radius:10px;border:1px solid #0003}
+table{border-collapse:collapse;min-width:900px;width:100%;background:var(--card)}
+th,td{padding:6px 8px;border-bottom:1px solid #0003;text-align:left;white-space:nowrap;font-variant-numeric:tabular-nums}
+th{position:sticky;top:0;background:var(--card);z-index:1}
+.badge{display:inline-block;padding:2px 6px;border:1px solid #0003;border-radius:999px;color:var(--mut);margin-left:6px}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.kv div{padding:6px 8px;border:1px dashed #0003;border-radius:8px}
+a{color:var(--acc);text-decoration:none}
+footer{opacity:.7;text-align:center;padding:10px}
+</style>
 </head>
 <body>
+<header>
+  <div><h1>All-in Weather</h1><small>Open-Meteo + OSM | 16-day hourly/daily</small></div>
+  <div id="tabs">
+    <button class="tab active" data-tab="now">Current & Map</button>
+    <button class="tab" data-tab="hourly">Hourly (16 days)</button>
+    <button class="tab" data-tab="daily">Daily (16 days)</button>
+  </div>
+</header>
 
-    <div class="container">
-        <div class="tabs">
-            <div class="tab-button active" data-tab="current">Current Weather</div>
-            <div class="tab-button" data-tab="hourly">Hourly Forecast</div>
-            <div class="tab-button" data-tab="daily">Daily Forecast</div>
+<main>
+  <!-- CURRENT + MAP -->
+  <section id="now" class="panel active">
+    <div class="card">
+      <div class="row">
+        <div>Lat <input id="lat" type="text" value="40.7128"> Lon <input id="lon" type="text" value="-74.0060">
+          <span class="badge" id="tzBadge">timezone: auto</span>
         </div>
-
-        <div id="current" class="tab-content active">
-            <h2 id="locationName">Loading...</h2>
-            <div id="map"></div>
-            <h3>Current Conditions</h3>
-            <div id="currentWeather"></div>
+        <div class="row">
+          <button id="geo">Use My Location</button>
+          <button id="go" class="primary">Fetch Weather</button>
         </div>
-
-        <div id="hourly" class="tab-content">
-            <h2>Hourly Forecast</h2>
-            <div id="hourlyWeather" class="forecast-grid"></div>
-        </div>
-
-        <div id="daily" class="tab-content">
-            <h2>Daily Forecast</h2>
-            <div id="dailyWeather" class="forecast-grid"></div>
-        </div>
+      </div>
     </div>
+    <div id="map" class="card"></div>
+    <div class="card">
+      <div class="row"><div id="placeName"><b>Selected:</b> New York (demo)</div><div id="modelInfo" class="badge"></div><div id="updated" class="badge"></div></div>
+      <div class="kv" id="currentKV"></div>
+    </div>
+  </section>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // Tab switching logic
-        document.querySelectorAll(".tab-button").forEach(btn => {
-            btn.addEventListener("click", () => {
-                document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
-                document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-                btn.classList.add("active");
-                document.getElementById(btn.dataset.tab).classList.add("active");
-            });
-        });
+  <!-- HOURLY -->
+  <section id="hourly" class="panel">
+    <div class="card"><span id="hourlySummary">Hourly variables • scroll →</span></div>
+    <div class="grid"><table id="hourlyTable"><thead></thead><tbody></tbody></table></div>
+  </section>
 
-        // Map and marker variables
-        let map, marker;
-        
-        // Function to translate WMO weather codes to descriptions and emojis
-        function getWeatherDescription(code, isDay) {
-            const descriptions = {
-                0: { text: "Clear sky", emoji: isDay ? "☀️" : "🌙" },
-                1: { text: "Mainly clear", emoji: isDay ? "🌤️" : "☁️" },
-                2: { text: "Partly cloudy", emoji: "⛅" },
-                3: { text: "Overcast", emoji: "☁️" },
-                45: { text: "Fog", emoji: "🌫️" },
-                48: { text: "Depositing rime fog", emoji: "🌫️" },
-                51: { text: "Drizzle: Light", emoji: "💧" },
-                53: { text: "Drizzle: Moderate", emoji: "💧" },
-                55: { text: "Drizzle: Dense", emoji: "💧" },
-                56: { text: "Freezing Drizzle: Light", emoji: "🧊💧" },
-                57: { text: "Freezing Drizzle: Dense", emoji: "🧊💧" },
-                61: { text: "Rain: Slight", emoji: "🌧️" },
-                63: { text: "Rain: Moderate", emoji: "🌧️" },
-                65: { text: "Rain: Heavy", emoji: "🌧️" },
-                66: { text: "Freezing Rain: Light", emoji: "🧊🌧️" },
-                67: { text: "Freezing Rain: Heavy", emoji: "🧊🌧️" },
-                71: { text: "Snow: Slight", emoji: "🌨️" },
-                73: { text: "Snow: Moderate", emoji: "🌨️" },
-                75: { text: "Snow: Heavy", emoji: "🌨️" },
-                77: { text: "Snow grains", emoji: "❄️" },
-                80: { text: "Rain showers: Slight", emoji: "🌦️" },
-                81: { text: "Rain showers: Moderate", emoji: "🌧️" },
-                82: { text: "Rain showers: Violent", emoji: "⛈️" },
-                85: { text: "Snow showers: Slight", emoji: "🌨️" },
-                86: { text: "Snow showers: Heavy", emoji: "🌨️" },
-                95: { text: "Thunderstorm", emoji: "⚡" },
-                96: { text: "Thunderstorm with slight hail", emoji: "⛈️" },
-                99: { text: "Thunderstorm with heavy hail", emoji: "🌩️" },
-            };
-            const fallback = { text: "Unknown", emoji: "❓" };
-            return descriptions[code] || fallback;
-        }
+  <!-- DAILY -->
+  <section id="daily" class="panel">
+    <div class="card"><span id="dailySummary">Daily variables • scroll →</span></div>
+    <div class="grid"><table id="dailyTable"><thead></thead><tbody></tbody></table></div>
+  </section>
+</main>
 
-        // Initialize the app on DOM content loaded
-        document.addEventListener("DOMContentLoaded", () => {
-            initMap();
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(pos => {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    map.setView([lat, lon], 8);
-                    marker.setLatLng([lat, lon]);
-                    updateWeatherFromMap(lat, lon);
-                }, () => {
-                    // Fallback to Mohegan Lake, NY
-                    updateWeatherFromMap(41.2841, -73.8872);
-                });
-            } else {
-                // Fallback to Mohegan Lake, NY
-                updateWeatherFromMap(41.2841, -73.8872);
-            }
-        });
+<footer>
+  Data: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> • Tiles: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a> • Map: Leaflet
+</footer>
 
-        // Initializes the Leaflet map
-        function initMap() {
-            map = L.map('map').setView([41.2841, -73.8872], 10);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
-            marker = L.marker([41.2841, -73.8872], { draggable: true }).addTo(map);
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(()=>{
+// ---- Variables (aim to include "all factors" Open-Meteo exposes) ----
+const CURRENT = [
+  // temps & humidity
+  "temperature_2m","apparent_temperature","dew_point_2m","relative_humidity_2m",
+  // wind
+  "wind_speed_10m","wind_direction_10m","wind_gusts_10m",
+  // pressure & clouds
+  "pressure_msl","surface_pressure","cloud_cover","cloud_cover_low","cloud_cover_mid","cloud_cover_high",
+  // precip & snow
+  "precipitation","rain","showers","snowfall","snow_depth",
+  // radiation & UV
+  "shortwave_radiation","direct_radiation","diffuse_radiation","direct_normal_irradiance","uv_index","uv_index_clear_sky",
+  // misc
+  "visibility","cape","is_day","weather_code","freezing_level_height"
+];
 
-            // Add event listeners for map clicks and marker drag
-            map.on('click', e => {
-                marker.setLatLng(e.latlng);
-                updateWeatherFromMap(e.latlng.lat, e.latlng.lng);
-            });
-            marker.on('dragend', e => {
-                const pos = marker.getLatLng();
-                updateWeatherFromMap(pos.lat, pos.lng);
-            });
-        }
+const HOURLY = [
+  // temps & humidity
+  "temperature_2m","apparent_temperature","dew_point_2m","relative_humidity_2m",
+  // wind (multi-level for completeness)
+  "wind_speed_10m","wind_direction_10m","wind_gusts_10m",
+  "wind_speed_80m","wind_speed_120m","wind_speed_180m",
+  // pressure & clouds
+  "pressure_msl","surface_pressure","cloud_cover","cloud_cover_low","cloud_cover_mid","cloud_cover_high","visibility",
+  // precip
+  "precipitation","rain","showers","snowfall","snow_depth","weather_code","precipitation_probability",
+  // radiation & UV
+  "shortwave_radiation","direct_radiation","diffuse_radiation","direct_normal_irradiance","terrestrial_radiation",
+  "uv_index","uv_index_clear_sky",
+  // soil & surface
+  "soil_temperature_0cm","soil_temperature_6cm","soil_temperature_18cm","soil_temperature_54cm",
+  "soil_moisture_0_to_7cm","soil_moisture_7_to_28cm","soil_moisture_28_to_100cm","soil_moisture_100_to_255cm",
+  // evapotranspiration & misc
+  "evapotranspiration","et0_fao_evapotranspiration","freezing_level_height","is_day"
+];
 
-        // Fetches a location name and weather data
-        async function updateWeatherFromMap(lat, lon) {
-            // Reverse geocode to get a location name
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-                const data = await res.json();
-                document.getElementById("locationName").textContent = data.display_name || `Location at ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-            } catch (error) {
-                console.error("Error fetching location name:", error);
-                document.getElementById("locationName").textContent = `Location at ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-            }
-            fetchWeather(lat, lon);
-        }
+const DAILY = [
+  "temperature_2m_max","temperature_2m_min",
+  "apparent_temperature_max","apparent_temperature_min",
+  "precipitation_sum","rain_sum","showers_sum","snowfall_sum","precipitation_hours",
+  "weather_code",
+  "wind_speed_10m_max","wind_gusts_10m_max","wind_direction_10m_dominant",
+  "sunrise","sunset","daylight_duration","sunshine_duration",
+  "shortwave_radiation_sum","uv_index_max","uv_index_clear_sky_max",
+  "et0_fao_evapotranspiration","snow_depth_max","freezing_level_height_mean"
+];
 
-        // Fetches weather data from the Open-Meteo API
-        async function fetchWeather(lat, lon) {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,precipitation_probability,weather_code,pressure_msl,cloud_cover,visibility,dew_point_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant&forecast_days=16&timezone=auto`;
-            try {
-                const res = await fetch(url);
-                if (!res.ok) {
-                    throw new Error(`API returned status: ${res.status}`);
-                }
-                const weather = await res.json();
-                renderCurrent(weather);
-                renderHourly(weather);
-                renderDaily(weather);
-            } catch (error) {
-                console.error("Error fetching weather data:", error);
-                const errorMessage = `<p style="color:red; text-align:center;">Failed to load weather data. Please check your internet connection or try a different location. Error: ${error.message}</p>`;
-                document.getElementById("currentWeather").innerHTML = errorMessage;
-                document.getElementById("hourlyWeather").innerHTML = errorMessage;
-                document.getElementById("dailyWeather").innerHTML = errorMessage;
-            }
-        }
+// ---- Helpers ----
+const $ = s=>document.querySelector(s);
+const fmt = (v)=> (v===null||v===undefined) ? "—" : (typeof v==="number" ? (Math.abs(v)>=10? v.toFixed(1): v.toFixed(2)) : v);
+const wmo = {
+  0:"Clear",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",
+  45:"Fog",48:"Depositing rime fog",51:"Light drizzle",53:"Drizzle",55:"Dense drizzle",
+  56:"Freezing drizzle",57:"Freezing drizzle heavy",61:"Slight rain",63:"Rain",65:"Heavy rain",
+  66:"Freezing rain",67:"Freezing rain heavy",71:"Slight snow",73:"Snow",75:"Heavy snow",
+  77:"Snow grains",80:"Rain showers",81:"Showers",82:"Violent showers",
+  85:"Snow showers",86:"Heavy snow showers",95:"Thunderstorm",96:"Thunderstorm + hail",99:"Thunderstorm ++ hail"
+};
+const tzBadge = $("#tzBadge"), placeNameEl=$("#placeName"), modelInfo=$("#modelInfo"), updated=$("#updated");
 
-        // Renders the current weather data
-        function renderCurrent(w) {
-            const c = w.current;
-            const description = getWeatherDescription(c.weather_code, c.is_day);
-            document.getElementById("currentWeather").innerHTML = `
-                <div class="weather-item">
-                    <strong>Condition:</strong>
-                    <span>${description.text} <span class="weather-emoji">${description.emoji}</span></span>
-                </div>
-                <div class="weather-item">
-                    <strong>Temperature:</strong>
-                    <span>${c.temperature_2m}°C</span>
-                </div>
-                <div class="weather-item">
-                    <strong>Feels Like:</strong>
-                    <span>${c.apparent_temperature}°C</span>
-                </div>
-                <div class="weather-item">
-                    <strong>Humidity:</strong>
-                    <span>${c.relative_humidity_2m}%</span>
-                </div>
-                <div class="weather-item">
-                    <strong>Precipitation:</strong>
-                    <span>${c.precipitation} mm</span>
-                </div>
-                <div class="weather-item">
-                    <strong>Surface Pressure:</strong>
-                    <span>${c.surface_pressure} hPa</span>
-                </div>
-                <div class="weather-item">
-                    <strong>Wind:</strong>
-                    <span>${c.wind_speed_10m} km/h @ ${c.wind_direction_10m}°</span>
-                </div>
-                <div class="weather-item">
-                    <strong>Wind Gusts:</strong>
-                    <span>${c.wind_gusts_10m} km/h</span>
-                </div>
-            `;
-        }
+// Build API URL (v1)
+function buildURL(lat,lon){
+  const base="https://api.open-meteo.com/v1/forecast";
+  const p=new URLSearchParams({
+    latitude:lat, longitude:lon, timezone:"auto", forecast_days:"16",
+    current: CURRENT.join(","),
+    hourly: HOURLY.join(","),
+    daily: DAILY.join(","),
+    models: "best_match"
+  });
+  return `${base}?${p}`;
+}
 
-        // Renders the hourly forecast data
-        function renderHourly(w) {
-            const hourlyContainer = document.getElementById("hourlyWeather");
-            hourlyContainer.innerHTML = ""; // Clear previous content
-            const times = w.hourly.time;
+// Renderers
+function renderCurrent(cur){
+  const kv=$("#currentKV"); kv.innerHTML="";
+  // Try to enrich weather_code label
+  const rows = Object.entries(cur).map(([k,v])=>{
+    if(k==="weather_code" && v!=null){ return [k, `${v} • ${wmo[v]||"—"}`]; }
+    return [k, v];
+  });
+  for(const [k,v] of rows){
+    const d=document.createElement("div");
+    d.innerHTML=`<b>${k}</b><br>${fmt(v)}`;
+    kv.appendChild(d);
+  }
+}
 
-            // Iterate over all hourly data points
-            for (let i = 0; i < times.length; i += 3) { // Display every 3rd hour for brevity
-                const time = times[i];
-                const dateTime = new Date(time);
-                const localTime = dateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const localDate = dateTime.toLocaleDateString();
-                const code = w.hourly.weather_code[i];
-                const isDay = w.hourly.is_day ? w.hourly.is_day[i] : 1;
-                const description = getWeatherDescription(code, isDay);
-                
-                const card = document.createElement("div");
-                card.className = "forecast-card";
-                card.innerHTML = `
-                    <div class="date">${localDate}</div>
-                    <div class="time">${localTime}</div>
-                    <div class="weather-emoji">${description.emoji}</div>
-                    <div class="details">
-                        ${description.text} <br>
-                        Temp: ${w.hourly.temperature_2m[i]}°C <br>
-                        Feels Like: ${w.hourly.apparent_temperature[i]}°C <br>
-                        Precip: ${w.hourly.precipitation[i]} mm (${w.hourly.precipitation_probability[i]}%) <br>
-                        Wind: ${w.hourly.wind_speed_10m[i]} km/h
-                    </div>
-                `;
-                hourlyContainer.appendChild(card);
-            }
-        }
+function renderTable(containerIds, timeArr, obj){
+  const thead=$(containerIds+" thead"), tbody=$(containerIds+" tbody");
+  const keys=Object.keys(obj).filter(k=>k!=="time");
+  thead.innerHTML="<tr><th>time</th>"+keys.map(k=>`<th>${k}</th>`).join("")+"</tr>";
+  const n=timeArr.length;
+  let html="";
+  for(let i=0;i<n;i++){
+    html+=`<tr><td>${timeArr[i]}</td>` + keys.map(k=>`<td>${fmt(obj[k][i])}</td>`).join("") + "</tr>";
+  }
+  tbody.innerHTML=html;
+}
 
-        // Renders the daily forecast data
-        function renderDaily(w) {
-            const dailyContainer = document.getElementById("dailyWeather");
-            dailyContainer.innerHTML = ""; // Clear previous content
-            const times = w.daily.time;
+function summarizeSet(arr, el){ el.textContent = arr.length+" variables • scroll →"; }
 
-            for (let i = 0; i < times.length; i++) {
-                const time = times[i];
-                const localDate = new Date(time).toLocaleDateString();
-                const sunrise = w.daily.sunrise[i];
-                const sunset = w.daily.sunset[i];
-                const localSunriseTime = new Date(sunrise).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const localSunsetTime = new Date(sunset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const code = w.daily.weather_code[i];
-                const description = getWeatherDescription(code, true);
+// ---- Map (Leaflet / OSM) ----
+let map, marker;
+function initMap(){
+  map = L.map('map',{zoomControl:true}).setView([40.7128,-74.0060], 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19, attribution:'© OpenStreetMap'
+  }).addTo(map);
+  marker = L.marker([40.7128,-74.0060],{draggable:true}).addTo(map);
+  marker.on("dragend", syncFromMarker);
+  map.on("click", e=>{ marker.setLatLng(e.latlng); syncFromMarker(); });
+  // Ensure map sizes correctly when tab is shown
+  const obs=new ResizeObserver(()=>map.invalidateSize()); obs.observe($("#now"));
+}
+function syncFromMarker(){
+  const {lat, lng}=marker.getLatLng();
+  $("#lat").value=lat.toFixed(5); $("#lon").value=lng.toFixed(5);
+  fetchAll();
+}
 
-                const card = document.createElement("div");
-                card.className = "forecast-card";
-                card.innerHTML = `
-                    <div class="date">${localDate}</div>
-                    <div class="weather-emoji">${description.emoji}</div>
-                    <div class="details">
-                        ${description.text} <br>
-                        Max Temp: ${w.daily.temperature_2m_max[i]}°C <br>
-                        Min Temp: ${w.daily.temperature_2m_min[i]}°C <br>
-                        Precip: ${w.daily.precipitation_sum[i]} mm (${w.daily.precipitation_probability_max[i]}% chance) <br>
-                        Wind Gusts: ${w.daily.wind_gusts_10m_max[i]} km/h <br>
-                        UV Index: ${w.daily.uv_index_max[i]} <br>
-                        Sunrise: ${localSunriseTime} <br>
-                        Sunset: ${localSunsetTime}
-                    </div>
-                `;
-                dailyContainer.appendChild(card);
-            }
-        }
-    </script>
-</body>
-</html>
-```
+// ---- Fetch + Wire-up ----
+let lastLat=40.7128,lastLon=-74.0060;
+async function fetchAll(){
+  const lat=parseFloat($("#lat").value), lon=parseFloat($("#lon").value);
+  lastLat=lat; lastLon=lon;
+  const url=buildURL(lat,lon);
+  try{
+    const res=await fetch(url);
+    const data=await res.json();
+    // update badges
+    tzBadge.textContent = "timezone: "+(data.timezone||"auto");
+    modelInfo.textContent = data.model?("model: "+data.model): (data.elevation ? ("elev: "+data.elevation+" m"):"");
+    updated.textContent = "updated: "+(new Date()).toLocaleString();
+    placeNameEl.innerHTML = `<b>Selected:</b> ${lat.toFixed(4)}, ${lon.toFixed(4)} <span class="badge">click/drag on map to change</span>`;
+    // current
+    if(data.current) renderCurrent(data.current);
+    // hourly
+    if(data.hourly){
+      summarizeSet(Object.keys(data.hourly).filter(k=>k!=="time"), $("#hourlySummary"));
+      renderTable("#hourlyTable", data.hourly.time, data.hourly);
+    }
+    // daily
+    if(data.daily){
+      summarizeSet(Object.keys(data.daily).filter(k=>k!=="time"), $("#dailySummary"));
+      renderTable("#dailyTable", data.daily.time, data.daily);
+    }
+  }catch(e){
+    alert("Fetch failed. Try again.\n"+e);
+  }
+}
+
+// Tabs
+for(const b of document.querySelectorAll(".tab")){
+  b.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    $("#"+b.dataset.tab).classList.add("active");
+    if(b.dataset.tab==="now" && map){ setTimeout(()=>map.invalidateSize(),50); }
+  });
+}
+
+// Buttons
+$("#go").onclick = ()=>{ if(map){ marker.setLatLng([parseFloat($("#lat").value), parseFloat($("#lon").value)]) } fetchAll(); };
+$("#geo").onclick = ()=>navigator.geolocation && navigator.geolocation.getCurrentPosition(
+  p=>{ $("#lat").value=p.coords.latitude.toFixed(5); $("#lon").value=p.coords.longitude.toFixed(5); if(map){ marker.setLatLng([p.coords.latitude,p.coords.longitude]); map.setView([p.coords.latitude,p.coords.longitude], 9);} fetchAll(); },
+  _=>alert("Geolocation unavailable.")
+);
+
+// Boot
+document.addEventListener("DOMContentLoaded", ()=>{
+  initMap(); // map first to avoid setView undefined
+  summarizeSet(HOURLY,$("#hourlySummary")); summarizeSet(DAILY,$("#dailySummary"));
+  fetchAll();
+});
+})();
+</script>
+</body></html>
