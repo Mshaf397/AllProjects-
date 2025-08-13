@@ -1,264 +1,91 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>All-in Weather (Open-Meteo + OSM)</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>All-In Weather</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-:root{--bg:#0b0e11;--fg:#e9eef3;--mut:#9fb0bf;--card:#13171c;--acc:#3aa0ff;--ok:#19c37d}
-@media (prefers-color-scheme: light){:root{--bg:#f6f7fb;--fg:#0d1b2a;--mut:#495867;--card:#ffffff;--acc:#0066ff;--ok:#0a8f5a}}
-*{box-sizing:border-box}html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--fg);font:14px system-ui,Segoe UI,Roboto,Helvetica,Arial}
-header{padding:10px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--card);position:sticky;top:0;z-index:2;border-bottom:1px solid #0003}
-h1{font-size:16px;margin:0;font-weight:600}
-small{color:var(--mut)}
-#tabs{display:flex;gap:6px}
-.tab{border:1px solid #0003;background:transparent;color:var(--fg);padding:6px 10px;border-radius:8px;cursor:pointer}
-.tab.active{background:var(--acc);border-color:transparent;color:#fff}
-main{padding:12px}
-.panel{display:none} .panel.active{display:block}
-.card{background:var(--card);border:1px solid #0003;border-radius:12px;padding:10px;margin-bottom:12px}
-.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-input[type="text"]{padding:7px 9px;border-radius:8px;border:1px solid #0003;background:transparent;color:var(--fg);min-width:220px}
-button{padding:7px 10px;border-radius:8px;border:1px solid #0003;background:transparent;color:var(--fg);cursor:pointer}
+:root{--bg:#0d1117;--fg:#e6edf3;--card:#161b22;--acc:#2f81f7;--ok:#2ea043;--mut:#8b949e}
+@media(prefers-color-scheme:light){:root{--bg:#f6f8fa;--fg:#24292f;--card:#fff;--acc:#0969da;--ok:#2da44e;--mut:#57606a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px system-ui}
+header{background:var(--card);padding:10px;display:flex;gap:6px;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:2}
+h1{margin:0;font-size:16px}small{color:var(--mut)}
+.tab{padding:6px 10px;border-radius:6px;background:transparent;border:1px solid #0003;color:var(--fg);cursor:pointer}
+.tab.active{background:var(--acc);color:#fff;border-color:transparent}
+.panel{display:none;padding:10px}.panel.active{display:block}
+.card{background:var(--card);padding:8px;border-radius:8px;margin-bottom:8px}
+#map{height:300px;border-radius:8px;overflow:hidden}
+input{padding:4px 6px;border:1px solid #0003;border-radius:4px;background:transparent;color:var(--fg)}
+button{padding:5px 8px;border:1px solid #0003;border-radius:4px;background:transparent;color:var(--fg);cursor:pointer}
 button.primary{background:var(--ok);color:#fff;border-color:transparent}
-#map{height:320px;border-radius:12px;overflow:hidden}
-.grid{width:100%;overflow:auto;border-radius:10px;border:1px solid #0003}
+.grid{overflow:auto;border-radius:6px;border:1px solid #0003}
 table{border-collapse:collapse;min-width:900px;width:100%;background:var(--card)}
-th,td{padding:6px 8px;border-bottom:1px solid #0003;text-align:left;white-space:nowrap;font-variant-numeric:tabular-nums}
-th{position:sticky;top:0;background:var(--card);z-index:1}
-.badge{display:inline-block;padding:2px 6px;border:1px solid #0003;border-radius:999px;color:var(--mut);margin-left:6px}
-.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.kv div{padding:6px 8px;border:1px dashed #0003;border-radius:8px}
-a{color:var(--acc);text-decoration:none}
-footer{opacity:.7;text-align:center;padding:10px}
+th,td{padding:4px 6px;border-bottom:1px solid #0003;white-space:nowrap}
+th{position:sticky;top:0;background:var(--card)}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:4px}
+.kv div{border:1px dashed #0003;padding:4px;border-radius:4px}
+.badge{font-size:12px;color:var(--mut);margin-left:4px}
 </style>
 </head>
 <body>
 <header>
-  <div><h1>All-in Weather</h1><small>Open-Meteo + OSM | 16-day hourly/daily</small></div>
-  <div id="tabs">
-    <button class="tab active" data-tab="now">Current & Map</button>
-    <button class="tab" data-tab="hourly">Hourly (16 days)</button>
-    <button class="tab" data-tab="daily">Daily (16 days)</button>
+  <div><h1>All-In Weather</h1><small>Open-Meteo + OSM</small></div>
+  <div>
+    <button class="tab active" data-t="now">Now/Map</button>
+    <button class="tab" data-t="hourly">Hourly</button>
+    <button class="tab" data-t="daily">Daily</button>
   </div>
 </header>
 
-<main>
-  <!-- CURRENT + MAP -->
-  <section id="now" class="panel active">
-    <div class="card">
-      <div class="row">
-        <div>Lat <input id="lat" type="text" value="40.7128"> Lon <input id="lon" type="text" value="-74.0060">
-          <span class="badge" id="tzBadge">timezone: auto</span>
-        </div>
-        <div class="row">
-          <button id="geo">Use My Location</button>
-          <button id="go" class="primary">Fetch Weather</button>
-        </div>
-      </div>
-    </div>
-    <div id="map" class="card"></div>
-    <div class="card">
-      <div class="row"><div id="placeName"><b>Selected:</b> New York (demo)</div><div id="modelInfo" class="badge"></div><div id="updated" class="badge"></div></div>
-      <div class="kv" id="currentKV"></div>
-    </div>
-  </section>
+<section id="now" class="panel active">
+  <div class="card">
+    Lat <input id="lat" value="40.7128"> Lon <input id="lon" value="-74.0060">
+    <button id="geo">Use My Location</button>
+    <button id="go" class="primary">Fetch</button>
+    <span id="tz" class="badge"></span>
+  </div>
+  <div id="map" class="card"></div>
+  <div class="card">
+    <div id="place"></div><div class="kv" id="currentKV"></div>
+  </div>
+</section>
 
-  <!-- HOURLY -->
-  <section id="hourly" class="panel">
-    <div class="card"><span id="hourlySummary">Hourly variables • scroll →</span></div>
-    <div class="grid"><table id="hourlyTable"><thead></thead><tbody></tbody></table></div>
-  </section>
+<section id="hourly" class="panel">
+  <div class="grid"><table id="hourlyTable"><thead></thead><tbody></tbody></table></div>
+</section>
 
-  <!-- DAILY -->
-  <section id="daily" class="panel">
-    <div class="card"><span id="dailySummary">Daily variables • scroll →</span></div>
-    <div class="grid"><table id="dailyTable"><thead></thead><tbody></tbody></table></div>
-  </section>
-</main>
-
-<footer>
-  Data: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> • Tiles: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a> • Map: Leaflet
-</footer>
+<section id="daily" class="panel">
+  <div class="grid"><table id="dailyTable"><thead></thead><tbody></tbody></table></div>
+</section>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-(()=>{
-// ---- Variables (aim to include "all factors" Open-Meteo exposes) ----
-const CURRENT = [
-  // temps & humidity
-  "temperature_2m","apparent_temperature","dew_point_2m","relative_humidity_2m",
-  // wind
-  "wind_speed_10m","wind_direction_10m","wind_gusts_10m",
-  // pressure & clouds
-  "pressure_msl","surface_pressure","cloud_cover","cloud_cover_low","cloud_cover_mid","cloud_cover_high",
-  // precip & snow
-  "precipitation","rain","showers","snowfall","snow_depth",
-  // radiation & UV
-  "shortwave_radiation","direct_radiation","diffuse_radiation","direct_normal_irradiance","uv_index","uv_index_clear_sky",
-  // misc
-  "visibility","cape","is_day","weather_code","freezing_level_height"
-];
-
-const HOURLY = [
-  // temps & humidity
-  "temperature_2m","apparent_temperature","dew_point_2m","relative_humidity_2m",
-  // wind (multi-level for completeness)
-  "wind_speed_10m","wind_direction_10m","wind_gusts_10m",
-  "wind_speed_80m","wind_speed_120m","wind_speed_180m",
-  // pressure & clouds
-  "pressure_msl","surface_pressure","cloud_cover","cloud_cover_low","cloud_cover_mid","cloud_cover_high","visibility",
-  // precip
-  "precipitation","rain","showers","snowfall","snow_depth","weather_code","precipitation_probability",
-  // radiation & UV
-  "shortwave_radiation","direct_radiation","diffuse_radiation","direct_normal_irradiance","terrestrial_radiation",
-  "uv_index","uv_index_clear_sky",
-  // soil & surface
-  "soil_temperature_0cm","soil_temperature_6cm","soil_temperature_18cm","soil_temperature_54cm",
-  "soil_moisture_0_to_7cm","soil_moisture_7_to_28cm","soil_moisture_28_to_100cm","soil_moisture_100_to_255cm",
-  // evapotranspiration & misc
-  "evapotranspiration","et0_fao_evapotranspiration","freezing_level_height","is_day"
-];
-
-const DAILY = [
-  "temperature_2m_max","temperature_2m_min",
-  "apparent_temperature_max","apparent_temperature_min",
-  "precipitation_sum","rain_sum","showers_sum","snowfall_sum","precipitation_hours",
-  "weather_code",
-  "wind_speed_10m_max","wind_gusts_10m_max","wind_direction_10m_dominant",
-  "sunrise","sunset","daylight_duration","sunshine_duration",
-  "shortwave_radiation_sum","uv_index_max","uv_index_clear_sky_max",
-  "et0_fao_evapotranspiration","snow_depth_max","freezing_level_height_mean"
-];
-
-// ---- Helpers ----
-const $ = s=>document.querySelector(s);
-const fmt = (v)=> (v===null||v===undefined) ? "—" : (typeof v==="number" ? (Math.abs(v)>=10? v.toFixed(1): v.toFixed(2)) : v);
-const wmo = {
-  0:"Clear",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",
-  45:"Fog",48:"Depositing rime fog",51:"Light drizzle",53:"Drizzle",55:"Dense drizzle",
-  56:"Freezing drizzle",57:"Freezing drizzle heavy",61:"Slight rain",63:"Rain",65:"Heavy rain",
-  66:"Freezing rain",67:"Freezing rain heavy",71:"Slight snow",73:"Snow",75:"Heavy snow",
-  77:"Snow grains",80:"Rain showers",81:"Showers",82:"Violent showers",
-  85:"Snow showers",86:"Heavy snow showers",95:"Thunderstorm",96:"Thunderstorm + hail",99:"Thunderstorm ++ hail"
-};
-const tzBadge = $("#tzBadge"), placeNameEl=$("#placeName"), modelInfo=$("#modelInfo"), updated=$("#updated");
-
-// Build API URL (v1)
-function buildURL(lat,lon){
-  const base="https://api.open-meteo.com/v1/forecast";
-  const p=new URLSearchParams({
-    latitude:lat, longitude:lon, timezone:"auto", forecast_days:"16",
-    current: CURRENT.join(","),
-    hourly: HOURLY.join(","),
-    daily: DAILY.join(","),
-    models: "best_match"
-  });
-  return `${base}?${p}`;
-}
-
-// Renderers
-function renderCurrent(cur){
-  const kv=$("#currentKV"); kv.innerHTML="";
-  // Try to enrich weather_code label
-  const rows = Object.entries(cur).map(([k,v])=>{
-    if(k==="weather_code" && v!=null){ return [k, `${v} • ${wmo[v]||"—"}`]; }
-    return [k, v];
-  });
-  for(const [k,v] of rows){
-    const d=document.createElement("div");
-    d.innerHTML=`<b>${k}</b><br>${fmt(v)}`;
-    kv.appendChild(d);
-  }
-}
-
-function renderTable(containerIds, timeArr, obj){
-  const thead=$(containerIds+" thead"), tbody=$(containerIds+" tbody");
-  const keys=Object.keys(obj).filter(k=>k!=="time");
-  thead.innerHTML="<tr><th>time</th>"+keys.map(k=>`<th>${k}</th>`).join("")+"</tr>";
-  const n=timeArr.length;
-  let html="";
-  for(let i=0;i<n;i++){
-    html+=`<tr><td>${timeArr[i]}</td>` + keys.map(k=>`<td>${fmt(obj[k][i])}</td>`).join("") + "</tr>";
-  }
-  tbody.innerHTML=html;
-}
-
-function summarizeSet(arr, el){ el.textContent = arr.length+" variables • scroll →"; }
-
-// ---- Map (Leaflet / OSM) ----
-let map, marker;
+const CURRENT=["temperature_2m","apparent_temperature","dew_point_2m","relative_humidity_2m","wind_speed_10m","wind_direction_10m","wind_gusts_10m","pressure_msl","surface_pressure","cloud_cover","cloud_cover_low","cloud_cover_mid","cloud_cover_high","precipitation","rain","showers","snowfall","snow_depth","shortwave_radiation","direct_radiation","diffuse_radiation","direct_normal_irradiance","uv_index","uv_index_clear_sky","visibility","cape","is_day","weather_code","freezing_level_height"];
+const HOURLY=[...CURRENT,"wind_speed_80m","wind_speed_120m","wind_speed_180m","precipitation_probability","terrestrial_radiation","soil_temperature_0cm","soil_temperature_6cm","soil_temperature_18cm","soil_temperature_54cm","soil_moisture_0_to_7cm","soil_moisture_7_to_28cm","soil_moisture_28_to_100cm","soil_moisture_100_to_255cm","evapotranspiration","et0_fao_evapotranspiration"];
+const DAILY=["temperature_2m_max","temperature_2m_min","apparent_temperature_max","apparent_temperature_min","precipitation_sum","rain_sum","showers_sum","snowfall_sum","precipitation_hours","weather_code","wind_speed_10m_max","wind_gusts_10m_max","wind_direction_10m_dominant","sunrise","sunset","daylight_duration","sunshine_duration","shortwave_radiation_sum","uv_index_max","uv_index_clear_sky_max","et0_fao_evapotranspiration","snow_depth_max","freezing_level_height_mean"];
+const $=s=>document.querySelector(s),fmt=v=>v==null?"—":+v.toFixed? (Math.abs(v)>=10?v.toFixed(1):v.toFixed(2)):v;
+let map,marker;
 function initMap(){
-  map = L.map('map',{zoomControl:true}).setView([40.7128,-74.0060], 6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom:19, attribution:'© OpenStreetMap'
-  }).addTo(map);
-  marker = L.marker([40.7128,-74.0060],{draggable:true}).addTo(map);
-  marker.on("dragend", syncFromMarker);
-  map.on("click", e=>{ marker.setLatLng(e.latlng); syncFromMarker(); });
-  // Ensure map sizes correctly when tab is shown
-  const obs=new ResizeObserver(()=>map.invalidateSize()); obs.observe($("#now"));
+ map=L.map('map').setView([40.7128,-74.0060],6);
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+ marker=L.marker([40.7128,-74.0060],{draggable:true}).addTo(map);
+ marker.on("dragend",()=>{const p=marker.getLatLng();$("#lat").value=p.lat.toFixed(5);$("#lon").value=p.lng.toFixed(5);fetchWeather()});
+ map.on("click",e=>{marker.setLatLng(e.latlng);$("#lat").value=e.latlng.lat.toFixed(5);$("#lon").value=e.latlng.lng.toFixed(5);fetchWeather()});
 }
-function syncFromMarker(){
-  const {lat, lng}=marker.getLatLng();
-  $("#lat").value=lat.toFixed(5); $("#lon").value=lng.toFixed(5);
-  fetchAll();
+function renderKV(cur){const kv=$("#currentKV");kv.innerHTML="";for(const[k,v]of Object.entries(cur)){const d=document.createElement("div");d.innerHTML=`<b>${k}</b><br>${fmt(v)}`;kv.appendChild(d)}}
+function renderTable(id,time,obj){const thead=$(id+" thead"),tbody=$(id+" tbody"),keys=Object.keys(obj).filter(k=>k!=="time");thead.innerHTML="<tr><th>time</th>"+keys.map(k=>`<th>${k}</th>`).join("")+"</tr>";tbody.innerHTML=time.map((t,i)=>"<tr><td>"+t+"</td>"+keys.map(k=>`<td>${fmt(obj[k][i])}</td>`).join("")+"</tr>").join("")}
+async function fetchWeather(){
+ const lat=$("#lat").value,lon=$("#lon").value;
+ const url="https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&timezone=auto&forecast_days=16&current="+CURRENT+"&hourly="+HOURLY+"&daily="+DAILY;
+ const r=await fetch(url);const j=await r.json();
+ $("#tz").textContent="TZ: "+j.timezone;$("#place").textContent=`Selected: ${lat}, ${lon}`;
+ if(j.current)renderKV(j.current);if(j.hourly)renderTable("#hourlyTable",j.hourly.time,j.hourly);if(j.daily)renderTable("#dailyTable",j.daily.time,j.daily);
 }
-
-// ---- Fetch + Wire-up ----
-let lastLat=40.7128,lastLon=-74.0060;
-async function fetchAll(){
-  const lat=parseFloat($("#lat").value), lon=parseFloat($("#lon").value);
-  lastLat=lat; lastLon=lon;
-  const url=buildURL(lat,lon);
-  try{
-    const res=await fetch(url);
-    const data=await res.json();
-    // update badges
-    tzBadge.textContent = "timezone: "+(data.timezone||"auto");
-    modelInfo.textContent = data.model?("model: "+data.model): (data.elevation ? ("elev: "+data.elevation+" m"):"");
-    updated.textContent = "updated: "+(new Date()).toLocaleString();
-    placeNameEl.innerHTML = `<b>Selected:</b> ${lat.toFixed(4)}, ${lon.toFixed(4)} <span class="badge">click/drag on map to change</span>`;
-    // current
-    if(data.current) renderCurrent(data.current);
-    // hourly
-    if(data.hourly){
-      summarizeSet(Object.keys(data.hourly).filter(k=>k!=="time"), $("#hourlySummary"));
-      renderTable("#hourlyTable", data.hourly.time, data.hourly);
-    }
-    // daily
-    if(data.daily){
-      summarizeSet(Object.keys(data.daily).filter(k=>k!=="time"), $("#dailySummary"));
-      renderTable("#dailyTable", data.daily.time, data.daily);
-    }
-  }catch(e){
-    alert("Fetch failed. Try again.\n"+e);
-  }
-}
-
-// Tabs
-for(const b of document.querySelectorAll(".tab")){
-  b.addEventListener("click", ()=>{
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
-    b.classList.add("active");
-    $("#"+b.dataset.tab).classList.add("active");
-    if(b.dataset.tab==="now" && map){ setTimeout(()=>map.invalidateSize(),50); }
-  });
-}
-
-// Buttons
-$("#go").onclick = ()=>{ if(map){ marker.setLatLng([parseFloat($("#lat").value), parseFloat($("#lon").value)]) } fetchAll(); };
-$("#geo").onclick = ()=>navigator.geolocation && navigator.geolocation.getCurrentPosition(
-  p=>{ $("#lat").value=p.coords.latitude.toFixed(5); $("#lon").value=p.coords.longitude.toFixed(5); if(map){ marker.setLatLng([p.coords.latitude,p.coords.longitude]); map.setView([p.coords.latitude,p.coords.longitude], 9);} fetchAll(); },
-  _=>alert("Geolocation unavailable.")
-);
-
-// Boot
-document.addEventListener("DOMContentLoaded", ()=>{
-  initMap(); // map first to avoid setView undefined
-  summarizeSet(HOURLY,$("#hourlySummary")); summarizeSet(DAILY,$("#dailySummary"));
-  fetchAll();
-});
-})();
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));b.classList.add("active");$("#"+b.dataset.t).classList.add("active");if(b.dataset.t==="now")setTimeout(()=>map.invalidateSize(),50)});
+$("#go").onclick=fetchWeather;
+$("#geo").onclick=()=>navigator.geolocation.getCurrentPosition(p=>{$("#lat").value=p.coords.latitude.toFixed(5);$("#lon").value=p.coords.longitude.toFixed(5);marker.setLatLng([p.coords.latitude,p.coords.longitude]);map.setView([p.coords.latitude,p.coords.longitude],9);fetchWeather()});
+initMap();fetchWeather();
 </script>
-</body></html>
+</body>
+</html>
