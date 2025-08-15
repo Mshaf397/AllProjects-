@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Merge 10</title>
+<style>
+  :root{
+    --gap:10px;
+    --cell:70px;
+    --radius:10px;
+    --bg:#0f1220;
+    --panel:#171a2b;
+    --ink:#eef2ff;
+    --muted:#9aa3b2;
+    --accent:#5cc8ff;
+    --danger:#ff6b6b;
+    --ok:#7CFC00;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 70% -10%, #1b2040 0%, #0d1020 55%, #0a0d19 100%);
+    color:var(--ink);
+    min-height:100svh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+  }
+  .wrap{
+    width:min(520px, 96vw);
+    display:grid;
+    gap:var(--gap);
+    grid-template-rows:auto auto 1fr auto;
+  }
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    background:color-mix(in oklab, var(--panel) 90%, black 10%);
+    border:1px solid #2a2f4a;
+    padding:12px 14px;border-radius:14px;
+    box-shadow:0 6px 18px rgb(0 0 0 / 30%);
+  }
+  header .stat{
+    display:flex;align-items:center;gap:8px;font-weight:700;
+    padding:6px 10px;border-radius:999px;background:#0c1022;border:1px solid #2a2f4a;
+  }
+  header .stat small{display:block;font-weight:600;color:var(--muted);line-height:1}
+  header .stat .value{font-variant-numeric:tabular-nums}
+  .controls{
+    display:flex;gap:10px;flex-wrap:wrap;
+  }
+  button{
+    cursor:pointer;
+    background:#1b2040;color:var(--ink);
+    border:1px solid #2a2f4a;border-radius:999px;
+    padding:10px 14px;font-weight:700;
+    transition:.15s ease;
+  }
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  button.primary{background:linear-gradient(180deg,#1e274f,#171d3b);border-color:#3a4480}
+  button.danger{background:linear-gradient(180deg,#3a1530,#2a0f23);border-color:#6a244f}
+  button[disabled]{opacity:.5;cursor:not-allowed}
+  #grid{
+    display:grid;
+    gap:var(--gap);
+    grid-template-columns:repeat(5,1fr);
+    padding:var(--gap);
+    background:color-mix(in oklab, var(--panel) 85%, black 15%);
+    border-radius:16px;border:1px solid #293052;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,0.02), 0 8px 30px rgba(0,0,0,0.35);
+  }
+  .cell{
+    width:100%; aspect-ratio:1;
+    border-radius:var(--radius);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:900;font-size:clamp(18px, 6vw, 28px);
+    color:#0a0d19;
+    user-select:none;
+    border:1px solid rgba(255,255,255,0.15);
+    box-shadow:0 8px 18px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+    transition:transform .12s ease, filter .2s ease, box-shadow .2s ease;
+    position:relative;
+  }
+  .cell:hover{filter:brightness(1.04)}
+  .cell.bump{animation:bump .18s}
+  @keyframes bump{50%{transform:scale(1.06)}}
+  .cell.border{border-width:2px; box-shadow:0 10px 24px rgba(0,0,0,.28), inset 0 0 0 2px rgba(255,255,255,0.15)}
+  .ghost{
+    position:absolute;inset:0;border-radius:inherit;
+    background:radial-gradient(120% 140% at 50% 120%, rgba(255,255,255,.28), transparent 60%);
+    pointer-events:none;opacity:.0;transition:opacity .15s;
+  }
+  .cell.group .ghost{opacity:.5}
+  .msg{
+    text-align:center;color:var(--muted);font-weight:600;margin-top:6px
+  }
+  footer{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .legend{
+    display:flex;gap:6px;flex-wrap:wrap;font-size:12px;color:#c6cbe0
+  }
+  .chip{padding:4px 8px;border-radius:999px;background:#0c1022;border:1px solid #2a2f4a}
+  .gameover{
+    position:fixed;inset:0;background:rgba(8,10,20,.76);
+    display:none;align-items:center;justify-content:center;padding:20px;z-index:5
+  }
+  .gameover.show{display:flex}
+  .panel{
+    width:min(460px, 96vw);
+    background:#0f142e;border:1px solid #2a2f4a;border-radius:16px;
+    padding:18px;box-shadow:0 18px 60px rgba(0,0,0,.5);
+  }
+  .panel h2{margin:0 0 6px}
+  .panel p{margin:6px 0 14px;color:#cfd6ef}
+  .panel .row{display:flex;gap:10px;flex-wrap:wrap}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid #3a4480;background:#12183a;font-weight:800}
+  .hint{color:#b7bfdc;font-size:13px;margin-top:6px}
+  .toggle{
+    padding:10px 12px;border-radius:999px;border:1px solid #3a4480;background:#12183a;font-weight:800;cursor:pointer
+  }
+  .toggle.active{outline:2px solid var(--accent)}
+  .pulse{animation:pulse 1.2s ease-out 2}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(92,200,255,.6)}100%{box-shadow:0 0 0 18px rgba(92,200,255,0)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="controls">
+      <button id="newGame" class="primary">New Game</button>
+      <button id="boostMode" class="toggle" title="Use 'clear one tile' booster">Booster: Off</button>
+      <button id="hintBtn">Hint</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div class="stat"><small>Coins</small><span class="value" id="coins">200</span></div>
+      <div class="stat"><small>Boosters</small><span class="value" id="boosters">0</span></div>
+      <div class="stat"><small>Highest</small><span class="value" id="highest">1</span></div>
+    </div>
+  </header>
+
+  <div id="grid" aria-label="Merge 10 board"></div>
+
+  <div class="msg" id="status">Merge adjacent equal numbers (no diagonals). Tap inside a group to merge. Using a tile booster clears a tile.</div>
+
+  <footer>
+    <div class="legend">
+      <span class="chip">1–9 unique colors</span>
+      <span class="chip">10+ colored + border</span>
+      <span class="chip">Merge n → +n coins</span>
+      <span class="chip">No moves → coins → boosters (40:1)</span>
+      <span class="chip">First 10,11,12… → +1 booster each</span>
+    </div>
+  </footer>
+</div>
+
+<div class="gameover" id="gameover">
+  <div class="panel">
+    <h2>Game Over</h2>
+    <p id="goText">No moves left.</p>
+    <div class="row" style="margin-bottom:8px">
+      <span class="badge">Highest: <span id="goHigh">—</span></span>
+      <span class="badge">Coins: <span id="goCoins">—</span></span>
+      <span class="badge">Boosters: <span id="goBoost">—</span></span>
+    </div>
+    <button id="again" class="primary">Play Again</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const SIZE = 5;
+  const START_COINS = 200;
+  const COIN_TO_BOOST = 40;
+  // New random tiles will be in this range (inclusive):
+  const MIN_RAND = 1, MAX_RAND = 5;
+
+  // Colors for 1–9, distinct and readable
+  const COLORS_1_9 = {
+    1:"#ffd166", 2:"#80ed99", 3:"#77b6ea", 4:"#f4978e", 5:"#f7b801",
+    6:"#9d4edd", 7:"#6fffe9", 8:"#ff9f1c", 9:"#4cc9f0"
+  };
+  // Colors for 10+ (cycled); cells 10+ also get a border class
+  const COLORS_10P = ["#e66", "#6e6", "#66e", "#ec6", "#6ec", "#c6e", "#e6c", "#6ce"];
+
+  let grid = [];
+  let coins = START_COINS;
+  let boosters = 0;
+  let highest = 1;
+  let awardedLevels = new Set(); // first-time 10,11,12… booster awards
+  let boostMode = false;
+
+  const els = {
+    grid: document.getElementById('grid'),
+    coins: document.getElementById('coins'),
+    boosters: document.getElementById('boosters'),
+    highest: document.getElementById('highest'),
+    status: document.getElementById('status'),
+    newGame: document.getElementById('newGame'),
+    boostMode: document.getElementById('boostMode'),
+    hintBtn: document.getElementById('hintBtn'),
+    gameover: document.getElementById('gameover'),
+    goText: document.getElementById('goText'),
+    goCoins: document.getElementById('goCoins'),
+    goBoost: document.getElementById('goBoost'),
+    goHigh: document.getElementById('goHigh'),
+    again: document.getElementById('again'),
+  };
+
+  function randInt(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+  function newTileValue(){ return randInt(MIN_RAND, MAX_RAND); }
+
+  function initGrid(){
+    grid = [];
+    for(let r=0;r<SIZE;r++){
+      const row=[];
+      for(let c=0;c<SIZE;c++) row.push(newTileValue());
+      grid.push(row);
+    }
+    coins = START_COINS;
+    boosters = 0;
+    highest = maxOnGrid();
+    awardedLevels = new Set();
+    boostMode = false;
+    render();
+    updateHUD();
+    setStatus("Merge adjacent equal numbers (no diagonals). Tap inside a group to merge. Using a tile booster clears a tile.");
+    checkNoMovesAndConvert();
+  }
+
+  function maxOnGrid(){
+    return Math.max(...grid.flat());
+  }
+
+  function setStatus(t){ els.status.textContent = t; }
+
+  function colorForValue(v){
+    if(v<=9){
+      return {bg: COLORS_1_9[v] || "#ccc", bordered: false};
+    }else{
+      const idx = (v-10) % COLORS_10P.length;
+      return {bg: COLORS_10P[idx], bordered: true};
+    }
+  }
+
+  function render(){
+    els.grid.innerHTML='';
+    highest = maxOnGrid();
+    for(let r=0;r<SIZE;r++){
+      for(let c=0;c<SIZE;c++){
+        const v = grid[r][c];
+        const cell = document.createElement('button');
+        cell.type='button';
+        cell.className = 'cell';
+        const {bg, bordered} = colorForValue(v);
+        cell.style.background = bg;
+        cell.textContent = v;
+        if(bordered) cell.classList.add('border');
+        cell.dataset.r = r; cell.dataset.c = c;
+        cell.setAttribute('aria-label', `Row ${r+1} column ${c+1}: ${v}`);
+        const glow = document.createElement('div'); glow.className='ghost';
+        cell.appendChild(glow);
+        els.grid.appendChild(cell);
+      }
+    }
+  }
+
+  function updateHUD(){
+    els.coins.textContent = coins;
+    els.boosters.textContent = boosters;
+    els.highest.textContent = highest;
+    els.boostMode.textContent = `Booster: ${boostMode ? 'On' : 'Off'}`;
+    els.boostMode.classList.toggle('active', boostMode);
+  }
+
+  function neighbors(r,c){
+    return [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].filter(([rr,cc])=> rr>=0&&rr<SIZE&&cc>=0&&cc<SIZE);
+  }
+
+  function getGroup(r,c){
+    const target = grid[r][c];
+    const seen = new Set([r+','+c]);
+    const q = [[r,c]];
+    while(q.length){
+      const [rr,cc] = q.shift();
+      for(const [nr,nc] of neighbors(rr,cc)){
+        const key = nr+','+nc;
+        if(!seen.has(key) && grid[nr][nc]===target){
+          seen.add(key); q.push([nr,nc]);
+        }
+      }
+    }
+    return [...seen].map(s=>s.split(',').map(Number));
+  }
+
+  function anyMovesLeft(){
+    // Any group of size >=2?
+    for(let r=0;r<SIZE;r++){
+      for(let c=0;c<SIZE;c++){
+        const v = grid[r][c];
+        for(const [nr,nc] of neighbors(r,c)){
+          if(grid[nr][nc]===v) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function highlightGroup(group){
+    // Temporary highlight for user feedback
+    const keys = new Set(group.map(([r,c])=>r+','+c));
+    [...els.grid.children].forEach(btn=>{
+      const k = btn.dataset.r+','+btn.dataset.c;
+      btn.classList.toggle('group', keys.has(k));
+    });
+    setTimeout(()=>{ [...els.grid.children].forEach(b=>b.classList.remove('group')); }, 150);
+  }
+
+  function mergeAt(r,c){
+    const group = getGroup(r,c);
+    if(group.length<2){ setStatus('Need at least 2 adjacent tiles of the same number to merge.'); return false; }
+    const val = grid[r][c];
+    highlightGroup(group);
+    // Coins for merging n
+    coins += val;
+
+    // Upgrade clicked tile
+    grid[r][c] = val + 1;
+
+    // Replace the rest with fresh tiles
+    for(const [rr,cc] of group){
+      if(rr===r && cc===c) continue;
+      grid[rr][cc] = newTileValue();
+    }
+
+    // Award booster for first time reaching >=10
+    if(grid[r][c] >= 10 && !awardedLevels.has(grid[r][c])){
+      boosters += 1;
+      awardedLevels.add(grid[r][c]);
+      flashBoostNotice(`First ${grid[r][c]}! +1 booster`);
+    }
+
+    highest = Math.max(highest, grid[r][c]);
+    bounceCell(r,c);
+    render(); // re-render for fresh colors/borders
+    updateHUD();
+    return true;
+  }
+
+  function bounceCell(r,c){
+    const idx = r*SIZE + c;
+    const el = els.grid.children[idx];
+    if(el){
+      el.classList.remove('bump');
+      // force reflow
+      void el.offsetWidth;
+      el.classList.add('bump');
+    }
+  }
+
+  function flashBoostNotice(text){
+    setStatus(text);
+    els.boosters.parentElement.classList.add('pulse');
+    setTimeout(()=>els.boosters.parentElement.classList.remove('pulse'), 900);
+  }
+
+  function clearOneAt(r,c){
+    grid[r][c] = newTileValue();
+    render();
+    updateHUD();
+  }
+
+  function checkNoMovesAndConvert(){
+    if(anyMovesLeft()) return;
+    // No moves: convert coins to boosters at 40:1
+    if(coins >= COIN_TO_BOOST){
+      const gained = Math.floor(coins / COIN_TO_BOOST);
+      boosters += gained;
+      coins = coins % COIN_TO_BOOST;
+      updateHUD();
+      setStatus(`No moves left → Converted coins into boosters: +${gained}. Use a booster to clear any tile.`);
+    }else{
+      // If no boosters and <40 coins → game over
+      if(boosters<=0){
+        gameOver();
+      }else{
+        setStatus(`No moves left. Use a booster to clear a tile.`);
+      }
+    }
+  }
+
+  function gameOver(){
+    els.goText.textContent = `No moves left, no boosters available, and fewer than ${COIN_TO_BOOST} coins.`;
+    els.goHigh.textContent = highest;
+    els.goCoins.textContent = coins;
+    els.goBoost.textContent = boosters;
+    els.gameover.classList.add('show');
+  }
+
+  function handleClickCell(e){
+    const target = e.target.closest('.cell');
+    if(!target) return;
+    const r = +target.dataset.r, c = +target.dataset.c;
+
+    if(boostMode){
+      if(boosters<=0){ setStatus('No boosters left.'); return; }
+      boosters -= 1;
+      clearOneAt(r,c);
+      boostMode = false;
+      updateHUD();
+      // After clearing, check if moves exist; if not, convert coins or end.
+      if(!anyMovesLeft()) checkNoMovesAndConvert();
+      return;
+    }
+
+    const before = grid[r][c];
+    const ok = mergeAt(r,c);
+    if(ok){
+      // Optional: provide a quick hint if stuck after move
+      if(!anyMovesLeft()) checkNoMovesAndConvert();
+    }else{
+      // peek if it’s a mergeable group to show feedback (already handled)
+      const g = getGroup(r,c);
+      if(g.length<2) setStatus(`That ${before} isn't in a group. Try another tile.`);
+    }
+  }
+
+  function findHint(){
+    for(let r=0;r<SIZE;r++){
+      for(let c=0;c<SIZE;c++){
+        const v = grid[r][c];
+        for(const [nr,nc] of neighbors(r,c)){
+          if(grid[nr][nc]===v) return {r,c};
+        }
+      }
+    }
+    return null;
+  }
+
+  // Events
+  els.grid.addEventListener('click', handleClickCell);
+  els.newGame.addEventListener('click', initGrid);
+  els.again.addEventListener('click', ()=>{
+    els.gameover.classList.remove('show');
+    initGrid();
+  });
+  els.boostMode.addEventListener('click', ()=>{
+    boostMode = !boostMode;
+    updateHUD();
+    setStatus(boostMode ? 'Booster ON: tap a tile to clear it.' : 'Booster OFF: tap groups to merge.');
+  });
+  els.hintBtn.addEventListener('click', ()=>{
+    const h = findHint();
+    if(!h){ setStatus('No merges available. Convert coins to boosters will happen automatically.'); checkNoMovesAndConvert(); return; }
+    // briefly highlight a mergeable spot
+    const group = getGroup(h.r,h.c);
+    highlightGroup(group);
+    setStatus('Hint: highlighted a mergeable group.');
+  });
+
+  // Initialize
+  initGrid();
+})();
+</script>
+</body>
+</html>
