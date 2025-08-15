@@ -72,6 +72,12 @@
     border-radius:16px;border:1px solid #293052;
     box-shadow:inset 0 0 0 1px rgba(255,255,255,0.02), 0 8px 30px rgba(0,0,0,0.35);
   }
+  .cell {
+  transition: transform 0.25s ease-out;
+}
+.cell.falling {
+  transition: transform 0.25s ease-out;
+}
   .cell{
     width:100%; aspect-ratio:1;
     border-radius:var(--radius);
@@ -317,36 +323,78 @@
     setTimeout(()=>{ [...els.grid.children].forEach(b=>b.classList.remove('group')); }, 150);
   }
 
-  function mergeAt(r,c){
-    const group = getGroup(r,c);
-    if(group.length<2){ setStatus('Need at least 2 adjacent tiles of the same number to merge.'); return false; }
-    const val = grid[r][c];
-    highlightGroup(group);
-    // Coins for merging n
-    coins += val;
-
-    // Upgrade clicked tile
-    grid[r][c] = val + 1;
-
-    // Replace the rest with fresh tiles
-    for(const [rr,cc] of group){
-      if(rr===r && cc===c) continue;
-      grid[rr][cc] = newTileValue();
-    }
-
-    // Award booster for first time reaching >=10
-    if(grid[r][c] >= 10 && !awardedLevels.has(grid[r][c])){
-      boosters += 1;
-      awardedLevels.add(grid[r][c]);
-      flashBoostNotice(`First ${grid[r][c]}! +1 booster`);
-    }
-
-    highest = Math.max(highest, grid[r][c]);
-    bounceCell(r,c);
-    render(); // re-render for fresh colors/borders
-    updateHUD();
-    return true;
+  function mergeAt(r, c) {
+  const group = getGroup(r, c);
+  if (group.length < 2) {
+    setStatus('Need at least 2 adjacent tiles of the same number to merge.');
+    return false;
   }
+
+  const val = grid[r][c];
+  highlightGroup(group);
+  coins += val; // coins for merging
+
+  // Upgrade clicked tile
+  grid[r][c] = val + 1;
+
+  if (grid[r][c] >= 10 && !awardedLevels.has(grid[r][c])) {
+    boosters += 1;
+    awardedLevels.add(grid[r][c]);
+    flashBoostNotice(`First ${grid[r][c]}! +1 booster`);
+  }
+
+  highest = Math.max(highest, grid[r][c]);
+
+  // Mark rest as null
+  for (const [rr, cc] of group) {
+    if (rr === r && cc === c) continue;
+    grid[rr][cc] = null;
+  }
+
+  // --- ANIMATION STEP ---
+  // First render so we have DOM elements for current state
+  render();
+
+  // Calculate drop distances for each column
+  const dropMap = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+  for (let col = 0; col < SIZE; col++) {
+    let emptyBelow = 0;
+    for (let row = SIZE - 1; row >= 0; row--) {
+      if (grid[row][col] === null) {
+        emptyBelow++;
+      } else {
+        dropMap[row][col] = emptyBelow;
+      }
+    }
+  }
+
+  // Animate falling
+  [...els.grid.children].forEach(cell => {
+    const rr = +cell.dataset.r;
+    const cc = +cell.dataset.c;
+    const dist = dropMap[rr][cc];
+    if (dist > 0) {
+      cell.style.transform = `translateY(${dist * 100}%)`;
+    }
+  });
+
+  // After animation, update actual grid with new filled state
+  setTimeout(() => {
+    for (let col = 0; col < SIZE; col++) {
+      const newCol = grid.map(row => row[col]).filter(v => v !== null);
+      while (newCol.length < SIZE) {
+        newCol.unshift(newTileValue());
+      }
+      for (let row = 0; row < SIZE; row++) {
+        grid[row][col] = newCol[row];
+      }
+    }
+    render();
+    updateHUD();
+  }, 250);
+
+  return true;
+}
 
   function bounceCell(r,c){
     const idx = r*SIZE + c;
