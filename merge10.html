@@ -413,11 +413,50 @@
     setTimeout(()=>els.boosters.parentElement.classList.remove('pulse'), 900);
   }
 
-  function clearOneAt(r,c){
-    grid[r][c] = newTileValue();
+  function clearOneAt(r, c) {
+  // Remove the tile
+  grid[r][c] = null;
+
+  // First render current state so we can animate
+  render();
+
+  // Calculate drop distances for animation
+  const dropMap = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+  for (let col = 0; col < SIZE; col++) {
+    let emptyBelow = 0;
+    for (let row = SIZE - 1; row >= 0; row--) {
+      if (grid[row][col] === null) {
+        emptyBelow++;
+      } else {
+        dropMap[row][col] = emptyBelow;
+      }
+    }
+  }
+
+  [...els.grid.children].forEach(cell => {
+    const rr = +cell.dataset.r;
+    const cc = +cell.dataset.c;
+    const dist = dropMap[rr][cc];
+    if (dist > 0) {
+      cell.style.transform = `translateY(${dist * 100}%)`;
+    }
+  });
+
+  // After the animation delay, shift tiles down and fill new ones from top
+  setTimeout(() => {
+    for (let col = 0; col < SIZE; col++) {
+      const newCol = grid.map(row => row[col]).filter(v => v !== null);
+      while (newCol.length < SIZE) {
+        newCol.unshift(newTileValue());
+      }
+      for (let row = 0; row < SIZE; row++) {
+        grid[row][col] = newCol[row];
+      }
+    }
     render();
     updateHUD();
-  }
+  }, 250);
+}
 
   function checkNoMovesAndConvert(){
     if(anyMovesLeft()) return;
