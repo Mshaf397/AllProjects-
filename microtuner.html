@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Microtonal Tuner — EDO & Scala</title>
+  <style>
+    :root {
+      --bg: #0b0e12;
+      --panel: #121821;
+      --muted: #8aa0b4;
+      --text: #e9f0f7;
+      --accent: #6fd3ff;
+      --accent-2: #9dff9d;
+      --bad: #ff6f6f;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
+      background: radial-gradient(1200px 800px at 70% -200px, #122337 0%, var(--bg) 50%);
+      color: var(--text);
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    h1 { font-size: 26px; margin: 0; letter-spacing: 0.4px; }
+    .sub { color: var(--muted); font-size: 14px; }
+
+    .grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
+    @media (max-width: 960px){ .grid{ grid-template-columns: 1fr; } }
+
+    .card { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 16px; }
+    .card h2{ margin: 0 0 12px; font-size: 18px; color: var(--accent); font-weight: 600; }
+
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 12px; color: var(--muted); }
+    input, select, button { background: var(--panel); color: var(--text); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+    input[type="number"]{ -moz-appearance: textfield; }
+    input::file-selector-button{ background: #1c2430; border: 0; margin-right: 10px; padding: 8px 10px; border-radius: 10px; color: var(--accent); }
+    button { cursor: pointer; transition: transform .05s ease; }
+    button:active { transform: translateY(1px); }
+
+    .status { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+    .big { font-size: 36px; font-weight: 700; letter-spacing: 0.5px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    .unit { font-size: 14px; color: var(--muted); margin-left: 6px; }
+
+    /* Needle gauge */
+    .gauge { height: 180px; position: relative; }
+    canvas { width: 100%; height: 100%; display: block; }
+
+    .led { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-left: 8px; box-shadow: 0 0 10px currentColor; }
+    .led.ok { color: var(--accent-2); }
+    .led.bad { color: var(--bad); }
+
+    .scale-table { max-height: 220px; overflow: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,.07); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    th { text-align: left; position: sticky; top: 0; background: #0f1520; }
+    tr.highlight { background: rgba(111,211,255,0.08); }
+    .foot { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Microtonal Tuner <span class="sub">— any EDO + Scala (.scl)</span></h1>
+        <div class="sub">Precision: 0.1 cent • Works in your browser using the Web Audio API</div>
+      </div>
+      <div>
+        <button id="startBtn">🎙️ Start</button>
+        <button id="stopBtn" disabled>⏹️ Stop</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Live Tuner</h2>
+        <div class="status" style="margin-bottom:12px;">
+          <div>
+            <div style="color:var(--muted); font-size:12px;">Frequency</div>
+            <div class="big mono"><span id="freq">—</span> <span class="unit">Hz</span></div>
+          </div>
+          <div>
+            <div style="color:var(--muted); font-size:12px;">Deviation</div>
+            <div class="big mono"><span id="cents">—</span> <span class="unit">cents</span></div>
+          </div>
+          <div>
+            <div style="color:var(--muted); font-size:12px;">Target</div>
+            <div class="big mono"><span id="target">—</span></div>
+          </div>
+          <div>
+            <div style="color:var(--muted); font-size:12px;">Degree</div>
+            <div class="big mono"><span id="degree">—</span></div>
+          </div>
+        </div>
+        <div class="gauge card" style="padding:6px;">
+          <canvas id="needle" width="900" height="300"></canvas>
+        </div>
+        <div class="foot">Stability <span id="stableLed" class="led bad"></span></div>
+      </section>
+
+      <section class="card">
+        <h2>Settings</h2>
+        <div class="controls">
+          <div class="field">
+            <label for="mode">Tuning mode</label>
+            <select id="mode">
+              <option value="edo" selected>EDO (equal division of the octave)</option>
+              <option value="scala">Custom scale (Scala .scl)</option>
+            </select>
+          </div>
+          <div class="field edo-only">
+            <label for="edo">EDO steps (y)</label>
+            <input id="edo" type="number" min="2" max="96" step="1" value="12" />
+          </div>
+          <div class="field edo-only">
+            <label for="edoOffset">EDO offset (x=0 anchor in cents)</label>
+            <input id="edoOffset" type="number" step="0.1" value="0" />
+          </div>
+          <div class="field scala-only" style="display:none;">
+            <label for="sclFile">Upload Scala .scl</label>
+            <input id="sclFile" type="file" accept=".scl" />
+          </div>
+          <div class="field">
+            <label for="refFreq">Reference frequency (A4)</label>
+            <input id="refFreq" type="number" min="100" max="500" step="0.1" value="440.0" />
+          </div>
+          <div class="field">
+            <label for="smoothing">Smoothing (ms)</label>
+            <input id="smoothing" type="number" min="0" max="500" step="10" value="120" />
+          </div>
+          <div class="field">
+            <label for="noiseGate">Noise gate (RMS)</label>
+            <input id="noiseGate" type="number" min="0" max="0.1" step="0.005" value="0.02" />
+          </div>
+        </div>
+        <div class="foot">Tip: For EDO, “Degree” displays <strong>x\y</strong> (steps/EDO). For Scala scales, degree indexing is shown as <strong>n</strong> only.</div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:16px;">
+      <h2>Current Scale</h2>
+      <div id="scaleMeta" class="sub" style="margin-bottom:8px;">12-EDO • step = 100.0 cents</div>
+      <div class="scale-table">
+        <table>
+          <thead>
+            <tr><th>#</th><th>cents</th><th>ratio</th></tr>
+          </thead>
+          <tbody id="scaleBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="sub" style="margin-top:12px;">
+      Built with ❤️ Web Audio. Your audio never leaves your device.
+    </footer>
+  </div>
+
+<script>
+// ---------- Utilities ----------
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const log2 = x => Math.log(x) / Math.LN2;
+const centsBetween = (f1, f2) => 1200 * log2(f1 / f2);
+const TWO_PI = Math.PI * 2;
+
+function formatCents(c){
+  if (!isFinite(c)) return '—';
+  const s = (Math.round(c * 10) / 10).toFixed(1);
+  return (c > 0 ? '+' : (c < 0 ? '' : '')) + s;
+}
+
+function ratioFromCents(c){
+  const r = Math.pow(2, c / 1200);
+  // show as power-of-two ratio approximation
+  return r.toFixed(6);
+}
+
+// ---------- Scale Models ----------
+class EDOScale {
+  constructor(y = 12, offsetCents = 0){
+    this.y = y|0; // steps per octave
+    this.step = 1200 / this.y;
+    this.offset = +offsetCents || 0; // where x=0 lies within the octave in cents
+    this.type = 'edo';
+    this.name = `${this.y}-EDO`;
+  }
+  // Return nearest degree idx and cents deviation for a cents position within [0,1200)
+  nearest(centsMod){
+    const shifted = (centsMod - this.offset + 1200) % 1200;
+    let x = Math.round(shifted / this.step);
+    x = ((x % this.y) + this.y) % this.y; // wrap 0..y-1
+    const target = (x * this.step + this.offset) % 1200;
+    let dev = centsMod - target;
+    // choose the smallest magnitude deviation within [-600, +600]
+    if (dev > 600) dev -= 1200; else if (dev < -600) dev += 1200;
+    return { index: x, targetCents: target, deviation: dev };
+  }
+  table(){
+    const rows = [];
+    for(let i=0;i<this.y;i++){
+      const c = (i * this.step + this.offset) % 1200;
+      rows.push({ idx: i, cents: +c.toFixed(5), ratio: ratioFromCents(c) });
+    }
+    rows.sort((a,b)=>a.cents-b.cents);
+    return rows;
+  }
+  meta(){ return `${this.y}-EDO • step = ${this.step.toFixed(1)} cents` }
+}
+
+class ScalaScale {
+  constructor(name, centsArray){
+    this.type = 'scala';
+    this.name = name || 'Scala scale';
+    // Ensure 0 and sort unique within [0,1200)
+    const set = new Set([0, ...centsArray.map(Number).filter(v=>isFinite(v))]);
+    this.cents = Array.from(set).map(v=>((v%1200)+1200)%1200).sort((a,b)=>a-b);
+  }
+  nearest(centsMod){
+    // Binary search nearest degree
+    const a = this.cents;
+    let lo = 0, hi = a.length - 1;
+    while (hi - lo > 1){
+      const mid = (lo + hi) >> 1;
+      if (a[mid] < centsMod) lo = mid; else hi = mid;
+    }
+    const c1 = a[lo], c2 = a[hi];
+    let idx = Math.abs(centsMod - c1) <= Math.abs(centsMod - c2) ? lo : hi;
+    let target = a[idx];
+    let dev = centsMod - target;
+    if (dev > 600) dev -= 1200; else if (dev < -600) dev += 1200;
+    return { index: idx, targetCents: target, deviation: dev };
+  }
+  table(){
+    return this.cents.map((c, i)=>({ idx: i, cents: +c.toFixed(5), ratio: ratioFromCents(c) }));
+  }
+  meta(){ return `${this.name} • ${this.cents.length} notes/Oct`; }
+}
+
+function parseScala(text){
+  // Scala .scl parser (basic): ignores lines starting with '!' comments
+  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l && !l.startsWith('!'));
+  if (lines.length < 2) throw new Error('Invalid .scl file');
+  const name = lines[0];
+  const count = parseInt(lines[1], 10);
+  const entries = lines.slice(2);
+  if (!Number.isFinite(count) || count < 1) throw new Error('Invalid .scl count');
+  const cents = [];
+  for (let i=0; i<Math.min(count, entries.length); i++){
+    let s = entries[i].split(/\s+/)[0]; // take first token
+    if (!s) continue;
+    if (s.includes('/')){
+      // ratio a/b
+      const [a,b] = s.split('/').map(Number);
+      if (a>0 && b>0) cents.push(1200 * Math.log2(a/b));
+    } else {
+      // may be float, optionally ending with 'c'
+      s = s.endsWith('c') ? s.slice(0, -1) : s;
+      const v = parseFloat(s);
+      if (isFinite(v)) cents.push(v);
+    }
+  }
+  return new ScalaScale(name, cents);
+}
+
+// ---------- Pitch Detection (Autocorrelation + parabolic interp) ----------
+class PitchDetector {
+  constructor(sampleRate){
+    this.sampleRate = sampleRate;
+    this.bufferSize = 2048; // analysis window
+    this.minFreq = 27.5; // A0
+    this.maxFreq = 2000; // up to ~C7
+    this.minLag = Math.floor(sampleRate / this.maxFreq);
+    this.maxLag = Math.floor(sampleRate / this.minFreq);
+    this.prevHz = 0;
+  }
+
+  estimateHz(timeDomain){
+    const buf = timeDomain;
+    const n = buf.length;
+
+    // DC offset removal & windowing (Hann)
+    let mean = 0; for (let i=0;i<n;i++) mean += buf[i]; mean /= n;
+    const w = 0.5; // Hann window parameters
+    let rms = 0;
+    for (let i=0;i<n;i++){
+      const x = buf[i] - mean;
+      const win = w - w*Math.cos(TWO_PI * i/(n-1));
+      buf[i] = x * win;
+      rms += buf[i]*buf[i];
+    }
+    rms = Math.sqrt(rms / n);
+
+    // Early exit if too quiet
+    this.rms = rms;
+
+    // Autocorrelation
+    const minLag = this.minLag, maxLag = Math.min(this.maxLag, n-1);
+    let bestLag = -1, bestCorr = 0;
+    for (let lag = minLag; lag <= maxLag; lag++){
+      let sum = 0;
+      for (let i=0; i<n-lag; i++) sum += buf[i] * buf[i+lag];
+      if (sum > bestCorr){ bestCorr = sum; bestLag = lag; }
+    }
+
+    if (bestLag === -1) return { hz: 0, rms };
+
+    // Parabolic interpolation around best lag for sub-bin precision
+    let y0, y1, y2; y1 = 0;
+    for (let i=0; i<n-bestLag; i++) y1 += buf[i]*buf[i+bestLag];
+    const lagM1 = Math.max(bestLag-1, minLag);
+    const lagP1 = Math.min(bestLag+1, maxLag);
+    y0 = 0; for (let i=0; i<n-lagM1; i++) y0 += buf[i]*buf[i+lagM1];
+    y2 = 0; for (let i=0; i<n-lagP1; i++) y2 += buf[i]*buf[i+lagP1];
+    const denom = (y0 - 2*y1 + y2);
+    const shift = denom !== 0 ? 0.5 * (y0 - y2) / denom : 0;
+    const refinedLag = clamp(bestLag + shift, minLag, maxLag);
+
+    const hz = this.sampleRate / refinedLag;
+    return { hz, rms };
+  }
+}
+
+// ---------- App State ----------
+const ui = {
+  freq: document.getElementById('freq'),
+  cents: document.getElementById('cents'),
+  target: document.getElementById('target'),
+  degree: document.getElementById('degree'),
+  scaleMeta: document.getElementById('scaleMeta'),
+  scaleBody: document.getElementById('scaleBody'),
+  mode: document.getElementById('mode'),
+  edoInput: document.getElementById('edo'),
+  edoOffset: document.getElementById('edoOffset'),
+  refFreq: document.getElementById('refFreq'),
+  smoothing: document.getElementById('smoothing'),
+  noiseGate: document.getElementById('noiseGate'),
+  sclFile: document.getElementById('sclFile'),
+  startBtn: document.getElementById('startBtn'),
+  stopBtn: document.getElementById('stopBtn'),
+  stableLed: document.getElementById('stableLed'),
+  needle: document.getElementById('needle'),
+};
+
+let audioCtx, analyser, micSrc, workBuf, detector, rafId;
+let scale = new EDOScale(12, 0);
+let baseA4 = 440;
+let smoothingMs = 120; // for cents average
+let noiseGate = 0.02;
+let avgDev = 0, lastUpdate = 0;
+
+function setModeControls(){
+  const edoOnly = document.querySelectorAll('.edo-only');
+  const scalaOnly = document.querySelectorAll('.scala-only');
+  const isEDO = ui.mode.value === 'edo';
+  edoOnly.forEach(el=>el.style.display = isEDO ? '' : 'none');
+  scalaOnly.forEach(el=>el.style.display = isEDO ? 'none' : '');
+}
+
+function refreshScaleTable(){
+  ui.scaleMeta.textContent = scale.meta();
+  const rows = scale.table();
+  ui.scaleBody.innerHTML = rows.map(r=>`<tr data-cents="${r.cents}"><td>${r.idx}</td><td class="mono">${r.cents.toFixed(2)}</td><td class="mono">${r.ratio}</td></tr>`).join('');
+}
+
+function updateScaleFromUI(){
+  if (ui.mode.value === 'edo'){
+    const y = parseInt(ui.edoInput.value, 10) || 12;
+    const off = parseFloat(ui.edoOffset.value) || 0;
+    scale = new EDOScale(y, off);
+  }
+  ui.scaleMeta.textContent = scale.meta();
+  refreshScaleTable();
+}
+
+ui.mode.addEventListener('change', ()=>{ setModeControls(); updateScaleFromUI(); });
+ui.edoInput.addEventListener('input', updateScaleFromUI);
+ui.edoOffset.addEventListener('input', updateScaleFromUI);
+ui.refFreq.addEventListener('input', ()=>{ baseA4 = parseFloat(ui.refFreq.value)||440; });
+ui.smoothing.addEventListener('input', ()=>{ smoothingMs = parseInt(ui.smoothing.value,10)||120; });
+ui.noiseGate.addEventListener('input', ()=>{ noiseGate = parseFloat(ui.noiseGate.value)||0.02; });
+
+ui.sclFile.addEventListener('change', async e=>{
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const text = await file.text();
+  try {
+    scale = parseScala(text);
+    ui.mode.value = 'scala';
+    setModeControls();
+    refreshScaleTable();
+  } catch(err){
+    alert('Failed to parse .scl: ' + err.message);
+  }
+});
+
+refreshScaleTable();
+
+// ---------- Drawing the needle ----------
+const ctx2d = ui.needle.getContext('2d');
+function drawGauge(devCents, stepCents){
+  const cw = ui.needle.width, ch = ui.needle.height;
+  ctx2d.clearRect(0,0,cw,ch);
+
+  const cx = cw/2, cy = ch*0.8; // center bottom-ish
+  const radius = Math.min(cw, ch)*0.45;
+
+  // scale: show +/- 50 cents (or half of step for super-fine EDOs)
+  const span = Math.max(50, stepCents/2);
+  const norm = clamp(devCents/span, -1, 1);
+  const angle = (-Math.PI*5/6) + (norm + 1) * (Math.PI*10/6 / 2);
+
+  // arc
+  ctx2d.lineWidth = 10; ctx2d.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx2d.beginPath(); ctx2d.arc(cx, cy, radius, Math.PI*7/6, Math.PI*11/6); ctx2d.stroke();
+
+  // center tick
+  ctx2d.lineWidth = 3; ctx2d.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx2d.beginPath(); ctx2d.moveTo(cx, cy - radius); ctx2d.lineTo(cx, cy - radius + 20); ctx2d.stroke();
+
+  // needle
+  ctx2d.save();
+  ctx2d.translate(cx, cy);
+  ctx2d.rotate(angle);
+  ctx2d.fillStyle = '#6fd3ff';
+  ctx2d.beginPath();
+  ctx2d.moveTo(-6, 0); ctx2d.lineTo(0, -radius + 8); ctx2d.lineTo(6, 0); ctx2d.closePath();
+  ctx2d.fill();
+  ctx2d.restore();
+
+  // labels
+  ctx2d.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx2d.font = '16px ui-monospace, monospace';
+  ctx2d.textAlign = 'center';
+  ctx2d.fillText('-' + span + ' c', cx - radius*0.8, cy - radius*0.2);
+  ctx2d.fillText('+' + span + ' c', cx + radius*0.8, cy - radius*0.2);
+}
+
+// ---------- Audio & Loop ----------
+async function start(){
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  micSrc = audioCtx.createMediaStreamSource(stream);
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 4096; // gives timeDomain buffer of 2048
+  analyser.smoothingTimeConstant = 0.0;
+  micSrc.connect(analyser);
+
+  workBuf = new Float32Array(analyser.fftSize/2);
+  detector = new PitchDetector(audioCtx.sampleRate);
+
+  loop();
+  ui.startBtn.disabled = true; ui.stopBtn.disabled = false;
+}
+
+function stop(){
+  cancelAnimationFrame(rafId);
+  if (audioCtx){ audioCtx.close(); }
+  audioCtx = null; analyser = null; detector = null; micSrc = null;
+  ui.startBtn.disabled = false; ui.stopBtn.disabled = true;
+}
+
+function centsModFromHz(hz){
+  // map frequency to cents position relative to A4 base and modulo octave
+  const c = 1200 * log2(hz / baseA4);
+  return ((c % 1200) + 1200) % 1200;
+}
+
+function highlightScaleRow(targetCents){
+  const rows = ui.scaleBody.querySelectorAll('tr');
+  let best, bestDiff = 1e9;
+  rows.forEach(tr=>{
+    const c = parseFloat(tr.dataset.cents);
+    const d = Math.abs((((targetCents - c + 600) % 1200) + 1200) % 1200 - 600);
+    if (d < bestDiff){ bestDiff = d; best = tr; }
+    tr.classList.remove('highlight');
+  });
+  if (best) best.classList.add('highlight');
+}
+
+function loop(ts){
+  rafId = requestAnimationFrame(loop);
+  if (!analyser) return;
+
+  analyser.getFloatTimeDomainData(workBuf);
+  const { hz, rms } = detector.estimateHz(workBuf.slice()); // copy for safe windowing
+
+  const gate = noiseGate;
+  const stable = rms > gate && hz > 0;
+  ui.stableLed.className = 'led ' + (stable ? 'ok' : 'bad');
+
+  if (!stable){
+    ui.freq.textContent = '—';
+    ui.cents.textContent = '—';
+    drawGauge(0, (scale.step||100));
+    return;
+  }
+
+  // Compute cents and map to scale
+  const centsMod = centsModFromHz(hz);
+  const near = scale.nearest(centsMod);
+  const dev = near.deviation; // cents deviation from target
+
+  // Temporal smoothing on deviation
+  const now = ts || performance.now();
+  const dt = lastUpdate ? (now - lastUpdate) : 0; lastUpdate = now;
+  const alpha = dt > 0 ? Math.exp(-dt / smoothingMs) : 0.5;
+  avgDev = alpha * avgDev + (1-alpha) * dev;
+
+  // UI updates
+  ui.freq.textContent = hz.toFixed(2);
+  ui.cents.textContent = formatCents(avgDev);
+  const stepCents = scale.type === 'edo' ? scale.step : 50; // gauge span helper
+  drawGauge(avgDev, stepCents);
+
+  // Target label & degree
+  let targetLabel = `${near.targetCents.toFixed(1)} c`;
+  if (scale.type === 'edo'){
+    ui.degree.textContent = `${near.index}\\${scale.y}`;
+  } else {
+    ui.degree.textContent = `${near.index}`;
+  }
+  ui.target.textContent = targetLabel;
+  highlightScaleRow(near.targetCents);
+}
+
+// ---------- Wire controls ----------
+ui.startBtn.addEventListener('click', start);
+ui.stopBtn.addEventListener('click', stop);
+setModeControls();
+
+</script>
+</body>
+</html>
