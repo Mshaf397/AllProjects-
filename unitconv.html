@@ -75,7 +75,7 @@ button:hover {
                 <option value="meters">Meters</option>
                 <option value="kilometers">Kilometers</option>
                 <option value="miles">Miles</option>
-                <!-- Add more units as needed -->
+                <option value="feet">Feet</option>
             </select>
         </div>
         <div class="input-group">
@@ -84,7 +84,7 @@ button:hover {
                 <option value="meters">Meters</option>
                 <option value="kilometers">Kilometers</option>
                 <option value="miles">Miles</option>
-                <!-- Add more units as needed -->
+                <option value="feet">Feet</option>
             </select>
         </div>
         <button id="convertBtn">Convert</button>
@@ -112,19 +112,30 @@ button:hover {
             return;
         }
 
-        // Example: Length conversion (add more unit types as needed)
         if (from === 'meters' && to === 'kilometers') {
             result = value / 1000;
         } else if (from === 'meters' && to === 'miles') {
             result = value / 1609.34;
+        } else if (from === 'meters' && to === 'feet') {
+            result = value * 3.28084;
         } else if (from === 'kilometers' && to === 'meters') {
             result = value * 1000;
         } else if (from === 'kilometers' && to === 'miles') {
             result = value / 1.60934;
+        } else if (from === 'kilometers' && to === 'feet') {
+            result = value * 3280.84;
         } else if (from === 'miles' && to === 'meters') {
             result = value * 1609.34;
         } else if (from === 'miles' && to === 'kilometers') {
             result = value * 1.60934;
+        } else if (from === 'miles' && to === 'feet') {
+            result = value * 5280;
+        } else if (from === 'feet' && to === 'meters') {
+            result = value / 3.28084;
+        } else if (from === 'feet' && to === 'kilometers') {
+            result = value / 3280.84;
+        } else if (from === 'feet' && to === 'miles') {
+            result = value / 5280;
         } else if (from === to) {
             result = value; // Same unit, no conversion needed
         } else {
