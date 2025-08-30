@@ -108,12 +108,6 @@
     <label>Key Height (px): <input type="number" id="keyHeight" value="70" min="20"></label>
   </div>
 
-  <div style="min-width:220px;">
-    <label>Custom note names (comma separated). Example: C, C#, D, ...</label>
-    <textarea id="noteNames" placeholder="Leave blank to hide note names">C,C#,D,D#,E,F,F#,G,G#,A,A#,B</textarea>
-    <label class="small">If fewer names than keys, names will repeat cyclically.</label>
-  </div>
-
   <div style="display:flex; flex-direction:column; gap:8px;">
     <div class="controls-row">
       <button onclick="renderKeyboard()">Render</button>
@@ -281,9 +275,6 @@
     keyboard.style.gridTemplateColumns = `repeat(${cols}, ${keyW}px)`;
     keyboard.style.gridAutoRows = `${keyH}px`;
 
-    // custom note names
-    const noteNamesRaw = document.getElementById("noteNames").value || "";
-    const names = noteNamesRaw.split(",").map(s => s.trim()).filter(s => s.length > 0);
 
     // build frequencies array according to chosen tuning
     let frequencies = [];
@@ -344,12 +335,12 @@
       if (names.length > 0) {
         displayName = names[i % names.length];
       }
+      
       const cents = (1200 * Math.log2(freq / rootFreq)).toFixed(2);
-      div.innerHTML = `
-        ${displayName ? `<div class="name">${escapeHtml(displayName)}</div>` : ""}
-        <div class="freq">${freq.toFixed(3)} Hz</div>
-        <div class="cents">${cents}¢</div>
-      `;
+    div.innerHTML = `
+      <div class="freq">${freq.toFixed(3)} Hz</div>
+      <div class="cents">${cents}¢</div>
+    `;
 
       // pointer play logic
       let osc = null;
