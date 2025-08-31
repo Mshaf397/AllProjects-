@@ -2,6 +2,52 @@
 <html>
 <head>
   <title>Web Synth</title>
+  <style>
+  /* Add these new CSS rules to your existing style block. */
+
+  body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+
+  h1 {
+    margin-bottom: 20px;
+    color: #333;
+  }
+
+  #keyboard {
+    display: flex;
+    gap: 5px; /* Adds space between the keys */
+  }
+
+  .key {
+    width: 60px; /* Adjust for desired key width */
+    height: 200px; /* Adjust for desired key height */
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-end; /* Aligns the text to the bottom of the key */
+    justify-content: center;
+    padding-bottom: 10px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+  }
+
+  /* This adds a visual effect when the key is pressed. */
+  .key:active {
+    background-color: #eee;
+    transform: translateY(2px);
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+  }
+</style>
 </head>
 <body>
   <h1>Simple Web Synth</h1>
