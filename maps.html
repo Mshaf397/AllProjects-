@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenStreetMap Viewer</title>
+    <!-- Use Tailwind CSS for a clean, modern look -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Include Leaflet CSS for map styling -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha2d1-LwJk5j1M5Jz2r7c5l6b9j8e0g9c6x7p8r4m4g5h3w8o0x8a9r0m8b2q9e4w6p8e7d8" crossorigin=""/>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #map {
+            flex-grow: 1;
+            z-index: 0;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 flex flex-col items-center">
+    <div class="w-full max-w-4xl bg-white p-6 rounded-xl shadow-lg flex flex-col space-y-4">
+        <h1 class="text-3xl font-bold text-gray-800 text-center">OpenStreetMap Explorer</h1>
+        
+        <!-- Search bar and Geolocation buttons -->
+        <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full">
+            <div class="relative w-full">
+                <input type="text" id="search-input" placeholder="Search for a place..." class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="search-btn" class="absolute inset-y-0 right-0 flex items-center pr-3 text-blue-500 hover:text-blue-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+            <button id="locate-btn" class="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                </svg>
+                My Location
+            </button>
+        </div>
+        <!-- The map container -->
+        <div id="map" class="h-[60vh] w-full"></div>
+    </div>
+    
+    <!-- Include Leaflet JavaScript file -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha2d1-e5zT7g0J5w7c4e5s3p1f8h6y9j8k4l2g6d9o0x8a7b5d9p2m3c8d1r2a9j4k0o9m8n7v1b0f" crossorigin=""></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize the map and set its view to a geographical center and zoom level
+            const map = L.map('map').setView([40.7128, -74.0060], 13); // Centered on New York City by default
+            let currentMarker = null;
+
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Function to add or move a marker
+            function addMarker(lat, lon, text) {
+                if (currentMarker) {
+                    map.removeLayer(currentMarker);
+                }
+                currentMarker = L.marker([lat, lon]).addTo(map).bindPopup(text).openPopup();
+            }
+
+            // Geolocation button functionality
+            document.getElementById('locate-btn').addEventListener('click', () => {
+                map.locate({ setView: true, maxZoom: 16 });
+            });
+
+            // Handle location found event
+            map.on('locationfound', (e) => {
+                const latlng = e.latlng;
+                const radius = e.accuracy;
+                
+                addMarker(latlng.lat, latlng.lng, "You are here!");
+                
+                // Add a circle to show the accuracy
+                L.circle(latlng, radius).addTo(map);
+            });
+
+            // Handle location error event
+            map.on('locationerror', (e) => {
+                console.error(e.message);
+                alert("Location access denied. Please enable location services to use this feature.");
+            });
+
+            // Search functionality using Nominatim
+            const searchInput = document.getElementById('search-input');
+            const searchBtn = document.getElementById('search-btn');
+
+            searchBtn.addEventListener('click', () => {
+                const query = searchInput.value;
+                if (query.trim() === '') return;
+
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`;
+
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            const result = data[0];
+                            const lat = parseFloat(result.lat);
+                            const lon = parseFloat(result.lon);
+
+                            map.setView([lat, lon], 16);
+                            addMarker(lat, lon, `Found: ${result.display_name}`);
+                        } else {
+                            alert('Location not found.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('There was a problem with the fetch operation:', error);
+                        alert('Could not perform search. Please try again later.');
+                    });
+            });
+
+            // Allow search with the Enter key
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchBtn.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
