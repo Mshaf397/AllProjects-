@@ -1,4 +1,4 @@
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let audioContext = null;
 const noteFrequencies = {
   'C4': 261.63,
   'D4': 293.66,
