@@ -9,6 +9,7 @@ const noteFrequencies = {
   'B4': 493.88,
   'C5': 523.25
 };
+const activeNotes = {};
 function playNote(note) {
   // Create an oscillator node
   const oscillator = audioContext.createOscillator();
@@ -42,7 +43,6 @@ document.addEventListener('mousedown', (event) => {
   if (event.target.classList.contains('key')) {
     const note = event.target.dataset.note;
     if (!activeNotes[note]) {
-      // If the note isn't already playing, play it and store the nodes
       const { oscillator, gainNode } = playNote(note);
       activeNotes[note] = { oscillator, gainNode };
     }
@@ -53,16 +53,15 @@ document.addEventListener('mouseup', (event) => {
   if (event.target.classList.contains('key')) {
     const note = event.target.dataset.note;
     if (activeNotes[note]) {
-      // If the note exists in our activeNotes object, stop it
       const { oscillator, gainNode } = activeNotes[note];
       
-      // Smoothly ramp down the gain to 0 to prevent a click
+      // We'll add a smooth release to prevent a clicking sound.
       gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.2);
       
-      // Stop the oscillator after a brief delay
+      // Stop the oscillator after a brief delay.
       oscillator.stop(audioContext.currentTime + 0.2);
       
-      // Remove the note from our active notes object
+      // Remove the note from our tracking object.
       delete activeNotes[note];
     }
   }
