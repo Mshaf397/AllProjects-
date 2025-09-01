@@ -28,6 +28,30 @@
     button:hover {
       background: #ccc;
     }
+    .grid {
+  display: grid;
+  grid-template-columns: repeat(4, 100px);
+  grid-template-rows: repeat(4, 100px);
+  gap: 10px;
+}
+
+.grid button {
+  font-size: 1.2em;
+  border: none;
+  border-radius: 8px;
+  background: #eee;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.grid button:hover {
+  background: #ccc;
+}
+
+.grid button:active {
+  background: #999;
+  transform: scale(0.95);
+}
   </style>
 </head>
 <body>
