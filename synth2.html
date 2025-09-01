@@ -80,33 +80,78 @@
 
   <script>
     const AudioContext = window.AudioContext || window.webkitAudioContext;
-    const audioCtx = new AudioContext();
+const audioCtx = new AudioContext();
 
-    function playNote(frequency) {
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
+// keep track of active notes for polyphony
+const activeNotes = {}; // frequency → { oscillator, gainNode }
 
-      oscillator.type = 'sine'; // try: square, triangle, sawtooth
-      oscillator.frequency.value = frequency;
+function startNote(frequency) {
+  // prevent duplicate starts
+  if (activeNotes[frequency]) return;
 
-      // connect oscillator -> gain -> destination
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
+  const oscillator = audioCtx.createOscillator();
+  const gainNode = audioCtx.createGain();
 
-      // envelope: quick fade out
-      gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+  oscillator.type = 'sine'; // changeable later
+  oscillator.frequency.value = frequency;
 
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 1); // stop after 1s
-    }
+  oscillator.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
 
-    document.querySelectorAll("button").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const freq = parseFloat(btn.dataset.freq);
-        playNote(freq);
-      });
-    });
+  gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+
+  oscillator.start();
+
+  activeNotes[frequency] = { oscillator, gainNode };
+}
+
+function stopNote(frequency) {
+  const note = activeNotes[frequency];
+  if (note) {
+    // fade out smoothly
+    note.gainNode.gain.exponentialRampToValueAtTime(
+      0.001,
+      audioCtx.currentTime + 0.3
+    );
+    note.oscillator.stop(audioCtx.currentTime + 0.3);
+
+    delete activeNotes[frequency];
+  }
+}
+
+// attach listeners to all grid buttons
+document.querySelectorAll(".grid button").forEach(btn => {
+  const freq = parseFloat(btn.dataset.freq);
+
+  // Mouse support
+  btn.addEventListener("mousedown", () => startNote(freq));
+  btn.addEventListener("mouseup", () => stopNote(freq));
+  btn.addEventListener("mouseleave", () => stopNote(freq));
+
+  // Touch support
+  btn.addEventListener("touchstart", (e) => {
+    e.preventDefault(); // prevents scrolling
+    startNote(freq);
+  });
+  btn.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    stopNote(freq);
+  });
+});
+
+// unlock audio on first touch for iOS/Android
+document.body.addEventListener("touchstart", () => {
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
+}, { once: true });
+
+// also unlock on first click (desktop Safari can suspend too)
+document.body.addEventListener("mousedown", () => {
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
+}, { once: true });
   </script>
 </body>
 </html>
