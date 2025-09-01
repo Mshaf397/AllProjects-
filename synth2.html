@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Basic Web Synth</title>
+  <style>
+    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    button { font-size: 1.5em; padding: 1em 2em; }
+  </style>
+</head>
+<body>
+  <button id="playBtn">Play Tone</button>
+
+  <script>
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+
+    document.getElementById('playBtn').addEventListener('click', () => {
+      // Create oscillator
+      const oscillator = audioCtx.createOscillator();
+      oscillator.type = 'sine'; // options: sine, square, sawtooth, triangle
+      oscillator.frequency.value = 440; // A4 (440 Hz)
+
+      // Connect to output
+      oscillator.connect(audioCtx.destination);
+
+      // Play
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 1); // stop after 1 second
+    });
+  </script>
+</body>
+</html>
