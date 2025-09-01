@@ -2,31 +2,74 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Basic Web Synth</title>
+  <title>Web Synth Keyboard</title>
   <style>
-    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    button { font-size: 1.5em; padding: 1em 2em; }
+    body {
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
+    }
+    .keyboard {
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      font-size: 1.2em;
+      padding: 1em;
+      border: none;
+      border-radius: 5px;
+      background: #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #ccc;
+    }
   </style>
 </head>
 <body>
-  <button id="playBtn">Play Tone</button>
+  <h1>Web Synth</h1>
+  <div class="keyboard">
+    <button data-freq="261.63">C</button>
+    <button data-freq="293.66">D</button>
+    <button data-freq="329.63">E</button>
+    <button data-freq="349.23">F</button>
+    <button data-freq="392.00">G</button>
+    <button data-freq="440.00">A</button>
+    <button data-freq="493.88">B</button>
+  </div>
 
   <script>
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     const audioCtx = new AudioContext();
 
-    document.getElementById('playBtn').addEventListener('click', () => {
-      // Create oscillator
+    function playNote(frequency) {
       const oscillator = audioCtx.createOscillator();
-      oscillator.type = 'sine'; // options: sine, square, sawtooth, triangle
-      oscillator.frequency.value = 440; // A4 (440 Hz)
+      const gainNode = audioCtx.createGain();
 
-      // Connect to output
-      oscillator.connect(audioCtx.destination);
+      oscillator.type = 'sine'; // try: square, triangle, sawtooth
+      oscillator.frequency.value = frequency;
 
-      // Play
+      // connect oscillator -> gain -> destination
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      // envelope: quick fade out
+      gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+
       oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 1); // stop after 1 second
+      oscillator.stop(audioCtx.currentTime + 1); // stop after 1s
+    }
+
+    document.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const freq = parseFloat(btn.dataset.freq);
+        playNote(freq);
+      });
     });
   </script>
 </body>
