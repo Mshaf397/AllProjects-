@@ -1,161 +1,743 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Web Synth Keyboard</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      height: 100vh;
-    }
-    .keyboard {
-      display: flex;
-      gap: 10px;
-    }
-    button {
-      font-size: 1.2em;
-      padding: 1em;
-      border: none;
-      border-radius: 5px;
-      background: #eee;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    button:hover {
-      background: #ccc;
-    }
-    .grid {
-  display: grid;
-  grid-template-columns: repeat(4, 100px);
-  grid-template-rows: repeat(4, 100px);
-  gap: 10px;
-}
-
-.grid button {
-  font-size: 1.2em;
-  border: none;
-  border-radius: 8px;
-  background: #eee;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-}
-
-.grid button:hover {
-  background: #ccc;
-}
-
-.grid button:active {
-  background: #999;
-  transform: scale(0.95);
-}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Grid Web Synth — Prototype</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin: 12px; }
+  header { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+  .controls { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  .controls label { display:flex; flex-direction:column; font-size:13px; }
+  input[type="number"], input[type="text"], select { padding:6px; font-size:14px; width:140px; }
+  button { padding:8px 12px; font-size:14px; }
+  #gridWrap { margin-top:14px; border:1px solid #ddd; overflow:auto; max-height:65vh; background:#fafafa; }
+  #gridCanvas { display:block; }
+  .info { margin-top:10px; font-size:13px; color:#333; }
+  .small { font-size:12px; color:#555; }
+  .controls .col { display:flex; gap:8px; align-items:center; }
+</style>
 </head>
 <body>
-  <h1>Web Synth</h1>
-  <div class="grid">
-  <button data-freq="261.63">C4</button>
-  <button data-freq="264.00">C+4</button>
-  <button data-freq="293.66">D4</button>
-  <button data-freq="329.63">E4</button>
-  <button data-freq="349.23">F4</button>
+<header>
+  <h2 style="margin:0">Grid Web Synth — Prototype</h2>
+  <div class="small">Click/touch keys to play. Works offline.</div>
+</header>
 
-  <button data-freq="392.00">G4</button>
-  <button data-freq="396.00">G+4</button>
-  <button data-freq="440.00">A4</button>
-  <button data-freq="493.88">B4</button>
-  <button data-freq="523.25">C5</button>
+<div class="controls">
+  <label>Rows
+    <input id="rows" type="number" min="1" max="500" value="6" />
+  </label>
 
-  <button data-freq="587.33">D5</button>
-  <button data-freq="594.00">D+5</button>
-  <button data-freq="659.25">E5</button>
-  <button data-freq="698.46">F5</button>
-  <button data-freq="783.99">G5</button>
+  <label>Cols
+    <input id="cols" type="number" min="1" max="500" value="12" />
+  </label>
 
-  <button data-freq="880.00">A5</button>
-  <button data-freq="891.00">A+5</button>
-  <button data-freq="987.77">B5</button>
-  <button data-freq="1046.50">C6</button>
-  <button data-freq="1174.66">D6</button>
+  <label>Key size (px)
+    <input id="keySize" type="number" min="8" max="200" value="60" />
+  </label>
+
+  <label>Tuning type
+    <select id="tuningType">
+      <option value="edo">EDO (equal divisions of octave)</option>
+      <option value="nonoctave">Nonoctave (xedY)</option>
+      <option value="ji">Just Intonation (prime limit)</option>
+    </select>
+  </label>
+
+  <label id="edoParams">EDO steps
+    <input id="edoSteps" type="number" min="2" max="4096" value="12" />
+  </label>
+
+  <label id="nonoParams" style="display:none">Nonoctave (format: xedY, e.g. 13ed3 or 13ed3/2)
+    <input id="nonoSpec" type="text" placeholder="13ed3" value="13ed3" />
+  </label>
+
+  <label id="jiParams" style="display:none">Prime limit
+    <input id="jiPrime" type="number" min="2" max="97" value="5" />
+  </label>
+
+  <label>Root note (name)
+    <input id="rootNoteName" type="text" value="C4" />
+  </label>
+
+  <label>Root frequency (Hz)
+    <input id="rootFreq" type="number" min="1" max="20000" value="261.6256" step="0.0001" />
+  </label>
+
+  <div class="col">
+    <button id="applyBtn">Apply</button>
+    <button id="randomize">Randomize tuning</button>
+  </div>
+
+  <div style="flex:1"></div>
+
+  <label>Waveform
+    <select id="wave">
+      <option>sine</option>
+      <option>square</option>
+      <option>triangle</option>
+      <option>sawtooth</option>
+    </select>
+  </label>
+
+  <label>Release (ms)
+    <input id="release" type="number" min="10" max="10000" value="120" />
+  </label>
 </div>
 
-  <script>
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-const audioCtx = new AudioContext();
+<div id="gridWrap">
+  <canvas id="gridCanvas"></canvas>
+</div>
 
-// keep track of active notes for polyphony
-const activeNotes = {}; // frequency → { oscillator, gainNode }
+<div class="info">
+  <div id="status">Tuning: <span id="tuningText">12-EDO</span> — Note naming: <span id="nameSource">EDO rules</span></div>
+  <div class="small" id="notesLegend"></div>
+</div>
 
-function startNote(frequency) {
-  // prevent duplicate starts
-  if (activeNotes[frequency]) return;
+<script>
+/*
+Grid Web Synth prototype.
+- Core mapping: each key maps to a step index i = row*cols + col (left-to-right, top-to-bottom).
+- Frequency for EDO: f = rootFreq * 2^(i/EDO)
+- For nonoctave: parse xedY => step ratio = (Y)^(1/x). root is index 0. For mapping into higher EDO approximation and generating note names we follow the procedure in the spec.
+- For JI: generate a list of ratios whose prime factors <= prime limit, within [1,2) and map in ascending order to steps.
+- Note naming for EDO: implements the chain-of-fifths-based algorithm per your spec (best approximation of 3/2 in steps).
+- Nonoctave naming: tries to find a higher EDO that maps the nonoctave step near an integer number of steps, as described.
+Caveats & choices:
+- Grid indices may become very large for 500x500; spectral density can be huge. The synth uses simple oscillator nodes and release envelopes. Browser performance may be the limiting factor for huge grids.
+- JI generator here produces a scale from ratios with numerator/denominator <= maxDen (simple heuristic) and primes limited.
+- Note names generation covers Fb..B# using the fifths chain approach and then annotates further notes with ^/v for EDO steps beyond those.
+*/
 
-  const oscillator = audioCtx.createOscillator();
-  const gainNode = audioCtx.createGain();
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const masterGain = audioCtx.createGain();
+masterGain.gain.value = 0.7;
+masterGain.connect(audioCtx.destination);
 
-  oscillator.type = 'sine'; // changeable later
-  oscillator.frequency.value = frequency;
+let activeVoices = new Map(); // key -> {osc, gain}
 
-  oscillator.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
+const canvas = document.getElementById('gridCanvas');
+const ctx = canvas.getContext('2d', { alpha: false });
 
-  gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+const rowsInput = document.getElementById('rows');
+const colsInput = document.getElementById('cols');
+const keySizeInput = document.getElementById('keySize');
+const tuningType = document.getElementById('tuningType');
+const edoStepsInput = document.getElementById('edoSteps');
+const nonoSpecInput = document.getElementById('nonoSpec');
+const jiPrimeInput = document.getElementById('jiPrime');
+const rootFreqInput = document.getElementById('rootFreq');
+const rootNoteNameInput = document.getElementById('rootNoteName');
+const applyBtn = document.getElementById('applyBtn');
+const statusText = document.getElementById('tuningText');
+const nameSourceText = document.getElementById('nameSource');
+const notesLegend = document.getElementById('notesLegend');
+const waveSel = document.getElementById('wave');
+const releaseInput = document.getElementById('release');
+const randomizeBtn = document.getElementById('randomize');
 
-  oscillator.start();
+const edoParams = document.getElementById('edoParams');
+const nonoParams = document.getElementById('nonoParams');
+const jiParams = document.getElementById('jiParams');
 
-  activeNotes[frequency] = { oscillator, gainNode };
-}
-
-function stopNote(frequency) {
-  const note = activeNotes[frequency];
-  if (note) {
-    // fade out smoothly
-    note.gainNode.gain.exponentialRampToValueAtTime(
-      0.001,
-      audioCtx.currentTime + 0.3
-    );
-    note.oscillator.stop(audioCtx.currentTime + 0.3);
-
-    delete activeNotes[frequency];
-  }
-}
-
-// attach listeners to all grid buttons
-document.querySelectorAll(".grid button").forEach(btn => {
-  const freq = parseFloat(btn.dataset.freq);
-
-  // Mouse support
-  btn.addEventListener("mousedown", () => startNote(freq));
-  btn.addEventListener("mouseup", () => stopNote(freq));
-  btn.addEventListener("mouseleave", () => stopNote(freq));
-
-  // Touch support
-  btn.addEventListener("touchstart", (e) => {
-    e.preventDefault(); // prevents scrolling
-    startNote(freq);
-  });
-  btn.addEventListener("touchend", (e) => {
-    e.preventDefault();
-    stopNote(freq);
-  });
+tuningType.addEventListener('change', () => {
+  const t = tuningType.value;
+  edoParams.style.display = t==='edo' ? '' : 'none';
+  nonoParams.style.display = t==='nonoctave' ? '' : 'none';
+  jiParams.style.display = t==='ji' ? '' : 'none';
 });
 
-// unlock audio on first touch for iOS/Android
-document.body.addEventListener("touchstart", () => {
-  if (audioCtx.state === "suspended") {
-    audioCtx.resume();
-  }
-}, { once: true });
+function toRad(x){return x*Math.PI/180;}
+function centsOfRatio(r){ return 1200*Math.log2(r); }
+function ratioFromCents(c){ return Math.pow(2, c/1200); }
 
-// also unlock on first click (desktop Safari can suspend too)
-document.body.addEventListener("mousedown", () => {
-  if (audioCtx.state === "suspended") {
-    audioCtx.resume();
+/* -------------------------
+   Utilities: ratio parsing
+   ------------------------- */
+function parseRatioString(s){
+  // Accept forms: "3", "3/2", "5/4", "3.5" -> return numeric ratio
+  s = s.trim();
+  if(s.includes('/')){
+    const [a,b] = s.split('/').map(x=>parseFloat(x.trim()));
+    if(isFinite(a) && isFinite(b) && b!==0) return a/b;
+    return NaN;
+  } else {
+    const v = parseFloat(s);
+    return isFinite(v) ? v : NaN;
   }
-}, { once: true });
-  </script>
+}
+
+/* -------------------------
+   Note-naming: EDO algorithm
+   ------------------------- */
+
+/*
+Given EDO N:
+1) find k = nearest integer to N * log2(3/2)
+2) wholeToneSteps = 2*k mod N (but we want value between 0..N-1)
+3) chromatic = (7*k - 4*N)
+4) diatonic = wholeTone - chromatic
+Then build names Fb..B# by following chain of fifths and mapping positions.
+We implement a best-effort routine that:
+- chooses C as reference at step 0
+- constructs the circle-of-fifths offsets for natural notes,
+- computes EDO step positions for letter names Fb..B#
+- then generates all other note names by adding ^ / v for +/-1 EDO step beyond the canonical set.
+This follows the spirit of your rules; edge cases (very small EDOs or weird approximations) are handled conservatively.
+*/
+
+function generateEDONoteNames(N){
+  // returns an object mapping stepIndex (0..N-1) -> name (best guess).
+  const stepForFifths = Math.round(N * Math.log2(3/2)); // k
+  const k = stepForFifths;
+  const wholeTone = (2*k) % N;
+  const chromatic = ((7*k) - 4*N);
+  // normalize chromatic to be within -N..N for calculations
+  const chrom = ((chromatic % N) + N) % N;
+  const diatonic = ((wholeTone - chrom) % N + N) % N;
+
+  // canonical natural note sequence relative to C: F C G D A E B (circle of fifths)
+  // We want names Fb..B# — we'll assign letters across a centered set.
+  const letters = ['F','C','G','D','A','E','B'];
+  // compute each letter's offset in fifths relative to C (C at 0)
+  const fifthOffsets = { 'C':0, 'G':1, 'D':2, 'A':3, 'E':4, 'B':5, 'F':-1 };
+
+  // For each letter we compute the EDO step position of its "natural" pitch given k:
+  // step = (fifths * k) mod N  (then reduce to 0..N-1)
+  const letterSteps = {};
+  for(const L of Object.keys(fifthOffsets)){
+    const offs = fifthOffsets[L];
+    let pos = (offs * k) % N;
+    pos = (pos + N) % N;
+    letterSteps[L] = pos;
+  }
+
+  // We'll want to produce names Fb, F, F#, etc across a contiguous span covering typical chromatic.
+  // Build initial mapping for notes from Fb to B# (Fb, F, F#, Gb, G, G#, Ab, A, A#, Bb, B, B#)
+  // We'll construct logical sequence of step offsets for natural diatonic + chromatic alterations.
+  // Make base mapping for naturals using letterSteps, then derive accidentals by +/- diatonic/chromatic steps.
+  const nameMap = new Map();
+
+  // List target canonical names from Fb to B#
+  const canonicalNames = ['Fb','F','F#','Gb','G','G#','Ab','A','A#','Bb','B','B#'];
+
+  // For each canonical name, compute an approximate step:
+  // Strategy: Start from letter natural (like F), then apply alteration:
+  // - 'b' (flat): subtract diatonic semitone (or 1 diatonic step)
+  // - '#' (sharp): add diatonic semitone
+  // Some names like Gb are functionally same as F#, but we'll follow letter spelling.
+  function nameToStep(name){
+    // parse letter and accidental(s)
+    let letter = name[0];
+    let rest = name.slice(1);
+    let base = letterSteps[letter];
+    if(base === undefined) base = 0;
+    // apply accidentals left-to-right: '#' -> +diatonic, 'b' -> -diatonic
+    for(const ch of rest){
+      if(ch === '#') base = (base + diatonic) % N;
+      else if(ch === 'b') base = (base - diatonic + N) % N;
+      else {
+        // ignore
+      }
+    }
+    return (base + N) % N;
+  }
+
+  const canonicalSteps = canonicalNames.map(name => ({name, step: nameToStep(name)}));
+  // add to map (if collisions, prefer first)
+  for(const {name, step} of canonicalSteps){
+    if(!nameMap.has(step)) nameMap.set(step, name);
+  }
+
+  // fill remaining steps with ^ / v relative to nearest canonical step
+  for(let s=0; s<N; s++){
+    if(nameMap.has(s)) continue;
+    // find nearest canonical step by circular distance (in EDO steps)
+    let best = null;
+    let bestDist = Infinity;
+    for(const [kNameStep, kName] of nameMap.entries()){
+      const d = Math.min( (s - kNameStep + N) % N, (kNameStep - s + N) % N );
+      if(d < bestDist){ bestDist = d; best = {kNameStep, kName}; }
+    }
+    // compute up/down distance signed: positive means s is above canonical step
+    let signed = ((s - best.kNameStep + N) % N);
+    if(signed > N/2) signed = signed - N;
+    // add ^ or v per step count (we will only use single ^ or v for single-step shifts; for larger shifts repeat)
+    let prefix = '';
+    if(signed > 0){
+      prefix = '^'.repeat(Math.abs(signed));
+    } else if(signed < 0){
+      prefix = 'v'.repeat(Math.abs(signed));
+    } else {
+      prefix = '';
+    }
+    nameMap.set(s, prefix + best.kName);
+  }
+
+  // return object mapping integers to names
+  const obj = {};
+  for(let s=0; s<N; s++) obj[s] = nameMap.get(s) || ('?' + s);
+  return { names: obj, stepInfo: {k, wholeTone, chromatic: chrom, diatonic} };
+}
+
+/* -------------------------
+   Nonoctave: xedY handling
+   ------------------------- */
+function parseNonoSpec(spec){
+  // Accept "13ed3" or "13ed3/2" or "13ed2.5"
+  const m = spec.trim().match(/^(\d+)\s*ed\s*(.+)$/i);
+  if(!m) return null;
+  const x = parseInt(m[1],10);
+  const ratioStr = m[2];
+  const ratio = parseRatioString(ratioStr);
+  if(!isFinite(ratio) || ratio <= 0) return null;
+  return {x, ratio};
+}
+
+function findApproxEDOForNono(x, ratio){
+  // Find smallest EDO > 12 such that the single step (ratio^(1/x)) maps to an integer number of EDO steps within 10% of EDO step.
+  // That is: look for EDO M >= 13 where s = round( M * log2(stepRatio) ) and |M*log2(stepRatio) - s| <= 0.1
+  const stepRatio = Math.pow(ratio, 1/x);
+  const stepCents = centsOfRatio(stepRatio);
+  for(let M=13; M<=4096; M++){
+    const raw = M * Math.log2(stepRatio);
+    const s = Math.round(raw);
+    if(Math.abs(raw - s) <= 0.1) {
+      return {M, s, raw, stepCents};
+    }
+  }
+  // if not found, return best candidate (smallest error)
+  let best = null;
+  for(let M=13; M<=2048; M++){
+    const raw = M * Math.log2(stepRatio);
+    const s = Math.round(raw);
+    const err = Math.abs(raw - s);
+    if(!best || err < best.err) best = {M, s, raw, err, stepCents};
+  }
+  return best;
+}
+
+/* -------------------------
+   JI generator (prime-limit)
+   ------------------------- */
+function primesUpTo(n){
+  const sieve = new Array(n+1).fill(true);
+  sieve[0]=sieve[1]=false;
+  for(let p=2;p*p<=n;p++) if(sieve[p]) for(let q=p*p;q<=n;q+=p) sieve[q]=false;
+  const ps=[];
+  for(let i=2;i<=n;i++) if(sieve[i]) ps.push(i);
+  return ps;
+}
+
+function generateJIScale(primeLimit, maxNumDen=16){
+  // generate a set of ratios in [1,2) whose prime factors (numerator and denominator) are <= primeLimit
+  // We enumerate numerator and denominator up to maxNumDen, filter prime factors, and keep unique ratios in [1,2)
+  const allowedPrimes = primesUpTo(primeLimit);
+  function factorOk(n){
+    let m = Math.abs(n);
+    for(const p of allowedPrimes){
+      while(m % p === 0) m = m / p;
+    }
+    return m === 1;
+  }
+  const ratios = new Set();
+  for(let num=1; num<=maxNumDen; num++){
+    for(let den=1; den<=maxNumDen; den++){
+      if(!factorOk(num) || !factorOk(den)) continue;
+      const r = num/den;
+      if(r >= 1 && r < 2) ratios.add(r);
+      // include octave-reduced ones: e.g., 3/1 -> 3 -> reduce by 2 -> 3/2 (we already catch if within range)
+      if(r >= 2 && r < 4){
+        const r2 = r/2;
+        if(r2>=1 && r2<2) ratios.add(r2);
+      }
+    }
+  }
+  const arr = Array.from(ratios).sort((a,b)=>centsOfRatio(a)-centsOfRatio(b));
+  return arr;
+}
+
+/* -------------------------
+   Grid / drawing / audio
+   ------------------------- */
+
+let gridState = {
+  rows: parseInt(rowsInput.value),
+  cols: parseInt(colsInput.value),
+  keySize: parseInt(keySizeInput.value),
+  tuning: { type: 'edo', edo: 12 },
+  rootFreq: parseFloat(rootFreqInput.value),
+  rootName: rootNoteNameInput.value,
+  nameMap: null, // step->name for naming
+  nonoApproxInfo: null,
+  jiRatios: null
+};
+
+function buildTuningFromUI(){
+  const t = tuningType.value;
+  const rootFreq = parseFloat(rootFreqInput.value);
+  const rootName = rootNoteNameInput.value || 'root';
+  const keySize = Math.max(8, Math.min(200, parseInt(keySizeInput.value) || 60));
+  const rows = Math.max(1, Math.min(500, parseInt(rowsInput.value) || 6));
+  const cols = Math.max(1, Math.min(500, parseInt(colsInput.value) || 12));
+
+  let tuning = { type: t };
+  if(t === 'edo'){
+    tuning.edo = Math.max(2, Math.min(4096, parseInt(edoStepsInput.value) || 12));
+    gridState.nameMap = generateEDONoteNames(tuning.edo).names;
+    nameSourceText.textContent = 'EDO rules';
+    statusText.textContent = tuning.edo + '-EDO';
+    gridState.nonoApproxInfo = null;
+    gridState.jiRatios = null;
+  } else if(t === 'nonoctave'){
+    const parsed = parseNonoSpec(nonoSpecInput.value);
+    if(!parsed){
+      alert('Invalid nonoctave spec. Use format xedY, e.g. 13ed3 or 13ed3/2');
+      return;
+    }
+    tuning.x = parsed.x;
+    tuning.ratio = parsed.ratio;
+    // find EDO approximation and generate name map from that EDO (per spec)
+    const approx = findApproxEDOForNono(parsed.x, parsed.ratio);
+    gridState.nonoApproxInfo = approx;
+    if(approx && approx.M){
+      gridState.nameMap = generateEDONoteNames(approx.M).names;
+      nameSourceText.textContent = 'Nonoctave approx (names from ' + approx.M + '-EDO)';
+      statusText.textContent = `${parsed.x}ed${parsed.ratio} → approx ${approx.M}edo (step ≈ ${approx.s} steps)`;
+    } else {
+      gridState.nameMap = null;
+      nameSourceText.textContent = 'Nonoctave (no good EDO found)';
+      statusText.textContent = `${parsed.x}ed${parsed.ratio}`;
+    }
+    gridState.jiRatios = null;
+  } else if(t === 'ji'){
+    const p = Math.max(2, Math.min(97, parseInt(jiPrimeInput.value) || 5));
+    tuning.prime = p;
+    const ratios = generateJIScale(p, 12); // default denom limit
+    gridState.jiRatios = ratios;
+    gridState.nameMap = {}; // we'll name JI steps as ratios (string) for now
+    for(let i=0;i<ratios.length;i++) gridState.nameMap[i] = rationalToName(ratios[i]);
+    nameSourceText.textContent = 'JI prime limit ' + p;
+    statusText.textContent = 'JI (prime ≤ ' + p + ')';
+    gridState.nonoApproxInfo = null;
+  }
+
+  gridState.rows = rows;
+  gridState.cols = cols;
+  gridState.keySize = keySize;
+  gridState.tuning = tuning;
+  gridState.rootFreq = rootFreq;
+  gridState.rootName = rootName;
+
+  // re-render
+  resizeCanvas();
+  renderGrid();
+  updateLegend();
+}
+
+function rationalToName(r){
+  // pretty format for a ratio like 1.25 -> "5/4 (386.31c)"
+  // Try to find small integer fraction representation
+  const maxDen = 64;
+  let best = {err:Infinity, n:1,d:1};
+  for(let d=1;d<=maxDen;d++){
+    const n = Math.round(r*d);
+    const err = Math.abs(r - n/d);
+    if(err < best.err){ best = {err, n, d}; if(err < 1e-12) break; }
+  }
+  const approx = `${best.n}/${best.d}`;
+  return `${approx} (${centsOfRatio(r).toFixed(2)} c)`;
+}
+
+function resizeCanvas(){
+  const ks = gridState.keySize;
+  const width = gridState.cols * ks;
+  const height = gridState.rows * ks;
+  // restrict canvas size to large but manageable
+  canvas.width = width;
+  canvas.height = height;
+  canvas.style.width = Math.min(width, window.innerWidth-40) + 'px';
+  canvas.style.height = Math.min(height, window.innerHeight*0.6) + 'px';
+}
+
+function renderGrid(){
+  const ks = gridState.keySize;
+  const rows = gridState.rows;
+  const cols = gridState.cols;
+
+  // background
+  ctx.fillStyle = '#fafafa';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  ctx.strokeStyle = '#ddd';
+  ctx.lineWidth = 1;
+
+  ctx.font = Math.max(10, Math.floor(ks/5)) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const names = gridState.nameMap;
+
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const x = c*ks;
+      const y = r*ks;
+      // cell background
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x,y,ks,ks);
+      ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1);
+
+      const idx = r*cols + c;
+      let label = '';
+      if(gridState.tuning.type === 'ji'){
+        // map via list of ratios repeating across octaves
+        const ratios = gridState.jiRatios || [];
+        if(ratios.length > 0){
+          const step = idx % ratios.length;
+          label = rationalToName(ratios[step]);
+        } else label = idx;
+      } else if(gridState.tuning.type === 'nonoctave'){
+        // show step index and name (if available)
+        if(names && names[idx % (Object.keys(names).length||1)]){
+          label = names[idx % Object.keys(names).length];
+        } else {
+          // show cents offset of nonoctave step
+          label = idx;
+        }
+      } else {
+        // EDO: names map by modulo EDO
+        if(names && names[idx % Object.keys(names).length]){
+          label = names[idx % Object.keys(names).length];
+        } else label = idx % (gridState.tuning.edo || 12);
+      }
+
+      // draw text
+      ctx.fillStyle = '#111';
+      // truncate long labels
+      let disp = String(label);
+      if(disp.length > 12) disp = disp.slice(0,10) + '…';
+      ctx.fillText(disp, x + ks/2, y + ks/2);
+    }
+  }
+}
+
+function updateLegend(){
+  const t = gridState.tuning;
+  let txt = `Rows × Cols: ${gridState.rows} × ${gridState.cols}, Key size: ${gridState.keySize}px. Root: ${gridState.rootName} @ ${gridState.rootFreq} Hz. `;
+  if(t.type === 'edo') txt += `${t.edo}-EDO (note names generated by fifths chain).`;
+  else if(t.type === 'nonoctave') txt += `${t.x}ed${t.ratio} (approx info: ${JSON.stringify(gridState.nonoApproxInfo||{})}).`;
+  else if(t.type === 'ji') txt += `JI prime ≤ ${t.prime}. Steps: ${ (gridState.jiRatios||[]).length } unique ratios shown.`;
+  notesLegend.textContent = txt;
+}
+
+/* -------------------------
+   Frequency mapping
+   ------------------------- */
+
+function frequencyForIndex(idx){
+  const t = gridState.tuning;
+  const root = gridState.rootFreq;
+  if(t.type === 'edo'){
+    const E = t.edo;
+    const f = root * Math.pow(2, idx / E);
+    return f;
+  } else if(t.type === 'nonoctave'){
+    // step ratio = ratio^(1/x)
+    const stepRatio = Math.pow(t.ratio, 1/t.x);
+    // frequency = root * stepRatio^idx
+    return root * Math.pow(stepRatio, idx);
+  } else if(t.type === 'ji'){
+    // Map index into repeating JI ratios across octaves.
+    const ratios = gridState.jiRatios || [1];
+    if(ratios.length === 0) return root * Math.pow(2, idx/12);
+    const len = ratios.length;
+    const step = idx % len;
+    const octaveShift = Math.floor(idx / len);
+    return root * ratios[step] * Math.pow(2, octaveShift);
+  } else {
+    return root * Math.pow(2, idx/12);
+  }
+}
+
+/* -------------------------
+   Playback (WebAudio)
+   ------------------------- */
+
+function noteOn(idx){
+  // create oscillator + gain, connect to master
+  const keyId = idx;
+  if(activeVoices.has(keyId)) return; // already playing
+  const osc = audioCtx.createOscillator();
+  osc.type = waveSel.value || 'sine';
+  const g = audioCtx.createGain();
+  g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(1.0, audioCtx.currentTime + 0.01);
+
+  osc.connect(g);
+  g.connect(masterGain);
+
+  const freq = frequencyForIndex(idx);
+  osc.frequency.value = freq;
+
+  osc.start();
+
+  activeVoices.set(keyId, {osc, gainNode: g});
+}
+
+function noteOff(idx){
+  const voice = activeVoices.get(idx);
+  if(!voice) return;
+  const release = Math.max(10, parseFloat(releaseInput.value) || 120) / 1000;
+  const now = audioCtx.currentTime;
+  voice.gainNode.gain.cancelScheduledValues(now);
+  voice.gainNode.gain.setValueAtTime(voice.gainNode.gain.value, now);
+  voice.gainNode.gain.exponentialRampToValueAtTime(0.0001, now + release);
+  voice.osc.stop(now + release + 0.02);
+  setTimeout(()=> {
+    try { voice.osc.disconnect(); voice.gainNode.disconnect(); } catch(e){}
+  }, (release+0.05)*1000);
+  activeVoices.delete(idx);
+}
+
+/* -------------------------
+   Input handling on canvas
+   ------------------------- */
+
+function canvasPosToIndex(evt){
+  const rect = canvas.getBoundingClientRect();
+  const clientX = (evt.touches && evt.touches[0]) ? evt.touches[0].clientX : evt.clientX;
+  const clientY = (evt.touches && evt.touches[0]) ? evt.touches[0].clientY : evt.clientY;
+  const x = (clientX - rect.left) * (canvas.width / rect.width);
+  const y = (clientY - rect.top) * (canvas.height / rect.height);
+  const c = Math.floor(x / gridState.keySize);
+  const r = Math.floor(y / gridState.keySize);
+  if(c < 0 || c >= gridState.cols || r < 0 || r >= gridState.rows) return null;
+  return r*gridState.cols + c;
+}
+
+let pointerDownIndex = null;
+
+canvas.addEventListener('pointerdown', (e) => {
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  const idx = canvasPosToIndex(e);
+  if(idx === null) return;
+  pointerDownIndex = idx;
+  noteOn(idx);
+  // visual feedback
+  drawKeyActive(idx, true);
+  e.preventDefault();
+});
+canvas.addEventListener('pointermove', (e) => {
+  if(pointerDownIndex === null) return;
+  const idx = canvasPosToIndex(e);
+  if(idx !== pointerDownIndex){
+    // release previous, start new
+    if(pointerDownIndex !== null) noteOff(pointerDownIndex);
+    if(idx !== null){
+      noteOn(idx);
+      drawKeyActive(idx, true);
+    }
+    pointerDownIndex = idx;
+  }
+});
+canvas.addEventListener('pointerup', (e) => {
+  if(pointerDownIndex !== null){
+    noteOff(pointerDownIndex);
+    drawKeyActive(pointerDownIndex, false);
+    pointerDownIndex = null;
+  }
+});
+canvas.addEventListener('pointerleave', (e) => {
+  if(pointerDownIndex !== null){
+    noteOff(pointerDownIndex);
+    drawKeyActive(pointerDownIndex, false);
+    pointerDownIndex = null;
+  }
+});
+
+// for mouse click quick taps: also stop after short time
+canvas.addEventListener('click', (e) => {
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  const idx = canvasPosToIndex(e);
+  if(idx === null) return;
+  noteOn(idx);
+  drawKeyActive(idx, true);
+  setTimeout(()=>{ noteOff(idx); drawKeyActive(idx,false); }, 220);
+});
+
+/* -------------------------
+   Key highlight drawing
+   ------------------------- */
+
+function drawKeyActive(idx, active){
+  const ks = gridState.keySize;
+  const r = Math.floor(idx / gridState.cols);
+  const c = idx % gridState.cols;
+  const x = c*ks;
+  const y = r*ks;
+  if(active){
+    ctx.fillStyle = '#e6f7ff';
+    ctx.fillRect(x+1,y+1,ks-2,ks-2);
+  } else {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x+1,y+1,ks-2,ks-2);
+  }
+  ctx.strokeStyle = '#ddd';
+  ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1);
+
+  // redraw label
+  const names = gridState.nameMap||{};
+  let label = '';
+  if(gridState.tuning.type === 'ji'){
+    const ratios = gridState.jiRatios || [];
+    if(ratios.length>0){
+      const step = idx % ratios.length;
+      label = rationalToName(ratios[step]);
+    } else label = idx;
+  } else {
+    label = names[idx % (Object.keys(names).length || 1)] || idx;
+  }
+  ctx.fillStyle = '#111';
+  ctx.font = Math.max(10, Math.floor(ks/5)) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  let disp = String(label);
+  if(disp.length > 12) disp = disp.slice(0,10) + '…';
+  ctx.fillText(disp, x + ks/2, y + ks/2);
+}
+
+/* -------------------------
+   Buttons
+   ------------------------- */
+
+applyBtn.addEventListener('click', ()=> {
+  buildTuningFromUI();
+});
+
+randomizeBtn.addEventListener('click', ()=> {
+  // small randomness: if EDO, randomize steps from 5..53; if nonoctave randomize x and ratio; if ji random prime
+  const t = tuningType.value;
+  if(t === 'edo'){
+    const v = Math.floor(5 + Math.random()*48);
+    edoStepsInput.value = v;
+  } else if(t === 'nonoctave'){
+    const x = Math.floor(5 + Math.random()*40);
+    const rnum = [3,5,7,9,2,4][Math.floor(Math.random()*6)];
+    nonoSpecInput.value = `${x}ed${rnum}`;
+  } else {
+    jiPrimeInput.value = [3,5,7,11,13,17][Math.floor(Math.random()*6)];
+  }
+  buildTuningFromUI();
+});
+
+/* -------------------------
+   Init
+   ------------------------- */
+
+buildTuningFromUI();
+
+window.addEventListener('resize', ()=> { resizeCanvas(); renderGrid(); });
+
+</script>
 </body>
 </html>
