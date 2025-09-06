@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cents & Ratio Converter</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .container {
+            max-width: 500px;
+        }
+    </style>
+    <script>
+        // Mathematical functions for decimal to fraction conversion
+        // Sourced from: https://stackoverflow.com/questions/14586940/decimal-to-fraction-js
+        const decimalToFraction = (decimal) => {
+            if (decimal === 0) return '0/1';
+
+            const tolerance = 1.0E-6; // Set a tolerance for floating point errors
+            let numerator = 1;
+            let denominator = 1;
+            let error = Math.abs(decimal - numerator / denominator);
+
+            while (error > tolerance && denominator < 10000) {
+                if (decimal > numerator / denominator) {
+                    numerator++;
+                } else {
+                    denominator++;
+                    numerator = Math.round(decimal * denominator);
+                }
+                error = Math.abs(decimal - numerator / denominator);
+            }
+            // Simplify the fraction
+            const gcd = (a, b) => {
+                if (b === 0) return a;
+                return gcd(b, a % b);
+            };
+            const commonDivisor = gcd(numerator, denominator);
+            return `${numerator / commonDivisor}/${denominator / commonDivisor}`;
+        };
+    </script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="container bg-white rounded-2xl shadow-lg p-6 md:p-8 w-full">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800 mb-6 text-center">
+            Cents & Ratio Converter
+        </h1>
+        
+        <!-- Cents to Ratio Converter Section -->
+        <div class="mb-8">
+            <h2 class="text-xl md:text-2xl font-bold text-gray-700 mb-4">Cents to Ratio</h2>
+            <p class="text-gray-500 text-sm mb-4">
+                Formula: $r = 2^{\frac{c}{1200}}$
+            </p>
+            <div class="mb-4">
+                <label for="centsInput" class="block text-sm font-semibold text-gray-700 mb-2">
+                    Cents ($c$)
+                </label>
+                <input 
+                    type="number" 
+                    id="centsInput" 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    placeholder="e.g., 1200"
+                >
+            </div>
+            <button 
+                onclick="convertCents()"
+                class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105"
+            >
+                Convert
+            </button>
+            <div class="mt-6 bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Result:</h3>
+                <div class="space-y-2">
+                    <p class="text-sm text-gray-500">Decimal Ratio ($r$)</p>
+                    <div id="ratioDecimal" class="text-2xl font-bold text-blue-600">
+                        —
+                    </div>
+                    <p class="text-sm text-gray-500">Fractional Ratio</p>
+                    <div id="ratioFraction" class="text-2xl font-bold text-blue-600">
+                        —
+                    </div>
+                </div>
+                <p id="centsErrorMsg" class="mt-2 text-red-500 text-sm hidden">
+                    Please enter a valid number.
+                </p>
+            </div>
+        </div>
+        
+        <hr class="my-8 border-gray-300">
+
+        <!-- Ratio to Cents Converter Section -->
+        <div class="mb-4">
+            <h2 class="text-xl md:text-2xl font-bold text-gray-700 mb-4">Ratio to Cents</h2>
+            <p class="text-gray-500 text-sm mb-4">
+                Formula: $c = \log_{2}(r) * 1200$
+            </p>
+            <div class="mb-4">
+                <label for="ratioInput" class="block text-sm font-semibold text-gray-700 mb-2">
+                    Frequency Ratio ($r$)
+                </label>
+                <input 
+                    type="text" 
+                    id="ratioInput" 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    placeholder="e.g., 1.5 or 3/2"
+                >
+            </div>
+            <button 
+                onclick="convertRatio()"
+                class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105"
+            >
+                Convert
+            </button>
+            <div class="mt-6 bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Result:</h3>
+                <div id="centsResult" class="text-2xl font-bold text-blue-600">
+                    —
+                </div>
+                <p id="ratioErrorMsg" class="mt-2 text-red-500 text-sm hidden">
+                    Please enter a valid decimal or fraction (e.g., 1.5 or 3/2).
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * @file Cents & Ratio Converter
+         * @description This script handles the conversion between cents and frequency ratios.
+         */
+
+        /**
+         * Converts a value in cents to a frequency ratio.
+         * The formula is r = 2^(c/1200).
+         * @param {number} cents - The value in cents to convert.
+         * @returns {number} The corresponding frequency ratio.
+         */
+        function centsToRatio(cents) {
+            return Math.pow(2, cents / 1200);
+        }
+
+        /**
+         * Converts a frequency ratio to cents.
+         * The formula is c = log2(r) * 1200.
+         * @param {number} ratio - The frequency ratio to convert.
+         * @returns {number} The corresponding value in cents.
+         */
+        function ratioToCents(ratio) {
+            // Guard against invalid input (negative or zero ratio)
+            if (ratio <= 0) return NaN;
+            return Math.log2(ratio) * 1200;
+        }
+
+        /**
+         * Main function to be called on "Convert Cents" button click.
+         * It reads the input, performs the conversion, and displays the result.
+         */
+        function convertCents() {
+            const centsInput = document.getElementById('centsInput');
+            const ratioDecimal = document.getElementById('ratioDecimal');
+            const ratioFraction = document.getElementById('ratioFraction');
+            const centsErrorMsg = document.getElementById('centsErrorMsg');
+
+            // Hide previous error message
+            centsErrorMsg.classList.add('hidden');
+
+            // Get the value from the input field
+            const cents = parseFloat(centsInput.value);
+
+            // Validate the input
+            if (isNaN(cents)) {
+                ratioDecimal.textContent = '—';
+                ratioFraction.textContent = '—';
+                centsErrorMsg.classList.remove('hidden');
+                return;
+            }
+
+            // Perform the conversion
+            const ratio = centsToRatio(cents);
+
+            // Display the result, formatted to a few decimal places for readability
+            ratioDecimal.textContent = ratio.toFixed(6);
+
+            // Convert to and display the fraction
+            ratioFraction.textContent = decimalToFraction(ratio);
+        }
+
+        /**
+         * Main function to be called on "Convert Ratio" button click.
+         * It reads the input, performs the conversion, and displays the result.
+         */
+        function convertRatio() {
+            const ratioInput = document.getElementById('ratioInput');
+            const centsResult = document.getElementById('centsResult');
+            const ratioErrorMsg = document.getElementById('ratioErrorMsg');
+
+            // Hide previous error message
+            ratioErrorMsg.classList.add('hidden');
+
+            const inputValue = ratioInput.value.trim();
+            let ratio;
+
+            // Check if the input is a fraction
+            if (inputValue.includes('/')) {
+                const parts = inputValue.split('/');
+                const numerator = parseFloat(parts[0]);
+                const denominator = parseFloat(parts[1]);
+                if (isNaN(numerator) || isNaN(denominator) || denominator === 0) {
+                    ratio = NaN;
+                } else {
+                    ratio = numerator / denominator;
+                }
+            } else {
+                // Otherwise, treat it as a decimal
+                ratio = parseFloat(inputValue);
+            }
+
+            // Validate the input
+            if (isNaN(ratio) || ratio <= 0) {
+                centsResult.textContent = '—';
+                ratioErrorMsg.classList.remove('hidden');
+                return;
+            }
+
+            // Perform the conversion
+            const cents = ratioToCents(ratio);
+
+            // Display the result, formatted to a few decimal places for readability
+            centsResult.textContent = cents.toFixed(4);
+        }
+
+        // Add event listener to the cents input for 'Enter' key press
+        document.getElementById('centsInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                convertCents();
+            }
+        });
+
+        // Add event listener to the ratio input for 'Enter' key press
+        document.getElementById('ratioInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                convertRatio();
+            }
+        });
+    </script>
+</body>
+</html>
+
