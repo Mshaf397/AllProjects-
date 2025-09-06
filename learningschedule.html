@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Torah Learning Schedule Maker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f1218;
+      --panel: #161b22;
+      --muted: #8b949e;
+      --text: #c9d1d9;
+      --accent: #2ea043;
+      --accent2: #58a6ff;
+      --danger: #f85149;
+      --border: #30363d;
+    }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans",
+                   "Apple Color Emoji", "Segoe UI Emoji";
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      padding: 20px 16px;
+      border-bottom: 1px solid var(--border);
+      background: #0b0e13;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 6px;
+    }
+    .muted { color: var(--muted); }
+    main {
+      max-width: 1100px;
+      margin: 24px auto;
+      padding: 0 16px 32px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 16px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    label { display: block; font-weight: 600; margin-bottom: 6px; }
+    select, input[type="date"], input[type="text"], input[type="number"], textarea {
+      width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: #0b0f15; color: var(--text); outline: none;
+    }
+    select:focus, input:focus, textarea:focus { border-color: var(--accent2); }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btns { display: flex; gap: 10px; flex-wrap: wrap; }
+    button {
+      background: var(--accent2); color: white; border: none; padding: 10px 14px; border-radius: 8px;
+      font-weight: 700; cursor: pointer;
+    }
+    button.secondary { background: transparent; color: var(--accent2); border: 1px solid var(--accent2); }
+    button.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+    .result { overflow: auto; max-height: 70vh; }
+    table {
+      width: 100%; border-collapse: collapse; font-size: 14px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--border); padding: 10px; vertical-align: top;
+    }
+    th { position: sticky; top: 0; background: #10151d; text-align: left; }
+    .tag {
+      display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border);
+      color: var(--muted); font-size: 12px;
+    }
+    details { margin: 10px 0; }
+    .flex { display: flex; gap: 10px; align-items: center; }
+    .tiny { font-size: 12px; color: var(--muted); }
+    pre { white-space: pre-wrap; }
+    ul { margin: 6px 0 0 18px; }
+    .hr { height: 1px; background: var(--border); margin: 12px 0; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Torah Learning Schedule Maker</h1>
+  <div class="muted">Evenly split verses/pages/chapters across a date range, down to exact verses per day.</div>
+</header>
+
+<main class="grid">
+  <section class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong>Inputs</strong>
+      <span class="tag">Local-only · No network</span>
+    </div>
+
+    <label for="portion">Portion</label>
+    <select id="portion">
+      <option value="tanach">Tanach (by verses)</option>
+      <option value="talmud">Talmud (by pages)</option>
+      <option value="halacha">Halacha (by chapters)</option>
+      <option value="kabbala">Kabbala (by pages)</option>
+      <option value="chassidus">Chassidus (by chapters)</option>
+    </select>
+
+    <div class="hr"></div>
+
+    <label for="subsection">Subsection</label>
+    <select id="subsection"></select>
+
+    <label for="book" id="bookLabel" style="display:none">Book/tractate/sefer</label>
+    <select id="book" style="display:none"></select>
+
+    <div id="rangeControls" style="display:none">
+      <label for="unitStart">Start unit (optional, e.g., chapter 3 or page 5)</label>
+      <input id="unitStart" type="number" min="1" placeholder="Leave blank for beginning" />
+      <label for="unitEnd">End unit (optional)</label>
+      <input id="unitEnd" type="number" min="1" placeholder="Leave blank for full extent" />
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="row">
+      <div>
+        <label for="start">Start date</label>
+        <input id="start" type="date" />
+      </div>
+      <div>
+        <label for="end">End date</label>
+        <input id="end" type="date" />
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <label for="notes">Optional notes (saved in export)</label>
+    <textarea id="notes" rows="3" placeholder="e.g., Prefer earlier days a bit heavier, exclude fast days, etc."></textarea>
+
+    <div class="hr"></div>
+
+    <div class="btns">
+      <button id="build">Build Schedule</button>
+      <button class="secondary" id="export">Export plan as JSON</button>
+      <button class="secondary" id="exportData">Export datasets</button>
+      <button class="danger" id="import">Import JSON</button>
+      <input type="file" id="file" style="display:none" accept=".json,application/json" />
+    </div>
+
+    <details>
+      <summary>Dataset format and how to add full Tanach/tractates</summary>
+      <div class="tiny">
+        <p>
+          DATA.canons is a dictionary by portion. Each entry defines a hierarchical structure and
+          how to count units at the leaves. For Tanach, leaves carry chapter verse counts so the scheduler can assign
+          precise verse ranges. For Talmud/Kabbala, leaves define pages per tractate. For Halacha/Chassidus, leaves define chapters.
+        </p>
+        <p>
+          To load full datasets, prepare a JSON shaped like DATA and use “Import JSON”.
+        </p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Scheduling logic</summary>
+      <div class="tiny">
+        <ul>
+          <li><strong>Flatten:</strong> The chosen scope is flattened into an ordered list of addressable units (e.g., verses).</li>
+          <li><strong>Divide:</strong> Total units ÷ number of days; distribute remainder to earliest days.</li>
+          <li><strong>Label:</strong> Daily rows show human-friendly ranges (e.g., Genesis 1:1–2:3).</li>
+          <li><strong>Custom ranges:</strong> Optional start/end unit for partial books/tractates.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section class="panel result">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong>Schedule</strong>
+      <span id="summary" class="tiny"></span>
+    </div>
+    <table id="table" style="display:none">
+      <thead>
+        <tr>
+          <th style="width:140px">Date</th>
+          <th>Assignment</th>
+          <th style="width:120px">Units</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div id="empty" class="muted">Fill the form and click “Build Schedule.”</div>
+  </section>
+</main>
+
+<script>
+/**
+ * DATA: Minimal starter dataset demonstrating structure.
+ * Replace or import a full dataset to cover all Tanach, tractates, and sefarim.
+ *
+ * Shapes:
+ * - Tanach: { groups: [{ id, name, books: [{ id, name, chapters: [verseCountPerChapter...] }]}] }
+ * - Talmud/Kabbala: { tractates: [{ id, name, pages: totalDafCount }] }
+ * - Halacha/Chassidus: { works: [{ id, name, chapters: totalChapterCount }] }
+ */
+const DATA = {
+  canons: {
+    tanach: {
+      groups: [
+        {
+          id: "torah",
+          name: "Torah",
+          books: [
+            {
+              id: "genesis",
+              name: "Bereishit / Genesis",
+              // Example: first 3 chapters verse counts. Replace with all chapters.
+              chapters: [31, 25, 24, /* ... fill through chapter 50 ... */]
+            },
+            // { id: "exodus", name: "Shemot / Exodus", chapters: [...] },
+            // ... Vayikra, Bamidbar, Devarim
+          ]
+        },
+        {
+          id: "neviim",
+          name: "Neviim",
+          books: [
+            // { id: "joshua", name: "Yehoshua / Joshua", chapters: [...] },
+            // ...
+          ]
+        },
+        {
+          id: "kesuvim",
+          name: "Kesuvim",
+          books: [
+            // { id: "psalms", name: "Tehillim / Psalms", chapters: [ ...150 entries of verse counts... ] },
+            // ...
+          ]
+        }
+      ]
+    },
+    talmud: {
+      tractates: [
+        // Example entries. Replace with full tractate list with daf counts.
+        { id: "brachot", name: "Berakhot", pages: 64 },
+        { id: "shabbat", name: "Shabbat", pages: 157 },
+      ]
+    },
+    kabbala: {
+      tractates: [
+        // Define treatises/works with page counts if using “by pages”.
+        { id: "etz-chayim", name: "Etz Chaim (sample)", pages: 200 },
+      ]
+    },
+    halacha: {
+      works: [
+        // Example: Mishneh Torah, Shulchan Aruch, Kitzur, etc.
+        { id: "kitzur", name: "Kitzur Shulchan Aruch", chapters: 221 },
+      ]
+    },
+    chassidus: {
+      works: [
+        { id: "tanya", name: "Tanya", chapters: 53 },
+      ]
+    }
+  }
+};
+
+// Utilities
+function parseDate(s) { const d = new Date(s + "T00:00:00"); if (isNaN(d)) return null; return d; }
+function fmtDate(d) { return d.toISOString().slice(0,10); }
+function daysBetweenInclusive(start, end) {
+  const ms = (parseDate(end) - parseDate(start)) / (1000*60*60*24);
+  return Math.floor(ms) + 1;
+}
+function addDays(dateStr, n) {
+  const d = parseDate(dateStr); d.setDate(d.getDate() + n); return fmtDate(d);
+}
+
+/**
+ * Flatten selections into unit list:
+ * - Tanach → an array of { label, ref: {groupId, bookId, chapter, verse}, unitIndex }
+ * - Talmud/Kabbala → { label, ref: {tractateId, page}, unitIndex }
+ * - Halacha/Chassidus → { label, ref: {workId, chapter}, unitIndex }
+ */
+function flattenSelection(portion, selections, rangeOpt) {
+  let units = [];
+  if (portion === "tanach") {
+    const { groupId, bookId } = selections;
+    const group = DATA.canons.tanach.groups.find(g => g.id === groupId);
+    if (!group) throw new Error("Group not found");
+    const books = bookId ? group.books.filter(b => b.id === bookId) : group.books;
+    let unitIdx = 0;
+    for (const book of books) {
+      for (let ch = 0; ch < book.chapters.length; ch++) {
+        const versesInChapter = book.chapters[ch];
+        for (let v = 1; v <= versesInChapter; v++) {
+          unitIdx++;
+          units.push({
+            label: `${book.name} ${ch+1}:${v}`,
+            ref: { groupId, bookId: book.id, chapter: ch+1, verse: v },
+            unitIndex: unitIdx
+          });
+        }
+      }
+    }
+    // Optional starting chapter filter
+    if (rangeOpt?.startUnit || rangeOpt?.endUnit) {
+      // Interpret range units at chapter granularity if provided
+      const byChapter = {};
+      units.forEach(u => {
+        const key = `${u.ref.bookId}-${u.ref.chapter}`;
+        byChapter[key] = byChapter[key] || [];
+        byChapter[key].push(u);
+      });
+      // Build filtered list by chapter bounds
+      const startCh = rangeOpt.startUnit ? Number(rangeOpt.startUnit) : 1;
+      const endCh = rangeOpt.endUnit ? Number(rangeOpt.endUnit) : Infinity;
+      units = units.filter(u => u.ref.chapter >= startCh && u.ref.chapter <= endCh);
+      // Reindex
+      units.forEach((u,i) => u.unitIndex = i+1);
+    }
+    return units;
+  }
+
+  if (portion === "talmud" || portion === "kabbala") {
+    const canon = DATA.canons[portion];
+    const tractates = selections.tractateId
+      ? canon.tractates.filter(t => t.id === selections.tractateId)
+      : canon.tractates;
+    let unitIdx = 0;
+    for (const t of tractates) {
+      const start = rangeOpt?.startUnit ? Number(rangeOpt.startUnit) : 1;
+      const end = rangeOpt?.endUnit ? Math.min(Number(rangeOpt.endUnit), t.pages) : t.pages;
+      for (let p = start; p <= end; p++) {
+        unitIdx++;
+        units.push({
+          label: `${t.name} daf ${p}`,
+          ref: { tractateId: t.id, page: p },
+          unitIndex: unitIdx
+        });
+      }
+    }
+    return units;
+  }
+
+  if (portion === "halacha" || portion === "chassidus") {
+    const canon = DATA.canons[portion];
+    const works = selections.workId
+      ? canon.works.filter(w => w.id === selections.workId)
+      : canon.works;
+    let unitIdx = 0;
+    for (const w of works) {
+      const start = rangeOpt?.startUnit ? Number(rangeOpt.startUnit) : 1;
+      const end = rangeOpt?.endUnit ? Math.min(Number(rangeOpt.endUnit), w.chapters) : w.chapters;
+      for (let c = start; c <= end; c++) {
+        unitIdx++;
+        units.push({
+          label: `${w.name} chapter ${c}`,
+          ref: { workId: w.id, chapter: c },
+          unitIndex: unitIdx
+        });
+      }
+    }
+    return units;
+  }
+
+  throw new Error("Unsupported portion");
+}
+
+/**
+ * Group units into days as evenly as possible.
+ * Returns [{ date, startUnit, endUnit, units, labelRange }]
+ */
+function buildDailyPlan(units, startDate, endDate) {
+  const days = daysBetweenInclusive(startDate, endDate);
+  if (days <= 0) throw new Error("Invalid date range");
+
+  const total = units.length;
+  const base = Math.floor(total / days);
+  let remainder = total % days;
+
+  const slices = [];
+  let cursor = 0;
+  for (let i = 0; i < days; i++) {
+    const take = base + (remainder > 0 ? 1 : 0);
+    if (remainder > 0) remainder--;
+    const chunk = units.slice(cursor, cursor + take);
+    cursor += take;
+    if (chunk.length === 0) continue;
+    const date = addDays(startDate, i);
+    const startUnit = chunk[0];
+    const endUnit = chunk[chunk.length - 1];
+    const labelRange = humanizeRange(startUnit, endUnit);
+    slices.push({ date, startUnit, endUnit, units: chunk.length, labelRange });
+  }
+  return slices;
+}
+
+/**
+ * Human-readable range label:
+ * - Same book/chapter: "Genesis 1:1–1:31"
+ * - Different chapters/books: "Genesis 1:20 – Genesis 2:3" or "Berakhot daf 1–3", etc.
+ */
+function humanizeRange(a, b) {
+  // Tanach style if both have chapter/verse
+  if (a.ref.chapter && a.ref.verse != null && b.ref.chapter && b.ref.verse != null) {
+    const aBook = a.label.split(" ")[0] === "Bereishit" ? a.label.split(" ").slice(0,3).join(" ") : a.label.split(" ").slice(0, a.label.indexOf(":") > -1 ? -1 : undefined).join(" ");
+    // Simpler approach: reconstruct from refs
+    const aLabel = a.label.split(" ").slice(0, -1).join(" ");
+    const bLabel = b.label.split(" ").slice(0, -1).join(" ");
+
+    const aBookName = a.label.split(" ").slice(0, a.label.indexOf(":") > -1 ? -1 : undefined).join(" ");
+    const bBookName = b.label.split(" ").slice(0, b.label.indexOf(":") > -1 ? -1 : undefined).join(" ");
+
+    const sameBook = aBookName === bBookName;
+    const sameChapter = sameBook && a.ref.chapter === b.ref.chapter;
+
+    if (sameChapter) {
+      return `${bookNameFromLabel(a.label)} ${a.ref.chapter}:${a.ref.verse}–${b.ref.chapter}:${b.ref.verse}`;
+    }
+    if (sameBook) {
+      return `${bookNameFromLabel(a.label)} ${a.ref.chapter}:${a.ref.verse} – ${b.ref.chapter}:${b.ref.verse}`;
+    }
+    return `${bookNameFromLabel(a.label)} ${a.ref.chapter}:${a.ref.verse} – ${bookNameFromLabel(b.label)} ${b.ref.chapter}:${b.ref.verse}`;
+  }
+
+  // Talmud/Kabbala pages
+  if (a.ref.page != null && b.ref.page != null) {
+    const aTract = a.label.split(" daf ")[0];
+    const bTract = b.label.split(" daf ")[0];
+    if (aTract === bTract) return `${aTract} daf ${a.ref.page}–${b.ref.page}`;
+    return `${aTract} daf ${a.ref.page} – ${bTract} daf ${b.ref.page}`;
+  }
+
+  // Halacha/Chassidus chapters
+  if (a.ref.chapter != null && b.ref.chapter != null && a.ref.workId && b.ref.workId) {
+    const aWork = a.label.split(" chapter ")[0];
+    const bWork = b.label.split(" chapter ")[0];
+    if (aWork === bWork) return `${aWork} chapters ${a.ref.chapter}–${b.ref.chapter}`;
+    return `${aWork} chapter ${a.ref.chapter} – ${bWork} chapter ${b.ref.chapter}`;
+  }
+
+  return `${a.label} – ${b.label}`;
+}
+
+function bookNameFromLabel(label) {
+  // Extract everything up to the last space before chapter:verse
+  const idx = label.lastIndexOf(" ");
+  return idx > -1 ? label.slice(0, idx) : label;
+}
+
+// UI wiring
+const portionEl = document.getElementById("portion");
+const subsectionEl = document.getElementById("subsection");
+const bookLabelEl = document.getElementById("bookLabel");
+const bookEl = document.getElementById("book");
+const rangeControlsEl = document.getElementById("rangeControls");
+const startEl = document.getElementById("start");
+const endEl = document.getElementById("end");
+const notesEl = document.getElementById("notes");
+const buildBtn = document.getElementById("build");
+const exportBtn = document.getElementById("export");
+const exportDataBtn = document.getElementById("exportData");
+const importBtn = document.getElementById("import");
+const fileInput = document.getElementById("file");
+const tableEl = document.getElementById("table");
+const tbodyEl = tableEl.querySelector("tbody");
+const emptyEl = document.getElementById("empty");
+const summaryEl = document.getElementById("summary");
+const unitStartEl = document.getElementById("unitStart");
+const unitEndEl = document.getElementById("unitEnd");
+
+function refreshSelectors() {
+  const portion = portionEl.value;
+  subsectionEl.innerHTML = "";
+  bookEl.style.display = "none";
+  bookLabelEl.style.display = "none";
+  rangeControlsEl.style.display = "none";
+
+  if (portion === "tanach") {
+    // Subsection = Torah/Neviim/Kesuvim
+    const groups = DATA.canons.tanach.groups;
+    groups.forEach(g => {
+      const opt = document.createElement("option");
+      opt.value = g.id; opt.textContent = g.name;
+      subsectionEl.appendChild(opt);
+    });
+    bookEl.style.display = "block";
+    bookLabelEl.style.display = "block";
+    populateBooks();
+    rangeControlsEl.style.display = "block";
+    unitStartEl.placeholder = "Start chapter (optional)";
+    unitEndEl.placeholder = "End chapter (optional)";
+  } else if (portion === "talmud" || portion === "kabbala") {
+    const opt = document.createElement("option");
+    opt.value = "__all"; opt.textContent = "All tractates (in dataset)";
+    subsectionEl.appendChild(opt);
+    const canon = DATA.canons[portion];
+    canon.tractates.forEach(t => {
+      const o = document.createElement("option");
+      o.value = t.id; o.textContent = t.name; subsectionEl.appendChild(o);
+    });
+    rangeControlsEl.style.display = "block";
+    unitStartEl.placeholder = "Start page (optional)";
+    unitEndEl.placeholder = "End page (optional)";
+  } else if (portion === "halacha" || portion === "chassidus") {
+    const opt = document.createElement("option");
+    opt.value = "__all"; opt.textContent = "All works (in dataset)";
+    subsectionEl.appendChild(opt);
+    const canon = DATA.canons[portion];
+    canon.works.forEach(w => {
+      const o = document.createElement("option");
+      o.value = w.id; o.textContent = w.name; subsectionEl.appendChild(o);
+    });
+    rangeControlsEl.style.display = "block";
+    unitStartEl.placeholder = "Start chapter (optional)";
+    unitEndEl.placeholder = "End chapter (optional)";
+  }
+}
+
+function populateBooks() {
+  const groupId = subsectionEl.value;
+  const group = DATA.canons.tanach.groups.find(g => g.id === groupId);
+  bookEl.innerHTML = "";
+  const any = document.createElement("option");
+  any.value = "__all"; any.textContent = "All books in " + group.name;
+  bookEl.appendChild(any);
+  if (group) {
+    group.books.forEach(b => {
+      const opt = document.createElement("option");
+      opt.value = b.id; opt.textContent = b.name;
+      bookEl.appendChild(opt);
+    });
+  }
+}
+
+portionEl.addEventListener("change", refreshSelectors);
+subsectionEl.addEventListener("change", () => {
+  if (portionEl.value === "tanach") populateBooks();
+});
+document.addEventListener("DOMContentLoaded", () => {
+  refreshSelectors();
+});
+
+buildBtn.addEventListener("click", () => {
+  try {
+    const portion = portionEl.value;
+    const startDate = startEl.value;
+    const endDate = endEl.value;
+    if (!startDate || !endDate) throw new Error("Please select start and end dates.");
+
+    let selections = {};
+    let rangeOpt = {};
+    if (unitStartEl.value) rangeOpt.startUnit = Number(unitStartEl.value);
+    if (unitEndEl.value) rangeOpt.endUnit = Number(unitEndEl.value);
+
+    if (portion === "tanach") {
+      const groupId = subsectionEl.value;
+      if (!groupId) throw new Error("Choose a Tanach subsection.");
+      const bookIdSel = bookEl.value && bookEl.value !== "__all" ? bookEl.value : null;
+      selections = { groupId, bookId: bookIdSel };
+    } else if (portion === "talmud" || portion === "kabbala") {
+      const tractSel = subsectionEl.value;
+      selections = { tractateId: tractSel !== "__all" ? tractSel : null };
+    } else if (portion === "halacha" || portion === "chassidus") {
+      const workSel = subsectionEl.value;
+      selections = { workId: workSel !== "__all" ? workSel : null };
+    }
+
+    const units = flattenSelection(portion, selections, rangeOpt);
+    if (units.length === 0) throw new Error("No units found in the selected scope. Add data or adjust filters.");
+
+    const plan = buildDailyPlan(units, startDate, endDate);
+
+    // Render
+    tbodyEl.innerHTML = "";
+    plan.forEach(row => {
+      const tr = document.createElement("tr");
+      const tdDate = document.createElement("td");
+      const tdAssign = document.createElement("td");
+      const tdUnits = document.createElement("td");
+
+      tdDate.textContent = row.date;
+      tdAssign.textContent = row.labelRange;
+      tdUnits.textContent = row.units.toString();
+
+      tr.appendChild(tdDate);
+      tr.appendChild(tdAssign);
+      tr.appendChild(tdUnits);
+      tbodyEl.appendChild(tr);
+    });
+
+    tableEl.style.display = "";
+    emptyEl.style.display = "none";
+    summaryEl.textContent = `${units.length} total units • ${plan.length} days • ~${Math.round(units.length / plan.length)} per day`;
+
+  } catch (e) {
+    alert(e.message);
+  }
+});
+
+exportBtn.addEventListener("click", () => {
+  const portion = portionEl.value;
+  const payload = {
+    type: "plan",
+    meta: {
+      portion,
+      subsection: subsectionEl.value,
+      book: bookEl.value || null,
+      startDate: startEl.value || null,
+      endDate: endEl.value || null,
+      range: {
+        startUnit: unitStartEl.value || null,
+        endUnit: unitEndEl.value || null
+      },
+      notes: notesEl.value || ""
+    },
+    // Not exporting generated rows here; export inputs for reproducibility.
+  };
+  downloadJSON(payload, "learning-plan.json");
+});
+
+exportDataBtn.addEventListener("click", () => {
+  downloadJSON(DATA, "learning-datasets.json");
+});
+
+importBtn.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const text = await file.text();
+  try {
+    const json = JSON.parse(text);
+    if (json.type === "plan") {
+      // Load saved inputs
+      const m = json.meta || {};
+      portionEl.value = m.portion || "tanach";
+      refreshSelectors();
+      if (m.subsection) subsectionEl.value = m.subsection;
+      if (m.book != null) {
+        if (portionEl.value === "tanach") {
+          bookEl.value = m.book;
+        } else {
+          // For other portions, subsection is the concrete selector already
+        }
+      }
+      if (m.range) {
+        unitStartEl.value = m.range.startUnit || "";
+        unitEndEl.value = m.range.endUnit || "";
+      }
+      startEl.value = m.startDate || "";
+      endEl.value = m.endDate || "";
+      notesEl.value = m.notes || "";
+      alert("Plan inputs imported. Click Build Schedule.");
+    } else if (json.canons) {
+      Object.assign(DATA, json);
+      refreshSelectors();
+      alert("Datasets imported.");
+    } else {
+      alert("Unrecognized JSON format.");
+    }
+  } catch (err) {
+    alert("Invalid JSON: " + err.message);
+  } finally {
+    fileInput.value = "";
+  }
+});
+
+function downloadJSON(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+</script>
+</body>
+</html>
