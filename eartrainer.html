@@ -231,7 +231,7 @@
   function buildJI(primeLimit) {
     const primes = getPrimesUpTo(primeLimit);
     // Monzo exponent bounds (tight enough to be useful, adjustable)
-    const EXP_MIN = -4, EXP_MAX = 6;
+    const EXP_MIN = -40, EXP_MAX = 60;
     const ratios = new Map(); // key string -> numeric
     // Construct values as product p_i^e_i, then reduce to [1,2)
     function fromExponents(exps) {
