@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Microtonal Ear Trainer</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 1.25rem; line-height: 1.35; }
+  h1 { font-size: 1.35rem; margin: 0 0 0.75rem; }
+  fieldset { border: 1px solid #9993; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+  legend { padding: 0 0.3rem; font-weight: 600; }
+  label { display: inline-flex; align-items: center; gap: 0.5rem; margin: 0.35rem 0; }
+  input[type="number"], input[type="text"], select { font: inherit; padding: 0.35rem 0.5rem; border-radius: 6px; border: 1px solid #9996; min-width: 6rem; }
+  input[type="text"] { min-width: 8rem; }
+  .row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+  .row > div { display: flex; align-items: center; gap: 0.5rem; }
+  button { font: inherit; padding: 0.5rem 0.8rem; border-radius: 8px; border: 1px solid #9996; background: #eee; cursor: pointer; }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .grid { display: grid; grid-template-columns: 1fr; gap: 0.5rem; }
+  .muted { opacity: 0.8; }
+  .note-list { display: flex; flex-wrap: wrap; gap: 0.4rem 0.8rem; }
+  .pill { padding: 0.15rem 0.5rem; border: 1px solid #9996; border-radius: 999px; font-size: 0.9rem; }
+  .status { min-height: 1.5rem; }
+  .good { color: #1b7f1b; font-weight: 600; }
+  .bad { color: #b21b1b; font-weight: 600; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+</style>
+</head>
+<body>
+  <h1>Microtonal Ear Trainer</h1>
+
+  <fieldset>
+    <legend>Tuning selection</legend>
+    <div class="grid">
+      <label>
+        <input type="radio" name="mode" value="edo" checked />
+        <span><strong>EDO:</strong></span>
+        <span>steps:</span>
+        <input id="edoSteps" type="number" min="2" max="720" value="12" />
+      </label>
+
+      <label>
+        <input type="radio" name="mode" value="nonoct" />
+        <span><strong>Non-octave xedY:</strong></span>
+        <span>x steps:</span>
+        <input id="xedx" type="number" min="2" max="720" value="13" />
+        <span>Y ratio (p/q):</span>
+        <input id="xedy" type="text" value="3/1" placeholder="e.g., 3/1" />
+      </label>
+
+      <label>
+        <input type="radio" name="mode" value="ji" />
+        <span><strong>JI prime limit:</strong></span>
+        <span>limit:</span>
+        <input id="jiPrimeLimit" type="number" min="3" max="23" value="5" />
+        <span class="muted">(generated within [1, 2))</span>
+      </label>
+    </div>
+    <div class="row">
+      <div>
+        <span><strong>Concert C4:</strong></span>
+        <span class="mono">261.625 Hz</span>
+      </div>
+      <button id="buildBtn">Generate tuning</button>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Training</legend>
+    <div class="row">
+      <button id="playBtn" disabled>Play</button>
+      <label>
+        <span><strong>Guess:</strong></span>
+        <select id="answerSelect" disabled></select>
+      </label>
+      <button id="submitBtn" disabled>Submit</button>
+      <div class="status" id="status"></div>
+    </div>
+    <div class="row">
+      <div class="pill">Correct: <span id="scoreGood">0</span></div>
+      <div class="pill">Incorrect: <span id="scoreBad">0</span></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Current tuning notes</legend>
+    <div id="notePreview" class="note-list"></div>
+  </fieldset>
+
+<script>
+(() => {
+  // Constants
+  const C4 = 261.625;
+  const IDEAL_FIFTH_CENTS = 701.955;
+
+  // State
+  let audioCtx = null;
+  let currentTuning = null;   // { labels: [], freqs: [], ids: [] }
+  let pendingNoteIndex = null; // which note is "in play" awaiting answer
+  let havePending = false;
+  let score = { good: 0, bad: 0 };
+  let currentOsc = null;
+
+  // Elements
+  const buildBtn = document.getElementById('buildBtn');
+  const playBtn = document.getElementById('playBtn');
+  const submitBtn = document.getElementById('submitBtn');
+  const answerSelect = document.getElementById('answerSelect');
+  const statusEl = document.getElementById('status');
+  const scoreGoodEl = document.getElementById('scoreGood');
+  const scoreBadEl = document.getElementById('scoreBad');
+  const notePreview = document.getElementById('notePreview');
+
+  function getSelectedMode() {
+    const v = [...document.querySelectorAll('input[name="mode"]')].find(x => x.checked)?.value || 'edo';
+    return v;
+  }
+
+  function parseRatio(s) {
+    const m = String(s || '').trim().match(/^(\d+)\s*\/\s*(\d+)$/);
+    if (!m) throw new Error('Invalid ratio. Use p/q.');
+    const p = parseInt(m[1], 10);
+    const q = parseInt(m[2], 10);
+    if (q === 0) throw new Error('Denominator cannot be zero.');
+    return p / q;
+  }
+
+  // Utility: unique with string key
+  function uniqueBy(arr, keyFn) {
+    const seen = new Set();
+    const out = [];
+    for (const x of arr) {
+      const k = keyFn(x);
+      if (!seen.has(k)) { seen.add(k); out.push(x); }
+    }
+    return out;
+  }
+
+  // EDO naming via chain of fifths
+  const FIFTH_NAME_CHAIN = [
+    // k from -12 to +14 (inclusive), provided order
+    { k: -12, name: 'Dbb' },
+    { k: -11, name: 'Abb' },
+    { k: -10, name: 'Ebb' },
+    { k:  -9, name: 'Bbb' },
+    { k:  -8, name: 'Fb'  },
+    { k:  -7, name: 'Cb'  },
+    { k:  -6, name: 'Gb'  },
+    { k:  -5, name: 'Db'  },
+    { k:  -4, name: 'Ab'  },
+    { k:  -3, name: 'Eb'  },
+    { k:  -2, name: 'Bb'  },
+    { k:  -1, name: 'F'   },
+    { k:   0, name: 'C'   },
+    { k:  +1, name: 'G'   },
+    { k:  +2, name: 'D'   },
+    { k:  +3, name: 'A'   },
+    { k:  +4, name: 'E'   },
+    { k:  +5, name: 'B'   },
+    { k:  +6, name: 'F#'  },
+    { k:  +7, name: 'C#'  },
+    { k:  +8, name: 'G#'  },
+    { k:  +9, name: 'D#'  },
+    { k: +10, name: 'A#'  },
+    { k: +11, name: 'E#'  },
+    { k: +12, name: 'B#'  },
+    { k: +13, name: 'Fx'  },
+    { k: +14, name: 'Cx'  },
+  ];
+
+  function buildEDO(steps) {
+    const stepCents = 1200 / steps;
+    // Best fifth in steps
+    const fifthSteps = Math.round(IDEAL_FIFTH_CENTS / stepCents);
+    // Map from pitch class index (0..steps-1) to candidate names by fifth distance
+    const pcToNames = new Map();
+    for (const {k, name} of FIFTH_NAME_CHAIN) {
+      const idx = ((k * fifthSteps) % steps + steps) % steps;
+      if (!pcToNames.has(idx)) pcToNames.set(idx, []);
+      pcToNames.get(idx).push({ name, absK: Math.abs(k) });
+    }
+    // Choose the name with minimal |k| for collisions
+    const indexToLabel = new Array(steps).fill(null);
+    for (let i = 0; i < steps; i++) {
+      if (pcToNames.has(i)) {
+        const best = pcToNames.get(i).slice().sort((a, b) => a.absK - b.absK)[0];
+        indexToLabel[i] = best.name;
+      }
+    }
+    // Fill any unlabeled steps using nearest labeled index and ^ / v marks
+    // We allow multiple marks if needed (one ^ or v per single EDO step).
+    const labeled = new Set(indexToLabel.map((x, i) => x ? i : -1).filter(i => i >= 0));
+    function nearestLabeled(i) {
+      // search both directions up to steps/2
+      for (let d = 1; d <= Math.floor(steps/2)+1; d++) {
+        const up = (i - d + steps) % steps;
+        const dn = (i + d) % steps;
+        if (labeled.has(up)) return { baseIdx: up, delta: (i - up + steps) % steps };
+        if (labeled.has(dn)) return { baseIdx: dn, delta: -((dn - i + steps) % steps) };
+      }
+      // fallback to C (0)
+      return { baseIdx: 0, delta: i };
+    }
+    for (let i = 0; i < steps; i++) {
+      if (!indexToLabel[i]) {
+        const { baseIdx, delta } = nearestLabeled(i);
+        const baseName = indexToLabel[baseIdx] || 'C';
+        let marks = '';
+        if (delta > 0) marks = '^'.repeat(delta);
+        else if (delta < 0) marks = 'v'.repeat(Math.abs(delta));
+        indexToLabel[i] = baseName + marks;
+      }
+    }
+    // Frequencies for one octave span [C4, C5)
+    const labels = indexToLabel;
+    const freqs = labels.map((_, i) => C4 * Math.pow(2, i / steps));
+    const ids = labels.map((_, i) => `pc${i}`); // internal IDs
+    return { labels, freqs, ids, meta: { steps, fifthSteps } };
+  }
+
+  function buildNonOct(x, yRatio) {
+    const stepRatio = Math.pow(yRatio, 1 / x);
+    const labels = Array.from({ length: x }, (_, i) => String(i));
+    const freqs = labels.map((_, i) => C4 * Math.pow(stepRatio, i));
+    const ids = labels.map((_, i) => `deg${i}`);
+    return { labels, freqs, ids, meta: { x, yRatio } };
+  }
+
+  // JI generator within [1,2), prime-limited, bounded exponent search
+  function buildJI(primeLimit) {
+    const primes = getPrimesUpTo(primeLimit);
+    // Monzo exponent bounds (tight enough to be useful, adjustable)
+    const EXP_MIN = -4, EXP_MAX = 6;
+    const ratios = new Map(); // key string -> numeric
+    // Construct values as product p_i^e_i, then reduce to [1,2)
+    function fromExponents(exps) {
+      let value = 1;
+      for (let i = 0; i < exps.length; i++) {
+        value *= Math.pow(primes[i], exps[i]);
+        if (!isFinite(value) || value <= 0) return null;
+      }
+      // Fold by octaves to [1,2)
+      while (value >= 2) value /= 2;
+      while (value < 1) value *= 2;
+      return value;
+    }
+    // Explore exponent grid sparsely: BFS by norm to favor simpler ratios
+    const start = new Array(primes.length).fill(0);
+    const q = [start];
+    const seen = new Set([start.join(',')]);
+    const neighbors = (v) => {
+      const out = [];
+      for (let i = 0; i < v.length; i++) {
+        if (v[i] < EXP_MAX) { const w = v.slice(); w[i]++; out.push(w); }
+        if (v[i] > EXP_MIN) { const w = v.slice(); w[i]--; out.push(w); }
+      }
+      return out;
+    };
+    let steps = 0;
+    const MAX_VISIT = 5000; // cap to keep UI snappy
+    while (q.length && steps < MAX_VISIT) {
+      const v = q.shift();
+      steps++;
+      const val = fromExponents(v);
+      if (val) {
+        // Convert to simplest fraction string (approx) by continued fraction
+        const frac = toSimpleFraction(val, 1e-10, 1 << 20);
+        const [num, den] = frac;
+        // Ensure prime-limited: both num and den only use allowed primes
+        if (primeLimited(num, primes) && primeLimited(den, primes)) {
+          const key = `${num}/${den}`;
+          ratios.set(key, val);
+        }
+      }
+      for (const n of neighbors(v)) {
+        const k = n.join(',');
+        if (!seen.has(k)) { seen.add(k); q.push(n); }
+      }
+    }
+    // Always include 1/1
+    ratios.set('1/1', 1);
+    // Deduplicate close ratios, then sort by value
+    const entries = uniqueBy(
+      [...ratios.entries()].sort((a, b) => a[1] - b[1]),
+      ([k, v]) => k
+    );
+    const labels = entries.map(([k]) => k);
+    const freqs = entries.map(([_, v]) => C4 * v);
+    const ids = labels.map(k => `ji_${k}`);
+    return { labels, freqs, ids, meta: { primes } };
+  }
+
+  function getPrimesUpTo(n) {
+    const out = [];
+    for (let i = 2; i <= n; i++) {
+      if (out.every(p => i % p !== 0)) out.push(i);
+    }
+    return out;
+  }
+  function primeLimited(n, allowedPrimes) {
+    let x = n;
+    for (const p of allowedPrimes) {
+      while (x % p === 0) x /= p;
+      if (x === 1) return true;
+    }
+    return x === 1;
+  }
+  // Continued fraction rational approximation
+  function toSimpleFraction(x, eps = 1e-12, maxDen = 1e6) {
+    let a0 = Math.floor(x);
+    if (Math.abs(a0 - x) < eps) return [a0, 1];
+    let numPrev = 1, denPrev = 0;
+    let num = a0, den = 1;
+    let frac = x - a0;
+    while (den <= maxDen && Math.abs(num/den - x) > eps) {
+      const a = Math.floor(1 / frac);
+      const nextNum = a * num + numPrev;
+      const nextDen = a * den + denPrev;
+      numPrev = num; denPrev = den;
+      num = nextNum; den = nextDen;
+      frac = 1 / frac - a;
+      if (!isFinite(frac) || frac <= 0) break;
+    }
+    // Reduce fraction
+    const g = gcd(num, den);
+    return [Math.round(num/g), Math.round(den/g)];
+  }
+  function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a; }
+
+  function renderTuning(tuning) {
+    // Populate answer select and preview chips
+    answerSelect.innerHTML = '';
+    tuning.labels.forEach((lab, i) => {
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = lab;
+      answerSelect.appendChild(opt);
+    });
+    notePreview.innerHTML = '';
+    tuning.labels.forEach((lab, i) => {
+      const span = document.createElement('span');
+      span.className = 'pill mono';
+      span.title = `${lab} — ${tuning.freqs[i].toFixed(3)} Hz`;
+      span.textContent = lab;
+      notePreview.appendChild(span);
+    });
+  }
+
+  function buildCurrent() {
+    const mode = getSelectedMode();
+    try {
+      if (mode === 'edo') {
+        const steps = clampInt(parseInt(document.getElementById('edoSteps').value, 10), 2, 720);
+        currentTuning = buildEDO(steps);
+      } else if (mode === 'nonoct') {
+        const x = clampInt(parseInt(document.getElementById('xedx').value, 10), 2, 720);
+        const yRatio = parseRatio(document.getElementById('xedy').value);
+        currentTuning = buildNonOct(x, yRatio);
+      } else {
+        const limit = clampInt(parseInt(document.getElementById('jiPrimeLimit').value, 10), 3, 23);
+        currentTuning = buildJI(limit);
+      }
+      renderTuning(currentTuning);
+      status('Tuning generated.', 'ok');
+      enableTraining(true);
+      resetPending();
+    } catch (e) {
+      status(String(e.message || e), 'error');
+      enableTraining(false);
+      currentTuning = null;
+    }
+  }
+
+  function clampInt(n, lo, hi) { if (!Number.isFinite(n)) return lo; return Math.max(lo, Math.min(hi, n|0)); }
+
+  function ensureAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
+
+  function playFreq(freq, dur = 1.2) {
+    stopSound();
+    const ctx = ensureAudio();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.18, now + 0.03);
+    gain.gain.linearRampToValueAtTime(0.13, now + dur * 0.5);
+    gain.gain.linearRampToValueAtTime(0.0001, now + dur);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + dur + 0.02);
+    currentOsc = osc;
+    osc.onended = () => { if (currentOsc === osc) currentOsc = null; };
+  }
+
+  function stopSound() {
+    try { if (currentOsc) currentOsc.stop(); } catch {}
+    currentOsc = null;
+  }
+
+  function status(msg, kind) {
+    statusEl.className = 'status';
+    if (kind === 'ok') statusEl.classList.add('good');
+    if (kind === 'error') statusEl.classList.add('bad');
+    statusEl.textContent = msg || '';
+  }
+
+  function enableTraining(on) {
+    playBtn.disabled = !on;
+    answerSelect.disabled = !on;
+    submitBtn.disabled = !on;
+  }
+
+  function resetPending() {
+    pendingNoteIndex = null;
+    havePending = false;
+  }
+
+  function startRound() {
+    if (!currentTuning) return;
+    if (havePending) {
+      // Re-play the same note until answer is submitted
+      const idx = pendingNoteIndex;
+      playFreq(currentTuning.freqs[idx]);
+      return;
+    }
+    const idx = Math.floor(Math.random() * currentTuning.labels.length);
+    pendingNoteIndex = idx;
+    havePending = true;
+    playFreq(currentTuning.freqs[idx]);
+    status('', null);
+  }
+
+  function submitGuess() {
+    if (!havePending || !currentTuning) return;
+    const selIdx = parseInt(answerSelect.value, 10);
+    const correct = (selIdx === pendingNoteIndex);
+    if (correct) {
+      score.good++;
+      scoreGoodEl.textContent = String(score.good);
+      status(`Correct: ${currentTuning.labels[pendingNoteIndex]}`, 'ok');
+    } else {
+      score.bad++;
+      scoreBadEl.textContent = String(score.bad);
+      status(`Incorrect. It was ${currentTuning.labels[pendingNoteIndex]}.`, 'error');
+    }
+    havePending = false; // next Play will pick a new random note
+  }
+
+  // Wire up
+  buildBtn.addEventListener('click', buildCurrent);
+  playBtn.addEventListener('click', startRound);
+  submitBtn.addEventListener('click', submitGuess);
+
+  // Initialize with default EDO
+  buildCurrent();
+
+})();
+</script>
+</body>
+</html>
