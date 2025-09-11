@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Microtonal Song Generator (EDO + Chain-of-Fifths Naming)</title>
+<style>
+  :root {
+    --bg: #0f1220;
+    --panel: #171a2c;
+    --accent: #7cc7ff;
+    --muted: #a9b2c3;
+    --text: #e8ecf3;
+    --good: #8af2b0;
+    --badge: #2a2e46;
+  }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
+                 "Segoe UI Emoji";
+  }
+  header {
+    padding: 20px 16px; border-bottom: 1px solid #242844;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  header h1 {
+    margin: 0; font-size: 20px; letter-spacing: 0.2px;
+  }
+  header .tagline { color: var(--muted); font-size: 13px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+  .panel {
+    background: var(--panel); border: 1px solid #222640; border-radius: 10px;
+    padding: 16px; margin-bottom: 16px;
+  }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  .field {
+    display: grid; gap: 6px; min-width: 160px;
+  }
+  label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.7px; }
+  input[type=number], select {
+    background: #0f1326; color: var(--text); border: 1px solid #242a4a; border-radius: 8px;
+    padding: 10px 12px; font-size: 14px; outline: none;
+  }
+  input[type=checkbox] { transform: translateY(1px); }
+  button {
+    background: linear-gradient(180deg, #2489ff, #1d6dde);
+    color: white; border: none; border-radius: 10px; padding: 12px 16px; font-weight: 600; font-size: 14px;
+    cursor: pointer; box-shadow: 0 8px 20px rgba(36,137,255,0.25);
+  }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .note-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--badge);
+    color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+  }
+  .accent-up { color: #ffdb7c; }
+  .accent-dn { color: #ffa6a6; }
+  .kv {
+    display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; font-size: 14px;
+  }
+  .kv div:nth-child(odd) { color: var(--muted); }
+  details { background: #12162a; border: 1px dashed #2b315a; border-radius: 8px; padding: 8px 10px; }
+  summary { cursor: pointer; color: var(--accent); }
+  .grid {
+    overflow: auto; border: 1px solid #222640; border-radius: 10px;
+  }
+  table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  th, td {
+    border-bottom: 1px solid #21254a; padding: 8px 10px; text-align: left; vertical-align: top;
+  }
+  th { background: #161b33; position: sticky; top: 0; }
+  .ok { color: var(--good); }
+  .small { font-size: 12px; color: var(--muted); }
+  code {
+    background: #0e1224; border: 1px solid #222640; padding: 2px 6px; border-radius: 6px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Microtonal Song Generator</h1>
+  <div class="tagline">EDO tuning • chain-of-fifths naming with ups (^) and downs (v)</div>
+</header>
+
+<div class="container">
+  <div class="panel">
+    <div class="row">
+      <div class="field">
+        <label for="edo">EDO (equal divisions of the octave)</label>
+        <input id="edo" type="number" inputmode="numeric" min="5" max="96" value="19" />
+      </div>
+      <div class="field">
+        <label for="measures">Measures</label>
+        <input id="measures" type="number" inputmode="numeric" min="1" max="64" value="8" />
+      </div>
+      <div class="field">
+        <label for="seed">Random seed (optional)</label>
+        <input id="seed" type="number" inputmode="numeric" placeholder="leave blank for random" />
+      </div>
+      <div class="field">
+        <label for="rests">Allow rests</label>
+        <div><input id="rests" type="checkbox" checked /> <span class="small">Rests may appear in rhythm</span></div>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button id="go">Generate</button>
+      </div>
+    </div>
+    <div class="kv" style="margin-top:12px;">
+      <div>Reference:</div><div>C4 = <code>261.625565 Hz</code></div>
+      <div>Time signature:</div><div>4/4</div>
+    </div>
+  </div>
+
+  <div id="summary" class="panel" style="display:none;"></div>
+  <div id="nameMapPanel" class="panel" style="display:none;"></div>
+  <div id="songPanel" class="panel" style="display:none;"></div>
+</div>
+
+<script>
+"use strict";
+
+/* -----------------------------------------
+   Core config
+------------------------------------------*/
+const C4_FREQ = 261.625565; // Hz
+const TIME_SIG = [4,4];     // 4/4
+const DURATIONS = [4.0, 2.0, 1.0, 0.5, 0.25]; // whole..sixteenth in beats
+const DEFAULT_REST_PROB = 0.12;
+const CHORD_PROB = 0.65;
+const MELODY_RANGE_OCTAVES = [-1, +1]; // relative to C4 (keeps melody near C4)
+
+/* Fixed chain from Fb (-8) to B# (+12) */
+const CHAIN_OF_FIFTHS = [
+  ["Fb", -8], ["Cb", -7], ["Gb", -6], ["Db", -5], ["Ab", -4], ["Eb", -3], ["Bb", -2], ["F", -1],
+  ["C", 0],   ["G", 1],   ["D", 2],   ["A", 3],   ["E", 4],   ["B", 5],
+  ["F#", 6],  ["C#", 7],  ["G#", 8],  ["D#", 9],  ["A#", 10], ["E#", 11], ["B#", 12],
+];
+
+/* -----------------------------------------
+   Utilities
+------------------------------------------*/
+const rnd = (seed => {
+  // Mulberry32 PRNG for repeatability
+  let s = seed ?? (Math.random() * 2**32) | 0;
+  return {
+    reseed(n) { s = (n >>> 0); },
+    next() { s |= 0; s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; },
+    choice(arr) { return arr[Math.floor(this.next()*arr.length)] },
+    weightedChoice(items, weights) {
+      const total = weights.reduce((a,b)=>a+b,0);
+      let r = this.next()*total, i=0;
+      while (i<items.length) { if ((r -= weights[i]) <= 0) return items[i]; i++; }
+      return items[items.length-1];
+    }
+  };
+})();
+
+const mod = (x, m) => ((x % m) + m) % m;
+const bestFifthSteps = edo => Math.round((701.955 / 1200) * edo);
+const stepToFreq = (stepsFromC4, edo) => C4_FREQ * Math.pow(2, stepsFromC4 / edo);
+const escapeHTML = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* accents */
+const addUp = name => name + "^";
+const addDown = name => name + "v";
+const baseNameOf = name => name.replace(/[\^v]/g, "");
+const countAccents = name => (name.match(/[\^v]/g) || []).length;
+
+/* -----------------------------------------
+   Naming system builder
+------------------------------------------*/
+function buildBaseMap(edo) {
+  const k = bestFifthSteps(edo);
+  const cand = new Map(); // pc -> [{name, span}]
+  for (const [nm, idx] of CHAIN_OF_FIFTHS) {
+    const pc = mod(idx * k, edo);
+    const span = Math.abs(idx);
+    if (!cand.has(pc)) cand.set(pc, []);
+    cand.get(pc).push({ name: nm, span });
+  }
+  const chosen = new Map(); // pc -> {name, span}
+  for (const [pc, list] of cand.entries()) {
+    // tie-break: smallest span, prefer flats over sharps, then shorter text
+    list.sort((a,b) => {
+      const aFlat = a.name.includes("b") ? 0 : (a.name.includes("#") ? 1 : 2);
+      const bFlat = b.name.includes("b") ? 0 : (b.name.includes("#") ? 1 : 2);
+      return (a.span - b.span) || (aFlat - bFlat) || (a.name.length - b.name.length);
+    });
+    chosen.set(pc, { name: list[0].name, span: list[0].span });
+  }
+  return chosen;
+}
+
+function expandWithAccents(edo, baseMap) {
+  // BFS over +/- 1 step from already named pitch classes
+  const chosen = new Map(); // pc -> {name, span}
+  const q = [];
+  // seed
+  for (const [pc, e] of baseMap.entries()) {
+    chosen.set(pc, { name: e.name, span: e.span });
+    q.push(pc);
+  }
+
+  function consider(pcTarget, candidate) {
+    const existing = chosen.get(pcTarget);
+    if (!existing) {
+      chosen.set(pcTarget, candidate);
+      q.push(pcTarget);
+      return;
+    }
+    // tie-break: smaller base fifthspan, fewer accents, prefer down(v) over up(^), then lexicographic
+    const key = x => [x.span, countAccents(x.name), x.name.endsWith("v") ? 0 : 1, x.name];
+    const a = key(candidate), b = key(existing);
+    for (let i=0;i<a.length;i++) {
+      if (a[i] < b[i]) { chosen.set(pcTarget, candidate); q.push(pcTarget); return; }
+      if (a[i] > b[i]) return;
+    }
+  }
+
+  while (q.length && chosen.size < edo) {
+    const pc = q.shift();
+    const here = chosen.get(pc);
+    const upPc = mod(pc + 1, edo);
+    const dnPc = mod(pc - 1, edo);
+    consider(upPc, { name: addUp(here.name), span: here.span });
+    consider(dnPc, { name: addDown(here.name), span: here.span });
+  }
+
+  // Ensure full coverage
+  if (chosen.size !== edo) {
+    // Attempt a final sweep from known pcs
+    for (let i=0;i<edo;i++) if (!chosen.has(i)) {
+      // snap to nearest named neighbor
+      let best = null;
+      for (let j=0;j<edo;j++) if (chosen.has(j)) {
+        const dist = Math.min(mod(i-j,edo), mod(j-i,edo));
+        if (!best || dist < best.dist) best = { j, dist };
+      }
+      // build by stepping from best.j toward i
+      let cur = best.j;
+      while (cur !== i) {
+        const forward = mod(cur+1, edo);
+        const backward = mod(cur-1, edo);
+        const stepF = Math.min(mod(i-forward,edo), mod(forward-i,edo));
+        const stepB = Math.min(mod(i-backward,edo), mod(backward-i,edo));
+        if (stepF <= stepB) {
+          const nm = addUp(chosen.get(cur).name);
+          chosen.set(forward, { name: nm, span: chosen.get(cur).span });
+          cur = forward;
+        } else {
+          const nm = addDown(chosen.get(cur).name);
+          chosen.set(backward, { name: nm, span: chosen.get(cur).span });
+          cur = backward;
+        }
+      }
+    }
+  }
+
+  // Compress to pc -> string name
+  const map = new Map();
+  for (const [pc, e] of chosen.entries()) map.set(pc, e.name);
+  return map;
+}
+
+function buildNameSystem(edo) {
+  const base = buildBaseMap(edo);
+  return expandWithAccents(edo, base); // Map pc -> name (with ^/v)
+}
+
+/* -----------------------------------------
+   Rhythm generation
+------------------------------------------*/
+function randomRhythm(measures, allowRests, restProb = DEFAULT_REST_PROB) {
+  const beatsTotal = measures * (TIME_SIG[0] * (4 / TIME_SIG[1])); // 4/4 => measures*4
+  const events = [];
+  let remain = beatsTotal;
+  while (remain > 1e-9) {
+    const options = DURATIONS.filter(d => d <= round6(remain) + 1e-6);
+    let d;
+    if (options.length === 0) d = Math.min(...DURATIONS);
+    else {
+      // bias toward shorter durations
+      const weights = options.map(o => 1.0 / (1 + DURATIONS.indexOf(o)));
+      d = rnd.weightedChoice(options, weights);
+    }
+    // avoid tiny residue: if next subtraction leaves < smallest duration, snap final
+    const smallest = Math.min(...DURATIONS);
+    if (remain - d < smallest - 1e-6 && remain - d > 1e-6) d = remain; // snap
+    const isRest = allowRests && (rnd.next() < restProb);
+    events.push({ dur: d, rest: isRest });
+    remain = round6(remain - d);
+  }
+  // normalize any floating dust
+  const sum = events.reduce((a,e)=>a+e.dur,0);
+  if (Math.abs(sum - beatsTotal) > 1e-6) {
+    const diff = beatsTotal - sum;
+    events[events.length-1].dur = round6(events[events.length-1].dur + diff);
+  }
+  return events;
+}
+
+const round6 = x => Math.round(x*1e6)/1e6;
+
+/* -----------------------------------------
+   Melody, chords, spelling, frequencies
+------------------------------------------*/
+function generateSong(edo, measures, nameMap) {
+  const k = bestFifthSteps(edo);
+  const fifth = mod(k, edo);
+  const third = mod(2*k, edo); // generator-based "third"
+  const events = randomRhythm(measures, document.getElementById("rests").checked);
+
+  // choose pitch classes for melody and assign octaves near C4
+  const melody = [];
+  for (const ev of events) {
+    if (ev.rest) { melody.push({ ...ev, notes: [] }); continue; }
+    const pc = Math.floor(rnd.next() * edo);
+    // choose octave offset to keep within range relative to C4
+    const oct = Math.floor(rnd.next() * (MELODY_RANGE_OCTAVES[1] - MELODY_RANGE_OCTAVES[0] + 1)) + MELODY_RANGE_OCTAVES[0];
+    const stepsFromC4 = oct*edo + pc;
+    const noteName = nameMap.get(pc);
+    const root = { pc, steps: stepsFromC4, name: noteName, freq: stepToFreq(stepsFromC4, edo) };
+
+    // chord?
+    let chord = [root];
+    if (rnd.next() < CHORD_PROB) {
+      const p2 = mod(pc + third, edo);
+      const p3 = mod(pc + fifth, edo);
+      // place chord tones near root (closest octave)
+      const s2 = closestStepsNear(p2, stepsFromC4, edo);
+      const s3 = closestStepsNear(p3, stepsFromC4, edo);
+      chord = [
+        root,
+        { pc: p2, steps: s2, name: nameMap.get(p2), freq: stepToFreq(s2, edo) },
+        { pc: p3, steps: s3, name: nameMap.get(p3), freq: stepToFreq(s3, edo) },
+      ];
+      // sort low-to-high for readability
+      chord.sort((a,b)=>a.steps - b.steps);
+    }
+
+    melody.push({ ...ev, notes: chord });
+  }
+
+  return { k, third, fifth, events: melody };
+}
+
+function closestStepsNear(pc, targetSteps, edo) {
+  // choose steps so pitch class pc lands closest to targetSteps
+  const baseOct = Math.round((targetSteps - pc) / edo);
+  const cands = [baseOct-1, baseOct, baseOct+1].map(oct => oct*edo + pc);
+  cands.sort((a,b)=>Math.abs(a - targetSteps) - Math.abs(b - targetSteps));
+  return cands[0];
+}
+
+/* -----------------------------------------
+   UI glue and rendering
+------------------------------------------*/
+const $go = document.getElementById("go");
+const $summary = document.getElementById("summary");
+const $nameMapPanel = document.getElementById("nameMapPanel");
+const $songPanel = document.getElementById("songPanel");
+
+$go.addEventListener("click", () => {
+  const edo = clampInt(parseInt(document.getElementById("edo").value, 10), 5, 96);
+  const measures = clampInt(parseInt(document.getElementById("measures").value, 10), 1, 64);
+  const seedEl = document.getElementById("seed");
+  const seed = seedEl.value !== "" ? parseInt(seedEl.value, 10) >>> 0 : ((Math.random()*2**32)>>>0);
+  rnd.reseed(seed);
+
+  try {
+    const nameMap = buildNameSystem(edo);
+    const song = generateSong(edo, measures, nameMap);
+
+    renderSummary(edo, seed, song);
+    renderNameMap(edo, nameMap);
+    renderSong(edo, nameMap, song);
+    $summary.style.display = "";
+    $nameMapPanel.style.display = "";
+    $songPanel.style.display = "";
+  } catch (e) {
+    alert("Error: " + e.message);
+    console.error(e);
+  }
+});
+
+function renderSummary(edo, seed, song) {
+  const k = song.k;
+  const approxFifthCents = (k/edo) * 1200;
+  $summary.innerHTML = `
+    <h3 style="margin:0 0 8px 0;">Tuning summary</h3>
+    <div class="kv">
+      <div>EDO:</div><div><span class="note-badge">${edo}</span></div>
+      <div>Best fifth (steps):</div><div><span class="note-badge">${k}</span> <span class="small">≈ ${approxFifthCents.toFixed(2)} cents</span></div>
+      <div>Generator-based triad intervals:</div><div><code>Δ3 = 2k = ${song.third} steps</code>, <code>Δ5 = k = ${song.fifth} steps</code></div>
+      <div>Seed:</div><div><code>${seed}</code></div>
+    </div>
+  `;
+}
+
+function renderNameMap(edo, nameMap) {
+  const rows = [];
+  for (let pc = 0; pc < edo; pc++) {
+    const nm = nameMap.get(pc);
+    rows.push(`
+      <tr>
+        <td>${pc}</td>
+        <td>${renderName(nm)}</td>
+      </tr>
+    `);
+  }
+  $nameMapPanel.innerHTML = `
+    <h3 style="margin:0 0 8px 0;">Pitch-class naming</h3>
+    <details>
+      <summary>Show mapping for all ${edo} pitch classes (Fb … B# with ^ and v)</summary>
+      <div class="grid" style="margin-top:10px;">
+        <table>
+          <thead><tr><th>Pitch class</th><th>Name</th></tr></thead>
+          <tbody>${rows.join("")}</tbody>
+        </table>
+      </div>
+    </details>
+  `;
+}
+
+function renderSong(edo, nameMap, song) {
+  const beatsPerMeasure = TIME_SIG[0] * (4 / TIME_SIG[1]); // 4
+  let beatSum = 0, measure = 1, rows = [];
+  for (const ev of song.events) {
+    const startBeat = beatSum % beatsPerMeasure;
+    const endBeat = startBeat + ev.dur;
+    const row = [];
+    row.push(`<td>M${measure}</td>`);
+    row.push(`<td>${fmtBeatRange(startBeat, endBeat)}</td>`);
+    row.push(`<td>${fmtDuration(ev.dur)}</td>`);
+    if (ev.rest) {
+      row.push(`<td colspan="2"><span class="note-badge">Rest</span></td>`);
+    } else {
+      const names = ev.notes.map(n => renderName(n.name)).join(" &nbsp; ");
+      const freqs = ev.notes.map(n => `<code>${stepInfo(n.steps, edo)} • ${stepToFreq(n.steps, edo).toFixed(2)} Hz</code>`).join("<br>");
+      const spelled = ev.notes.map(n => `<span class="note-badge">${escapeHTML(n.name)}</span>`).join(" ");
+      row.push(`<td>${names}</td>`);
+      row.push(`<td>${freqs}</td>`);
+    }
+    rows.push(`<tr>${row.join("")}</tr>`);
+    beatSum += ev.dur;
+    if (beatSum % beatsPerMeasure === 0) measure++;
+  }
+
+  $songPanel.innerHTML = `
+    <h3 style="margin:0 0 8px 0;">Generated song</h3>
+    <div class="grid">
+      <table>
+        <thead>
+          <tr>
+            <th>Measure</th>
+            <th>Beat range</th>
+            <th>Duration</th>
+            <th>Spelling</th>
+            <th>Steps • Frequency</th>
+          </tr>
+        </thead>
+        <tbody>${rows.join("")}</tbody>
+      </table>
+    </div>
+    <div class="small" style="margin-top:10px;">
+      Chords are built on each melody tone using the EDO generator: triad = {root, root + 2k, root + k} reduced to nearest octaves.
+    </div>
+  `;
+}
+
+function fmtDuration(d) {
+  if (d === 4) return "whole";
+  if (d === 2) return "half";
+  if (d === 1) return "quarter";
+  if (d === 0.5) return "eighth";
+  if (d === 0.25) return "sixteenth";
+  return d.toFixed(2) + " beats";
+}
+
+function fmtBeatRange(start, end) {
+  const s = (start + 1e-6).toFixed(2).replace(/\.00$/,'');
+  const e = (end + 1e-6).toFixed(2).replace(/\.00$/,'');
+  return `${s}–${e}`;
+}
+
+function renderName(nm) {
+  // color-code accents for readability
+  const parts = nm.split("").map(ch => {
+    if (ch === "^") return `<span class="accent-up">^</span>`;
+    if (ch === "v") return `<span class="accent-dn">v</span>`;
+    return escapeHTML(ch);
+  }).join("");
+  return `<span class="note-badge">${parts}</span>`;
+}
+
+function stepInfo(steps, edo) {
+  // show octave and pc relative to C4
+  const oct = Math.floor(steps / edo);
+  const pc = mod(steps, edo);
+  const sign = steps >= 0 ? "+" : "";
+  return `${sign}${steps} steps (oct ${oct}, pc ${pc})`;
+}
+
+function clampInt(x, min, max) {
+  if (Number.isNaN(x)) return min;
+  return Math.max(min, Math.min(max, x|0));
+}
+</script>
+</body>
+</html>
