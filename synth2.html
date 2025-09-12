@@ -286,27 +286,41 @@ function generateEDONaming(N){
   return { names, info: {k, wholeTone, chromaticRaw, chromatic, diatonic} };
 }
 
-/* pick simplest name from array (same rules as before) */
+// map canonical note names to their fifthspan relative to C
+const fifthspanMap = {};
+canonicalChainOfFifths.forEach((name, i) => {
+  const span = i - canonicalChainOfFifths.indexOf("C");
+  fifthspanMap[name] = span;
+});
+
 function pickSimplestName(list){
   if(!Array.isArray(list) || list.length===0) return '?';
   const uniq = Array.from(new Set(list));
 
   function analyze(n){
     let s = n;
-    let prefixCount = 0;
-    while(s[0] === '^' || s[0] === 'v'){ prefixCount++; s = s.slice(1); }
+    // peel off ^ / v prefixes (non-canonical displacement)
+    let prefixShift = 0;
+    while(s[0] === '^' || s[0] === 'v'){
+      prefixShift += (s[0] === '^' ? 1 : -1);
+      s = s.slice(1);
+    }
     const core = s;
+    const spanFromC = (fifthspanMap[core] ?? 0) + prefixShift;
+    const absSpan = Math.abs(spanFromC);
+
     const isNatural = /^[A-G]$/.test(core);
     const sharps = (core.match(/#/g)||[]).length;
     const flats = (core.match(/b/g)||[]).length;
     const accidentalCount = sharps + flats;
     const kindScore = isNatural ? 0 : (sharps>0 ? 1 : (flats>0 ? 2 : 3));
-    return {orig: n, prefixCount, kindScore, accidentalCount, length: n.length};
+
+    return {orig: n, absSpan, kindScore, accidentalCount, length: n.length};
   }
 
   const analyzed = uniq.map(s => ({s, a: analyze(s)}));
   analyzed.sort((A,B)=>{
-    if(A.a.prefixCount !== B.a.prefixCount) return A.a.prefixCount - B.a.prefixCount;
+    if(A.a.absSpan !== B.a.absSpan) return A.a.absSpan - B.a.absSpan;  // smallest absolute fifthspan
     if(A.a.kindScore !== B.a.kindScore) return A.a.kindScore - B.a.kindScore;
     if(A.a.accidentalCount !== B.a.accidentalCount) return A.a.accidentalCount - B.a.accidentalCount;
     if(A.a.length !== B.a.length) return A.a.length - B.a.length;
