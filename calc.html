@@ -1,263 +1,788 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Basic Calculator</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Custom styles for the calculator */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5; /* Light gray background */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-        .calculator-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            padding: 20px;
-            border-radius: 15px;
-            background-color: #333; /* Dark background for the calculator body */
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-            max-width: 350px; /* Limit max width for better mobile view */
-            width: 90%; /* Responsive width */
-        }
-        .output {
-            grid-column: 1 / -1;
-            background-color: #222; /* Darker background for output */
-            color: #fff;
-            padding: 20px;
-            text-align: right;
-            font-size: 2.5em; /* Larger font for output */
-            border-radius: 10px;
-            margin-bottom: 10px;
-            word-wrap: break-word; /* Prevent overflow */
-            overflow: hidden; /* Hide overflow */
-            min-height: 60px; /* Ensure minimum height */
-            display: flex;
-            align-items: flex-end;
-            justify-content: flex-end;
-        }
-        .calculator-grid > button {
-            background-color: #555; /* Darker gray for buttons */
-            color: #fff;
-            border: none;
-            padding: 20px;
-            font-size: 1.5em;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .calculator-grid > button:hover {
-            background-color: #777; /* Lighter on hover */
-            transform: translateY(-2px);
-        }
-        .calculator-grid > button:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
-        }
-        .operator {
-            background-color: #ff9500 !important; /* Orange for operators */
-        }
-        .operator:hover {
-            background-color: #ffa520 !important;
-        }
-        .equals {
-            background-color: #4CAF50 !important; /* Green for equals */
-            grid-column: span 2; /* Make equals button span two columns */
-        }
-        .equals:hover {
-            background-color: #5cb85c !important;
-        }
-        .clear {
-            background-color: #d9534f !important; /* Red for clear */
-        }
-        .clear:hover {
-            background-color: #e0635f !important;
-        }
-        .decimal {
-            background-color: #555 !important; /* Same as numbers */
-        }
-        .decimal:hover {
-            background-color: #777 !important;
-        }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>High-precision Scientific Calculator (Up to 5000 digits)</title>
+<style>
+  :root {
+    --bg:#0f1220; --panel:#14182a; --btn:#1b2040; --btn2:#253066; --accent:#72f3b6; --text:#e9ecf2; --muted:#aab2c8; --danger:#ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; padding:24px; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    background: radial-gradient(1200px 800px at 80% -10%, #1b1f38 0%, #0f1220 60%), var(--bg); color: var(--text);
+  }
+  .wrap {
+    max-width: 980px; margin: 0 auto; display:grid; grid-template-columns: 1.2fr 1fr; gap: 20px;
+  }
+  @media (max-width: 980px) { .wrap { grid-template-columns: 1fr; } }
+  .panel {
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 16px; backdrop-filter: blur(4px);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .title { font-weight: 700; letter-spacing: .3px; color:#dfe6ff; margin: 0 0 8px; }
+  .row { display:flex; gap: 10px; align-items:center; flex-wrap:wrap; }
+  .grow { flex:1 1 auto; }
+  .control {
+    background: var(--panel); border:1px solid rgba(255,255,255,0.08); color:var(--text);
+    border-radius:10px; padding: 10px 12px; outline:none; width:100%;
+  }
+  .control:focus { border-color: rgba(114,243,182,.6); box-shadow: 0 0 0 3px rgba(114,243,182,.12); }
+  .btn {
+    user-select:none; cursor:pointer; border:none; border-radius:10px; padding:10px 14px; color:var(--text);
+    background: var(--btn); transition: transform .04s ease, background .15s ease, border .15s ease;
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .btn:hover { background: #222852; }
+  .btn:active { transform: translateY(1px); }
+  .btn.accent { background: linear-gradient(180deg,#2c835f,#1d5a43); border-color: rgba(114,243,182,.38); }
+  .btn.accent:hover { background: linear-gradient(180deg,#32966e,#22664d); }
+  .btn.warn { background: #3a1d2a; border-color: rgba(255,107,107,.3); color:#ffd9df; }
+  label { font-size: 12px; color: var(--muted); display:block; margin-bottom:6px; }
+  .display {
+    background: #0e1223; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px 12px; min-height: 84px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 14px; line-height:1.45;
+    overflow:auto; white-space: pre-wrap; word-break: break-word;
+  }
+  .small { font-size: 12px; color: var(--muted); }
+  .kbd { background:#10162a; border:1px solid rgba(255,255,255,.08); border-radius:6px; padding: 2px 6px; font-size: 12px; }
+  .grid {
+    display:grid; grid-template-columns: repeat(6,1fr); gap:8px; margin-top:10px;
+  }
+  .key { background: var(--btn2); border:1px solid rgba(255,255,255,.09); border-radius:10px; padding:10px; text-align:center; cursor:pointer; }
+  .key:hover { background:#2c3979; }
+  .key.fn { background:#20284f; }
+  .badge {
+    display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.1); font-size:11px; color:#c6d3ff;
+    background: rgba(114,243,182,.08);
+  }
+  .footer { font-size:12px; color:#9aa6c9; margin-top:10px; }
+  .hr { height:1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent); margin: 10px 0; border:none; }
+</style>
 </head>
 <body>
-    <div class="calculator-grid">
-        <!-- Calculator display -->
-        <div class="output" id="display">0</div>
+  <div class="wrap">
+    <div class="panel">
+      <h2 class="title">High-precision scientific calculator</h2>
 
-        <!-- Calculator buttons -->
-        <button class="clear" data-type="clear">AC</button>
-        <button class="operator" data-type="operator" data-value="%">%</button>
-        <button class="operator" data-type="operator" data-value="/">&divide;</button>
-        <button data-type="number" data-value="7">7</button>
-        <button data-type="number" data-value="8">8</button>
-        <button data-type="number" data-value="9">9</button>
-        <button class="operator" data-type="operator" data-value="*">&times;</button>
-        <button data-type="number" data-value="4">4</button>
-        <button data-type="number" data-value="5">5</button>
-        <button data-type="number" data-value="6">6</button>
-        <button class="operator" data-type="operator" data-value="-">-</button>
-        <button data-type="number" data-value="1">1</button>
-        <button data-type="number" data-value="2">2</button>
-        <button data-type="number" data-value="3">3</button>
-        <button class="operator" data-type="operator" data-value="+">+</button>
-        <button data-type="number" data-value="0">0</button>
-        <button class="decimal" data-type="decimal" data-value=".">.</button>
-        <button class="equals" data-type="equals">=</button>
+      <div class="row">
+        <div class="grow">
+          <label>Expression</label>
+          <input id="expr" class="control" placeholder="e.g., sin(pi/3)^2 + ln(2) * sqrt(2) - 1/7" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div class="grow">
+          <label>Precision digits (max 5000)</label>
+          <input id="prec" type="number" class="control" min="10" max="5000" value="100" />
+        </div>
+        <div>
+          <label>Angle mode</label>
+          <select id="angle" class="control">
+            <option value="rad">Radians</option>
+            <option value="deg">Degrees</option>
+          </select>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button id="eval" class="btn accent">Evaluate</button>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button id="clear" class="btn">Clear</button>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button id="copy" class="btn">Copy</button>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div class="grow">
+          <label>Result</label>
+          <div id="out" class="display"></div>
+          <div class="row" style="margin-top:6px;">
+            <span class="badge" id="meta"></span>
+            <span class="small" id="warn"></span>
+          </div>
+        </div>
+      </div>
+
+      <hr class="hr"/>
+
+      <div class="small">
+        Supported:
+        <span class="kbd">+</span>
+        <span class="kbd">-</span>
+        <span class="kbd">*</span>
+        <span class="kbd">/</span>
+        <span class="kbd">^</span>
+        <span class="kbd">( )</span>,
+        functions <span class="kbd">sin</span> <span class="kbd">cos</span> <span class="kbd">tan</span> <span class="kbd">asin</span> <span class="kbd">acos</span> <span class="kbd">atan</span> <span class="kbd">ln</span> <span class="kbd">log10</span> <span class="kbd">exp</span> <span class="kbd">sqrt</span> <span class="kbd">abs</span>,
+        constants <span class="kbd">pi</span>, <span class="kbd">e</span>.
+        Use angle mode for trig. Examples: <span class="kbd">sin(pi/6)</span>, <span class="kbd">ln(2)^2</span>, <span class="kbd">sqrt(2)^1000</span>.
+      </div>
+
+      <div class="footer">Tip: For thousands of digits, start with smaller precision to preview, then increase and re-evaluate.</div>
     </div>
 
-    <script>
-        // Get the display element
-        const display = document.getElementById('display');
-        // Get all calculator buttons
-        const buttons = document.querySelectorAll('.calculator-grid button');
+    <div class="panel">
+      <h3 class="title">Keypad</h3>
+      <div class="grid" id="keys"></div>
+    </div>
+  </div>
 
-        // Variables to store calculator state
-        let currentInput = '0'; // The number currently being entered
-        let firstOperand = null; // The first number in an operation
-        let operator = null; // The selected operator (+, -, *, /)
-        let waitingForSecondOperand = false; // Flag to indicate if we're ready for the second number
+<script>
+/* =========================
+   Arbitrary-precision decimal core (BigDec)
+   ========================= */
+class BigDec {
+  constructor(sign, int, scale) {
+    this.s = sign;        // 1 or -1 or 0
+    this.i = BigInt(int); // BigInt >= 0
+    this.sc = scale|0;    // integer >= 0
+    if (this.s === 0 || this.i === 0n) { this.s = 0; this.i = 0n; this.sc = 0; }
+    else this._norm();
+  }
+  static zero() { return new BigDec(0,0n,0); }
+  static one() { return new BigDec(1,1n,0); }
 
-        /**
-         * Updates the display with the current input.
-         */
-        function updateDisplay() {
-            display.textContent = currentInput;
+  static fromNumber(x) {
+    if (!isFinite(x)) throw new Error("Non-finite number not allowed");
+    if (x === 0) return BigDec.zero();
+    let s = x < 0 ? -1 : 1;
+    x = Math.abs(x);
+    return BigDec.fromString(String(x)).mulInt(s);
+  }
+  static fromString(str) {
+    str = String(str).trim();
+    if (!str) throw new Error("Empty string");
+    let s = 1;
+    if (str[0] === '+') str = str.slice(1);
+    else if (str[0] === '-') { s = -1; str = str.slice(1); }
+    if (!/^\d*\.?\d*$/.test(str)) throw new Error("Invalid number literal");
+    if (str === '.' || str === '') return BigDec.zero();
+    let [a,b=''] = str.split('.');
+    a = a.replace(/^0+/, '');
+    b = b.replace(/0+$/, '');
+    if ((a === '' || a === '0') && b === '') return BigDec.zero();
+    const intStr = (a === '' ? '0' : a) + b;
+    const int = BigInt(intStr);
+    const sc = b.length;
+    return new BigDec(int === 0n ? 0 : s, int, sc);
+  }
+  clone() { return new BigDec(this.s, this.i, this.sc); }
+  isZero() { return this.s === 0; }
+  sign() { return this.s; }
+
+  _norm() {
+    if (this.s === 0) { this.i = 0n; this.sc = 0; return this; }
+    while (this.i !== 0n && this.i % 10n === 0n && this.sc > 0) {
+      this.i /= 10n; this.sc--;
+    }
+    if (this.i === 0n) { this.s = 0; this.sc = 0; }
+    return this;
+  }
+
+  static _align(a, b) {
+    if (a.s === 0) return [BigDec.zero(), b.clone()];
+    if (b.s === 0) return [a.clone(), BigDec.zero()];
+    if (a.sc === b.sc) return [a.clone(), b.clone()];
+    if (a.sc > b.sc) {
+      const diff = a.sc - b.sc;
+      return [a.clone(), new BigDec(b.s, b.i * 10n**BigInt(diff), a.sc)];
+    } else {
+      const diff = b.sc - a.sc;
+      return [new BigDec(a.s, a.i * 10n**BigInt(diff), b.sc), b.clone()];
+    }
+  }
+
+  abs() { return this.s >= 0 ? this.clone() : new BigDec(1, this.i, this.sc); }
+  neg() { return this.s === 0 ? BigDec.zero() : new BigDec(-this.s, this.i, this.sc); }
+
+  cmp(other) {
+    const b = other instanceof BigDec ? other : BigDec.fromString(String(other));
+    if (this.s !== b.s) return this.s - b.s;
+    if (this.s === 0) return 0;
+    const [x,y] = BigDec._align(this,b);
+    if (x.i === y.i) return 0;
+    return this.s * (x.i > y.i ? 1 : -1);
+  }
+
+  add(other) {
+    const b = other instanceof BigDec ? other : BigDec.fromString(String(other));
+    if (this.s === 0) return b.clone();
+    if (b.s === 0) return this.clone();
+    let [x,y] = BigDec._align(this,b);
+    if (x.s === y.s) return new BigDec(x.s, x.i + y.i, x.sc)._norm();
+    if (x.i === y.i) return BigDec.zero();
+    if (x.i > y.i) return new BigDec(x.s, x.i - y.i, x.sc)._norm();
+    return new BigDec(y.s, y.i - x.i, y.sc)._norm();
+  }
+
+  sub(other) { return this.add((other instanceof BigDec ? other : BigDec.fromString(String(other))).neg()); }
+
+  mul(other) {
+    const b = other instanceof BigDec ? other : BigDec.fromString(String(other));
+    if (this.s === 0 || b.s === 0) return BigDec.zero();
+    return new BigDec(this.s * b.s, this.i * b.i, this.sc + b.sc)._norm();
+  }
+  mulInt(k) {
+    if (k === 0) return BigDec.zero();
+    const s = k < 0 ? -1 : 1;
+    const kk = BigInt(Math.abs(k));
+    if (this.s === 0) return BigDec.zero();
+    return new BigDec(this.s * s, this.i * kk, this.sc)._norm();
+  }
+
+  div(other, precDigits) {
+    const b = other instanceof BigDec ? other : BigDec.fromString(String(other));
+    if (b.s === 0) throw new Error("Division by zero");
+    if (this.s === 0) return BigDec.zero();
+    const extra = BigInt(Math.max(precDigits, 0) + 6);
+    const num = this.i * 10n**(extra + BigInt(b.sc));
+    const den = b.i * 10n**BigInt(this.sc);
+    const int = num / den;
+    const sgn = this.s * b.s;
+    const res = new BigDec(sgn, int, Number(extra));
+    return res._round(precDigits + 2)._norm();
+  }
+
+  _roundScale(scaleOut) {
+    if (this.s === 0) return this;
+    if (this.sc <= scaleOut) return this;
+    const diff = this.sc - scaleOut;
+    const pow = 10n**BigInt(diff);
+    const q = this.i / pow;
+    const r = this.i % pow;
+    const half = pow / 2n;
+    let qi = q;
+    if (r !== 0n) {
+      if (r > half) qi = q + 1n;
+      else if (r < half) qi = q;
+      else qi = (q % 2n === 0n) ? q : q + 1n;
+    }
+    this.i = qi;
+    this.sc = scaleOut;
+    return this._norm();
+  }
+
+  _round(sig) {
+    if (this.s === 0) return this;
+    const digits = this.i.toString().length;
+    const extra = digits - sig;
+    if (extra <= 0) return this;
+    const pow = 10n**BigInt(extra);
+    const q = this.i / pow;
+    const r = this.i % pow;
+    const half = pow / 2n;
+    let qi = q;
+    if (r !== 0n) {
+      if (r > half) qi = q + 1n;
+      else if (r < half) qi = q;
+      else qi = (q % 2n === 0n) ? q : q + 1n;
+    }
+    this.i = qi;
+    this.sc -= extra;
+    return this._norm();
+  }
+
+  toStringFixed(scale) {
+    if (this.s === 0) return "0";
+    const tmp = this.clone()._roundScale(Math.max(0, scale));
+    let s = tmp.i.toString();
+    if (tmp.sc === 0) return (tmp.s < 0 ? "-" : "") + s;
+    if (s.length <= tmp.sc) s = "0".repeat(tmp.sc - s.length + 1) + s;
+    const point = s.length - tmp.sc;
+    const a = s.slice(0, point);
+    const b = s.slice(point);
+    return (tmp.s < 0 ? "-" : "") + a + (b ? "." + b : "");
+  }
+  toString() {
+    if (this.s === 0) return "0";
+    if (this.sc === 0) return (this.s < 0 ? "-" : "") + this.i.toString();
+    let s = this.i.toString();
+    if (s.length <= this.sc) s = "0".repeat(this.sc - s.length + 1) + s;
+    const k = s.length - this.sc;
+    return (this.s < 0 ? "-" : "") + s.slice(0, k) + "." + s.slice(k);
+  }
+}
+
+/* ========= Precision context and math helpers ========= */
+const HP = {
+  PREC: 100,
+  setPrec(n) { HP.PREC = Math.max(10, Math.min(5000, n|0)); return HP.PREC; },
+
+  _PI: null, _PI_prec: 0,
+  _E: null, _E_prec: 0,
+  _LN10: null, _LN10_prec: 0,
+  _LN2: null, _LN2_prec: 0,
+
+  int(n) { return new BigDec(n<0?-1:1, BigInt(Math.abs(n)), 0); },
+
+  powInt(x, k) {
+    if (k === 0) return BigDec.one();
+    if (k < 0) return HP.div(BigDec.one(), HP.powInt(x, -k));
+    let base = x.clone();
+    let res = BigDec.one();
+    let kk = BigInt(k);
+    while (kk > 0n) {
+      if (kk & 1n) res = res.mul(base);
+      base = base.mul(base);
+      kk >>= 1n;
+      res = res._round(HP.PREC + 6);
+      base = base._round(HP.PREC + 6);
+    }
+    return res._round(HP.PREC + 2);
+  },
+
+  tol() { return BigDec.fromString("1e-" + (HP.PREC + 2)); },
+
+  ltAbs(x, y) { return x.abs().cmp(y) < 0; },
+
+  div(x, y) { return x.div(y, HP.PREC + 6); },
+
+  sqrt(x) {
+    if (x.s < 0) throw new Error("sqrt of negative");
+    if (x.s === 0) return BigDec.zero();
+    const approx = Math.sqrt(parseFloat(x.toString()));
+    let y = BigDec.fromString(String(approx));
+    const two = HP.int(2);
+    for (let i=0;i<Math.ceil(Math.log2(HP.PREC))+6;i++) {
+      y = HP.div( y.add( HP.div(x, y) ), two );
+      y = y._round(HP.PREC + 6);
+    }
+    return y._round(HP.PREC + 2);
+  },
+
+  exp(x) {
+    // x = k*ln(2) + r with small r; then exp(x) = exp(r) * 2^k
+    const LN2 = HP.ln2();
+    let k = 0;
+    if (!x.isZero()) {
+      const r_approx = parseFloat(x.toString())/Math.LN2;
+      k = Math.trunc(r_approx);
+    }
+    const r = x.sub(LN2.mul(HP.int(k)));
+    let term = BigDec.one();
+    let sum = BigDec.one();
+    for (let n=1; n < 200000; n++) {
+      term = HP.div( term.mul(r), HP.int(n) );
+      sum = sum.add(term);
+      if (HP.ltAbs(term, HP.tol())) break;
+    }
+    if (k !== 0) {
+      const twok = HP.powInt(HP.int(2), Math.abs(k));
+      sum = k > 0 ? sum.mul(twok) : HP.div(sum, twok);
+    }
+    return sum._round(HP.PREC + 2);
+  },
+
+  ln(x) {
+    if (x.s <= 0) throw new Error("ln domain error");
+    const LN2 = HP.ln2();
+    // x = m * 2^k, bring m near 1 (rough k from double)
+    let k = 0;
+    const approx = parseFloat(x.toString());
+    if (approx > 0) k = Math.round(Math.log2(approx));
+    if (k !== 0) {
+      x = HP.div(x, HP.powInt(HP.int(2), k));
+    }
+    const one = BigDec.one();
+    const y = HP.div( x.sub(one), x.add(one) );
+    const y2 = y.mul(y)._round(HP.PREC+6);
+    let term = y.clone();
+    let sum = y.clone();
+    for (let n=1; n<200000; n++) {
+      term = term.mul(y2); // y^{2n+1}
+      const add = HP.div( term, HP.int(2*n+1) );
+      sum = sum.add(add);
+      if (HP.ltAbs(add, HP.tol())) break;
+    }
+    let res = sum.mul(HP.int(2));
+    if (k !== 0) res = res.add(LN2.mul(HP.int(k)));
+    return res._round(HP.PREC + 2);
+  },
+
+  log10(x) { return HP.div(HP.ln(x), HP.ln10()); },
+
+  pi() {
+    if (HP._PI && HP._PI_prec === HP.PREC) return HP._PI;
+    const guard = HP.PREC + 10;
+    const old = HP.PREC;
+    HP.PREC = guard;
+    const arctan = (inv) => {
+      const x = HP.div(BigDec.one(), HP.int(inv));
+      const x2 = x.mul(x);
+      let term = x.clone();
+      let sum = term.clone();
+      for (let n=1; n<200000; n++) {
+        term = term.mul(x2).neg();
+        const add = HP.div(term, HP.int(2*n+1));
+        sum = sum.add(add);
+        if (HP.ltAbs(add, HP.tol())) break;
+      }
+      return sum;
+    };
+    let pi = arctan(5).mul(HP.int(16)).sub(arctan(239).mul(HP.int(4)));
+    HP.PREC = old;
+    HP._PI = pi._round(HP.PREC + 2);
+    HP._PI_prec = HP.PREC;
+    return HP._PI;
+  },
+  twoPi() { return HP.pi().mul(HP.int(2)); },
+
+  e() {
+    if (HP._E && HP._E_prec === HP.PREC) return HP._E;
+    let sum = BigDec.one();
+    let term = BigDec.one();
+    for (let n=1; n<200000; n++) {
+      term = HP.div(term, HP.int(n));
+      sum = sum.add(term);
+      if (HP.ltAbs(term, HP.tol())) break;
+    }
+    HP._E = sum._round(HP.PREC + 2);
+    HP._E_prec = HP.PREC;
+    return HP._E;
+  },
+
+  ln10() {
+    if (HP._LN10 && HP._LN10_prec === HP.PREC) return HP._LN10;
+    HP._LN10 = HP.ln(BigDec.fromString("10"));
+    HP._LN10_prec = HP.PREC;
+    return HP._LN10;
+  },
+  ln2() {
+    if (HP._LN2 && HP._LN2_prec === HP.PREC) return HP._LN2;
+    HP._LN2 = HP.ln(BigDec.fromString("2"));
+    HP._LN2_prec = HP.PREC;
+    return HP._LN2;
+  },
+
+  toRad(x, mode) { return mode === 'rad' ? x : HP.div(x.mul(HP.pi()), HP.int(180)); },
+  toDeg(x, mode) { return mode === 'deg' ? x : HP.div(x.mul(HP.int(180)), HP.pi()); },
+
+  reduceAngle(x) {
+    const twoPi = HP.twoPi();
+    const k = Math.trunc(parseFloat(HP.div(x, twoPi).toString()));
+    const r = x.sub(twoPi.mul(HP.int(k)));
+    const pi = HP.pi();
+    let y = r;
+    if (y.cmp(pi) > 0) y = y.sub(twoPi);
+    if (y.cmp(pi.neg()) < 0) y = y.add(twoPi);
+    const halfPi = HP.div(pi, HP.int(2));
+    if (y.cmp(halfPi) > 0) y = pi.sub(y);
+    if (y.cmp(halfPi.neg()) < 0) y = pi.neg().sub(y);
+    return y;
+  },
+
+  sin(x, mode='rad') {
+    const xr = HP.toRad(x, mode);
+    const z = HP.reduceAngle(xr);
+    let term = z.clone();
+    let sum = term.clone();
+    for (let n=1; n<200000; n++) {
+      const num = z.mul(z).neg();
+      term = HP.div( term.mul(num), HP.int( (2*n)*(2*n+1) ) );
+      sum = sum.add(term);
+      if (HP.ltAbs(term, HP.tol())) break;
+    }
+    return sum._round(HP.PREC + 2);
+  },
+  cos(x, mode='rad') {
+    const xr = HP.toRad(x, mode);
+    const z = HP.reduceAngle(xr);
+    let term = BigDec.one();
+    let sum = term.clone();
+    for (let n=1; n<200000; n++) {
+      const num = z.mul(z).neg();
+      term = HP.div( term.mul(num), HP.int( (2*n-1)*(2*n) ) );
+      sum = sum.add(term);
+      if (HP.ltAbs(term, HP.tol())) break;
+    }
+    return sum._round(HP.PREC + 2);
+  },
+  tan(x, mode='rad') {
+    const s = HP.sin(x, mode);
+    const c = HP.cos(x, mode);
+    return HP.div(s, c);
+  },
+
+  asin(x, mode='rad') {
+    if (x.cmp(BigDec.one()) > 0 || x.cmp(BigDec.one().neg()) < 0) throw new Error("asin domain error");
+    let y = x.clone();
+    for (let i=0;i<Math.ceil(Math.log2(HP.PREC))+8;i++) {
+      const f = HP.sin(y, 'rad').sub(x);
+      const df = HP.cos(y, 'rad');
+      y = y.sub( HP.div(f, df) );
+      if (HP.ltAbs(f, HP.tol())) break;
+    }
+    return HP.toDeg(y, mode)._round(HP.PREC + 2);
+  },
+  acos(x, mode='rad') {
+    const a = HP.asin(x, 'rad');
+    const res = HP.div(HP.pi(), HP.int(2)).sub(a);
+    return HP.toDeg(res, mode)._round(HP.PREC + 2);
+  },
+  atan(x, mode='rad') {
+    const half = BigDec.fromString("0.5");
+    let y;
+    if (HP.ltAbs(x, half)) {
+      const x2 = x.mul(x);
+      let term = x.clone();
+      let sum = term.clone();
+      for (let n=1; n<200000; n++) {
+        term = term.mul(x2).neg();
+        const add = HP.div(term, HP.int(2*n+1));
+        sum = sum.add(add);
+        if (HP.ltAbs(add, HP.tol())) break;
+      }
+      y = sum;
+    } else {
+      const inv = HP.div(BigDec.one(), x);
+      const t = HP.atan(inv, 'rad');
+      const pi2 = HP.div(HP.pi(), HP.int(2));
+      y = x.s > 0 ? pi2.sub(t) : pi2.neg().sub(t);
+    }
+    return HP.toDeg(y, mode)._round(HP.PREC + 2);
+  },
+};
+
+/* ========= Expression parser (shunting-yard) ========= */
+const TOK = {
+  isSpace: c => /\s/.test(c),
+  isDigit: c => /[0-9]/.test(c),
+  isAlpha: c => /[A-Za-z]/.test(c),
+};
+
+const FUNCTIONS = new Set([
+  "sin","cos","tan","asin","acos","atan","ln","log10","exp","sqrt","abs"
+]);
+const CONSTANTS = {
+  pi: () => HP.pi(),
+  e: () => HP.e(),
+};
+
+const OPERATORS = {
+  "+": { prec:2, assoc:"L", args:2, fn:(a,b)=>a.add(b) },
+  "-": { prec:2, assoc:"L", args:2, fn:(a,b)=>a.sub(b) },
+  "*": { prec:3, assoc:"L", args:2, fn:(a,b)=>a.mul(b) },
+  "/": { prec:3, assoc:"L", args:2, fn:(a,b)=>HP.div(a,b) },
+  "^": { prec:4, assoc:"R", args:2, fn:(a,b)=> {
+      const bStr = b.toString();
+      if (/^-?\d+$/.test(bStr)) return HP.powInt(a, parseInt(bStr,10));
+      if (a.s <= 0) throw new Error("Non-integer power of non-positive not supported");
+      return HP.exp( HP.ln(a).mul(b) );
+    }
+  },
+  "u-": { prec:5, assoc:"R", args:1, fn:(a)=>a.neg() },
+  "u+": { prec:5, assoc:"R", args:1, fn:(a)=>a },
+};
+
+function tokenize(expr) {
+  const tokens = [];
+  let i=0;
+  while (i<expr.length) {
+    const c = expr[i];
+    if (TOK.isSpace(c)) { i++; continue; }
+    if (TOK.isDigit(c) || (c === '.' && TOK.isDigit(expr[i+1]||''))) {
+      let j=i; let seenDot=false;
+      while (j<expr.length && (TOK.isDigit(expr[j]) || (expr[j]==='.' && !seenDot))) {
+        if (expr[j]==='.') seenDot=true;
+        j++;
+      }
+      tokens.push({type:"num", val: expr.slice(i,j)});
+      i=j; continue;
+    }
+    if (TOK.isAlpha(c)) {
+      let j=i;
+      while (j<expr.length && (TOK.isAlpha(expr[j]) || TOK.isDigit(expr[j]))) j++;
+      tokens.push({type:"id", val: expr.slice(i,j).toLowerCase()});
+      i=j; continue;
+    }
+    if ("+-*/^(),".includes(c)) {
+      tokens.push({type:"op", val:c});
+      i++; continue;
+    }
+    throw new Error("Unexpected character: " + c);
+  }
+  return tokens;
+}
+
+function toRPN(tokens) {
+  const out = [];
+  const stack = [];
+  let prev = null;
+  for (let t of tokens) {
+    if (t.type === "num") { out.push(t); prev = t; continue; }
+    if (t.type === "id") {
+      if (FUNCTIONS.has(t.val)) { stack.push({type:"fn", val:t.val}); }
+      else if (t.val in CONSTANTS) { out.push({type:"const", val:t.val}); }
+      else throw new Error("Unknown identifier: " + t.val);
+      prev = t; continue;
+    }
+    if (t.type === "op") {
+      if (t.val === ",") {
+        while (stack.length && stack[stack.length-1].val !== "(") out.push(stack.pop());
+        if (!stack.length) throw new Error("Misplaced comma");
+        prev = t; continue;
+      }
+      if (t.val === "(") { stack.push({type:"op", val:"("}); prev = t; continue; }
+      if (t.val === ")") {
+        while (stack.length && stack[stack.length-1].val !== "(") out.push(stack.pop());
+        if (!stack.length) throw new Error("Mismatched parentheses");
+        stack.pop();
+        if (stack.length && stack[stack.length-1].type === "fn") out.push(stack.pop());
+        prev = t; continue;
+      }
+      let op = t.val;
+      if ((op === "+" || op === "-") && (!prev || (prev.type==="op" && prev.val !== ")") || (prev.type==="id" && FUNCTIONS.has(prev.val)))) {
+        op = op === "-" ? "u-" : "u+";
+      }
+      const o1 = OPERATORS[op];
+      if (!o1) throw new Error("Unsupported operator: " + op);
+      while (stack.length) {
+        const top = stack[stack.length-1];
+        if (top.type === "op" && top.val in OPERATORS) {
+          const o2 = OPERATORS[top.val];
+          if ((o1.assoc === "L" && o1.prec <= o2.prec) || (o1.assoc === "R" && o1.prec < o2.prec)) {
+            out.push(stack.pop());
+            continue;
+          }
         }
+        break;
+      }
+      stack.push({type:"op", val:op});
+      prev = t; continue;
+    }
+  }
+  while (stack.length) {
+    const x = stack.pop();
+    if (x.val === "(" || x.val === ")") throw new Error("Mismatched parentheses");
+    out.push(x);
+  }
+  return out;
+}
 
-        /**
-         * Handles number button clicks.
-         * @param {string} number - The number string (e.g., '7', '0').
-         */
-        function inputNumber(number) {
-            if (waitingForSecondOperand) {
-                currentInput = number;
-                waitingForSecondOperand = false;
-            } else {
-                // If current input is '0', replace it; otherwise, append the number
-                currentInput = currentInput === '0' ? number : currentInput + number;
-            }
-            updateDisplay();
-        }
+function evalRPN(rpn, angleMode) {
+  const st = [];
+  const get = () => {
+    if (!st.length) throw new Error("Insufficient operands");
+    return st.pop();
+  };
+  for (let t of rpn) {
+    if (t.type === "num") st.push(BigDec.fromString(t.val));
+    else if (t.type === "const") st.push(CONSTANTS[t.val]());
+    else if (t.type === "fn") {
+      const a = get();
+      switch (t.val) {
+        case "sin": st.push(HP.sin(a, angleMode)); break;
+        case "cos": st.push(HP.cos(a, angleMode)); break;
+        case "tan": st.push(HP.tan(a, angleMode)); break;
+        case "asin": st.push(HP.asin(a, angleMode)); break;
+        case "acos": st.push(HP.acos(a, angleMode)); break;
+        case "atan": st.push(HP.atan(a, angleMode)); break;
+        case "ln": st.push(HP.ln(a)); break;
+        case "log10": st.push(HP.log10(a)); break;
+        case "exp": st.push(HP.exp(a)); break;
+        case "sqrt": st.push(HP.sqrt(a)); break;
+        case "abs": st.push(a.abs()); break;
+        default: throw new Error("Function not implemented: " + t.val);
+      }
+    } else if (t.type === "op") {
+      const info = OPERATORS[t.val];
+      if (!info) throw new Error("Operator not implemented: " + t.val);
+      if (info.args === 1) {
+        const a = get();
+        st.push(info.fn(a));
+      } else {
+        const b = get(), a = get();
+        st.push(info.fn(a,b));
+      }
+    } else {
+      throw new Error("Bad token in RPN");
+    }
+  }
+  if (st.length !== 1) throw new Error("Invalid expression");
+  return st[0];
+}
 
-        /**
-         * Handles decimal point button clicks.
-         */
-        function inputDecimal() {
-            // If waiting for second operand, start a new number with '0.'
-            if (waitingForSecondOperand) {
-                currentInput = '0.';
-                waitingForSecondOperand = false;
-                updateDisplay();
-                return;
-            }
-            // Only add a decimal if one doesn't already exist
-            if (!currentInput.includes('.')) {
-                currentInput += '.';
-            }
-            updateDisplay();
-        }
+/* ========= UI glue ========= */
+const out = document.getElementById('out');
+const expr = document.getElementById('expr');
+const prec = document.getElementById('prec');
+const angle = document.getElementById('angle');
+const evalBtn = document.getElementById('eval');
+const clearBtn = document.getElementById('clear');
+const copyBtn = document.getElementById('copy');
+const meta = document.getElementById('meta');
+const warn = document.getElementById('warn');
+const keys = document.getElementById('keys');
 
-        /**
-         * Handles operator button clicks.
-         * @param {string} nextOperator - The operator string (e.g., '+', '-').
-         */
-        function handleOperator(nextOperator) {
-            const inputValue = parseFloat(currentInput);
+function fmtResult(x) { return x.toString(); }
 
-            // If an operator has already been entered and we're waiting for the second operand,
-            // update the operator without performing a calculation yet.
-            if (operator && waitingForSecondOperand) {
-                operator = nextOperator;
-                return;
-            }
+function evaluate() {
+  warn.textContent = "";
+  const p = parseInt(prec.value,10);
+  HP.setPrec(p);
+  const start = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  try {
+    const tokens = tokenize(expr.value);
+    const rpn = toRPN(tokens);
+    const val = evalRPN(rpn, angle.value);
+    const end = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    const ms = Math.round(end - start);
+    out.textContent = fmtResult(val);
+    meta.textContent = `digits: ${HP.PREC} • time: ${ms} ms`;
+    if (HP.PREC > 1000) warn.textContent = " High precision may be slow for trig/log.";
+  } catch (e) {
+    out.textContent = "Error: " + e.message;
+    meta.textContent = "";
+  }
+}
 
-            // If firstOperand is null, store the current input as the first operand
-            if (firstOperand === null) {
-                firstOperand = inputValue;
-            } else if (operator) {
-                // If an operator exists and we have a first operand, perform the calculation
-                const result = performCalculation[operator](firstOperand, inputValue);
-                currentInput = String(result);
-                firstOperand = result;
-            }
+evalBtn.addEventListener('click', evaluate);
+clearBtn.addEventListener('click', () => { expr.value = ""; out.textContent=""; meta.textContent=""; warn.textContent=""; });
+copyBtn.addEventListener('click', async () => {
+  if (!out.textContent) return;
+  try { await navigator.clipboard.writeText(out.textContent); copyBtn.textContent="Copied!"; setTimeout(()=>copyBtn.textContent="Copy",800); }
+  catch { copyBtn.textContent="Copy failed"; setTimeout(()=>copyBtn.textContent="Copy",1000); }
+});
+expr.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); evaluate(); } });
 
-            waitingForSecondOperand = true;
-            operator = nextOperator;
-            updateDisplay();
-        }
+const KEY_LAYOUT = [
+  "7","8","9","/","^","(",
+  "4","5","6","*","- ",")",
+  "1","2","3","-","+ ",",",
+  "0",".","pi","e","=","C",
+  "sin","cos","tan","asin","acos","atan",
+  "ln","log10","exp","sqrt","abs","DEL"
+];
+function addKey(label, val=label) {
+  const b = document.createElement('button');
+  b.className = "key";
+  if (/[A-Za-z]/.test(label)) b.classList.add('fn');
+  b.textContent = label.trim();
+  b.addEventListener('click', () => {
+    if (label === "=") { evaluate(); return; }
+    if (label === "C") { expr.value=""; out.textContent=""; meta.textContent=""; return; }
+    if (label === "DEL") { expr.value = expr.value.slice(0,-1); return; }
+    const map = { 'pi': 'pi', 'e':'e' };
+    const fns = new Set(["sin","cos","tan","asin","acos","atan","ln","log10","exp","sqrt","abs"]);
+    if (fns.has(label)) expr.value += label + "(";
+    else expr.value += (map[label] || label);
+    expr.focus();
+  });
+  keys.appendChild(b);
+}
+KEY_LAYOUT.forEach(k => addKey(k));
 
-        /**
-         * Object containing functions for performing calculations based on the operator.
-         */
-        const performCalculation = {
-            '/': (firstOperand, secondOperand) => secondOperand === 0 ? 'Error' : firstOperand / secondOperand,
-            '*': (firstOperand, secondOperand) => firstOperand * secondOperand,
-            '+': (firstOperand, secondOperand) => firstOperand + secondOperand,
-            '-': (firstOperand, secondOperand) => firstOperand - secondOperand,
-            '%': (firstOperand, secondOperand) => firstOperand % secondOperand, // Modulo operator
-        };
-
-        /**
-         * Resets the calculator to its initial state.
-         */
-        function clearCalculator() {
-            currentInput = '0';
-            firstOperand = null;
-            operator = null;
-            waitingForSecondOperand = false;
-            updateDisplay();
-        }
-
-        // Add event listeners to all buttons
-        buttons.forEach(button => {
-            button.addEventListener('click', (event) => {
-                const { type, value } = event.target.dataset;
-
-                switch (type) {
-                    case 'number':
-                        inputNumber(value);
-                        break;
-                    case 'operator':
-                        handleOperator(value);
-                        break;
-                    case 'decimal':
-                        inputDecimal();
-                        break;
-                    case 'clear':
-                        clearCalculator();
-                        break;
-                    case 'equals':
-                        // If there's a first operand and an operator, perform the final calculation
-                        if (firstOperand !== null && operator !== null) {
-                            const inputValue = parseFloat(currentInput);
-                            const result = performCalculation[operator](firstOperand, inputValue);
-                            currentInput = String(result);
-                            firstOperand = null; // Reset for next calculation
-                            operator = null; // Reset operator
-                            waitingForSecondOperand = false;
-                            updateDisplay();
-                        }
-                        break;
-                    default:
-                        // Do nothing for unrecognized button types
-                        break;
-                }
-            });
-        });
-
-        // Initial display update
-        updateDisplay();
-    </script>
+// Demo default
+expr.value = "sin(pi/6)^2 + cos(pi/6)^2";
+</script>
 </body>
 </html>
