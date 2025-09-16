@@ -89,11 +89,11 @@ canvas {
 
 <div class="controls">
   <label>Rows
-    <input id="rows" type="number" min="1" max="500" value="6" />
+    <input id="rows" type="number" min="1" max="4294967296" value="6" />
   </label>
 
   <label>Cols
-    <input id="cols" type="number" min="1" max="500" value="12" />
+    <input id="cols" type="number" min="1" max="4294967296" value="12" />
   </label>
 
   <label>Key size (px)
@@ -109,7 +109,7 @@ canvas {
   </label>
 
   <label id="edoParams">EDO steps
-    <input id="edoSteps" type="number" min="2" max="4096" value="12" />
+    <input id="edoSteps" type="number" min="2" max="4294967296" value="12" />
   </label>
 
   <label id="nonoParams" style="display:none">Nonoctave (format `xedY`, e.g. `13ed3`)
@@ -342,7 +342,7 @@ function findEDOApproxForNono(x, ratio){
   const stepRatio = Math.pow(ratio, 1 / x);
   const stepCents = centsOfRatio(stepRatio);
   let best = null;
-  for(let M=13; M<=4096; M++){
+  for(let M=13; M<=4294967296; M++){
     const raw = M * Math.log2(stepRatio);
     const s = Math.round(raw);
     const err = Math.abs(raw - s);
@@ -395,8 +395,8 @@ let gridState = {
 };
 
 function buildStateFromUI(){
-  const rows = Math.max(1, Math.min(500, parseInt(rowsInput.value) || 6));
-  const cols = Math.max(1, Math.min(500, parseInt(colsInput.value) || 12));
+  const rows = Math.max(1, Math.min(4294967296, parseInt(rowsInput.value) || 6));
+  const cols = Math.max(1, Math.min(4294967296, parseInt(colsInput.value) || 12));
   const keySize = Math.max(8, Math.min(200, parseInt(keySizeInput.value) || 64));
   const rootFreq = Math.max(1, Math.min(20000, parseFloat(rootFreqInput.value) || 261.6256));
   const rootName = rootNoteNameInput.value || 'root';
@@ -406,7 +406,7 @@ function buildStateFromUI(){
   gridState.rootFreq = rootFreq; gridState.rootName = rootName;
 
   if(type === 'edo'){
-    const N = Math.max(2, Math.min(4096, parseInt(edoStepsInput.value) || 12));
+    const N = Math.max(2, Math.min(4294967296, parseInt(edoStepsInput.value) || 12));
     gridState.tuning = { type:'edo', edo: N };
     gridState.edoNameTable = generateEDONaming(N).names;
     gridState.nonoInfo = null; gridState.jiRatios = null;
