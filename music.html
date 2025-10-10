@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>EDO Ups/Downs Notation App — Playback & Export</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root { --bg: #0f1220; --fg: #e8ecf1; --muted: #a9b3c1; --accent: #55c2ff; --line: #d9dee7; }
+  body { background: var(--bg); color: var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; margin: 0; }
+  header { padding: 16px 20px; border-bottom: 1px solid #1e2233; display:flex; align-items:center; justify-content:space-between; }
+  h1 { font-size: 20px; margin: 0; font-weight: 600; }
+  .actions-top { display:flex; gap:8px; }
+  main { display: grid; grid-template-columns: 380px 1fr; gap: 20px; padding: 20px; }
+  .panel { background: #12162a; border: 1px solid #1e2233; border-radius: 10px; padding: 16px; }
+  .panel h2 { font-size: 16px; margin: 0 0 12px; font-weight: 600; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  input, textarea, select, button { width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #293049; background: #0f1326; color: var(--fg); padding: 10px 12px; font-size: 14px; }
+  textarea { min-height: 80px; resize: vertical; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .actions { display: flex; gap: 10px; margin-top: 10px; }
+  button { cursor: pointer; background: #183055; border-color: #28436c; }
+  button.primary { background: var(--accent); color: #0a0d17; border-color: #55c2ff; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .card { background: #0f1326; border: 1px solid #1e2233; border-radius: 10px; padding: 12px; }
+  .card h3 { font-size: 14px; margin: 0 0 10px; font-weight: 600; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid #252b42; }
+  th { text-align: left; color: var(--muted); font-weight: 600; }
+  .muted { color: var(--muted); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .staff-wrap { overflow: auto; background: #0b0f1f; border-radius: 10px; border: 1px solid #1e2233; }
+  svg { display: block; width: 100%; height: auto; }
+  .notehead { fill: #eef3ff; stroke: #c4d0e3; stroke-width: 1; }
+  .ledger { stroke: var(--line); stroke-width: 2; }
+  .staff-line { stroke: var(--line); stroke-width: 2; }
+  .label { font-size: 11px; fill: #b7c3d9; }
+  .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; background:#152043; border:1px solid #26345e; font-size:12px; color:#b9d9ff; }
+  .play-controls { display:grid; grid-template-columns: repeat(2,1fr); gap:10px; margin-top:8px; }
+  .play-row { display:flex; gap:8px; align-items:center; }
+  .inline { width:auto; display:inline-block; }
+</style>
+</head>
+<body>
+<header>
+  <h1>EDO Ups/Downs Notation</h1>
+  <div class="actions-top">
+    <button id="exportPdfBtn">Export PDF</button>
+    <button id="exportMp3Btn">Export MP3</button>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Inputs</h2>
+    <div class="row">
+      <div>
+        <label for="edoN"><strong>EDO:</strong> Number of equal divisions of the octave (N)</label>
+        <input id="edoN" type="number" min="2" max="96" step="1" value="19" />
+      </div>
+      <div>
+        <label for="c4freq"><strong>Reference C4 frequency:</strong> Hz</label>
+        <input id="c4freq" type="number" min="100" max="1000" step="0.0001" value="261.6256" />
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label for="fifthCents"><strong>Target fifth size:</strong> cents (default 701.955)</label>
+        <input id="fifthCents" type="number" step="0.001" value="701.955" />
+      </div>
+      <div>
+        <label for="tokens"><strong>Evaluate tokens:</strong> Comma-separated (^ raises, v lowers)</label>
+        <textarea id="tokens" placeholder="e.g., ^F, vC#, G, ^^Bb"></textarea>
+      </div>
+    </div>
+    <div class="play-controls">
+      <div>
+        <label for="tempo"><strong>Tempo:</strong> beats per minute</label>
+        <input id="tempo" type="number" min="20" max="300" step="1" value="100" />
+      </div>
+      <div>
+        <label for="noteMs"><strong>Note length:</strong> milliseconds per token</label>
+        <input id="noteMs" type="number" min="50" max="4000" step="10" value="500" />
+      </div>
+    </div>
+    <div class="play-row" style="margin-top:6px">
+      <button class="primary inline" id="computeBtn">Compute mapping</button>
+      <button class="inline" id="resetBtn">Reset</button>
+      <button class="inline" id="playBtn">Play</button>
+      <button class="inline" id="stopBtn">Stop</button>
+    </div>
+    <p class="muted" style="margin-top:10px">
+      <span class="pill">Tip</span> Use multiple ^ or v to stack EDO steps (e.g., ^^G = +2 steps).
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2>Results</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Fifth and step size</h3>
+        <div id="stats" class="mono"></div>
+      </div>
+      <div class="card">
+        <h3>Evaluated tokens</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Token</th>
+              <th>Note</th>
+              <th>EDO step</th>
+              <th>Frequency (Hz)</th>
+            </tr>
+          </thead>
+          <tbody id="tokensBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h3>Circle mapping (-15 to +19 fifths)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Index</th>
+            <th>Note name</th>
+            <th>EDO step</th>
+            <th>Frequency (Hz)</th>
+          </tr>
+        </thead>
+        <tbody id="mappingBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card staff-wrap" style="margin-top:14px">
+      <h3>Simple staff view (positioned by EDO steps)</h3>
+      <svg id="staffSvg" viewBox="0 0 1000 220" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  // ----- Notation core -----
+  const NOTE_NAMES = [
+    "Fbb","Cbb","Gbb","Dbb","Abb","Ebb","Bbb","Fb","Cb","Gb","Db","Ab","Eb","Bb",
+    "F","C","G","D","A","E","B","F#","C#","G#","D#","A#","E#","B#","Fx","Cx","Gx","Dx","Ax","Ex","Bx"
+  ]; // indices -15..+19
+  const FIFTH_RANGE = { minIndex: -15, maxIndex: 19 };
+
+  function computeW(N, fifthCents) {
+    const stepSize = 1200 / N;
+    const raw = fifthCents / stepSize;
+    return { w: Math.round(raw), stepSize };
+  }
+
+  function mod(a, n) { return ((a % n) + n) % n; }
+
+  function buildCircleMapping(N, w, c4) {
+    const rows = [];
+    for (let i = FIFTH_RANGE.minIndex; i <= FIFTH_RANGE.maxIndex; i++) {
+      const name = NOTE_NAMES[i - FIFTH_RANGE.minIndex];
+      const step = mod(i * w, N);
+      const freq = c4 * Math.pow(2, step / N);
+      rows.push({ index: i, name, step, freq });
+    }
+    return rows;
+  }
+
+  function parseToken(tok) {
+    let i = 0, up = 0, down = 0;
+    while (i < tok.length && (tok[i] === '^' || tok[i] === 'v')) {
+      if (tok[i] === '^') up++; else down++;
+      i++;
+    }
+    const core = tok.slice(i).trim();
+    return { core, offset: up - down };
+  }
+
+  function coreToStep(core, mapping) {
+    const found = mapping.find(r => r.name === core);
+    if (found) return found.step;
+    return null;
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, ch => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[ch]));
+  }
+
+  function formatHz(x) { return Number.isFinite(x) ? x.toFixed(4) : ""; }
+
+  // ----- Rendering -----
+  function renderStats(N, w, stepSize, c4) {
+    const el = document.getElementById('stats');
+    el.innerHTML = `
+      <div><strong>EDO N:</strong> ${N}</div>
+      <div><strong>Best fifth (w):</strong> ${w} EDO steps</div>
+      <div><strong>Step size:</strong> ${stepSize.toFixed(6)} cents</div>
+      <div><strong>C4:</strong> ${c4} Hz</div>
+    `;
+  }
+
+  function renderMapping(mappingRows) {
+    const body = document.getElementById('mappingBody');
+    body.innerHTML = "";
+    for (const r of mappingRows) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r.index}</td>
+        <td>${r.name}</td>
+        <td>${r.step}</td>
+        <td>${formatHz(r.freq)}</td>
+      `;
+      body.appendChild(tr);
+    }
+  }
+
+  function renderTokens(raw, mappingRows, N, c4) {
+    const tbody = document.getElementById('tokensBody');
+    tbody.innerHTML = "";
+    if (!raw.trim()) return;
+    const tokens = raw.split(',').map(s => s.trim()).filter(Boolean);
+    for (const t of tokens) {
+      const { core, offset } = parseToken(t);
+      const baseStep = coreToStep(core, mappingRows);
+      let finalStep = null, freq = null, noteDisp = core;
+      if (baseStep !== null) {
+        finalStep = mod(baseStep + offset, N);
+        freq = c4 * Math.pow(2, finalStep / N);
+      } else {
+        noteDisp = `(unknown: ${core})`;
+      }
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(t)}</td>
+        <td>${escapeHtml(noteDisp)}</td>
+        <td>${finalStep !== null ? finalStep : ''}</td>
+        <td>${finalStep !== null ? formatHz(freq) : ''}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function renderStaff(mappingRows, N) {
+    const svg = document.getElementById('staffSvg');
+    const W = 1000, H = 220, left = 40, right = W - 40, top = 40, lineGap = 10;
+    const staffY = y => top + y * lineGap;
+    const staffLines = [0,1,2,3,4].map(i => staffY(i));
+    const colGap = (right - left) / (mappingRows.length - 1);
+
+    let content = '';
+    for (const y of staffLines) {
+      content += `<line class="staff-line" x1="${left}" y1="${y}" x2="${right}" y2="${y}" />`;
+    }
+    const laneSteps = Math.max(12, Math.min(2 * Math.floor(N), 48));
+    const lanePx = 80;
+    const stepToY = step => {
+      const s = step % laneSteps;
+      const frac = s / (laneSteps - 1);
+      return top + frac * lanePx + 10;
+    };
+
+    mappingRows.forEach((r, idx) => {
+      const x = left + idx * colGap;
+      const y = stepToY(r.step);
+      const topStaff = staffLines[0], botStaff = staffLines[4];
+      const needsLedger = (y < topStaff - 6) || (y > botStaff + 6);
+      if (needsLedger) {
+        content += `<line class="ledger" x1="${x-10}" y1="${y}" x2="${x+10}" y2="${y}" />`;
+      }
+      content += `<ellipse class="notehead" cx="${x}" cy="${y}" rx="6.8" ry="5.0" />`;
+      content += `<text class="label" x="${x}" y="${y - 12}" text-anchor="middle">${r.name}</text>`;
+      content += `<text class="label" x="${x}" y="${y + 16}" text-anchor="middle">step ${r.step}</text>`;
+    });
+
+    svg.innerHTML = content;
+  }
+
+  // ----- Compute orchestration -----
+  function clampInt(x, min, max){ if (isNaN(x)) return min; return Math.max(min, Math.min(max, x)); }
+
+  function compute() {
+    const N = clampInt(parseInt(document.getElementById('edoN').value, 10), 2, 96);
+    const c4 = parseFloat(document.getElementById('c4freq').value) || 261.6256;
+    const fifthCents = parseFloat(document.getElementById('fifthCents').value) || 701.955;
+    const tokens = document.getElementById('tokens').value || '';
+
+    const { w, stepSize } = computeW(N, fifthCents);
+    const mappingRows = buildCircleMapping(N, w, c4);
+
+    renderStats(N, w, stepSize, c4);
+    renderMapping(mappingRows);
+    renderTokens(tokens, mappingRows, N, c4);
+    renderStaff(mappingRows, N);
+
+    state.N = N; state.c4 = c4; state.w = w; state.stepSize = stepSize; state.mappingRows = mappingRows; state.tokensRaw = tokens;
+  }
+
+  function reset() {
+    document.getElementById('edoN').value = 19;
+    document.getElementById('c4freq').value = 261.6256;
+    document.getElementById('fifthCents').value = 701.955;
+    document.getElementById('tokens').value = '';
+    document.getElementById('tempo').value = 100;
+    document.getElementById('noteMs').value = 500;
+    compute();
+  }
+
+  // ----- Playback -----
+  const state = { N:19, c4:261.6256, w:11, stepSize:1200/19, mappingRows:[], tokensRaw:'', isPlaying:false, mediaRecorder:null, recordedChunks:[], streamDest:null };
+  let audioCtx = null;
+  let scheduled = [];
+
+  function ensureAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!state.streamDest) state.streamDest = audioCtx.createMediaStreamDestination();
+  }
+
+  function parseTokensToSteps(tokensRaw, mappingRows, N) {
+    if (!tokensRaw || !tokensRaw.trim()) return [];
+    const tokens = tokensRaw.split(',').map(s => s.trim()).filter(Boolean);
+    const out = [];
+    for (const t of tokens) {
+      const { core, offset } = parseToken(t);
+      const baseStep = coreToStep(core, mappingRows);
+      if (baseStep !== null) {
+        const finalStep = mod(baseStep + offset, N);
+        const freq = state.c4 * Math.pow(2, finalStep / N);
+        out.push({ token:t, step:finalStep, freq, name:core });
+      }
+    }
+    return out;
+  }
+
+  function makeVoice(freq, when, durMs, gainTarget = 0.15) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, when);
+
+    // Gentle lowpass to soften aliasing at higher EDOs
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(Math.min(8000, freq * 4), when);
+    filter.Q.value = 0.5;
+
+    // ADSR-like envelope
+    const g = gain.gain;
+    const attack = 0.01, decay = 0.08, sustain = 0.7 * gainTarget, release = 0.08;
+    g.setValueAtTime(0.0001, when);
+    g.exponentialRampToValueAtTime(gainTarget, when + attack);
+    g.linearRampToValueAtTime(sustain, when + attack + decay);
+    g.setValueAtTime(sustain, when + (durMs/1000));
+    g.exponentialRampToValueAtTime(0.0001, when + (durMs/1000) + release);
+
+    // Routing: osc -> filter -> gain -> destination + stream (for recording)
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+    gain.connect(state.streamDest);
+
+    osc.start(when);
+    osc.stop(when + (durMs/1000) + release + 0.02);
+
+    return { osc, gain, filter };
+  }
+
+  function play() {
+    compute(); // ensure latest mapping
+    ensureAudio();
+    if (state.isPlaying) return;
+    const tempo = parseFloat(document.getElementById('tempo').value) || 100;
+    const durMs = parseFloat(document.getElementById('noteMs').value) || 500;
+    const seq = parseTokensToSteps(state.tokensRaw, state.mappingRows, state.N);
+    if (seq.length === 0) return;
+
+    state.isPlaying = true;
+    const start = audioCtx.currentTime + 0.05;
+    const beatMs = 60000 / tempo;
+    const spacingMs = Math.max(durMs, beatMs);
+
+    scheduled = [];
+    seq.forEach((ev, i) => {
+      const when = start + (i * spacingMs)/1000;
+      const v = makeVoice(ev.freq, when, durMs);
+      scheduled.push(v);
+    });
+  }
+
+  function stop() {
+    state.isPlaying = false;
+    try {
+      scheduled.forEach(v => { v.osc.stop(); });
+    } catch(e) {}
+    scheduled = [];
+  }
+
+  // ----- Export PDF -----
+  function exportPDF() {
+    // Create a clean print view with the staff SVG and mapping table
+    const svg = document.getElementById('staffSvg').outerHTML;
+    const mappingHtml = document.querySelector('#mappingBody').parentElement.outerHTML;
+    const statsHtml = document.getElementById('stats').outerHTML;
+
+    const w = window.open('', '_blank');
+    const style = `
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial; margin: 24px; }
+        h1 { font-size: 18px; margin: 0 0 10px; }
+        h2 { font-size: 16px; margin: 18px 0 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { padding: 6px 8px; border-bottom: 1px solid #ddd; text-align: left; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+        .section { margin-bottom: 16px; }
+        svg { width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; }
+      </style>
+    `;
+    w.document.write(`
+      <html><head><title>EDO Notation Export</title>${style}</head>
+      <body>
+        <h1>EDO Ups/Downs Notation — Export</h1>
+        <div class="section"><h2>Stats</h2>${statsHtml}</div>
+        <div class="section"><h2>Staff view</h2>${svg}</div>
+        <div class="section"><h2>Circle mapping</h2>${mappingHtml}</div>
+      </body></html>
+    `);
+    w.document.close();
+    w.focus();
+    // Let the window render, then invoke print (user can choose "Save as PDF")
+    setTimeout(() => { w.print(); }, 300);
+  }
+
+  // ----- Export MP3 / WAV fallback -----
+  async function exportMP3() {
+    compute();
+    ensureAudio();
+
+    // Test supported types; prefer MP3 if available
+    const tryTypes = ['audio/mpeg', 'audio/mp3', 'audio/webm;codecs=opus', 'audio/webm', 'audio/wav'];
+    let chosenType = '';
+    for (const t of tryTypes) {
+      if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) { chosenType = t; break; }
+    }
+    if (!chosenType) {
+      alert('Recording not supported in this browser.');
+      return;
+    }
+
+    // Prepare sequence (quick render of tokens with silence between)
+    const durMs = parseFloat(document.getElementById('noteMs').value) || 500;
+    const tempo = parseFloat(document.getElementById('tempo').value) || 100;
+    const beatMs = 60000 / tempo;
+    const spacingMs = Math.max(durMs, beatMs);
+    const seq = parseTokensToSteps(state.tokensRaw, state.mappingRows, state.N);
+    if (seq.length === 0) { alert('No valid tokens to render.'); return; }
+
+    // Record the live playback routing using MediaStreamDestination
+    state.recordedChunks = [];
+    const rec = new MediaRecorder(state.streamDest.stream, { mimeType: chosenType });
+    state.mediaRecorder = rec;
+
+    const blobPromise = new Promise((resolve) => {
+      rec.addEventListener('dataavailable', e => {
+        if (e.data && e.data.size > 0) state.recordedChunks.push(e.data);
+      });
+      rec.addEventListener('stop', () => {
+        const blob = new Blob(state.recordedChunks, { type: chosenType });
+        resolve(blob);
+      });
+    });
+
+    // Start recorder and schedule tones
+    rec.start();
+    const start = audioCtx.currentTime + 0.05;
+    scheduled = [];
+    seq.forEach((ev, i) => {
+      const when = start + (i * spacingMs)/1000;
+      const v = makeVoice(ev.freq, when, durMs, 0.18);
+      scheduled.push(v);
+    });
+
+    // Stop after last note plus brief tail
+    const totalMs = seq.length * spacingMs + 300;
+    setTimeout(() => { try { rec.stop(); } catch(e){} }, totalMs);
+
+    const blob = await blobPromise;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ext = chosenType.includes('mpeg') || chosenType.includes('mp3') ? 'mp3'
+                : chosenType.includes('wav') ? 'wav'
+                : 'webm';
+    a.href = url;
+    a.download = `edo-notation.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // ----- Bindings -----
+  document.getElementById('computeBtn').addEventListener('click', compute);
+  document.getElementById('resetBtn').addEventListener('click', reset);
+  document.getElementById('playBtn').addEventListener('click', play);
+  document.getElementById('stopBtn').addEventListener('click', stop);
+  document.getElementById('exportPdfBtn').addEventListener('click', exportPDF);
+  document.getElementById('exportMp3Btn').addEventListener('click', exportMP3);
+
+  // Initial compute
+  compute();
+})();
+</script>
+</body>
+</html>
