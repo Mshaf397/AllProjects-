@@ -161,7 +161,8 @@
       const name = NOTE_NAMES[i - FIFTH_RANGE.minIndex];
       const step = mod(i * w, N);
       const freq = c4 * Math.pow(2, step / N);
-      rows.push({ index: i, name, step, freq });
+      const octave = 4 + Math.floor(step / N);
+rows.push({ index, name, step, freq, octave });
     }
     return rows;
   }
@@ -232,13 +233,20 @@
         noteDisp = `(unknown: ${core})`;
       }
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${escapeHtml(t)}</td>
-        <td>${escapeHtml(noteDisp)}</td>
-        <td>${finalStep !== null ? finalStep : ''}</td>
-        <td>${finalStep !== null ? formatHz(freq) : ''}</td>
-      `;
-      tbody.appendChild(tr);
+
+let octave = '';
+if (finalStep !== null) {
+  octave = 4 + Math.floor(finalStep / N);
+}
+
+tr.innerHTML = `
+  <td>${escapeHtml(t)}</td>
+  <td>${escapeHtml(noteDisp)}${octave !== '' ? octave : ''}</td>
+  <td>${finalStep !== null ? finalStep : ''}</td>
+  <td>${finalStep !== null ? formatHz(freq) : ''}</td>
+`;
+tbody.appendChild(tr);
+
     }
   }
 
