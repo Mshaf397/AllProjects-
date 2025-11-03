@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Venus Clock</title>
+  <style>
+    body { background:#000; color:#ffd27f; font-family: "Courier New", monospace; display:flex; align-items:center; justify-content:center; height:100vh; margin:0 }
+    .card { text-align:center }
+    .label { font-size:1.0rem; opacity:0.9; margin-bottom:0.25rem }
+    .date { font-size:1.2rem; margin-bottom:0.5rem }
+    .time { font-size:2rem }
+    .muted { opacity:0.8; font-size:0.9rem }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="label">Venus Clock</div>
+    <div id="venus-date" class="date">---- - --</div>
+    <div id="venus-time" class="time">--:--:--:--:--</div>
+    <div class="muted">Epoch: 2000-01-01 12:00:00 UTC</div>
+  </div>
+
+<script>
+// Earth seconds constants
+const EARTH_SEC = 1;
+const SEC_PER_DAY = 86400;
+
+// Venus time parameters
+const VENUS_DAY_SEC = 116.75 * SEC_PER_DAY;          // 116d 18h
+const VENUS_HOUR_SEC = 4.67 * SEC_PER_DAY;           // 4d 16h 4m 48s
+const VENUS_MIN_SEC = 2.2416 * 3600;                 // 2h 14m 30s
+const VENUS_SEC_SEC = 2.68992 * 60;                  // 2m 41s
+
+// Subsecond units
+const VENUS_SUB23 = 7;   // 1/23 sec = 7 Earth seconds
+const VENUS_SUB161 = 1;  // 1/161 sec = 1 Earth second
+
+// Calendar system: 77 days per 40 years
+// Most years are 2-day years, minority are 1-day years
+const CYCLE_YEARS = 40;
+const CYCLE_DAYS = 77;
+const BASE_DAYS = Math.floor(CYCLE_DAYS / CYCLE_YEARS); // 1
+const LEAP_YEARS = CYCLE_DAYS - BASE_DAYS * CYCLE_YEARS; // 37 years have 2 days
+
+// Cumulative days in cycle
+function cumulativeDays(y) {
+  return BASE_DAYS * y + Math.floor((y * LEAP_YEARS) / CYCLE_YEARS);
+}
+
+// Whether year y in cycle is a 2-day year
+function isLeapYearInCycle(y) {
+  const a = Math.floor(((y+1)*LEAP_YEARS)/CYCLE_YEARS) - Math.floor((y*LEAP_YEARS)/CYCLE_YEARS);
+  return a === 1 ? 1 : 0;
+}
+
+function findYearInCycle(dayIndex) {
+  let lo = 0, hi = CYCLE_YEARS;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (cumulativeDays(mid) <= dayIndex) lo = mid + 1;
+    else hi = mid;
+  }
+  return Math.max(0, lo - 1);
+}
+
+const EPOCH = Date.UTC(2000, 0, 1, 12, 0, 0);
+
+function updateClock() {
+  const now = Date.now();
+  const elapsed = Math.floor((now - EPOCH) / 1000);
+
+  const totalVenusDays = Math.floor(elapsed / VENUS_DAY_SEC);
+
+  const cycles = Math.floor(totalVenusDays / CYCLE_DAYS);
+  let dayInCycle = totalVenusDays - cycles * CYCLE_DAYS;
+
+  const yearInCycle = findYearInCycle(dayInCycle);
+  const daysBeforeYear = cumulativeDays(yearInCycle);
+  const dayOfYear0 = dayInCycle - daysBeforeYear;
+
+  const venusYear = cycles * CYCLE_YEARS + yearInCycle + 1;
+
+  const secInDay = elapsed % VENUS_DAY_SEC;
+
+  let r = secInDay;
+  const hours = Math.floor(r / VENUS_HOUR_SEC); r -= hours * VENUS_HOUR_SEC;
+  const minutes = Math.floor(r / VENUS_MIN_SEC); r -= minutes * VENUS_MIN_SEC;
+  const seconds = Math.floor(r / VENUS_SEC_SEC); r -= seconds * VENUS_SEC_SEC;
+
+  const sub23 = Math.floor(r / VENUS_SUB23); r -= sub23 * VENUS_SUB23;
+  const sub161 = Math.floor(r / VENUS_SUB161);
+
+  const YYYY = venusYear.toString().padStart(4, '0');
+  const D = (dayOfYear0 + 1).toString();
+
+  const HH = hours.toString().padStart(2, '0');
+  const MM = minutes.toString().padStart(2, '0');
+  const SS = seconds.toString().padStart(2, '0');
+  const T23 = sub23.toString().padStart(2, '0');
+  const T161 = sub161.toString().padStart(3, '0');
+
+  document.getElementById('venus-date').textContent = `${YYYY}-${D}`;
+  document.getElementById('venus-time').textContent = `${HH}:${MM}:${SS}:${T23}:${T161}`;
+}
+
+updateClock();
+setInterval(updateClock, 200);
+</script>
+</body>
+</html>
