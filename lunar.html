@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Moon Clock — Lunar Calendar & Time</title>
+  <style>
+    body { background:#000; color:#bfe7ff; font-family: "Courier New", monospace; display:flex; align-items:center; justify-content:center; height:100vh; margin:0 }
+    .card { text-align:center }
+    .label { font-size:1.0rem; opacity:0.9; margin-bottom:0.25rem }
+    .date { font-size:1.2rem; margin-bottom:0.5rem }
+    .time { font-size:2rem }
+    .muted { opacity:0.8; font-size:0.9rem }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="label">Moon Clock — Lunar Calendar with Leap Days</div>
+    <div id="moon-date" class="date">---- - --</div>
+    <div id="moon-time" class="time">--:--:--:-</div>
+    <div class="muted">Epoch: 2000-01-01 12:00:00 UTC — Moon year numbering starts at 0001 at the epoch.</div>
+  </div>
+
+<script>
+// Lunar time parameters (Earth seconds)
+const SEC_PER_DAY = 86400;
+const MOON_DAY_SEC = 29.5306 * SEC_PER_DAY;        // 29d 12h 44m 3s ≈ 2551443.84 sec
+const MOON_HOUR_SEC = 11.4312 * 3600;             // 11h 25m 52s ≈ 41152.32 sec
+const MOON_MIN_SEC = 10.392 * 60;                 // 10m 24s = 623.52 sec
+const MOON_SEC_SEC = 26;                          // 26 sec
+// 1/26 second unit = 1 Earth second
+
+// Calendar: 1237 days every 100 years
+const CYCLE_YEARS = 100;
+const CYCLE_DAYS = 1237;
+const BASE_DAYS_PER_YEAR = Math.floor(CYCLE_DAYS / CYCLE_YEARS); // 12
+const LEAP_DAYS_PER_CYCLE = CYCLE_DAYS - BASE_DAYS_PER_YEAR * CYCLE_YEARS; // 37 (years with +1 day)
+
+// Epoch: Jan 1 2000 12:00:00 UTC
+const EPOCH_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
+
+// cumulativeDays(y): total lunar days in y years starting from year 0 (not including year y)
+function cumulativeDays(y) {
+  // y up to 100 in cycle; safe integer math
+  return BASE_DAYS_PER_YEAR * y + Math.floor((y * LEAP_DAYS_PER_CYCLE) / CYCLE_YEARS);
+}
+
+function isLeapYearInCycle(y) {
+  // y is 0-based within the 100-year cycle
+  const a = Math.floor(((y + 1) * LEAP_DAYS_PER_CYCLE) / CYCLE_YEARS) - Math.floor((y * LEAP_DAYS_PER_CYCLE) / CYCLE_YEARS);
+  return a === 1 ? 1 : 0;
+}
+
+function findYearInCycle(dayIndex) {
+  // binary search over [0, CYCLE_YEARS]
+  let lo = 0, hi = CYCLE_YEARS; // exclusive hi
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (cumulativeDays(mid) <= dayIndex) lo = mid + 1;
+    else hi = mid;
+  }
+  return Math.max(0, lo - 1);
+}
+
+function updateClock() {
+  const nowMs = Date.now();
+  const elapsedSec = (nowMs - EPOCH_MS) / 1000; // may be fractional
+
+  // Total whole lunar days since epoch
+  const totalMoonDays = Math.floor(elapsedSec / MOON_DAY_SEC);
+
+  // How many complete 100-year cycles and remaining days
+  const cycles = Math.floor(totalMoonDays / CYCLE_DAYS);
+  let dayInCycle = totalMoonDays - cycles * CYCLE_DAYS; // 0-based
+
+  // Find the year within cycle and day-of-year (0-based)
+  const yearInCycle = findYearInCycle(dayInCycle);
+  const daysBeforeYear = cumulativeDays(yearInCycle);
+  const dayOfYear0 = dayInCycle - daysBeforeYear; // 0-based (0..12)
+
+  // Absolute Moon year (1-based)
+  const moonYear = cycles * CYCLE_YEARS + yearInCycle + 1;
+
+  // Seconds into current lunar day (remaining fractional seconds)
+  const secondsIntoDay = elapsedSec - totalMoonDays * MOON_DAY_SEC; // >=0 and < MOON_DAY_SEC
+
+  let r = secondsIntoDay;
+  const hours = Math.floor(r / MOON_HOUR_SEC); r -= hours * MOON_HOUR_SEC;
+  const minutes = Math.floor(r / MOON_MIN_SEC); r -= minutes * MOON_MIN_SEC;
+  const seconds = Math.floor(r / MOON_SEC_SEC); r -= seconds * MOON_SEC_SEC;
+  const sub26 = Math.floor(r); // 0..25 (each = 1 Earth second)
+
+  // Format
+  const YYYY = moonYear.toString().padStart(4, '0');
+  const D = (dayOfYear0 + 1).toString(); // 1-based
+
+  const HH = hours.toString().padStart(2, '0');
+  const MM = minutes.toString().padStart(2, '0');
+  const SS = seconds.toString().padStart(2, '0');
+  const T = sub26.toString();
+
+  document.getElementById('moon-date').textContent = `${YYYY}-${D}`;
+  document.getElementById('moon-time').textContent = `${HH}:${MM}:${SS}:${T}`;
+}
+
+// initial + interval (update 5x/sec so subseconds feel responsive)
+updateClock();
+setInterval(updateClock, 200);
+</script>
+</body>
+</html>
