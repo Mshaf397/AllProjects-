@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mars Clock</title>
+  <style>
+    :root{--bg:#0b1020;--card:#0f1724;--accent:#ff6b6b;--muted:#9aa4b2}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#071028 0%, #081526 100%);color:#e6eef8}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:28px;border-radius:16px;box-shadow:0 8px 30px rgba(2,6,23,0.7);width:720px;max-width:95%}
+    h1{margin:0 0 8px;font-size:20px}
+    p.lead{margin:0 0 20px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .panel{background:rgba(255,255,255,0.02);padding:16px;border-radius:12px}
+    .bigtime{font-variant-numeric:tabular-nums;font-size:48px;letter-spacing:0.02em}
+    .sm{font-size:13px;color:var(--muted)}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+    .row{display:flex;align-items:center;justify-content:space-between}
+    footer{margin-top:14px;color:var(--muted);font-size:13px}
+    .note{margin-top:10px;color:#cfe7ff00}
+    .label{font-size:12px;color:var(--muted)}
+    .pill{display:inline-block;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,0.02);font-size:12px}
+    .muted{color:var(--muted)}
+    .credits{font-size:12px;color:var(--muted);margin-top:10px}
+    .controls{display:flex;gap:8px;margin-top:10px}
+    button{background:transparent;border:1px solid rgba(255,255,255,0.04);color:inherit;padding:8px 10px;border-radius:8px;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Mars Clock</h1>
+    <p class="lead">Mars calendar/time using the exact Earth-based parameters you provided. Epoch: <strong>2000-01-01 12:00:00 UTC</strong>.</p>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="row">
+          <div>
+            <div class="label">Mars date</div>
+            <div id="mars-date" class="bigtime mono">—</div>
+            <div class="sm" id="mars-sub">Year length pretended to be 686 Earth days. Months ~49.07 Earth days. Skip 1 month out of every 700 (see notes).</div>
+          </div>
+          <div style="text-align:right">
+            <div class="label">Mars time (hh:mm:ss)</div>
+            <div id="mars-time" class="bigtime mono">—</div>
+            <div class="sm" id="mars-tz">1 Mars day = 1.02749 Earth days (24h 39m 35s)</div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="copyBtn">Copy current Mars time</button>
+          <button id="pauseBtn">Pause</button>
+        </div>
+
+        <div class="credits">
+          Notes: This implementation follows your parameters exactly (1 second = 1 Earth second, 1 minute = 53s, 1 hour = 59.18 Earth minutes). Because those units aren't integer multiples of each other the clock shows hours/minutes computed from the specified Earth-second durations.
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="label">Debug / Details</div>
+        <div style="margin-top:10px">
+          <div class="sm">Epoch (Earth UTC): <span class="mono">2000-01-01 12:00:00</span></div>
+          <div class="sm">Total Earth seconds since epoch: <span id="sec-since" class="mono">—</span></div>
+          <div class="sm">Mars day length (Earth seconds): <span id="day-sec" class="mono">—</span></div>
+          <div class="sm">Mars hour length (Earth seconds): <span id="hour-sec" class="mono">—</span></div>
+          <div class="sm">Mars minute length (Earth seconds): <span id="min-sec" class="mono">—</span></div>
+        </div>
+
+        <div style="margin-top:12px">
+          <div class="label">Conversion choices</div>
+          <ul class="sm">
+            <li>Months are fixed at 49.07 Earth days for conversion and numbering.</li>
+            <li>A global month counter is tracked from epoch; to "skip a month out of every 700" the code removes every 700th month from the displayed sequence (so months and years shift slightly when a skip occurs).</li>
+            <li>Year numbering is Mars years since epoch (Mars Year 0 = epoch).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Implementation note: this is an Earth-clock-driven simulation (uses your browser time). The calendar skip strategy and "pretend year = 686 days" decision are implemented to match your instructions as closely as possible.
+    </footer>
+  </div>
+
+  <script>
+    // ====== PARAMETERS (from user) ======
+    const params = {
+      mars_year_days_exact: 686.98,           // Earth days (exact human-supplied)
+      pretend_year_days: 686,                 // for calendar arithmetic (user asked to pretend)
+      month_days: 49.07,                      // Earth days in a month
+      day_earth_days: 1.02749,                // Mars sol length in Earth days
+      hour_earth_minutes: 59.18,              // Mars hour in Earth minutes
+      minute_earth_seconds: 53,               // Mars minute in Earth seconds
+      second_earth_seconds: 1                 // Mars second = Earth second
+    };
+
+    // Derived (in Earth seconds)
+    const EARTH_SEC = 1;
+    const MARS_SECOND_S = params.second_earth_seconds * EARTH_SEC; // 1
+    const MARS_MINUTE_S = params.minute_earth_seconds * EARTH_SEC; // 53
+    const MARS_HOUR_S = params.hour_earth_minutes * 60 * EARTH_SEC; // 59.18 * 60
+    const MARS_DAY_S = params.day_earth_days * 86400 * EARTH_SEC; // 1.02749 * 86400
+    const MARS_MONTH_S = params.month_days * 86400;
+    const PRETEND_YEAR_DAYS = params.pretend_year_days;
+    const PRETEND_YEAR_S = PRETEND_YEAR_DAYS * 86400;
+
+    // Epoch: 2000-01-01 12:00:00 UTC (J2000)
+    const EPOCH_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
+
+    // Controls
+    const marsDateEl = document.getElementById('mars-date');
+    const marsTimeEl = document.getElementById('mars-time');
+    const secSinceEl = document.getElementById('sec-since');
+    const daySecEl = document.getElementById('day-sec');
+    const hourSecEl = document.getElementById('hour-sec');
+    const minSecEl = document.getElementById('min-sec');
+    const copyBtn = document.getElementById('copyBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+
+    let paused = false;
+    pauseBtn.addEventListener('click',()=>{paused=!paused;pauseBtn.textContent=paused? 'Resume':'Pause'});
+    copyBtn.addEventListener('click',()=>{navigator.clipboard?.writeText(formatMarsFull(nowMars)).then(()=>{copyBtn.textContent='Copied!';setTimeout(()=>copyBtn.textContent='Copy current Mars time',1200)})});
+
+    function pad(n, len=2){return String(Math.floor(n)).padStart(len,'0')}
+
+    function computeMarsFromEarthNow(nowMs){
+      // elapsed Earth seconds since epoch
+      const elapsedS = (nowMs - EPOCH_MS) / 1000;
+
+      // Total Earth days since epoch (float)
+      const totalEarthDays = elapsedS / 86400;
+
+      // Global month index counting every month of length params.month_days from epoch (0-based)
+      const globalMonthIndex = Math.floor((elapsedS) / MARS_MONTH_S);
+      // Skip a month out of every 700: remove every 700th month from the displayed sequence.
+      const skippedBefore = Math.floor((globalMonthIndex + 1) / 700);
+      const effectiveMonthIndex = globalMonthIndex - skippedBefore; // compressed index after removing skipped months
+
+      // Month in year and year number (Mars Year 0 = epoch)
+      const MONTHS_PER_YEAR = 14; // 49.07 * 14 ≈ 686.98 (close to supplied year)
+      const marsYear = Math.floor(effectiveMonthIndex / MONTHS_PER_YEAR);
+      const monthInYear = (effectiveMonthIndex % MONTHS_PER_YEAR) + 1; // 1-based
+
+      // To compute dayInMonth accurately we compute the start of this global month (not counting skipped months)
+      const monthStartGlobalS = globalMonthIndex * MARS_MONTH_S; // Earth seconds
+      let secIntoMonth = elapsedS - monthStartGlobalS;
+      // If we're in a month that was skipped (i.e., (globalMonthIndex+1) % 700 === 0), we consider that this month does not exist in display:
+      const isSkippedMonth = ((globalMonthIndex + 1) % 700) === 0;
+      if(isSkippedMonth){
+        // in practice this means the displayed month rolls over immediately to the next -- cap secIntoMonth to 0 for display
+        secIntoMonth = 0;
+      }
+
+      // day and time-of-day based on Mars sol length (MARS_DAY_S)
+      const secIntoMarsDay = ((elapsedS % MARS_DAY_S) + MARS_DAY_S) % MARS_DAY_S; // 0..MARS_DAY_S
+
+      // compute mars hh:mm:ss using supplied hour/minute definitions
+      const hoursPerDay = MARS_DAY_S / MARS_HOUR_S; // ~25.00
+      const marsHour = Math.floor(secIntoMarsDay / MARS_HOUR_S);
+      const remAfterHour = secIntoMarsDay - marsHour * MARS_HOUR_S;
+      const marsMinute = Math.floor(remAfterHour / MARS_MINUTE_S);
+      const marsSecond = Math.floor(remAfterHour - marsMinute * MARS_MINUTE_S);
+
+      // day number inside month
+      const dayInMonth = Math.floor(secIntoMonth / 86400) + 1; // using Earth days inside month (1-based). This anchors month/day to Earth-day boundaries.
+      // day of year (pretend year length)
+      const pseudoYearIndex = Math.floor(totalEarthDays / PRETEND_YEAR_DAYS);
+      const dayOfYearPretend = Math.floor(totalEarthDays % PRETEND_YEAR_DAYS) + 1;
+
+      return {
+        elapsedS, totalEarthDays, globalMonthIndex, skippedBefore, effectiveMonthIndex,
+        marsYear, monthInYear, dayInMonth, isSkippedMonth,
+        marsHour, marsMinute, marsSecond,
+        secIntoMarsDay, hoursPerDay, dayOfYearPretend, pseudoYearIndex
+      };
+    }
+
+    function formatMarsFull(m){
+      return `MY ${m.marsYear} M${m.monthInYear} D${m.dayInMonth} — ${pad(m.marsHour)}:${pad(m.marsMinute)}:${pad(m.marsSecond)}`;
+    }
+
+    function tick(){
+      if(paused) return;
+      const now = Date.now();
+      const m = computeMarsFromEarthNow(now);
+
+      marsDateEl.textContent = `Mars Year ${m.marsYear} — Month ${m.monthInYear} — Day ${m.dayInMonth}` + (m.isSkippedMonth? ' (this global month is a SKIPPED month in the rules)':'');
+      marsTimeEl.textContent = `${pad(m.marsHour)}:${pad(m.marsMinute)}:${pad(m.marsSecond)}`;
+
+      secSinceEl.textContent = `${Math.floor(m.elapsedS).toLocaleString()} s`;
+      daySecEl.textContent = `${MARS_DAY_S.toFixed(3)} s`;
+      hourSecEl.textContent = `${MARS_HOUR_S.toFixed(3)} s`;
+      minSecEl.textContent = `${MARS_MINUTE_S.toFixed(3)} s`;
+
+      // schedule next frame (fast update so seconds tick smoothly)
+      requestAnimationFrame(tick);
+    }
+
+    // initial fill of static values
+    daySecEl.textContent = `${MARS_DAY_S.toFixed(3)} s`;
+    hourSecEl.textContent = `${MARS_HOUR_S.toFixed(3)} s`;
+    minSecEl.textContent = `${MARS_MINUTE_S.toFixed(3)} s`;
+
+    // Start animation loop
+    requestAnimationFrame(tick);
+
+    // expose for dev console
+    window.computeMarsFromEarthNow = computeMarsFromEarthNow;
+  </script>
+</body>
+</html>
