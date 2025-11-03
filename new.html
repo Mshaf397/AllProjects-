@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Earth Clock</title>
+  <title>Earth Clock with Parameters</title>
   <style>
     body {
       display: flex;
@@ -13,12 +13,12 @@
       height: 100vh;
       margin: 0;
       background: #000;
-      color: #0ff;
+      color: #0f0;
       font-family: monospace;
       font-size: 1.5rem;
     }
     #time { font-size: 3rem; margin-bottom: 1rem; }
-    #date { font-size: 1.25rem; color: #8ff; }
+    #date { font-size: 1.25rem; color: #8f8; }
   </style>
 </head>
 <body>
@@ -26,20 +26,51 @@
   <div id="date">Loading...</div>
 
   <script>
+    // Earth parameters
+    const params = {
+      year_days: 365.25,          // Earth year
+      month_days: [31,28.25,31,30,31,30,31,31,30,31,30,31], // approximate per month
+      day_hours: 24,               // 24 hours per day
+      hour_minutes: 60,            // 60 minutes per hour
+      minute_seconds: 60,          // 60 seconds per minute
+      second_seconds: 1,           // 1 Earth second
+      epoch: Date.UTC(2000, 0, 1, 0, 0, 0) // standard epoch
+    };
+
+    const PLANET_SEC = params.second_seconds;
+    const PLANET_MIN = params.minute_seconds;
+    const PLANET_HOUR = params.hour_minutes * 60;
+    const PLANET_DAY = params.day_hours * 3600;
+
     function pad(n, len = 2) { return String(Math.floor(n)).padStart(len, '0'); }
 
+    function computeEarthTime(now) {
+      const elapsedS = (now - params.epoch) / 1000;
+      const date = new Date(params.epoch + elapsedS * 1000);
+
+      const year = date.getUTCFullYear();
+      const month = date.getUTCMonth() + 1;
+      const day = date.getUTCDate();
+      const hour = date.getUTCHours();
+      const minute = date.getUTCMinutes();
+      const second = date.getUTCSeconds();
+
+      return { year, month, day, hour, minute, second };
+    }
+
+    function formatTime(t) {
+      return `${pad(t.hour)}:${pad(t.minute)}:${pad(t.second)}`;
+    }
+
+    function formatDate(t) {
+      return `Year ${t.year}, Month ${t.month}, Day ${t.day}`;
+    }
+
     function tick() {
-      const now = new Date();
-      const year = now.getUTCFullYear();
-      const month = now.getUTCMonth() + 1;
-      const day = now.getUTCDate();
-      const hour = now.getUTCHours();
-      const minute = now.getUTCMinutes();
-      const second = now.getUTCSeconds();
-
-      document.getElementById('time').textContent = `${pad(hour)}:${pad(minute)}:${pad(second)}`;
-      document.getElementById('date').textContent = `Year ${year}, Month ${month}, Day ${day}`;
-
+      const now = Date.now();
+      const t = computeEarthTime(now);
+      document.getElementById('time').textContent = formatTime(t);
+      document.getElementById('date').textContent = formatDate(t);
       requestAnimationFrame(tick);
     }
 
