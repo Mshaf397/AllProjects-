@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>True Binary Clock</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .clock {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      font-size: 2rem;
+      text-align: center;
+    }
+    .bits {
+      font-family: "Courier New", monospace;
+      letter-spacing: 0.3rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="clock">
+    <div>UTC Binary Clock</div>
+    <div id="binary-time" class="bits"></div>
+  </div>
+
+  <script>
+    function to5Bit(n) {
+      return n.toString(2).padStart(5, '0');
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const utcHours = now.getUTCHours();
+      const utcMinutes = now.getUTCMinutes();
+      const utcSeconds = now.getUTCSeconds();
+
+      const totalSeconds = utcHours * 3600 + utcMinutes * 60 + utcSeconds;
+
+      const hours5 = to5Bit(utcHours);
+      const minutes5 = to5Bit(utcMinutes);
+      const seconds5 = to5Bit(utcSeconds);
+
+      document.getElementById('binary-time').textContent = `${hours5}:${minutes5}:${seconds5}`;
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+  </script>
+</body>
+</html>
