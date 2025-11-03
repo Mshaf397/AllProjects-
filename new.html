@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Earth Clock with Parameters</title>
+  <title>Custom Planet Clock</title>
   <style>
     body {
       display: flex;
@@ -22,44 +22,53 @@
   </style>
 </head>
 <body>
-  <div id="time">--:--:--</div>
+  <div id="time">--:--:--.--</div>
   <div id="date">Loading...</div>
 
   <script>
-    // Earth parameters
+    // --------------------
+    // EDIT THESE PARAMETERS
+    // --------------------
     const params = {
-      year_days: 676,   
-      month_days: 26,
-      day_hours: 24,              
-      hour_minutes: 60,            // 60 minutes per hour
-      minute_seconds: 60,          // 60 seconds per minute
-      second_seconds: 1,           // 1 Earth second
-      epoch: Date.UTC(2000, 0, 1, 0, 0, 0) // standard epoch
+      year_days: 360,    // Number of Earth days in a year
+      month_days: 30,    // Number of Earth days in a month
+      day_hours: 24,     // Number of Earth hours in a day
+      hour_minutes: 60,  // Number of minutes in an hour
+      minute_seconds: 60,// Number of seconds in a minute
+      second_seconds: 1, // Number of seconds in a second
+      epoch: Date.UTC(2000, 0, 1, 0, 0, 0) // Starting point (UTC)
     };
 
     const PLANET_SEC = params.second_seconds;
     const PLANET_MIN = params.minute_seconds;
     const PLANET_HOUR = params.hour_minutes * 60;
     const PLANET_DAY = params.day_hours * 3600;
+    const PLANET_MONTH = params.month_days * 86400;
+    const PLANET_YEAR = params.year_days * 86400;
 
     function pad(n, len = 2) { return String(Math.floor(n)).padStart(len, '0'); }
 
-    function computeEarthTime(now) {
+    function computeTime(now) {
       const elapsedS = (now - params.epoch) / 1000;
-      const date = new Date(params.epoch + elapsedS * 1000);
+      const year = Math.floor(elapsedS / PLANET_YEAR);
+      const secIntoYear = elapsedS % PLANET_YEAR;
+      const month = Math.floor(secIntoYear / PLANET_MONTH) + 1;
+      const secIntoMonth = secIntoYear % PLANET_MONTH;
+      const day = Math.floor(secIntoMonth / PLANET_DAY) + 1;
+      const secIntoDay = secIntoMonth % PLANET_DAY;
 
-      const year = date.getUTCFullYear();
-      const month = date.getUTCMonth() + 1;
-      const day = date.getUTCDate();
-      const hour = date.getUTCHours();
-      const minute = date.getUTCMinutes();
-      const second = date.getUTCSeconds();
+      const hour = Math.floor(secIntoDay / PLANET_HOUR);
+      const remAfterHour = secIntoDay - hour * PLANET_HOUR;
+      const minute = Math.floor(remAfterHour / PLANET_MIN);
+      const remAfterMinute = remAfterHour - minute * PLANET_MIN;
+      const second = Math.floor(remAfterMinute / PLANET_SEC);
+      const hundredth = Math.floor((remAfterMinute % PLANET_SEC) * 100 / PLANET_SEC);
 
-      return { year, month, day, hour, minute, second };
+      return { year, month, day, hour, minute, second, hundredth };
     }
 
     function formatTime(t) {
-      return `${pad(t.hour)}:${pad(t.minute)}:${pad(t.second)}`;
+      return `${pad(t.hour)}:${pad(t.minute)}:${pad(t.second)}.${pad(t.hundredth,2)}`;
     }
 
     function formatDate(t) {
@@ -68,10 +77,10 @@
 
     function tick() {
       const now = Date.now();
-      const t = computeEarthTime(now);
+      const t = computeTime(now);
       document.getElementById('time').textContent = formatTime(t);
       document.getElementById('date').textContent = formatDate(t);
-      requestAnimationFrame(tick);
+      setTimeout(tick, 10); // update every 1/100 of a second
     }
 
     tick();
