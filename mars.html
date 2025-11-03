@@ -116,7 +116,6 @@ function updateClock() {
   const hours = Math.floor(r / MARS_HOUR_SECONDS); r -= hours * MARS_HOUR_SECONDS;
   const minutes = Math.floor(r / MARS_MINUTE_SECONDS); r -= minutes * MARS_MINUTE_SECONDS;
   const seconds = Math.floor(r / MARS_SECOND_SECONDS); r -= seconds * MARS_SECOND_SECONDS;
-  const subseconds = Math.floor(r); // fractional seconds (Earth seconds)
 
   // Format
   const YYYY = year.toString().padStart(4, '0');
@@ -126,7 +125,6 @@ function updateClock() {
   const HH = hours.toString().padStart(2, '0');
   const MIN = minutes.toString().padStart(2, '0');
   const SS = seconds.toString().padStart(2, '0');
-  const SUB = subseconds.toString().padStart(2, '0');
 
   document.getElementById('mars-date').textContent = `Y${YYYY} M${MM} D${DD}`;
   document.getElementById('mars-time').textContent = `${HH}:${MIN}:${SS}.${SUB}`;
