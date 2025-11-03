@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Earth Clock</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #000;
+      color: #0ff;
+      font-family: monospace;
+      font-size: 1.5rem;
+    }
+    #time { font-size: 3rem; margin-bottom: 1rem; }
+    #date { font-size: 1.25rem; color: #8ff; }
+  </style>
+</head>
+<body>
+  <div id="time">--:--:--</div>
+  <div id="date">Loading...</div>
+
+  <script>
+    function pad(n, len = 2) { return String(Math.floor(n)).padStart(len, '0'); }
+
+    function tick() {
+      const now = new Date();
+      const year = now.getUTCFullYear();
+      const month = now.getUTCMonth() + 1;
+      const day = now.getUTCDate();
+      const hour = now.getUTCHours();
+      const minute = now.getUTCMinutes();
+      const second = now.getUTCSeconds();
+
+      document.getElementById('time').textContent = `${pad(hour)}:${pad(minute)}:${pad(second)}`;
+      document.getElementById('date').textContent = `Year ${year}, Month ${month}, Day ${day}`;
+
+      requestAnimationFrame(tick);
+    }
+
+    tick();
+  </script>
+</body>
+</html>
