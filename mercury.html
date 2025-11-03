@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mercury Clock — Calendar with Leap Days (100M-year cycle)</title>
+  <style>
+    body { background:#000; color:#ffd27f; font-family: "Courier New", monospace; display:flex; align-items:center; justify-content:center; height:100vh; margin:0 }
+    .card { text-align:center }
+    .label { font-size:1.0rem; opacity:0.9; margin-bottom:0.25rem }
+    .date { font-size:1.2rem; margin-bottom:0.5rem }
+    .time { font-size:2rem }
+    .muted { opacity:0.8; font-size:0.9rem }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="label">Mercury Clock (True day length, leap-day system)</div>
+    <div id="mercury-date" class="date">---- - --</div>
+    <div id="mercury-time" class="time">---:--:--:-</div>
+    <div class="muted">Epoch: 2000-01-01 12:00:00 UTC — Mercury year numbering starts at 0001 at the epoch.</div>
+  </div>
+
+  <script>
+    // Parameters for Mercury units (Earth seconds)
+    const SEC_PER_EARTH_DAY = 86400;
+    const MERCURY_DAY_SECONDS = 58.6 * SEC_PER_EARTH_DAY; // 58.6 Earth days = 5,063,040 seconds
+    const SEC_MERCURY_HOUR = 4 * 3600 + 48 * 60; // 4h48m = 17280
+    const SEC_MERCURY_MIN = 6 * 60; // 360
+    const SEC_MERCURY_SEC = 6; // 6
+    // 1/6-second unit = 1 Earth second
+
+    // Epoch: Jan 1 2000 12:00:00 UTC
+    const EPOCH_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
+
+    // Leap-day cycle specified by user (updated):
+    // 150,119,454 Mercury days in 100,000,000 Mercury years
+    // Each year has either 1 or 2 Mercury days, so base = 1 day/year and some years have +1 day.
+    const CYCLE_YEARS = 100_000_000;
+    const DAYS_PER_CYCLE = 150_119_454;
+    const BASE_DAYS_PER_YEAR = Math.floor(DAYS_PER_CYCLE / CYCLE_YEARS); // 1
+    const LEAPS_PER_CYCLE = DAYS_PER_CYCLE - BASE_DAYS_PER_YEAR * CYCLE_YEARS; // 50,119,454
+
+    // Pre-calc for speed
+    const DAYS_PER_CYCLE_INT = DAYS_PER_CYCLE;
+    const CYCLE_YEARS_INT = CYCLE_YEARS;
+    const LEAPS = LEAPS_PER_CYCLE;
+
+    // cumulativeDays(y) = total days in y years starting from year 0 (not inclusive of year y)
+    // i.e., sum_{i=0}^{y-1} (BASE_DAYS + isLeap(i))
+    function cumulativeDays(y) {
+      // SAFE: y up to 1e8, calculations fit in JS Number precision
+      return BASE_DAYS_PER_YEAR * y + Math.floor((y * LEAPS) / CYCLE_YEARS_INT);
+    }
+
+    // Determine whether a given year in the cycle is a leap year using even distribution
+    function isLeapYearInCycle(y) {
+      // returns 1 if year y (0-based within cycle) has an extra day
+      const a = Math.floor(((y + 1) * LEAPS) / CYCLE_YEARS_INT) - Math.floor((y * LEAPS) / CYCLE_YEARS_INT);
+      return a === 1 ? 1 : 0;
+    }
+
+    // Find year index within cycle for a given day index (0-based days since start of cycle)
+    function findYearInCycle(dayIndex) {
+      // binary search over [0, CYCLE_YEARS]
+      let lo = 0, hi = CYCLE_YEARS_INT; // hi is exclusive
+      while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (cumulativeDays(mid) <= dayIndex) lo = mid + 1;
+        else hi = mid;
+      }
+      // lo is first year s.t. cumulativeDays(lo) > dayIndex
+      const year = Math.max(0, lo - 1);
+      return year; // 0-based year index within cycle
+    }
+
+    function updateClock() {
+      const nowMs = Date.now();
+      const elapsedSeconds = Math.floor((nowMs - EPOCH_MS) / 1000);
+
+      // Total Mercury days since epoch (integer days)
+      const totalMerDays = Math.floor(elapsedSeconds / MERCURY_DAY_SECONDS);
+
+      // How many complete cycles and remaining days
+      const cycles = Math.floor(totalMerDays / DAYS_PER_CYCLE_INT);
+      let dayInCycle = totalMerDays - cycles * DAYS_PER_CYCLE_INT; // 0-based
+
+      // Find year within cycle
+      const yearInCycle = findYearInCycle(dayInCycle);
+      const daysBeforeYear = cumulativeDays(yearInCycle);
+      const dayOfYear0 = dayInCycle - daysBeforeYear; // 0-based day within year (0 or 1)
+
+      // Compute absolute Mercury year number (1-based)
+      const mercuryYear = cycles * CYCLE_YEARS_INT + yearInCycle + 1; // start at 1
+
+      // Seconds into current Mercury day (Earth seconds)
+      const secondsIntoDay = elapsedSeconds - totalMerDays * MERCURY_DAY_SECONDS;
+
+      // Extract H:M:S:sub (sub is 0..5, each = 1 Earth second)
+      let r = secondsIntoDay;
+      const hours = Math.floor(r / SEC_MERCURY_HOUR); r -= hours * SEC_MERCURY_HOUR;
+      const minutes = Math.floor(r / SEC_MERCURY_MIN); r -= minutes * SEC_MERCURY_MIN;
+      const seconds = Math.floor(r / SEC_MERCURY_SEC); r -= seconds * SEC_MERCURY_SEC;
+      const subsecs = Math.floor(r); // 0..5 (Earth seconds)
+
+      // Format
+      const YYYY = mercuryYear.toString().padStart(4, '0');
+      const D = (dayOfYear0 + 1).toString(); // 1-based day-of-year (1 or 2)
+
+      const HH = hours.toString().padStart(3, '0');
+      const MM = minutes.toString().padStart(2, '0');
+      const SS = seconds.toString().padStart(2, '0');
+      const TT = subsecs.toString();
+
+      document.getElementById('mercury-date').textContent = `${YYYY}-${D}`;
+      document.getElementById('mercury-time').textContent = `${HH}:${MM}:${SS}:${TT}`;
+    }
+
+    // initial + interval
+    updateClock();
+    setInterval(updateClock, 200); // update 5x/sec so subseconds feel responsive
+  </script>
+</body>
+</html>
