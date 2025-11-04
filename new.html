@@ -1,88 +1,202 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Custom Planet Clock</title>
-  <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      background: #000;
-      color: #0f0;
-      font-family: monospace;
-      font-size: 1.5rem;
-    }
-    #time { font-size: 3rem; margin-bottom: 1rem; }
-    #date { font-size: 1.25rem; color: #8f8; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>625-Day Year Clock (23 Hour Day)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        :root {
+            --clock-color: #4f46e5; /* Indigo-600 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate-900 */
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .clock-container {
+            background-color: #1e293b; /* Slate-800 */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            max-width: 400px;
+            width: 100%;
+            border: 1px solid #334155; /* Slate-700 */
+        }
+        .time-unit-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+        .unit-label {
+            font-size: 0.875rem;
+            color: #94a3b8; /* Slate-400 */
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .unit-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--clock-color);
+            line-height: 1;
+        }
+    </style>
 </head>
 <body>
-  <div id="time">--:--:--.--</div>
-  <div id="date">Loading...</div>
 
-  <script>
-    // --------------------
-    // EDIT THESE PARAMETERS
-    // --------------------
-    const params = {
-      year_days: 1604,    // Number of Earth days in a year
-      day_hours: 23,     // Number of Earth hours in a day
-      hour_minutes: 47,  // Number of minutes in an hour
-      minute_seconds: 47, // Number of seconds in a minute
-      second_seconds: 1, // Number of seconds in a second
-      epoch: Date.UTC(2000, 0, 1, 0, 0, 0) // Starting point (UTC)
-    };
+<div class="clock-container">
+    <h1 class="text-3xl font-extrabold text-center mb-6 text-white tracking-tight">Custom Calendar Clock</h1>
 
-    const PLANET_SEC = params.second_seconds;
-    const PLANET_MIN = params.minute_seconds;
-    const PLANET_HOUR = params.hour_minutes * 60;
-    const PLANET_DAY = params.day_hours * 3600;
-    const PLANET_MONTH = params.month_days * 86400;
-    const PLANET_YEAR = params.year_days * 86400;
+    <!-- Epoch Information -->
+    <div class="bg-slate-700 p-3 rounded-lg text-sm mb-6 shadow-inner">
+        <p class="text-slate-300 font-medium">Epoch Start (Year 1, Day 0):</p>
+        <p class="text-slate-100 font-mono">2000-01-01 @ 12:00:00 UTC</p>
+    </div>
 
-    function pad(n, len = 2) { return String(Math.floor(n)).padStart(len, '0'); }
+    <!-- Clock Display -->
+    <div class="text-center mb-6">
+        <div id="custom-time" class="text-6xl font-extrabold font-mono tracking-tighter text-indigo-400">00:00:00</div>
+        <!-- Hour (0-22) : Minute (0-0) : Second (0-0) -->
+        <p class="text-lg font-semibold mt-1 text-slate-300">Hour (0-22) : Minute (0-0) : Second (0-0)</p>
+    </div>
 
-    function computeTime(now) {
-      const elapsedS = (now - params.epoch) / 1000;
-      const year = Math.floor(elapsedS / PLANET_YEAR);
-      const secIntoYear = elapsedS % PLANET_YEAR;
-      const month = Math.floor(secIntoYear / PLANET_MONTH) + 1;
-      const secIntoMonth = secIntoYear % PLANET_MONTH;
-      const day = Math.floor(secIntoMonth / PLANET_DAY) + 1;
-      const secIntoDay = secIntoMonth % PLANET_DAY;
+    <!-- Year and Day Breakdown -->
+    <div class="flex justify-between gap-4 mb-6 p-2 bg-slate-800 rounded-xl border border-slate-700">
+        <!-- Custom Year -->
+        <div class="time-unit-display flex-1 border-r border-slate-700">
+            <span class="unit-label">Custom Year (625 Days)</span>
+            <span id="custom-year" class="unit-value">1</span>
+        </div>
+        <!-- Custom Day -->
+        <div class="time-unit-display flex-1">
+            <span class="unit-label">Custom Day (0-624)</span>
+            <span id="custom-day" class="unit-value">000</span>
+        </div>
+    </div>
 
-      const hour = Math.floor(secIntoDay / PLANET_HOUR);
-      const remAfterHour = secIntoDay - hour * PLANET_HOUR;
-      const minute = Math.floor(remAfterHour / PLANET_MIN);
-      const remAfterMinute = remAfterHour - minute * PLANET_MIN;
-      const second = Math.floor(remAfterMinute / PLANET_SEC);
-      const hundredth = Math.floor((remAfterMinute % PLANET_SEC) * 100 / PLANET_SEC);
+    <!-- Day Progress Bar -->
+    <h2 class="text-base font-semibold text-slate-300 mb-2">Day Progress (23 Hours)</h2>
+    <div class="w-full h-4 bg-slate-700 rounded-full overflow-hidden shadow-lg">
+        <div id="day-progress-bar" class="h-full bg-indigo-500 transition-all duration-100 ease-linear" style="width: 0%;"></div>
+    </div>
+    <p class="text-xs text-right text-slate-400 mt-1">
+        <span id="progress-percent">0.00</span>% complete
+    </p>
 
-      return { year, month, day, hour, minute, second, hundredth };
+</div>
+
+<script>
+    // --- Configuration Constants ---
+    // Standard UTC time (ms) for January 1, 2000, 12:00:00 UTC
+    const EPOCH_MS = 946728000000;
+
+    // Custom unit conversion factors (in standard milliseconds)
+    const CUSTOM_SECOND_MS = 1000;
+    
+    // New: 1 second per minute
+    const CUSTOM_MINUTE_PER_CUSTOM_SECOND = 1;
+    const CUSTOM_MINUTE_MS = CUSTOM_MINUTE_PER_CUSTOM_SECOND * CUSTOM_SECOND_MS;
+    
+    // New: 1 minute per hour
+    const CUSTOM_HOUR_PER_CUSTOM_MINUTE = 1;
+    const CUSTOM_HOUR_MS = CUSTOM_HOUR_PER_CUSTOM_MINUTE * CUSTOM_MINUTE_MS; 
+    
+    // New: 23 hours per day
+    const CUSTOM_DAY_PER_CUSTOM_HOUR = 23;
+    const CUSTOM_DAY_MS = CUSTOM_DAY_PER_CUSTOM_HOUR * CUSTOM_HOUR_MS;   
+    
+    // New: 625 days per year
+    const CUSTOM_YEAR_PER_CUSTOM_DAY = 625;
+    const CUSTOM_YEAR_MS = CUSTOM_YEAR_PER_CUSTOM_DAY * CUSTOM_DAY_MS;   
+    // Note: CUSTOM_YEAR_MS is 625 * 23 * 1000 = 14375000 ms (14375 standard seconds)
+
+    // --- DOM Elements ---
+    const customYearEl = document.getElementById('custom-year');
+    const customDayEl = document.getElementById('custom-day');
+    const customTimeEl = document.getElementById('custom-time');
+    const progressBarEl = document.getElementById('day-progress-bar');
+    const progressPercentEl = document.getElementById('progress-percent');
+
+    // Helper function to format numbers with padding
+    const format = (n, digits = 2) => String(n).padStart(digits, '0');
+
+    function updateCustomClock() {
+        const now = Date.now();
+        // Calculate total elapsed standard milliseconds since the epoch
+        let elapsedMs = now - EPOCH_MS;
+
+        // Ensure we don't display negative time if the current time is before the epoch
+        if (elapsedMs < 0) {
+            console.error("Time is before the epoch.");
+            return;
+        }
+
+        // --- Calculate Custom Units ---
+
+        // 1. Years
+        const years = Math.floor(elapsedMs / CUSTOM_YEAR_MS);
+        elapsedMs %= CUSTOM_YEAR_MS;
+
+        // 2. Days (0-624)
+        const days = Math.floor(elapsedMs / CUSTOM_DAY_MS);
+        elapsedMs %= CUSTOM_DAY_MS;
+
+        // 3. Hours (0-22)
+        const hours = Math.floor(elapsedMs / CUSTOM_HOUR_MS);
+        elapsedMs %= CUSTOM_HOUR_MS;
+
+        // 4. Minutes (0-0)
+        const minutes = Math.floor(elapsedMs / CUSTOM_MINUTE_MS);
+        elapsedMs %= CUSTOM_MINUTE_MS;
+
+        // 5. Seconds (0-0)
+        const seconds = Math.floor(elapsedMs / CUSTOM_SECOND_MS);
+
+
+        // --- Display Formatting ---
+        
+        // Custom Year starts at 1
+        const customYear = 1 + years;
+        // Day is 0-indexed (0 to 624)
+        const customDay = days;
+
+        const hourStr = format(hours, 2);
+        const minuteStr = format(minutes, 2);
+        const secondStr = format(seconds, 2); 
+
+        // Update Text
+        customYearEl.textContent = String(customYear);
+        customDayEl.textContent = format(customDay, 3); // 3 digits for up to 624 days
+        customTimeEl.textContent = `${hourStr}:${minuteStr}:${secondStr}`;
+
+        // --- Progress Bar Calculation ---
+        const totalDaySeconds = CUSTOM_DAY_MS / CUSTOM_SECOND_MS;
+        // Calculate total seconds elapsed within the current custom day
+        const dayElapsedSeconds = (hours * (CUSTOM_HOUR_MS / 1000)) +
+                                  (minutes * (CUSTOM_MINUTE_MS / 1000)) +
+                                  seconds;
+        
+        const progress = (dayElapsedSeconds / totalDaySeconds) * 100;
+        
+        // Update Progress Bar
+        progressBarEl.style.width = `${progress.toFixed(2)}%`;
+        progressPercentEl.textContent = progress.toFixed(2);
     }
 
-    function formatTime(t) {
-      return `${pad(t.hour)}:${pad(t.minute)}:${pad(t.second)}.${pad(t.hundredth,2)}`;
+    // Initialize and set interval
+    // Run every 50ms for a visually smooth update
+    window.onload = function() {
+        updateCustomClock();
+        setInterval(updateCustomClock, 50);
     }
-
-    function formatDate(t) {
-      return `Year ${t.year}, Month ${t.month}, Day ${t.day}`;
-    }
-
-    function tick() {
-      const now = Date.now();
-      const t = computeTime(now);
-      document.getElementById('time').textContent = formatTime(t);
-      document.getElementById('date').textContent = formatDate(t);
-      setTimeout(tick, 10); // update every 1/100 of a second
-    }
-
-    tick();
-  </script>
+</script>
 </body>
 </html>
