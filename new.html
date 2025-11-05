@@ -22,9 +22,9 @@
 
         <!-- Current Planetary Time Display -->
         <div class="bg-white p-6 md:p-10 rounded-xl shadow-2xl mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-indigo-600">Current Planetary Time</h2>
+            <h2 class="text-xl font-semibold mb-4 text-indigo-600">Current Planetary Time (HH:MM:SS)</h2>
             <div id="planetary-time" class="text-center font-mono text-4xl md:text-6xl text-gray-800 break-words transition duration-500 ease-in-out">
-                --:--:--
+                00:00:00
             </div>
 
             <!-- Detailed Breakdown -->
@@ -35,7 +35,7 @@
                 </div>
                 <div class="p-3 bg-indigo-50 rounded-lg shadow-inner">
                     <span class="font-bold text-indigo-700 block">Planetary Day (of Year):</span>
-                    <span id="p-day-of-year">0</span>
+                    <span id="p-day-of-year">0 / 0</span>
                 </div>
                 <div class="p-3 bg-indigo-50 rounded-lg shadow-inner col-span-2">
                     <span class="font-bold text-indigo-700 block">Time Since Epoch (ms):</span>
@@ -54,10 +54,10 @@
 
         <!-- Configuration Panel -->
         <div class="bg-white p-6 md:p-8 rounded-xl shadow-xl">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Custom Planetary Settings (Stored in Firestore)</h2>
+            <h2 class="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Custom Planetary Settings (Resets on Refresh)</h2>
 
-            <div id="firestore-status" class="mb-4 text-sm font-medium p-2 rounded-lg bg-yellow-100 text-yellow-800 hidden">
-                Initializing Firestore...
+            <div id="status" class="mb-4 text-sm font-medium p-2 rounded-lg bg-red-100 text-red-800">
+                Data is NOT saved between sessions. Reset to Earth defaults on page load.
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -107,27 +107,9 @@
         </div>
     </div>
 
-    <!-- Firebase Imports and Script Logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Set log level to debug for Firestore/Auth to aid in development/debugging
-        setLogLevel('debug');
-
-        // --- GLOBAL VARIABLES (Provided by Canvas Environment) ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-clock-app';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        let db;
-        let auth;
-        let userId = null;
-        let settings = {};
-        const SETTINGS_DOC_ID = 'settings';
-
-        // Default Earth-based settings
+    <!-- Script Logic -->
+    <script>
+        // Default Earth-based settings (always loaded on start)
         const DEFAULT_SETTINGS = {
             epochDate: '2000-01-01',
             epochTime: '00:00:00',
@@ -137,6 +119,9 @@
             secondsPerMinute: 60,
             msPerSecond: 1000,
         };
+
+        let settings = { ...DEFAULT_SETTINGS };
+        let intervalId = null;
 
         const elements = {
             epochDate: document.getElementById('epoch-date'),
@@ -152,110 +137,17 @@
             msElapsed: document.getElementById('ms-elapsed'),
             progressBar: document.getElementById('day-progress-bar'),
             progressPercent: document.getElementById('progress-percent'),
-            status: document.getElementById('firestore-status')
+            status: document.getElementById('status')
         };
 
-        // --- FIREBASE AND AUTHENTICATION SETUP ---
+        // --- INITIALIZATION & INPUT HANDLING ---
 
-        async function initializeFirebase() {
-            try {
-                if (Object.keys(firebaseConfig).length === 0) {
-                    elements.status.textContent = 'Warning: Firebase config missing. Using local defaults only.';
-                    elements.status.classList.remove('hidden', 'bg-yellow-100', 'text-yellow-800');
-                    elements.status.classList.add('bg-red-100', 'text-red-800');
-                    applySettingsToUI(DEFAULT_SETTINGS);
-                    startClock();
-                    return;
-                }
-
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                elements.status.textContent = 'Authenticating...';
-                elements.status.classList.remove('hidden');
-
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        elements.status.textContent = `User authenticated (${userId.substring(0, 8)}...). Listening for settings...`;
-                        setupFirestoreListener();
-                        setupInputListeners();
-                    } else {
-                        // This should ideally not happen after initial sign-in
-                        console.error('Authentication failed or user signed out.');
-                        userId = null;
-                        elements.status.textContent = 'Authentication error. Using local defaults.';
-                        elements.status.classList.add('bg-red-100', 'text-red-800');
-                        applySettingsToUI(DEFAULT_SETTINGS);
-                        startClock();
-                    }
-                });
-
-            } catch (error) {
-                console.error("Firebase initialization or authentication failed:", error);
-                elements.status.textContent = `Error: ${error.message}. Using local defaults.`;
-                elements.status.classList.add('bg-red-100', 'text-red-800');
-                applySettingsToUI(DEFAULT_SETTINGS);
-                startClock();
-            }
+        function initializeApp() {
+            // Apply default settings and start the clock immediately
+            applySettingsToUI(DEFAULT_SETTINGS);
+            setupInputListeners();
+            startClock();
         }
-
-        // --- FIRESTORE DATA HANDLING ---
-
-        function getSettingsDocRef() {
-            if (!db || !userId) return null;
-            // Private Data Path: /artifacts/{appId}/users/{userId}/clock_config/settings
-            return doc(db, 'artifacts', appId, 'users', userId, 'clock_config', SETTINGS_DOC_ID);
-        }
-
-        async function saveSettings(newSettings) {
-            const docRef = getSettingsDocRef();
-            if (!docRef) return;
-            try {
-                // Merge new settings with existing ones (though we're replacing the full set here)
-                await setDoc(docRef, newSettings, { merge: true });
-                // console.log("Settings saved successfully.");
-            } catch (error) {
-                console.error("Error saving settings:", error);
-            }
-        }
-
-        function setupFirestoreListener() {
-            const docRef = getSettingsDocRef();
-            if (!docRef) return;
-
-            onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    // Load and apply stored settings
-                    settings = { ...DEFAULT_SETTINGS, ...docSnap.data() };
-                    applySettingsToUI(settings);
-                    elements.status.textContent = 'Settings loaded from Firestore. Clock running.';
-                    elements.status.classList.replace('bg-yellow-100', 'bg-green-100');
-                    elements.status.classList.replace('text-yellow-800', 'text-green-800');
-                } else {
-                    // If no document exists, save the default settings
-                    elements.status.textContent = 'No settings found. Saving default settings.';
-                    settings = DEFAULT_SETTINGS;
-                    saveSettings(settings);
-                }
-                startClock();
-            }, (error) => {
-                console.error("Error listening to settings:", error);
-                elements.status.textContent = `Error loading settings: ${error.message}. Using defaults.`;
-                settings = DEFAULT_SETTINGS;
-                applySettingsToUI(DEFAULT_SETTINGS);
-                startClock();
-            });
-        }
-
-        // --- UI AND INPUTS ---
 
         function applySettingsToUI(currentSettings) {
             elements.epochDate.value = currentSettings.epochDate;
@@ -265,62 +157,56 @@
             elements.minutesPerHour.value = currentSettings.minutesPerHour;
             elements.secondsPerMinute.value = currentSettings.secondsPerMinute;
             elements.msPerSecond.value = currentSettings.msPerSecond;
-            settings = currentSettings; // Ensure the global settings object is updated
+            settings = currentSettings; // Update global settings object
         }
 
         function setupInputListeners() {
-            // Event listener for all input fields to trigger save
-            Object.values(elements).forEach(el => {
-                if (el && el.tagName === 'INPUT' && el.id !== 'ms-elapsed') {
-                    el.addEventListener('change', () => {
-                        updateAndSaveSettings();
-                    });
-                }
+            // Get all input elements in the configuration panel
+            const configInputs = document.querySelectorAll('#app input[type="date"], #app input[type="time"], #app input[type="number"]');
+
+            configInputs.forEach(el => {
+                el.addEventListener('change', updateSettingsFromUI);
+                el.addEventListener('keyup', updateSettingsFromUI); // For immediate feedback on number changes
             });
         }
 
-        function updateAndSaveSettings() {
+        function updateSettingsFromUI() {
             const newSettings = {
                 epochDate: elements.epochDate.value,
                 epochTime: elements.epochTime.value,
+                // Ensure values are positive integers
                 daysPerYear: Math.max(1, parseInt(elements.daysPerYear.value) || 1),
                 hoursPerDay: Math.max(1, parseInt(elements.hoursPerDay.value) || 1),
                 minutesPerHour: Math.max(1, parseInt(elements.minutesPerHour.value) || 1),
                 secondsPerMinute: Math.max(1, parseInt(elements.secondsPerMinute.value) || 1),
                 msPerSecond: Math.max(1, parseInt(elements.msPerSecond.value) || 1),
             };
-            saveSettings(newSettings);
-            settings = newSettings; // Update immediately for local clock calculation
+            
+            // Update global settings immediately
+            settings = newSettings; 
             updateClock();
         }
 
         // --- CORE CLOCK LOGIC ---
 
-        let epochMs = 0;
-        let intervalId = null;
-
         function startClock() {
             if (intervalId) {
                 clearInterval(intervalId); // Clear existing interval if restarting
             }
-            // Start the clock update loop
+            // Start the clock update loop every 10ms for high precision
             updateClock();
-            intervalId = setInterval(updateClock, 10); // Update every 10ms for smooth millisecond display
+            intervalId = setInterval(updateClock, 10); 
         }
 
         function updateClock() {
-            if (!settings || !settings.daysPerYear) {
-                // Wait for settings to load
-                return;
-            }
-
             // 1. Calculate Epoch Time in UTC milliseconds
+            // We concatenate the date and time, and use the 'Z' suffix to denote UTC
             const epochDateTimeString = `${settings.epochDate}T${settings.epochTime}.000Z`;
-            epochMs = Date.parse(epochDateTimeString);
+            const epochMs = Date.parse(epochDateTimeString);
 
             // Handle invalid date/time parsing
             if (isNaN(epochMs)) {
-                elements.planetaryTimeDisplay.textContent = 'Invalid Epoch Date/Time';
+                elements.planetaryTimeDisplay.textContent = 'Invalid Epoch';
                 return;
             }
 
@@ -330,7 +216,7 @@
             elements.msElapsed.textContent = msElapsedSinceEpoch.toLocaleString();
 
             if (msElapsedSinceEpoch < 0) {
-                elements.planetaryTimeDisplay.textContent = 'Future Date (Epoch is later than Now)';
+                elements.planetaryTimeDisplay.textContent = 'Future Epoch';
                 return;
             }
 
@@ -340,6 +226,10 @@
             const MS_PER_P_HOUR = MS_PER_P_MINUTE * settings.minutesPerHour;
             const MS_PER_P_DAY = MS_PER_P_HOUR * settings.hoursPerDay;
             const MS_PER_P_YEAR = MS_PER_P_DAY * settings.daysPerYear;
+
+            // Check for zero divisor which can happen if inputs are not yet ready/valid
+            if (MS_PER_P_YEAR === 0 || MS_PER_P_DAY === 0) return;
+
 
             // 4. Calculate Planetary Time Components
             let remainingMs = msElapsedSinceEpoch;
@@ -362,17 +252,17 @@
 
             // Calculate Seconds
             const pSeconds = Math.floor(remainingMs / MS_PER_P_SECOND);
-            remainingMs %= MS_PER_P_SECOND;
+            // The remaining are Milliseconds (not needed for main display, but good for progress)
+            // const pMilliseconds = remainingMs % MS_PER_P_SECOND; 
 
-            // The remaining are Milliseconds
-            const pMilliseconds = remainingMs;
 
             // 5. Update UI
 
-            // Format time components
+            // Helper function to format time components (e.g., 5 -> "05")
             const format = (num, length) => String(num).padStart(length, '0');
 
-            const formattedTime = `${format(pHours, 2)}:${format(pMinutes, 2)}:${format(pSeconds, 2)}.${format(pMilliseconds, 3)}`;
+            // MAIN DISPLAY: HH:MM:SS (as requested)
+            const formattedTime = `${format(pHours, 2)}:${format(pMinutes, 2)}:${format(pSeconds, 2)}`;
 
             elements.planetaryTimeDisplay.textContent = formattedTime;
             elements.pYear.textContent = pYears.toLocaleString();
@@ -388,7 +278,7 @@
         }
 
         // --- INITIALIZATION ---
-        window.onload = initializeFirebase;
+        window.onload = initializeApp;
 
     </script>
 </body>
