@@ -10,6 +10,23 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
         body { font-family: 'Inter', sans-serif; }
+
+        /* Custom styling for text inputs to look consistent, overriding any default browser input styling */
+        .text-input {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db; /* gray-300 */
+            border-radius: 0.5rem; /* rounded-lg */
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        .text-input:focus {
+            outline: none;
+            border-color: #4f46e5; /* indigo-600 */
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5); /* ring-indigo-500 */
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4 md:p-8">
@@ -68,11 +85,13 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label for="epoch-date" class="block text-sm font-medium text-gray-700 mb-1">Epoch Date (YYYY-MM-DD)</label>
-                            <input type="date" id="epoch-date" value="2000-01-01" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <!-- Changed type from 'date' to 'text' -->
+                            <input type="text" id="epoch-date" value="2000-01-01" placeholder="YYYY-MM-DD" class="text-input focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
                         <div>
                             <label for="epoch-time" class="block text-sm font-medium text-gray-700 mb-1">Epoch Time (HH:MM:SS)</label>
-                            <input type="time" id="epoch-time" step="1" value="00:00:00" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <!-- Changed type from 'time' to 'text' -->
+                            <input type="text" id="epoch-time" value="00:00:00" placeholder="HH:MM:SS" class="text-input focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
                     </div>
                 </div>
@@ -83,23 +102,23 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         <label class="block">
                             <span class="text-sm font-medium text-gray-700">Days per Year (D/Y)</span>
-                            <input type="number" min="1" id="days-per-year" value="365" class="w-full p-2 border border-gray-300 rounded-lg mt-1" required>
+                            <input type="number" min="1" id="days-per-year" value="365" class="text-input mt-1" required>
                         </label>
                         <label class="block">
                             <span class="text-sm font-medium text-gray-700">Hours per Day (H/D)</span>
-                            <input type="number" min="1" id="hours-per-day" value="24" class="w-full p-2 border border-gray-300 rounded-lg mt-1" required>
+                            <input type="number" min="1" id="hours-per-day" value="24" class="text-input mt-1" required>
                         </label>
                         <label class="block">
                             <span class="text-sm font-medium text-gray-700">Minutes per Hour (M/H)</span>
-                            <input type="number" min="1" id="minutes-per-hour" value="60" class="w-full p-2 border border-gray-300 rounded-lg mt-1" required>
+                            <input type="number" min="1" id="minutes-per-hour" value="60" class="text-input mt-1" required>
                         </label>
                         <label class="block">
                             <span class="text-sm font-medium text-gray-700">Seconds per Minute (S/M)</span>
-                            <input type="number" min="1" id="seconds-per-minute" value="60" class="w-full p-2 border border-gray-300 rounded-lg mt-1" required>
+                            <input type="number" min="1" id="seconds-per-minute" value="60" class="text-input mt-1" required>
                         </label>
                         <label class="block sm:col-span-2">
                             <span class="text-sm font-medium text-gray-700">Real Milliseconds per Planetary Second (MS/S)</span>
-                            <input type="number" min="1" id="ms-per-second" value="1000" class="w-full p-2 border border-gray-300 rounded-lg mt-1" required>
+                            <input type="number" min="1" id="ms-per-second" value="1000" class="text-input mt-1" required>
                         </label>
                     </div>
                 </div>
@@ -162,19 +181,21 @@
 
         function setupInputListeners() {
             // Get all input elements in the configuration panel
-            const configInputs = document.querySelectorAll('#app input[type="date"], #app input[type="time"], #app input[type="number"]');
+            const configInputs = document.querySelectorAll('#app input');
 
             configInputs.forEach(el => {
+                // Listen for change (e.g., blur/enter) and keyup for immediate feedback
                 el.addEventListener('change', updateSettingsFromUI);
-                el.addEventListener('keyup', updateSettingsFromUI); // For immediate feedback on number changes
+                el.addEventListener('keyup', updateSettingsFromUI);
             });
         }
 
         function updateSettingsFromUI() {
             const newSettings = {
+                // Text inputs for date and time are used directly
                 epochDate: elements.epochDate.value,
                 epochTime: elements.epochTime.value,
-                // Ensure values are positive integers
+                // Ensure number values are positive integers
                 daysPerYear: Math.max(1, parseInt(elements.daysPerYear.value) || 1),
                 hoursPerDay: Math.max(1, parseInt(elements.hoursPerDay.value) || 1),
                 minutesPerHour: Math.max(1, parseInt(elements.minutesPerHour.value) || 1),
@@ -200,7 +221,7 @@
 
         function updateClock() {
             // 1. Calculate Epoch Time in UTC milliseconds
-            // We concatenate the date and time, and use the 'Z' suffix to denote UTC
+            // Combine date and time strings into ISO format with UTC suffix 'Z'
             const epochDateTimeString = `${settings.epochDate}T${settings.epochTime}.000Z`;
             const epochMs = Date.parse(epochDateTimeString);
 
@@ -227,7 +248,7 @@
             const MS_PER_P_DAY = MS_PER_P_HOUR * settings.hoursPerDay;
             const MS_PER_P_YEAR = MS_PER_P_DAY * settings.daysPerYear;
 
-            // Check for zero divisor which can happen if inputs are not yet ready/valid
+            // Prevent division by zero if input values are invalid
             if (MS_PER_P_YEAR === 0 || MS_PER_P_DAY === 0) return;
 
 
@@ -252,21 +273,19 @@
 
             // Calculate Seconds
             const pSeconds = Math.floor(remainingMs / MS_PER_P_SECOND);
-            // The remaining are Milliseconds (not needed for main display, but good for progress)
-            // const pMilliseconds = remainingMs % MS_PER_P_SECOND; 
-
+            // The remaining are Milliseconds (not displayed in main clock)
 
             // 5. Update UI
 
             // Helper function to format time components (e.g., 5 -> "05")
             const format = (num, length) => String(num).padStart(length, '0');
 
-            // MAIN DISPLAY: HH:MM:SS (as requested)
+            // MAIN DISPLAY: HH:MM:SS (as requested, without milliseconds)
             const formattedTime = `${format(pHours, 2)}:${format(pMinutes, 2)}:${format(pSeconds, 2)}`;
 
             elements.planetaryTimeDisplay.textContent = formattedTime;
             elements.pYear.textContent = pYears.toLocaleString();
-            // Days are 0-indexed, so we add 1 for display
+            // Days are 0-indexed (0 to DaysPerYear-1), so we add 1 for display
             elements.pDayOfYear.textContent = `${(pDays + 1).toLocaleString()} / ${settings.daysPerYear}`;
 
             // 6. Update Day Progress Bar
