@@ -3,187 +3,393 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>625-Day Year Clock (23 Hour Day)</title>
+    <title>Planetary Epoch Clock</title>
+    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        :root {
-            --clock-color: #4f46e5; /* Indigo-600 */
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f172a; /* Slate-900 */
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 1rem;
-        }
-        .clock-container {
-            background-color: #1e293b; /* Slate-800 */
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            border-radius: 1.5rem;
-            padding: 2rem;
-            max-width: 400px;
-            width: 100%;
-            border: 1px solid #334155; /* Slate-700 */
-        }
-        .time-unit-display {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 0.5rem 0;
-        }
-        .unit-label {
-            font-size: 0.875rem;
-            color: #94a3b8; /* Slate-400 */
-            margin-bottom: 0.25rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .unit-value {
-            font-size: 2.25rem;
-            font-weight: 700;
-            color: var(--clock-color);
-            line-height: 1;
-        }
+        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
 
-<div class="clock-container">
-    <h1 class="text-3xl font-extrabold text-center mb-6 text-white tracking-tight">Custom Calendar Clock</h1>
+    <div id="app" class="max-w-4xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-indigo-700">Planetary Epoch Clock</h1>
+            <p class="text-gray-600 mt-2">Define the rules of your own time system and watch it tick.</p>
+        </header>
 
-    <!-- Epoch Information -->
-    <div class="bg-slate-700 p-3 rounded-lg text-sm mb-6 shadow-inner">
-        <p class="text-slate-300 font-medium">Epoch Start (Year 1, Day 0):</p>
-        <p class="text-slate-100 font-mono">2000-01-01 @ 12:00:00 UTC</p>
+        <!-- Current Planetary Time Display -->
+        <div class="bg-white p-6 md:p-10 rounded-xl shadow-2xl mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-indigo-600">Current Planetary Time</h2>
+            <div id="planetary-time" class="text-center font-mono text-4xl md:text-6xl text-gray-800 break-words transition duration-500 ease-in-out">
+                --:--:--
+            </div>
+
+            <!-- Detailed Breakdown -->
+            <div class="mt-6 text-sm md:text-base grid grid-cols-2 gap-4 text-gray-700">
+                <div class="p-3 bg-indigo-50 rounded-lg shadow-inner">
+                    <span class="font-bold text-indigo-700 block">Planetary Year:</span>
+                    <span id="p-year">0</span>
+                </div>
+                <div class="p-3 bg-indigo-50 rounded-lg shadow-inner">
+                    <span class="font-bold text-indigo-700 block">Planetary Day (of Year):</span>
+                    <span id="p-day-of-year">0</span>
+                </div>
+                <div class="p-3 bg-indigo-50 rounded-lg shadow-inner col-span-2">
+                    <span class="font-bold text-indigo-700 block">Time Since Epoch (ms):</span>
+                    <span id="ms-elapsed">0</span>
+                </div>
+            </div>
+
+            <!-- Day Progress Bar -->
+            <div class="mt-8">
+                <h3 class="text-lg font-medium mb-2 text-indigo-600">Planetary Day Progress (<span id="progress-percent">0.00</span>%)</h3>
+                <div class="w-full bg-gray-200 rounded-full h-3 shadow-inner">
+                    <div id="day-progress-bar" class="bg-indigo-500 h-3 rounded-full transition-all duration-100" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Panel -->
+        <div class="bg-white p-6 md:p-8 rounded-xl shadow-xl">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Custom Planetary Settings (Stored in Firestore)</h2>
+
+            <div id="firestore-status" class="mb-4 text-sm font-medium p-2 rounded-lg bg-yellow-100 text-yellow-800 hidden">
+                Initializing Firestore...
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- EPOCH DEFINITION -->
+                <div class="md:col-span-2 p-4 bg-gray-50 rounded-lg border-l-4 border-indigo-400">
+                    <h3 class="font-bold text-lg mb-3 text-indigo-600">Epoch Definition (UTC)</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="epoch-date" class="block text-sm font-medium text-gray-700 mb-1">Epoch Date (YYYY-MM-DD)</label>
+                            <input type="date" id="epoch-date" value="2000-01-01" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="epoch-time" class="block text-sm font-medium text-gray-700 mb-1">Epoch Time (HH:MM:SS)</label>
+                            <input type="time" id="epoch-time" step="1" value="00:00:00" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PLANETARY DEFINITION -->
+                <div class="md:col-span-2 p-4 bg-gray-50 rounded-lg border-l-4 border-indigo-400">
+                    <h3 class="font-bold text-lg mb-3 text-indigo-600">Planetary Time System Rules</h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        <label class="block">
+                            <span class="text-sm font-medium text-gray-700">Days per Year (D/Y)</span>
+                            <input type="number" min="1" id="days-per-year" value="365" class="w-full p-2 border border-gray-300 rounded-lg mt-1" required>
+                        </label>
+                        <label class="block">
+                            <span class="text-sm font-medium text-gray-700">Hours per Day (H/D)</span>
+                            <input type="number" min="1" id="hours-per-day" value="24" class="w-full p-2 border border-gray-300 rounded-lg mt-1" required>
+                        </label>
+                        <label class="block">
+                            <span class="text-sm font-medium text-gray-700">Minutes per Hour (M/H)</span>
+                            <input type="number" min="1" id="minutes-per-hour" value="60" class="w-full p-2 border border-gray-300 rounded-lg mt-1" required>
+                        </label>
+                        <label class="block">
+                            <span class="text-sm font-medium text-gray-700">Seconds per Minute (S/M)</span>
+                            <input type="number" min="1" id="seconds-per-minute" value="60" class="w-full p-2 border border-gray-300 rounded-lg mt-1" required>
+                        </label>
+                        <label class="block sm:col-span-2">
+                            <span class="text-sm font-medium text-gray-700">Real Milliseconds per Planetary Second (MS/S)</span>
+                            <input type="number" min="1" id="ms-per-second" value="1000" class="w-full p-2 border border-gray-300 rounded-lg mt-1" required>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Clock Display -->
-    <div class="text-center mb-6">
-        <div id="custom-time" class="text-6xl font-extrabold font-mono tracking-tighter text-indigo-400">00:00:00</div>
-        <!-- Hour (0-22) : Minute (0-0) : Second (0-0) -->
-    </div>
+    <!-- Firebase Imports and Script Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Set log level to debug for Firestore/Auth to aid in development/debugging
+        setLogLevel('debug');
 
+        // --- GLOBAL VARIABLES (Provided by Canvas Environment) ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-clock-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-    <!-- Day Progress Bar -->
-    <h2 class="text-base font-semibold text-slate-300 mb-2">Day Progress (23 Hours)</h2>
-    <div class="w-full h-4 bg-slate-700 rounded-full overflow-hidden shadow-lg">
-        <div id="day-progress-bar" class="h-full bg-indigo-500 transition-all duration-100 ease-linear" style="width: 0%;"></div>
-    </div>
-    <p class="text-xs text-right text-slate-400 mt-1">
-        <span id="progress-percent">0.00</span>% complete
-    </p>
+        let db;
+        let auth;
+        let userId = null;
+        let settings = {};
+        const SETTINGS_DOC_ID = 'settings';
 
-</div>
+        // Default Earth-based settings
+        const DEFAULT_SETTINGS = {
+            epochDate: '2000-01-01',
+            epochTime: '00:00:00',
+            daysPerYear: 365,
+            hoursPerDay: 24,
+            minutesPerHour: 60,
+            secondsPerMinute: 60,
+            msPerSecond: 1000,
+        };
 
-<script>
-    // --- Configuration Constants ---
-    // Standard UTC time (ms) for January 1, 2000, 12:00:00 UTC
-    const EPOCH_MS = 946728000000;
+        const elements = {
+            epochDate: document.getElementById('epoch-date'),
+            epochTime: document.getElementById('epoch-time'),
+            daysPerYear: document.getElementById('days-per-year'),
+            hoursPerDay: document.getElementById('hours-per-day'),
+            minutesPerHour: document.getElementById('minutes-per-hour'),
+            secondsPerMinute: document.getElementById('seconds-per-minute'),
+            msPerSecond: document.getElementById('ms-per-second'),
+            planetaryTimeDisplay: document.getElementById('planetary-time'),
+            pYear: document.getElementById('p-year'),
+            pDayOfYear: document.getElementById('p-day-of-year'),
+            msElapsed: document.getElementById('ms-elapsed'),
+            progressBar: document.getElementById('day-progress-bar'),
+            progressPercent: document.getElementById('progress-percent'),
+            status: document.getElementById('firestore-status')
+        };
 
-    // Custom unit conversion factors (in standard milliseconds)
-    const CUSTOM_SECOND_MS = 100;
-    
-    // New: 1 second per minute
-    const CUSTOM_MINUTE_PER_CUSTOM_SECOND = 10;
-    const CUSTOM_MINUTE_MS = CUSTOM_MINUTE_PER_CUSTOM_SECOND * CUSTOM_SECOND_MS;
-    
-    // New: 1 minute per hour
-    const CUSTOM_HOUR_PER_CUSTOM_MINUTE = 12;
-    const CUSTOM_HOUR_MS = CUSTOM_HOUR_PER_CUSTOM_MINUTE * CUSTOM_MINUTE_MS; 
-    
-    // New: 23 hours per day
-    const CUSTOM_DAY_PER_CUSTOM_HOUR = 14;
-    const CUSTOM_DAY_MS = CUSTOM_DAY_PER_CUSTOM_HOUR * CUSTOM_HOUR_MS;   
-    
-    // New: 625 days per year
-    const CUSTOM_YEAR_PER_CUSTOM_DAY = 310;
-    const CUSTOM_YEAR_MS = CUSTOM_YEAR_PER_CUSTOM_DAY * CUSTOM_DAY_MS;   
-    // Note: CUSTOM_YEAR_MS is 625 * 23 * 1000 = 14375000 ms (14375 standard seconds)
+        // --- FIREBASE AND AUTHENTICATION SETUP ---
 
-    // --- DOM Elements ---
-    const customYearEl = document.getElementById('custom-year');
-    const customDayEl = document.getElementById('custom-day');
-    const customTimeEl = document.getElementById('custom-time');
-    const progressBarEl = document.getElementById('day-progress-bar');
-    const progressPercentEl = document.getElementById('progress-percent');
+        async function initializeFirebase() {
+            try {
+                if (Object.keys(firebaseConfig).length === 0) {
+                    elements.status.textContent = 'Warning: Firebase config missing. Using local defaults only.';
+                    elements.status.classList.remove('hidden', 'bg-yellow-100', 'text-yellow-800');
+                    elements.status.classList.add('bg-red-100', 'text-red-800');
+                    applySettingsToUI(DEFAULT_SETTINGS);
+                    startClock();
+                    return;
+                }
 
-    // Helper function to format numbers with padding
-    const format = (n, digits = 2) => String(n).padStart(digits, '0');
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
 
-    function updateCustomClock() {
-        const now = Date.now();
-        // Calculate total elapsed standard milliseconds since the epoch
-        let elapsedMs = now - EPOCH_MS;
+                elements.status.textContent = 'Authenticating...';
+                elements.status.classList.remove('hidden');
 
-        // Ensure we don't display negative time if the current time is before the epoch
-        if (elapsedMs < 0) {
-            console.error("Time is before the epoch.");
-            return;
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        elements.status.textContent = `User authenticated (${userId.substring(0, 8)}...). Listening for settings...`;
+                        setupFirestoreListener();
+                        setupInputListeners();
+                    } else {
+                        // This should ideally not happen after initial sign-in
+                        console.error('Authentication failed or user signed out.');
+                        userId = null;
+                        elements.status.textContent = 'Authentication error. Using local defaults.';
+                        elements.status.classList.add('bg-red-100', 'text-red-800');
+                        applySettingsToUI(DEFAULT_SETTINGS);
+                        startClock();
+                    }
+                });
+
+            } catch (error) {
+                console.error("Firebase initialization or authentication failed:", error);
+                elements.status.textContent = `Error: ${error.message}. Using local defaults.`;
+                elements.status.classList.add('bg-red-100', 'text-red-800');
+                applySettingsToUI(DEFAULT_SETTINGS);
+                startClock();
+            }
         }
 
-        // --- Calculate Custom Units ---
+        // --- FIRESTORE DATA HANDLING ---
 
-        // 1. Years
-        const years = Math.floor(elapsedMs / CUSTOM_YEAR_MS);
-        elapsedMs %= CUSTOM_YEAR_MS;
+        function getSettingsDocRef() {
+            if (!db || !userId) return null;
+            // Private Data Path: /artifacts/{appId}/users/{userId}/clock_config/settings
+            return doc(db, 'artifacts', appId, 'users', userId, 'clock_config', SETTINGS_DOC_ID);
+        }
 
-        // 2. Days (0-624)
-        const days = Math.floor(elapsedMs / CUSTOM_DAY_MS);
-        elapsedMs %= CUSTOM_DAY_MS;
+        async function saveSettings(newSettings) {
+            const docRef = getSettingsDocRef();
+            if (!docRef) return;
+            try {
+                // Merge new settings with existing ones (though we're replacing the full set here)
+                await setDoc(docRef, newSettings, { merge: true });
+                // console.log("Settings saved successfully.");
+            } catch (error) {
+                console.error("Error saving settings:", error);
+            }
+        }
 
-        // 3. Hours (0-22)
-        const hours = Math.floor(elapsedMs / CUSTOM_HOUR_MS);
-        elapsedMs %= CUSTOM_HOUR_MS;
+        function setupFirestoreListener() {
+            const docRef = getSettingsDocRef();
+            if (!docRef) return;
 
-        // 4. Minutes (0-0)
-        const minutes = Math.floor(elapsedMs / CUSTOM_MINUTE_MS);
-        elapsedMs %= CUSTOM_MINUTE_MS;
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    // Load and apply stored settings
+                    settings = { ...DEFAULT_SETTINGS, ...docSnap.data() };
+                    applySettingsToUI(settings);
+                    elements.status.textContent = 'Settings loaded from Firestore. Clock running.';
+                    elements.status.classList.replace('bg-yellow-100', 'bg-green-100');
+                    elements.status.classList.replace('text-yellow-800', 'text-green-800');
+                } else {
+                    // If no document exists, save the default settings
+                    elements.status.textContent = 'No settings found. Saving default settings.';
+                    settings = DEFAULT_SETTINGS;
+                    saveSettings(settings);
+                }
+                startClock();
+            }, (error) => {
+                console.error("Error listening to settings:", error);
+                elements.status.textContent = `Error loading settings: ${error.message}. Using defaults.`;
+                settings = DEFAULT_SETTINGS;
+                applySettingsToUI(DEFAULT_SETTINGS);
+                startClock();
+            });
+        }
 
-        // 5. Seconds (0-0)
-        const seconds = Math.floor(elapsedMs / CUSTOM_SECOND_MS);
+        // --- UI AND INPUTS ---
 
+        function applySettingsToUI(currentSettings) {
+            elements.epochDate.value = currentSettings.epochDate;
+            elements.epochTime.value = currentSettings.epochTime;
+            elements.daysPerYear.value = currentSettings.daysPerYear;
+            elements.hoursPerDay.value = currentSettings.hoursPerDay;
+            elements.minutesPerHour.value = currentSettings.minutesPerHour;
+            elements.secondsPerMinute.value = currentSettings.secondsPerMinute;
+            elements.msPerSecond.value = currentSettings.msPerSecond;
+            settings = currentSettings; // Ensure the global settings object is updated
+        }
 
-        // --- Display Formatting ---
-        
-        // Custom Year starts at 1
-        const customYear = 1 + years;
-        // Day is 0-indexed (0 to 624)
-        const customDay = days;
+        function setupInputListeners() {
+            // Event listener for all input fields to trigger save
+            Object.values(elements).forEach(el => {
+                if (el && el.tagName === 'INPUT' && el.id !== 'ms-elapsed') {
+                    el.addEventListener('change', () => {
+                        updateAndSaveSettings();
+                    });
+                }
+            });
+        }
 
-        const hourStr = format(hours, 2);
-        const minuteStr = format(minutes, 2);
-        const secondStr = format(seconds, 2); 
+        function updateAndSaveSettings() {
+            const newSettings = {
+                epochDate: elements.epochDate.value,
+                epochTime: elements.epochTime.value,
+                daysPerYear: Math.max(1, parseInt(elements.daysPerYear.value) || 1),
+                hoursPerDay: Math.max(1, parseInt(elements.hoursPerDay.value) || 1),
+                minutesPerHour: Math.max(1, parseInt(elements.minutesPerHour.value) || 1),
+                secondsPerMinute: Math.max(1, parseInt(elements.secondsPerMinute.value) || 1),
+                msPerSecond: Math.max(1, parseInt(elements.msPerSecond.value) || 1),
+            };
+            saveSettings(newSettings);
+            settings = newSettings; // Update immediately for local clock calculation
+            updateClock();
+        }
 
-        // Update Text
-        customYearEl.textContent = String(customYear);
-        customDayEl.textContent = format(customDay, 3); // 3 digits for up to 624 days
-        customTimeEl.textContent = `${hourStr}:${minuteStr}:${secondStr}`;
+        // --- CORE CLOCK LOGIC ---
 
-        // --- Progress Bar Calculation ---
-        const totalDaySeconds = CUSTOM_DAY_MS / CUSTOM_SECOND_MS;
-        // Calculate total seconds elapsed within the current custom day
-        const dayElapsedSeconds = (hours * (CUSTOM_HOUR_MS / 1000)) +
-                                  (minutes * (CUSTOM_MINUTE_MS / 1000)) +
-                                  seconds;
-        
-        const progress = (dayElapsedSeconds / totalDaySeconds) * 100;
-        
-        // Update Progress Bar
-        progressBarEl.style.width = `${progress.toFixed(2)}%`;
-        progressPercentEl.textContent = progress.toFixed(2);
-    }
+        let epochMs = 0;
+        let intervalId = null;
 
-    // Initialize and set interval
-    // Run every 50ms for a visually smooth update
-    window.onload = function() {
-        updateCustomClock();
-        setInterval(updateCustomClock, 50);
-    }
-</script>
+        function startClock() {
+            if (intervalId) {
+                clearInterval(intervalId); // Clear existing interval if restarting
+            }
+            // Start the clock update loop
+            updateClock();
+            intervalId = setInterval(updateClock, 10); // Update every 10ms for smooth millisecond display
+        }
+
+        function updateClock() {
+            if (!settings || !settings.daysPerYear) {
+                // Wait for settings to load
+                return;
+            }
+
+            // 1. Calculate Epoch Time in UTC milliseconds
+            const epochDateTimeString = `${settings.epochDate}T${settings.epochTime}.000Z`;
+            epochMs = Date.parse(epochDateTimeString);
+
+            // Handle invalid date/time parsing
+            if (isNaN(epochMs)) {
+                elements.planetaryTimeDisplay.textContent = 'Invalid Epoch Date/Time';
+                return;
+            }
+
+            // 2. Calculate elapsed real time since epoch
+            const nowMs = Date.now();
+            const msElapsedSinceEpoch = nowMs - epochMs;
+            elements.msElapsed.textContent = msElapsedSinceEpoch.toLocaleString();
+
+            if (msElapsedSinceEpoch < 0) {
+                elements.planetaryTimeDisplay.textContent = 'Future Date (Epoch is later than Now)';
+                return;
+            }
+
+            // 3. Define Planetary Conversion Factors (Total Real MS in each custom unit)
+            const MS_PER_P_SECOND = settings.msPerSecond;
+            const MS_PER_P_MINUTE = MS_PER_P_SECOND * settings.secondsPerMinute;
+            const MS_PER_P_HOUR = MS_PER_P_MINUTE * settings.minutesPerHour;
+            const MS_PER_P_DAY = MS_PER_P_HOUR * settings.hoursPerDay;
+            const MS_PER_P_YEAR = MS_PER_P_DAY * settings.daysPerYear;
+
+            // 4. Calculate Planetary Time Components
+            let remainingMs = msElapsedSinceEpoch;
+
+            // Calculate Years
+            const pYears = Math.floor(remainingMs / MS_PER_P_YEAR);
+            remainingMs %= MS_PER_P_YEAR;
+
+            // Calculate Days (of Year)
+            const pDays = Math.floor(remainingMs / MS_PER_P_DAY);
+            remainingMs %= MS_PER_P_DAY;
+
+            // Calculate Hours
+            const pHours = Math.floor(remainingMs / MS_PER_P_HOUR);
+            remainingMs %= MS_PER_P_HOUR;
+
+            // Calculate Minutes
+            const pMinutes = Math.floor(remainingMs / MS_PER_P_MINUTE);
+            remainingMs %= MS_PER_P_MINUTE;
+
+            // Calculate Seconds
+            const pSeconds = Math.floor(remainingMs / MS_PER_P_SECOND);
+            remainingMs %= MS_PER_P_SECOND;
+
+            // The remaining are Milliseconds
+            const pMilliseconds = remainingMs;
+
+            // 5. Update UI
+
+            // Format time components
+            const format = (num, length) => String(num).padStart(length, '0');
+
+            const formattedTime = `${format(pHours, 2)}:${format(pMinutes, 2)}:${format(pSeconds, 2)}.${format(pMilliseconds, 3)}`;
+
+            elements.planetaryTimeDisplay.textContent = formattedTime;
+            elements.pYear.textContent = pYears.toLocaleString();
+            // Days are 0-indexed, so we add 1 for display
+            elements.pDayOfYear.textContent = `${(pDays + 1).toLocaleString()} / ${settings.daysPerYear}`;
+
+            // 6. Update Day Progress Bar
+            const msPassedToday = msElapsedSinceEpoch % MS_PER_P_DAY;
+            const progress = (msPassedToday / MS_PER_P_DAY) * 100;
+
+            elements.progressBar.style.width = `${progress}%`;
+            elements.progressPercent.textContent = progress.toFixed(2);
+        }
+
+        // --- INITIALIZATION ---
+        window.onload = initializeFirebase;
+
+    </script>
 </body>
 </html>
