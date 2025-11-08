@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battery Charge Test Logger</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f9;
+        }
+        /* Custom styles for better aesthetics */
+        .card {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Battery Test Logger</h1>
+        <p class="text-sm text-gray-600 mb-6">Your test data is saved securely to a personal Firestore database.</p>
+
+        <!-- Status Message Area -->
+        <div id="status-message" class="text-center p-3 mb-4 rounded-lg font-medium hidden"></div>
+
+        <!-- Logging Form -->
+        <div class="card bg-white p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-blue-600">Log New Test Result</h2>
+            <form id="log-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <!-- Row 1: Battery & Power -->
+                <div class="space-y-4 col-span-1">
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">Battery Size (mAh)</span>
+                        <input type="number" id="batterySizeMah" step="1" placeholder="e.g. 5000" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2.5 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
+                    </label>
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">Charging Power (W) - Max 1 decimal</span>
+                        <input type="number" id="chargingPowerW" step="0.1" placeholder="e.g. 67.0" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2.5 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
+                    </label>
+                </div>
+
+                <!-- Row 2: Display & Chipset -->
+                <div class="space-y-4 col-span-1">
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">Display Size (inches) - Max 2 decimals</span>
+                        <input type="number" id="displaySizeInches" step="0.01" placeholder="e.g. 6.78" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2.5 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
+                    </label>
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">Display Resolution (pixels)</span>
+                        <input type="text" id="displayResolution" placeholder="e.g. 1080x2340" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2.5 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
+                    </label>
+                </div>
+
+                <!-- Row 3: Chipset, Time & Percentage -->
+                <div class="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">Chipset Model</span>
+                        <input type="text" id="chipset" placeholder="e.g. Snapdragon 8 Gen 3" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2.5 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
+                    </label>
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">Charging Time (Minutes)</span>
+                        <input type="number" id="chargingTimeMinutes" step="1" placeholder="e.g. 30" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2.5 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
+                    </label>
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">Percentage Gained (0-100)</span>
+                        <input type="number" id="percentageGained" step="1" min="1" max="100" placeholder="e.g. 50" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2.5 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
+                    </label>
+                </div>
+
+                <div class="col-span-1 md:col-span-2 pt-2">
+                    <button type="submit" id="logButton"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition duration-300 disabled:opacity-50">
+                        <span id="button-text">Log Result</span>
+                        <svg id="button-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Results Table -->
+        <div class="card bg-white p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Test History</h2>
+            <div id="results-container" class="overflow-x-auto">
+                <table id="results-table" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size (mAh)</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Power (W)</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time (Min)</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% Gained</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Chipset</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Display</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Results will be injected here -->
+                    </tbody>
+                </table>
+                <p id="loading-indicator" class="text-center text-gray-500 py-4 hidden">Loading test results...</p>
+                <p id="no-results" class="text-center text-gray-500 py-4 hidden">No results logged yet. Log your first test above!</p>
+            </div>
+        </div>
+
+        <!-- User ID Display (Crucial for multi-user context) -->
+        <div class="mt-6 p-4 bg-gray-100 rounded-lg text-sm text-gray-600">
+            <p>Your unique identifier for this app is: <code id="user-id" class="font-mono text-gray-800 break-all">Initializing...</code></p>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Imports (Type Module) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, Timestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase variables provided by the environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, userId = null;
+        let isAuthReady = false;
+
+        const FORM_ID = 'log-form';
+        const RESULTS_BODY_ID = 'results-body';
+        const STATUS_MESSAGE_ID = 'status-message';
+        const USER_ID_ELEM_ID = 'user-id';
+        const LOADING_INDICATOR_ID = 'loading-indicator';
+        const NO_RESULTS_ID = 'no-results';
+        const LOG_BUTTON_ID = 'logButton';
+
+        const statusMessage = document.getElementById(STATUS_MESSAGE_ID);
+        const logButton = document.getElementById(LOG_BUTTON_ID);
+        const buttonText = document.getElementById('button-text');
+        const buttonSpinner = document.getElementById('button-spinner');
+
+        // --- Utility Functions ---
+
+        function displayMessage(text, isError = false) {
+            statusMessage.textContent = text;
+            statusMessage.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+            if (isError) {
+                statusMessage.classList.add('bg-red-100', 'text-red-700');
+            } else {
+                statusMessage.classList.add('bg-green-100', 'text-green-700');
+            }
+        }
+
+        function toggleButtonLoading(isLoading) {
+            logButton.disabled = isLoading;
+            buttonSpinner.classList.toggle('hidden', !isLoading);
+            buttonText.textContent = isLoading ? 'Logging...' : 'Log Result';
+        }
+
+        // --- Firebase Initialization and Authentication ---
+
+        async function initFirebase() {
+            if (!firebaseConfig) {
+                displayMessage("Firebase configuration is missing. Cannot initialize database.", true);
+                return;
+            }
+
+            try {
+                setLogLevel('Debug');
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                document.getElementById(LOADING_INDICATOR_ID).classList.remove('hidden');
+
+                // Set up authentication state listener
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        document.getElementById(USER_ID_ELEM_ID).textContent = userId;
+                        isAuthReady = true;
+                        // Start listening to data once authenticated
+                        setupRealtimeListener();
+                    } else {
+                        // Attempt to sign in if not already signed in
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                displayMessage(`Initialization Error: ${error.message}`, true);
+            }
+        }
+
+        // --- Firestore Operations ---
+
+        function getCollectionRef() {
+            if (!userId) throw new Error("User not authenticated.");
+            // Private data path: /artifacts/{appId}/users/{userId}/battery_tests
+            const path = `artifacts/${appId}/users/${userId}/battery_tests`;
+            return collection(db, path);
+        }
+
+        async function logResult(event) {
+            event.preventDefault();
+            if (!isAuthReady || !userId) {
+                displayMessage("Authentication not ready. Please wait.", true);
+                return;
+            }
+
+            toggleButtonLoading(true);
+
+            try {
+                // 1. Get and validate inputs
+                const batterySizeMah = parseFloat(document.getElementById('batterySizeMah').value);
+                const chargingPowerW = parseFloat(document.getElementById('chargingPowerW').value);
+                const displaySizeInches = parseFloat(document.getElementById('displaySizeInches').value);
+                const displayResolution = document.getElementById('displayResolution').value.trim();
+                const chipset = document.getElementById('chipset').value.trim();
+                const percentageGained = parseInt(document.getElementById('percentageGained').value, 10);
+                const chargingTimeMinutes = parseInt(document.getElementById('chargingTimeMinutes').value, 10);
+
+                if (isNaN(batterySizeMah) || isNaN(chargingPowerW) || isNaN(displaySizeInches) || isNaN(percentageGained) || isNaN(chargingTimeMinutes)) {
+                    throw new Error("Please ensure all numerical fields are filled correctly.");
+                }
+
+                if (!displayResolution || !chipset) {
+                    throw new Error("Display Resolution and Chipset fields are required.");
+                }
+
+                // 2. Prepare data object
+                const resultData = {
+                    batterySizeMah: batterySizeMah,
+                    chargingPowerW: parseFloat(chargingPowerW.toFixed(1)), // Enforce 1 decimal for power
+                    displaySizeInches: parseFloat(displaySizeInches.toFixed(2)), // Enforce 2 decimals for display size
+                    displayResolution: displayResolution,
+                    chipset: chipset,
+                    percentageGained: percentageGained,
+                    chargingTimeMinutes: chargingTimeMinutes,
+                    efficiency: percentageGained / chargingTimeMinutes, // Calculated metric: % per minute
+                    timestamp: Timestamp.now()
+                };
+
+                // 3. Save to Firestore
+                const docRef = await addDoc(getCollectionRef(), resultData);
+                displayMessage(`Test result logged successfully! Document ID: ${docRef.id}`);
+
+                // 4. Clear form
+                document.getElementById(FORM_ID).reset();
+
+            } catch (error) {
+                console.error("Error logging result:", error);
+                displayMessage(`Failed to log result: ${error.message}`, true);
+            } finally {
+                toggleButtonLoading(false);
+            }
+        }
+
+        // --- Real-time Data Listener ---
+
+        function setupRealtimeListener() {
+            const loadingIndicator = document.getElementById(LOADING_INDICATOR_ID);
+            const noResultsMessage = document.getElementById(NO_RESULTS_ID);
+            const resultsBody = document.getElementById(RESULTS_BODY_ID);
+
+            try {
+                // Query: Get all documents, ordered by timestamp (newest first)
+                const q = query(getCollectionRef(), orderBy("timestamp", "desc"));
+
+                // Real-time listener
+                onSnapshot(q, (snapshot) => {
+                    const tests = [];
+                    snapshot.forEach((doc) => {
+                        tests.push({ id: doc.id, ...doc.data() });
+                    });
+
+                    renderResults(tests, resultsBody, loadingIndicator, noResultsMessage);
+                }, (error) => {
+                    console.error("Error fetching real-time data:", error);
+                    displayMessage(`Failed to load history: ${error.message}`, true);
+                    loadingIndicator.classList.add('hidden');
+                });
+            } catch (e) {
+                console.error("Listener setup failed:", e);
+                loadingIndicator.classList.add('hidden');
+                displayMessage(`History setup failed. Auth issue? ${e.message}`, true);
+            }
+        }
+
+        // --- Rendering ---
+
+        function renderResults(tests, resultsBody, loadingIndicator, noResultsMessage) {
+            resultsBody.innerHTML = ''; // Clear existing rows
+            loadingIndicator.classList.add('hidden');
+            noResultsMessage.classList.toggle('hidden', tests.length > 0);
+
+            tests.forEach(test => {
+                const date = test.timestamp ? new Date(test.timestamp.seconds * 1000).toLocaleString() : 'N/A';
+                const efficiencyText = test.efficiency ? `${test.efficiency.toFixed(2)} %/min` : 'N/A';
+
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+
+                row.innerHTML = `
+                    <td class="px-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${date}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500">${test.batterySizeMah}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500">${test.chargingPowerW}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500">${test.chargingTimeMinutes}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm font-semibold ${test.efficiency > 1.5 ? 'text-green-600' : 'text-orange-600'}">${test.percentageGained}% <span class="text-xs font-normal text-gray-400">(${efficiencyText})</span></td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">${test.chipset}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">${test.displayResolution}, ${test.displaySizeInches}"</td>
+                `;
+                resultsBody.appendChild(row);
+            });
+        }
+
+
+        // --- Event Listener Setup ---
+        window.onload = () => {
+            initFirebase();
+            document.getElementById(FORM_ID).addEventListener('submit', logResult);
+        };
+
+    </script>
+</body>
+</html>
