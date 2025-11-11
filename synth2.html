@@ -570,13 +570,13 @@ function getPeriodicWave(type) {
 
     if (type === 'piano') {
         // Percussive, complex sound. Strong fundamental, good mix of lower harmonics.
-        real = new Float32Array([0, 1.0, 0.9, 0.55, 0.45, 0.37, 0.23, 0.0]);
+        real = new Float32Array([0, 1.0, 0.9, 0.55, 0.45, 0.37, 0.23, 0.0, 0.02, 0.01, 0.005, 0.002, 0.001, 0.0005, 0.0002, 0.0001, 0.00005]);
     } else if (type === 'guitar') {
         // Plucked, slightly brighter. Stronger fundamental and odd harmonics.
-        real = new Float32Array([0, 1.0, 0.65, 0.9, 0.33, 0.7, 0.17, 0.5]);
+        real = new Float32Array([0, 1.0, 0.65, 0.9, 0.33, 0.7, 0.17, 0.5, 0.0, 0.1, 0.0, 0.0, 0.0, 0.05, 0.0, 0.03, 0.0]);
     } else if (type === 'violin') {
         // Bowed, very rich and bright (similar to sawtooth but customized for warmth).
-        real = new Float32Array([0, 1.0, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1]);
+        real = new Float32Array([0, 1.0, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0.2, 0.15, 0.1, 0.08, 0.05, 0.02, 0.01]);
     } else {
         // Return null if type is not recognized
         return null;
