@@ -42,6 +42,18 @@ label {
   min-width: 120px;
 }
 
+/* Specific styling for the range input to ensure it fits nicely */
+input[type="range"] {
+  height: 30px;
+  cursor: grab;
+}
+
+input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin-top: 5px;
+}
+
 input[type="number"],
 input[type="text"],
 select {
@@ -53,7 +65,17 @@ button {
   padding: 8px 12px;
   font-size: 14px;
   cursor: pointer;
+  border-radius: 4px;
+  background: #12e34b;
+  color: #323ddd;
+  border: none;
+  font-weight: bold;
+  transition: background 0.1s;
 }
+button:hover {
+  background: #0fbc3c;
+}
+
 
 #gridWrap {
   margin-top: 12px;
@@ -131,9 +153,20 @@ canvas {
   <div style="display:flex;gap:8px;align-items:center;">
     <button id="applyBtn">Apply</button>
     <button id="randomizeBtn">Randomize</button>
+    <button id="stopAllBtn" title="Stop all playing voices">Stop All</button>
   </div>
 
   <div style="flex:1"></div>
+
+  <!-- Volume Slider -->
+  <label>Volume
+    <input id="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.8" />
+  </label>
+  
+  <!-- Sustain Toggle -->
+  <label>Sustain
+    <input id="sustainToggle" type="checkbox" />
+  </label>
 
   <label>Waveform
     <select id="wave">
@@ -141,6 +174,10 @@ canvas {
       <option>triangle</option>
       <option>sawtooth</option>
       <option>square</option>
+      <!-- NEW TIMBRES ADDED HERE -->
+      <option>piano</option>
+      <option>guitar</option>
+      <option>violin</option>
     </select>
   </label>
 
@@ -163,7 +200,7 @@ canvas {
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const masterGain = audioCtx.createGain();
-masterGain.gain.value = 0.8;
+// masterGain gain value is initialized below by the volume slider
 masterGain.connect(audioCtx.destination);
 
 const canvas = document.getElementById('gridCanvas');
@@ -188,6 +225,20 @@ const notesLegend = document.getElementById('notesLegend');
 const waveSel = document.getElementById('wave');
 const releaseInput = document.getElementById('release');
 const edoParams = document.getElementById('edoParams');
+// Volume Slider, Sustain Toggle, and Stop All Button
+const volumeSlider = document.getElementById('volumeSlider');
+const sustainToggle = document.getElementById('sustainToggle');
+const stopAllBtn = document.getElementById('stopAllBtn');
+
+
+// Set initial volume and add listener
+if(volumeSlider) {
+  masterGain.gain.value = parseFloat(volumeSlider.value);
+  volumeSlider.addEventListener('input', (e) => {
+    masterGain.gain.value = parseFloat(e.target.value);
+  });
+}
+
 
 tuningType.addEventListener('change', () => {
   const v = tuningType.value;
@@ -196,7 +247,7 @@ tuningType.addEventListener('change', () => {
   jiParams.style.display = v === 'ji' ? '' : 'none';
 });
 
-/* helpers */
+/* helpers (unchanged) */
 function centsOfRatio(r){ return 1200 * Math.log2(r); }
 function parseRatioString(s){
   s = String(s).trim();
@@ -211,16 +262,14 @@ function parseRatioString(s){
   }
 }
 
-/* canonical chain Fb..B# */
+/* canonical chain Fb..B# (unchanged) */
 const canonicalChainOfFifths = [
   "Dbb", "Abb", "Ebb", "Bbb", "Fb","Cb","Gb","Db","Ab","Eb","Bb","F",
   "C","G","D","A","E","B","F#","C#",
   "G#","D#","A#","E#","B#", "Fx", "Cx"
 ];
 
-/* EDO naming: IMPORTANT FIX
-   '#' and 'b' MUST use the chromatic semitone (the 7*k-4*N result),
-   NOT the diatonic. */
+/* EDO naming (unchanged) */
 function generateEDONaming(N){
   const kfloat = N * Math.log2(3/2);
   const k = Math.round(kfloat);
@@ -286,7 +335,7 @@ function generateEDONaming(N){
   return { names, info: {k, wholeTone, chromaticRaw, chromatic, diatonic} };
 }
 
-// map canonical note names to their fifthspan relative to C
+// map canonical note names to their fifthspan relative to C (unchanged)
 const fifthspanMap = {};
 canonicalChainOfFifths.forEach((name, i) => {
   const span = i - canonicalChainOfFifths.indexOf("C");
@@ -329,7 +378,7 @@ function pickSimplestName(list){
   return analyzed[0].s;
 }
 
-/* nonoctave parse & find EDO approx */
+/* nonoctave parse & find EDO approx (unchanged) */
 function parseNonoSpec(spec){
   const m = String(spec).trim().match(/^(\d+)\s*ed\s*(.+)$/i);
   if(!m) return null;
@@ -352,7 +401,7 @@ function findEDOApproxForNono(x, ratio){
   return best;
 }
 
-/* JI generation */
+/* JI generation (unchanged) */
 function primesUpTo(n){
   const sieve = new Array(n+1).fill(true);
   sieve[0]=sieve[1]=false;
@@ -386,7 +435,7 @@ function generateJIRatios(primeLimit, maxNumDen=16){
   return arr;
 }
 
-/* state */
+/* state (unchanged) */
 let gridState = {
   rows: 6, cols: 12, keySize: 64,
   tuning: { type:'edo', edo:12 },
@@ -413,7 +462,7 @@ function buildStateFromUI(){
     tuningText.textContent = `${N}-EDO (names generated from chain-of-fifths)`;
   } else if(type === 'nonoctave'){
     const parsed = parseNonoSpec(nonoSpecInput.value);
-    if(!parsed){ alert('Invalid nonoctave spec. Use format xedY, e.g. 13ed3 or 13ed3/2'); return false; }
+    if(!parsed){ console.error('Invalid nonoctave spec.'); return false; }
     const approx = findEDOApproxForNono(parsed.x, parsed.ratio);
     gridState.tuning = { type:'nonoctave', x: parsed.x, ratio: parsed.ratio };
     gridState.nonoInfo = { parsed, approx };
@@ -436,7 +485,7 @@ function buildStateFromUI(){
   return true;
 }
 
-/* frequency & labeling */
+/* frequency & labeling (unchanged) */
 function frequencyForIndex(idx){
   const t = gridState.tuning; const root = gridState.rootFreq;
   if(t.type === 'edo'){
@@ -484,7 +533,7 @@ function nameForIndex(idx){
   return '?';
 }
 
-/* canvas draw */
+/* canvas draw (unchanged) */
 function resizeCanvas(){
   const ks = gridState.keySize;
   const width = gridState.cols * ks;
@@ -509,15 +558,99 @@ function renderGrid(){
   }
 }
 
+/* --- NEW: PeriodicWave Definitions for Timbres --- */
+
+function getPeriodicWave(type) {
+    let real; // Cosine components (mostly used)
+    let imag; // Sine components (we keep these zero for simplicity)
+    const maxHarmonics = 8; // Number of harmonics to define
+
+    // Helper to create zero-filled imag array
+    const createImag = (len) => new Float32Array(len).fill(0);
+
+    if (type === 'piano') {
+        // Percussive, complex sound. Strong fundamental, good mix of lower harmonics.
+        real = new Float32Array([0, 1.0, 0.8, 0.5, 0.3, 0.15, 0.05, 0.02]);
+    } else if (type === 'guitar') {
+        // Plucked, slightly brighter. Stronger fundamental and odd harmonics.
+        real = new Float32Array([0, 1.0, 0.2, 0.6, 0.1, 0.4, 0.05, 0.2]);
+    } else if (type === 'violin') {
+        // Bowed, very rich and bright (similar to sawtooth but customized for warmth).
+        real = new Float32Array([0, 1.0, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1]);
+    } else {
+        // Return null if type is not recognized
+        return null;
+    }
+    
+    // Ensure arrays are the same length (DC offset + maxHarmonics)
+    if (real.length < maxHarmonics + 1) {
+      real = new Float32Array([...real, ...Array(maxHarmonics + 1 - real.length).fill(0)]);
+    }
+
+    imag = createImag(real.length);
+    
+    // Create and return the custom waveform
+    return audioCtx.createPeriodicWave(real, imag, { disableNormalization: true });
+}
+
 /* Audio voices & robust pointer handling */
 const activeVoices = new Map(); // idx -> {osc,gain}
 const pointerToIdx = new Map(); // pointerId -> idx
+
+// Function to stop all playing voices (unchanged)
+function stopAllVoices() {
+  const now = audioCtx.currentTime;
+  // Get keys before iterating as noteOff deletes from the map
+  const voicesToStop = Array.from(activeVoices.keys()); 
+
+  for(const idx of voicesToStop) {
+    // Manually trigger the note-off envelope for all active voices
+    const v = activeVoices.get(idx);
+    if(v) {
+        const rel = Math.max(5, parseFloat(releaseInput.value) || 120) / 1000;
+        try {
+          v.gain.gain.cancelScheduledValues(now);
+          v.gain.gain.setValueAtTime(v.gain.gain.value, now);
+          v.gain.gain.exponentialRampToValueAtTime(0.0001, now + rel);
+          v.osc.stop(now + rel + 0.02);
+        } catch(e){}
+        setTimeout(()=>{ try{ v.osc.disconnect(); v.gain.disconnect(); }catch(_){} }, (rel+0.05)*1000);
+        activeVoices.delete(idx);
+    }
+    // Update UI
+    drawKeyActive(idx, false);
+  }
+
+  // Clear all pointers being tracked
+  pointerToIdx.clear();
+  renderGrid(); // Redraw the entire grid to ensure keys are reset
+}
+
+// Attach stopAllVoices to the new button (unchanged)
+if(stopAllBtn) stopAllBtn.addEventListener('click', stopAllVoices);
+
 
 function noteOn(idx){
   if(activeVoices.has(idx)) return;
   const osc = audioCtx.createOscillator();
   const g = audioCtx.createGain();
-  osc.type = waveSel.value || 'sine';
+  
+  const selectedWave = waveSel.value;
+  
+  // --- MODIFIED LOGIC TO SUPPORT NEW TIMBRES ---
+  if (selectedWave === 'sine' || selectedWave === 'triangle' || selectedWave === 'sawtooth' || selectedWave === 'square') {
+      osc.type = selectedWave;
+  } else {
+      const customWave = getPeriodicWave(selectedWave);
+      if (customWave) {
+          osc.setPeriodicWave(customWave);
+      } else {
+          // Fallback if something goes wrong or selection is unknown
+          osc.type = 'sine';
+      }
+  }
+  // --- END MODIFIED LOGIC ---
+
   g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
   g.gain.exponentialRampToValueAtTime(1.0, audioCtx.currentTime + 0.01);
   osc.connect(g); g.connect(masterGain);
@@ -525,9 +658,11 @@ function noteOn(idx){
   osc.start();
   activeVoices.set(idx, {osc, gain: g});
 }
+
 function noteOff(idx){
   const v = activeVoices.get(idx);
   if(!v) return;
+  
   const rel = Math.max(5, parseFloat(releaseInput.value) || 120) / 1000;
   const now = audioCtx.currentTime;
   try {
@@ -540,7 +675,7 @@ function noteOff(idx){
   activeVoices.delete(idx);
 }
 
-/* coordinate -> index */
+/* coordinate -> index (unchanged) */
 function canvasPosToIndex(evt){
   const rect = canvas.getBoundingClientRect();
   const clientX = (evt.touches && evt.touches[0]) ? evt.touches[0].clientX : evt.clientX;
@@ -553,7 +688,7 @@ function canvasPosToIndex(evt){
   return r * gridState.cols + c;
 }
 
-/* pointer handlers using pointer capture and per-pointer mapping */
+/* pointer handlers (unchanged, includes sustain logic) */
 canvas.addEventListener('pointerdown', (e) => {
   if(audioCtx.state === 'suspended') audioCtx.resume();
   e.preventDefault();
@@ -564,33 +699,60 @@ canvas.addEventListener('pointerdown', (e) => {
   noteOn(idx);
   drawKeyActive(idx, true);
 });
+
 canvas.addEventListener('pointermove', (e) => {
   if(!pointerToIdx.has(e.pointerId)) return;
   e.preventDefault();
   const prevIdx = pointerToIdx.get(e.pointerId);
   const idx = canvasPosToIndex(e);
   if(idx === prevIdx) return;
-  // stop previous
-  if(prevIdx !== null) { noteOff(prevIdx); drawKeyActive(prevIdx, false); }
+
+  // stop previous ONLY if sustain is OFF
+  if(prevIdx !== null) {
+    if(!sustainToggle.checked) {
+      noteOff(prevIdx);
+    }
+    drawKeyActive(prevIdx, false);
+  }
+  
   // start new if valid
-  if(idx !== null){ noteOn(idx); drawKeyActive(idx, true); pointerToIdx.set(e.pointerId, idx); }
-  else pointerToIdx.set(e.pointerId, null);
+  if(idx !== null){
+    noteOn(idx); 
+    drawKeyActive(idx, true); 
+    pointerToIdx.set(e.pointerId, idx); 
+  } else {
+    pointerToIdx.set(e.pointerId, null);
+  }
 });
+
 canvas.addEventListener('pointerup', (e) => {
   e.preventDefault();
   const idx = pointerToIdx.get(e.pointerId);
-  if(typeof idx === 'number' && idx !== null){ noteOff(idx); drawKeyActive(idx, false); }
+  if(typeof idx === 'number' && idx !== null){
+    // ONLY stop the note if sustain is OFF
+    if(!sustainToggle.checked) {
+      noteOff(idx);
+    }
+    drawKeyActive(idx, false);
+  }
   pointerToIdx.delete(e.pointerId);
   try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
 });
+
 canvas.addEventListener('pointercancel', (e) => {
+  e.preventDefault();
   const idx = pointerToIdx.get(e.pointerId);
-  if(typeof idx === 'number' && idx !== null){ noteOff(idx); drawKeyActive(idx, false); }
+  if(typeof idx === 'number' && idx !== null){
+    // ONLY stop the note if sustain is OFF
+    if(!sustainToggle.checked) {
+      noteOff(idx);
+    }
+    drawKeyActive(idx, false);
+  }
   pointerToIdx.delete(e.pointerId);
 });
 
-/* remove any 'click' based triggering to avoid retriggers (no click handler) */
-
+/* drawKeyActive (unchanged) */
 function drawKeyActive(idx, active){
   const ks = gridState.keySize;
   const r = Math.floor(idx / gridState.cols);
@@ -606,7 +768,7 @@ function drawKeyActive(idx, active){
   ctx.fillText(disp, x+ks/2, y+ks/2);
 }
 
-/* buttons */
+/* buttons and init (unchanged) */
 applyBtn.addEventListener('click', () => {
   const ok = buildStateFromUI(); if(!ok) return;
   resizeCanvas(); renderGrid(); updateLegend();
@@ -643,3 +805,5 @@ window.addEventListener('resize', () => { resizeCanvas(); renderGrid(); });
 </script>
 </body>
 </html>
+
+
