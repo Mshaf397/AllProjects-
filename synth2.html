@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Grid Web Synth — Fixed</title>
+<title>Grid Web Synth — New Timbres</title>
 <style>
   :root {
   --pad: 10px;
@@ -105,8 +105,8 @@ canvas {
 </head>
 <body>
 <header>
-  <h2 style="margin:0">Grid Web Synth — Fixed</h2>
-  <div class="small">Fixes: correct chromatic/diatonic mapping & robust pointer/voice handling.</div>
+  <h2 style="margin:0">Grid Web Synth — New Timbres</h2>
+  <div class="small">Now includes Organ and Electric Guitar harmonic profiles.</div>
 </header>
 
 <div class="controls">
@@ -174,10 +174,12 @@ canvas {
       <option>triangle</option>
       <option>sawtooth</option>
       <option>square</option>
-      <!-- NEW TIMBRES ADDED HERE -->
       <option>piano</option>
       <option>guitar</option>
       <option>violin</option>
+      <!-- ADDED NEW TIMBRES -->
+      <option>organ</option>
+      <option>electric_guitar</option>
     </select>
   </label>
 
@@ -558,27 +560,36 @@ function renderGrid(){
   }
 }
 
-/* --- NEW: PeriodicWave Definitions for Timbres --- */
+/* --- EDITED: PeriodicWave Definitions for Timbres (Up to 16th Harmonic) --- */
 
 function getPeriodicWave(type) {
-    let real; // Cosine components (mostly used)
+    let real; // Cosine components (amplitudes/volumes of the harmonics)
     let imag; // Sine components (we keep these zero for simplicity)
-    const maxHarmonics = 8; // Number of harmonics to define
+    const maxHarmonics = 16; // Up to the 16th harmonic (17 elements total: DC offset + 16 harmonics)
 
     // Helper to create zero-filled imag array
     const createImag = (len) => new Float32Array(len).fill(0);
 
+    // Harmonic data starts at index 1: real[0] is the DC offset (ignored for timbre)
     if (type === 'piano') {
-        // Percussive, complex sound. Strong fundamental, good mix of lower harmonics.
-        real = new Float32Array([0, 1.0, 0.8, 0.5, 0.4, 0.2, 0.0, 0.0, 0.02, 0.01, 0.005, 0.002, 0.001, 0.0005, 0.0002, 0.0001, 0.00005]);
+        real = new Float32Array([0, 1.0, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001, 0.0005, 0.0002, 0.0001, 0.00005]);
     } else if (type === 'guitar') {
-        // Plucked, slightly brighter. Stronger fundamental and odd harmonics.
-        real = new Float32Array([0, 1.0, 0.6, 0.7, 0.3, 0.4, 0.0, 0.005, 0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.0, 0.03, 0.0]);
+        real = new Float32Array([0, 1.0, 0.1, 0.7, 0.0, 0.4, 0.0, 0.2, 0.0, 0.1, 0.0, 0.05, 0.0, 0.0, 0.0, 0.03, 0.0]);
     } else if (type === 'violin') {
-        // Bowed, very rich and bright (similar to sawtooth but customized for warmth).
-        real = new Float32Array([0, 1.0, 0.5, 0.333, 0.25, 0.2, 0.166667, 0.142857, 0.125, 0.111, 0.1, 0.09, 0.083, 0.076923, 0.07142857, 0.0667, 0.0625]);
-    } else {
-        // Return null if type is not recognized
+        real = new Float32Array([0, 1.0, 0.8, 0.6, 0.5, 0.4, 0.3, 0.25, 0.2, 0.15, 0.1, 0.08, 0.05, 0.04, 0.03, 0.02, 0.01]);
+    } 
+    // NEW TIMBRE 1: ORGAN (Mellow drawbar style)
+    else if (type === 'organ') {
+        // Strong Fundamental, Octave (2nd), and 12th (3rd harmonic of 2nd oct) for a sustained, rich tone.
+        real = new Float32Array([0, 1.0, 0.8, 0.2, 0.4, 0.8, 0.05, 0.04, 0.03, 0.02, 0.01, 0.005, 0.003, 0.002, 0.001, 0.0005, 0.0001]);
+    } 
+    // NEW TIMBRE 2: ELECTRIC GUITAR (Overdriven/Fuzz)
+    else if (type === 'electric_guitar') {
+        // Heavy emphasis on ODD harmonics (3, 5, 7, 9) to simulate distortion/square wave clipping.
+        real = new Float32Array([0, 1.0, 0.1, 0.45, 0.1, 0.7, 0.1, 0.5, 0.05, 0.3, 0.0, 0.1, 0.0, 0.05, 0.0, 0.02, 0.0]);
+    }
+    else {
+        // Fallback or unrecognized type (default to sine wave setup)
         return null;
     }
     
@@ -805,5 +816,3 @@ window.addEventListener('resize', () => { resizeCanvas(); renderGrid(); });
 </script>
 </body>
 </html>
-
-
