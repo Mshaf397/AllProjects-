@@ -98,11 +98,12 @@
   #gridWrap {
     margin-top: 12px;
     border-radius: 8px;
-    overflow: auto;
+    overflow: auto; /* Handles scrolling for large canvas */
     background: var(--control-bg);
     padding: 8px;
-    /* Use dynamic height for responsiveness */
+    /* Limit the viewport size here, not on the canvas */
     max-height: 60vh; 
+    max-width: 100%;
   }
   @media (max-width: 768px) {
     #gridWrap {
@@ -114,8 +115,8 @@
     display: block;
     background: var(--key-color);
     border-radius: 4px;
-    /* Ensures canvas scales fluidly within its wrapper */
-    max-width: 100%;
+    /* Canvas size is set explicitly in JS, so we disable max-width/height here */
+    width: auto; 
     height: auto;
   }
 
@@ -232,6 +233,12 @@
   </div>
 
   <div style="flex:1"></div>
+  
+  <!-- NEW MODE ROTATION DROPDOWN -->
+  <label style="min-width: 150px;">Start Step (Mode)
+    <select id="modeSelector"></select>
+  </label>
+  <!-- END NEW DROPDOWN -->
 
   <!-- Volume Slider -->
   <label>Volume
@@ -280,7 +287,7 @@
         <label>Generator (Ratio x/y, Cents, or EDO Steps x\y, e.g., 3/2 or 7\12):
           <input id="gen_generator" value="700">
         </label>
-        <label>Period (Ratio x/y, Cents, or EDO Steps x\y, e.g., 2/1 or 12\12):
+        <label>Period (Ratio x/y, Cents, or EDO Steps x\y, eg., 2/1 or 12\12):
           <input id="gen_period" value="1200">
         </label>
         <label>UDP (e.g., up|down(periods), like 3|3(1)):
@@ -296,12 +303,20 @@
 <!-- /MODAL -->
 
 <script>
+let gridState = {
+  rows: 6, cols: 12, keySize: 64,
+  tuning: { type:'edo', edo: 12 },
+  rootFreq: 261.6256, rootName: 'C4',
+  edoNameTable: null, nonoInfo: null, jiRatios: null,
+  subsetPattern: [], // Initially populated in buildStateFromUI
+};
+
 // --- WEB AUDIO API SETUP ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const masterGain = audioCtx.createGain();
 masterGain.connect(audioCtx.destination);
 
-// Synth Class for Audio Generation and ADSR
+// Synth Class for Audio Generation
 class Synth {
     constructor(ctx, gainNode, waveType, releaseTime) {
         this.ctx = ctx;
@@ -316,36 +331,58 @@ class Synth {
         
         this.initOscillators();
     }
-
+    
     initOscillators() {
-        const createOsc = (type, gainValue, multiplier = 1) => {
+        // Defines the harmonic structure for custom waveforms
+        const getPeriodicWave = (type) => {
+            const maxHarmonics = 16;
+            const real = new Array(maxHarmonics + 1).fill(0);
+            
+            // Set fundamental (1st harmonic)
+            real[1] = 1.0; 
+            
+            if (type === 'piano') {
+                // Quick decay, complex lower harmonics for percussive sound
+                real[2] = 0.5; real[3] = 0.4; real[4] = 0.3; real[5] = 0.2; real[6] = 0.1;
+                real[7] = 0.05; real[8] = 0.02; real[9] = 0.01; real[10] = 0.005; real[11] = 0.002;
+                real[12] = 0.001; real[13] = 0.0005; real[14] = 0.0002; real[15] = 0.0001; real[16] = 0.00005;
+            } else if (type === 'guitar') {
+                // Strong odd harmonics for twang, quick high-end drop
+                real[2] = 0.1; real[3] = 0.7; real[4] = 0.0; real[5] = 0.4; real[6] = 0.0;
+                real[7] = 0.2; real[8] = 0.0; real[9] = 0.1; real[10] = 0.0; real[11] = 0.05;
+                real[12] = 0.0; real[13] = 0.0; real[14] = 0.0; real[15] = 0.03; real[16] = 0.0;
+            } else if (type === 'violin') {
+                // Rich high-frequency content for bright, sustained, bowed sound
+                real[2] = 0.8; real[3] = 0.6; real[4] = 0.5; real[5] = 0.4; real[6] = 0.3;
+                real[7] = 0.25; real[8] = 0.2; real[9] = 0.15; real[10] = 0.1; real[11] = 0.08;
+                real[12] = 0.05; real[13] = 0.04; real[14] = 0.03; real[15] = 0.02; real[16] = 0.01;
+            } else if (type === 'organ') {
+                // Drawbar approximation: 8', 4', 2 2/3' (1st, 2nd, 3rd harmonics)
+                real[2] = 0.6; real[3] = 0.4; real[4] = 0.2; real[5] = 0.1;
+            } else if (type === 'electric_guitar') {
+                // Heavy odd harmonics for distortion/compression effect
+                real[2] = 0.1; real[3] = 0.8; real[4] = 0.1; real[5] = 0.6; real[7] = 0.4; real[9] = 0.2;
+            }
+            
+            // Imaginary parts typically kept at zero for symmetric waveforms
+            const imag = new Array(maxHarmonics + 1).fill(0);
+            return this.ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+        };
+        
+        // Use a single oscillator for custom waveforms
+        if (this.waveType === 'piano' || this.waveType === 'guitar' || this.waveType === 'violin' || this.waveType === 'organ' || this.waveType === 'electric_guitar') {
             const osc = this.ctx.createOscillator();
-            osc.type = type;
-            const g = this.ctx.createGain();
-            g.gain.setValueAtTime(gainValue, this.ctx.currentTime);
-            osc.connect(g).connect(this.gain);
-            this.oscillators.push({ osc, multiplier });
-        };
+            osc.setPeriodicWave(getPeriodicWave(this.waveType));
+            osc.connect(this.gain);
+            this.oscillators.push({ osc, multiplier: 1 });
+        } else {
+            // Standard wave forms
+            const osc = this.ctx.createOscillator();
+            osc.type = this.waveType;
+            osc.connect(this.gain);
+            this.oscillators.push({ osc, multiplier: 1 });
+        }
 
-        const types = {
-            'sine': [{type:'sine', gain:1}],
-            'triangle': [{type:'triangle', gain:1}],
-            'sawtooth': [{type:'sawtooth', gain:1}],
-            'square': [{type:'square', gain:1}],
-            // Simple additive approximations for instrument sounds
-            'piano': [{type:'sine', gain:1}, {type:'triangle', gain:0.5, mult: 2}],
-            'guitar': [{type:'sawtooth', gain:1}, {type:'square', gain:0.4, mult: 3}],
-            'violin': [{type:'sawtooth', gain:1}, {type:'sine', gain:0.6, mult: 2}, {type:'triangle', gain:0.3, mult: 4}],
-            'organ': [{type:'square', gain:1}, {type:'square', gain:0.5, mult: 2}, {type:'sine', gain:0.3, mult: 3}],
-            'electric_guitar': [{type:'square', gain:1}, {type:'sawtooth', gain:0.6, mult: 2}],
-        };
-        
-        const config = types[this.waveType] || types['sine'];
-
-        config.forEach(c => {
-            createOsc(c.type, c.gain, c.mult);
-        });
-        
         this.oscillators.forEach(item => {
             item.osc.start();
         });
@@ -354,16 +391,14 @@ class Synth {
     start(frequency) {
         const now = this.ctx.currentTime;
         
-        // Update frequencies
         this.oscillators.forEach(item => {
             const freq = frequency * (item.multiplier || 1);
             item.osc.frequency.setValueAtTime(freq, now);
         });
 
-        // Simple Attack to Sustain
         this.gain.gain.cancelScheduledValues(now);
         this.gain.gain.setValueAtTime(0, now);
-        this.gain.gain.linearRampToValueAtTime(1 * this.masterGain.gain.value, now + 0.005); // Attack
+        this.gain.gain.linearRampToValueAtTime(1 * this.masterGain.gain.value, now + 0.005); 
     }
 
     release() {
@@ -372,13 +407,10 @@ class Synth {
         this.gain.gain.setValueAtTime(this.gain.gain.value, now);
         this.gain.gain.linearRampToValueAtTime(0, now + this.releaseTime);
         
-        // Stop oscillators after release time
         this.oscillators.forEach(item => {
             try {
-                item.osc.stop(now + this.releaseTime + 0.05); // Add small buffer
-            } catch (e) {
-                // Oscillator may already be stopped if rapid note-on/off occurs
-            }
+                item.osc.stop(now + this.releaseTime + 0.05); 
+            } catch (e) {}
         });
     }
 }
@@ -415,10 +447,17 @@ const gen_period = document.getElementById('gen_period');
 const gen_udp = document.getElementById('gen_udp');
 const gen_cancelBtn = document.getElementById('gen_cancelBtn');
 const gen_applyBtn = document.getElementById('gen_applyBtn');
+const modeSelector = document.getElementById('modeSelector');
 
 // --- AUDIO/SYNTH STATE ---
 const activeVoices = new Map(); 
+// Stores {pointerId: last_valid_idx}
 const pointerToIdx = new Map(); 
+
+let baseSubsetPattern = []; 
+let currentModeIndex = 0; 
+let fullScaleStepsData = []; 
+
 
 if(volumeSlider) {
   masterGain.gain.value = parseFloat(volumeSlider.value);
@@ -427,48 +466,33 @@ if(volumeSlider) {
   });
 }
 
-// --- HELPER FUNCTIONS ---
+// --- CORE HELPER FUNCTIONS ---
 function centsOfRatio(r){ return 1200 * Math.log2(r); }
 
-/**
- * Parses an interval string into cents. Handles:
- * 1. EDO steps: x\y (e.g., 7\12) -> 1200 * x/y
- * 2. Ratio: x/y (e.g., 3/2) -> 1200 * log2(x/y)
- * 3. Cents: plain number (e.g., 702)
- */
 function parseInterval(input) {
   input = input.trim();
   if(!input) return NaN;
 
-  // 1. EDO steps format: x\y
   if (input.includes('\\')) {
     const parts = input.split('\\').map(x => parseFloat(x.trim()));
     if (parts.length === 2 && isFinite(parts[0]) && isFinite(parts[1]) && parts[1] !== 0) {
-      // Cents = 1200 * log2(2^(x/y)) = 1200 * x/y
       return 1200 * (parts[0] / parts[1]); 
     }
     return NaN;
   } 
   
-  // 2. Ratio format: x/y
   if (input.includes('/')){
     const [a,b] = input.split('/').map(x=>parseFloat(x.trim()));
     if(isFinite(a) && isFinite(b) && b!==0) return centsOfRatio(a/b);
     return NaN;
   } 
   
-  // 3. Assume cents if no format found
   const v = parseFloat(input);
   return isFinite(v) ? v : NaN; 
 }
 
-/**
- * Converts cents to the raw number of EDO steps (before modulo N).
- * This is used for generating the scale steps, where an octave is N steps, not 0.
- */
 function centsToEDOStepRaw(cents, N) {
   if (N === 0) return 0;
-  // Quantize cents to the nearest EDO step (can be >= N)
   return Math.round((cents / 1200) * N);
 }
 
@@ -490,7 +514,7 @@ const canonicalChainOfFifths = ["Dbb", "Abb", "Ebb", "Bbb", "Fb","Cb","Gb","Db",
 const fifthspanMap = {};
 canonicalChainOfFifths.forEach((name, i) => { const span = i - canonicalChainOfFifths.indexOf("C"); fifthspanMap[name] = span; });
 
-function generateEDONaming(N){ /* ... logic unchanged ... */
+function generateEDONaming(N){ 
   const kfloat = N * Math.log2(3/2); const k = Math.round(kfloat); const wholeTone = (2 * k) % N; const chromaticRaw = (7 * k) - (4 * N); const chromatic = ((chromaticRaw % N) + N) % N; const diatonic = ((wholeTone - chromatic) % N + N) % N;
   const fifthOffsets = { 'C':0, 'G':1, 'D':2, 'A':3, 'E':4, 'B':5, 'F':-1 }; const letterSteps = {};
   for(const [L, offs] of Object.entries(fifthOffsets)){ let pos = (offs * k) % N; pos = (pos + N) % N; letterSteps[L] = pos; }
@@ -520,7 +544,7 @@ function generateEDONaming(N){ /* ... logic unchanged ... */
   return { names, info: {k, wholeTone, chromaticRaw, chromatic, diatonic} };
 }
 
-function pickSimplestName(list){ /* ... logic unchanged ... */
+function pickSimplestName(list){ 
   if(!Array.isArray(list) || list.length===0) return '?';
   const uniq = Array.from(new Set(list));
   function analyze(n){
@@ -542,14 +566,6 @@ function pickSimplestName(list){ /* ... logic unchanged ... */
   return analyzed[0].s;
 }
 
-// --- STATE ---
-let gridState = {
-  rows: 6, cols: 12, keySize: 64,
-  tuning: { type:'edo', edo:12 },
-  rootFreq: 261.6256, rootName: 'C4',
-  edoNameTable: null, nonoInfo: null, jiRatios: null,
-  subsetPattern: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-};
 
 // --- MODAL CONTROLS ---
 
@@ -572,6 +588,9 @@ function showModalMessage(title, message) {
 }
 
 generateScaleBtn.addEventListener('click', () => {
+    // Resume audio on button click (secondary check)
+    if (audioCtx.state !== 'running') { audioCtx.resume().catch(e => console.error("Audio resume failed:", e)); }
+    
     if (tuningType.value !== 'edo') {
         showModalMessage('Action Required', 'The scale generator only works when **Tuning Type** is set to **EDO**.');
         return;
@@ -584,7 +603,7 @@ gen_applyBtn.addEventListener('click', () => {
 });
 
 
-// --- SCALE GENERATOR LOGIC ---
+// --- SCALE GENERATOR & MODE LOGIC ---
 
 function generateAndApplyScale(generatorStr, periodStr, udpStr) {
     const N = parseInt(edoStepsInput.value);
@@ -603,11 +622,9 @@ function generateAndApplyScale(generatorStr, periodStr, udpStr) {
         return;
     }
 
-    // Convert Cents to RAW EDO Steps (can be > N for period, e.g., 12/12 in 12-EDO is 12 steps)
     const generatorStepRaw = centsToEDOStepRaw(generatorCents, N);
     const periodStepRaw = centsToEDOStepRaw(periodCents, N);
 
-    // Validation check for period magnitude (must be at least one step)
     if (Math.abs(periodStepRaw) < 1) {
         showModalMessage('Error', 'The Period interval cannot quantize to zero EDO steps. It must represent at least one full step.');
         return;
@@ -616,18 +633,15 @@ function generateAndApplyScale(generatorStr, periodStr, udpStr) {
     const pitchesEDOSteps = new Set();
     
     for (let p = 0; p < udp.periods; p++) {
-        // Use the RAW step count for the period offset calculation
         const periodOffset = p * periodStepRaw; 
         for (let i = -udp.down; i <= udp.up; i++) {
-            // Use the RAW step count for generator steps as well
             let step = (i * generatorStepRaw) + periodOffset; 
-            
-            // Modulo only at the end to get the step index (0 to N-1)
             step = mod(step, N); 
             pitchesEDOSteps.add(step);
         }
     }
     
+    // The base pattern MUST be sorted for interval calculation and UI
     const finalScale = Array.from(pitchesEDOSteps).sort((a, b) => a - b);
     
     if (finalScale.length < 2) {
@@ -635,17 +649,86 @@ function generateAndApplyScale(generatorStr, periodStr, udpStr) {
         return;
     }
 
-    gridState.subsetPattern = finalScale;
+    // Set the BASE pattern and reset the mode
+    baseSubsetPattern = finalScale;
+    currentModeIndex = 0;
     
-    applySubsetPatternToUI(finalScale);
-
+    applyBaseSubsetToGrid(); // Applies mode 0 and updates UI
     hideModal();
+}
+
+/**
+ * Calculates the current mode pattern by rotating the intervals of the base scale.
+ * The result is an UNSORTED array of EDO steps in sequential order.
+ */
+function calculateModePattern(basePattern, startIndex) {
+    if (basePattern.length === 0) return [];
+    
+    const N = gridState.tuning.edo;
+    const size = basePattern.length;
+    
+    // 1. Calculate intervals (size intervals including the one closing the octave)
+    const intervals = [];
+    for (let i = 0; i < size; i++) {
+        const nextStep = (i === size - 1) ? N : basePattern[i + 1];
+        let interval = nextStep - basePattern[i];
+        
+        // This handles cases like 11 -> 0 in 12-EDO (interval is 1)
+        if (i === size - 1 && basePattern[i] !== 0) {
+            interval = N - basePattern[i]; 
+        } else if (i < size - 1 && interval < 0) {
+             // Should not happen if basePattern is correctly sorted (which it is)
+             interval += N; 
+        }
+        intervals.push(interval);
+    }
+    
+    // 2. Rotate intervals based on the start index
+    const rotationAmount = startIndex % size;
+    const rotatedIntervals = intervals.slice(rotationAmount).concat(intervals.slice(0, rotationAmount));
+    
+    // 3. Reconstruct the steps starting from EDO step 0
+    const modePattern = [0];
+    let currentStep = 0;
+    
+    // We only need to generate size - 1 steps (steps 1 through size-1)
+    // The final rotated interval implicitly returns us to N (the octave).
+    for (let i = 0; i < size - 1; i++) { 
+        currentStep = (currentStep + rotatedIntervals[i]);
+        modePattern.push(currentStep);
+    }
+
+    // CRITICAL: DO NOT SORT. The pattern must be the sequential list of EDO steps for the mode.
+    return modePattern; 
+}
+
+/**
+ * Applies the base pattern and current mode index to the grid state, 
+ * then updates all related UI elements.
+ */
+function applyBaseSubsetToGrid() {
+    // If the base pattern is empty, default to full scale (0..N-1)
+    if (baseSubsetPattern.length === 0 && gridState.tuning.edo) {
+        baseSubsetPattern = Array.from({length: gridState.tuning.edo}, (_, i) => i);
+    }
+    
+    // 1. Calculate the new mode pattern (this array is unsorted and sequential)
+    const modePattern = calculateModePattern(baseSubsetPattern, currentModeIndex);
+    
+    // 2. Apply the calculated pattern to the grid state
+    gridState.subsetPattern = modePattern;
+    
+    // 3. Update the UI controls
+    populateModeSelector(baseSubsetPattern);
+    applySubsetPatternToUI(baseSubsetPattern); // Updates the check marks in the multi-select (shows the original scale notes)
+    
+    // RENDER
     updateLegend();
     resizeCanvas();
     renderGrid();
 }
 
-// --- STATE MANAGEMENT ---
+// --- STATE MANAGEMENT AND UI UPDATES ---
 
 function generateFullScaleSteps(tuning, edoNameTable, jiRatios) {
   let steps = []; let N = 0; 
@@ -665,12 +748,41 @@ function populateScaleSubsetSelect(fullSteps) {
     select.innerHTML = '<option disabled>No steps available</option>';
     return;
   }
+  
+  // Update the label to show item count
+  const labelDiv = select.parentNode.querySelector('.small');
+  if (labelDiv) {
+      labelDiv.previousSibling.textContent = `Scale Subset (Select Notes) [${fullSteps.length} Items]`;
+  }
+  
   for (const step of fullSteps) {
     const option = document.createElement('option');
     option.value = step.index; 
     option.textContent = `[${step.index}] ${step.name}`; 
     select.appendChild(option);
   }
+}
+
+function populateModeSelector(subsetSteps) {
+    modeSelector.innerHTML = '';
+    
+    if (subsetSteps.length === 0) {
+        modeSelector.innerHTML = '<option disabled>No steps</option>';
+        return;
+    }
+
+    const fullStepsDataMap = new Map(fullScaleStepsData.map(s => [s.index, s.name]));
+
+    subsetSteps.forEach((step, index) => {
+        const option = document.createElement('option');
+        const name = fullStepsDataMap.get(step) || `Step ${step}`;
+        option.value = index; // We store the index into the baseSubsetPattern
+        option.textContent = `${name} (${step})`;
+        modeSelector.appendChild(option);
+    });
+    
+    // Restore mode index selection
+    modeSelector.value = currentModeIndex;
 }
 
 function applySubsetPatternToUI(pattern) {
@@ -690,8 +802,25 @@ function getSelectedSubset() {
         selections.push(parseInt(option.value, 10));
       }
     }
+    // Final pattern must always contain 0 and be sorted to correctly represent the base scale steps.
     const finalPattern = [...new Set([0, ...selections])].sort((a, b) => a - b);
     return finalPattern;
+}
+
+function updateLegend(){
+  const t = gridState.tuning;
+  const subsetSize = gridState.subsetPattern.length;
+  let txt = `Grid: ${gridState.rows}×${gridState.cols} • Key size: ${gridState.keySize}px • Root: ${gridState.rootName} @ ${gridState.rootFreq} Hz. `;
+  
+  if(t.type === 'edo') {
+      txt += `${t.edo}-EDO. `;
+      if (subsetSize > 0) {
+          txt += `Scale Size: ${subsetSize}. Mode: ${modeSelector.options[currentModeIndex]?.textContent || 'Ionian'}`;
+      }
+  }
+  
+  tuningText.textContent = `Tuning: ${txt}`;
+  // notesLegend.textContent = txt; // Combined into tuningText for simplicity
 }
 
 function buildStateFromUI(){
@@ -707,7 +836,6 @@ function buildStateFromUI(){
 
   let totalSteps = 0; 
   let tuningTextContent = '';
-  let fullStepsData = [];
 
   if(type === 'edo'){
     const N = Math.max(2, parseInt(edoStepsInput.value) || 12);
@@ -716,26 +844,33 @@ function buildStateFromUI(){
     gridState.nonoInfo = null; gridState.jiRatios = null;
     tuningTextContent = `${N}-EDO (names generated from chain-of-fifths)`;
   } 
-  // ... (nonoctave/JI logic omitted)
   
   const fullStepsResult = generateFullScaleSteps(
     gridState.tuning, 
     gridState.edoNameTable, 
     gridState.jiRatios
   );
-  fullStepsData = fullStepsResult.steps;
+  fullScaleStepsData = fullStepsResult.steps; // Update global list
   totalSteps = fullStepsResult.N;
 
   const oldSubsetLength = scaleSubsetSelect.options.length;
   const tuningChanged = totalSteps !== oldSubsetLength;
 
   if (tuningChanged || totalSteps === 0) {
-      populateScaleSubsetSelect(fullStepsData);
+      populateScaleSubsetSelect(fullScaleStepsData);
       // Default to full scale selection visually
       for (const option of scaleSubsetSelect.options) { option.selected = true; }
   }
   
-  gridState.subsetPattern = getSelectedSubset();
+  // Update base pattern from manual selection
+  const manuallySelectedSubset = getSelectedSubset();
+  if (JSON.stringify(manuallySelectedSubset) !== JSON.stringify(baseSubsetPattern)) {
+      baseSubsetPattern = manuallySelectedSubset;
+      currentModeIndex = 0; // Reset mode when base scale changes
+  }
+
+  // Apply the currently active mode to the grid state
+  applyBaseSubsetToGrid();
 
   tuningText.textContent = tuningTextContent;
   return true;
@@ -744,10 +879,11 @@ function buildStateFromUI(){
 function frequencyForIndex(idx){
   const t = gridState.tuning; 
   const root = gridState.rootFreq;
-  const subset = gridState.subsetPattern;
+  const subset = gridState.subsetPattern; // This is now the sequential mode pattern
   if (subset.length === 0) return root; 
   const subsetIntervalIndex = idx % subset.length;
-  const intervalStep = subset[subsetIntervalIndex];
+  const intervalStep = subset[subsetIntervalIndex]; // The EDO step index
+
   const octaveShift = Math.floor(idx / subset.length);
 
   if(t.type === 'edo'){
@@ -759,222 +895,260 @@ function frequencyForIndex(idx){
 
 function nameForIndex(idx){
   const t = gridState.tuning;
-  const subset = gridState.subsetPattern;
+  const subset = gridState.subsetPattern; // The sequential mode pattern
   if (subset.length === 0) return 'Error';
   const subsetIntervalIndex = idx % subset.length;
-  const intervalStep = subset[subsetIntervalIndex];
-  const octaveShift = Math.floor(idx / subset.length);
-  const octaveNum = Math.floor(gridState.rootName.match(/\d/)?.[0] || 4) + octaveShift;
+  const intervalStep = subset[subsetIntervalIndex]; // The EDO step index
+  
+  // 1. Calculate Octave Shift
+  const rootOctaveMatch = gridState.rootName.match(/\d/);
+  const rootOctave = rootOctaveMatch ? parseInt(rootOctaveMatch[0], 10) : 4; 
+  const octaveShift = rootOctave + Math.floor(idx / subset.length);
   
   let baseName = '';
   
   if(t.type === 'edo'){
-    const step = ((intervalStep % t.edo)+t.edo)%t.edo;
+    // Step is used to look up the name in the full EDO table (0 to N-1)
+    const step = ((intervalStep % t.edo) + t.edo) % t.edo;
     const candidates = gridState.edoNameTable[step] || [];
     baseName = pickSimplestName(candidates);
+    
+    // Ensure the baseName does not include any number from the EDO naming generator
+    baseName = baseName.replace(/\d/g, ''); 
   }
   
   if (t.type === 'edo') {
-      return `${baseName.replace(/\d/g, '')}${octaveNum}`;
+      return `${baseName}${octaveShift}`;
   }
   return baseName;
 }
 
+// --- MODE SELECTOR HANDLER ---
+modeSelector.addEventListener('change', () => {
+    currentModeIndex = parseInt(modeSelector.value, 10);
+    applyBaseSubsetToGrid();
+});
 
 // --- CANVAS DRAWING & INTERACTION ---
 
-function resizeCanvas(){
-  const ks = gridState.keySize;
-  const width = gridState.cols * ks;
-  const height = gridState.rows * ks;
-  canvas.width = width; canvas.height = height;
+function resizeCanvas(){ 
+  const ks = gridState.keySize; 
+  const width = gridState.cols * ks; 
+  const height = gridState.rows * ks; 
   
-  // Set canvas size based on its container (for responsiveness)
-  const wrapper = document.getElementById('gridWrap');
-  if (wrapper) {
-      // Set the explicit size on the canvas element, but let CSS handle the visual scaling
-      canvas.style.maxWidth = '100%';
-      canvas.style.height = 'auto'; 
-  }
+  // Set canvas size to the full calculated dimensions
+  canvas.width = width; 
+  canvas.height = height; 
+  
+  // CSS takes over to handle scrolling within #gridWrap
 }
 
-function renderGrid(){
-  const ks = gridState.keySize, rows = gridState.rows, cols = gridState.cols;
-  ctx.fillStyle='var(--key-color)'; 
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.strokeStyle='rgba(0,0,0,0.2)'; 
-  ctx.lineWidth=1;
-  ctx.font = Math.max(10, Math.floor(ks/5)) + 'px system-ui, sans-serif';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
+function renderGrid(){ 
+  const ks = gridState.keySize, rows = gridState.rows, cols = gridState.cols; 
+  // Clear the whole canvas with the overall background key color (ForestGreen)
+  ctx.fillStyle='var(--key-color)'; ctx.fillRect(0,0,canvas.width,canvas.height); 
   
-  for(let r=0;r<rows;r++){
-    for(let c=0;c<cols;c++){
+  ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1; 
+  ctx.font = Math.max(10, Math.floor(ks/5)) + 'px system-ui, sans-serif'; 
+  ctx.textAlign='center'; ctx.textBaseline='middle'; 
+  
+  for(let r=0;r<rows;r++){ 
+    for(let c=0;c<cols;c++){ 
       const x=c*ks, y=r*ks; 
       const idx=r*cols+c; 
       
-      // Highlight active key
-      ctx.fillStyle = activeVoices.has(idx) ? '#ffcc00' : 'rgba(255,255,255,0.9)';
+      // Draw key background: light gray/white, or yellow if active
+      ctx.fillStyle = activeVoices.has(idx) ? '#ffcc00' : 'rgba(255,255,255,0.9)'; 
+      
       ctx.fillRect(x,y,ks,ks); 
+      ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1); 
       
-      // Draw border
-      ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1);
-      
-      // Draw text
-      let label = nameForIndex(idx);
+      let label = nameForIndex(idx); 
       ctx.fillStyle='#111'; 
-      let disp=String(label); 
-      if(disp.length>14) disp = disp.slice(0,12)+'…';
-      ctx.fillText(disp, x+ks/2, y+ks/2);
-    }
+      let disp=String(label); if(disp.length>14) disp = disp.slice(0,12)+'…';
+      ctx.fillText(disp, x+ks/2, y+ks/2); 
+    } 
   }
 }
 
-function drawKeyActive(idx, isActive) {
-  const ks = gridState.keySize;
-  const c = idx % gridState.cols;
-  const r = Math.floor(idx / gridState.cols);
-  const x = c * ks;
-  const y = r * ks;
+function drawKeyActive(idx, isActive) { 
+  const ks = gridState.keySize; 
+  const c = idx % gridState.cols; 
   
-  // Redraw the key to reflect the active state
-  ctx.fillStyle = isActive ? '#ffcc00' : 'rgba(255,255,255,0.9)';
-  ctx.fillRect(x,y,ks,ks);
+  // Divide by columns to get the row
+  const r = Math.floor(idx / gridState.cols); 
   
-  ctx.strokeStyle='rgba(0,0,0,0.2)';
-  ctx.lineWidth=1;
-  ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1);
-
-  // Redraw text
-  let label = nameForIndex(idx);
+  const x = c * ks; const y = r * ks; 
+  
+  // Use explicit key background color when drawing active/inactive state
+  ctx.fillStyle = isActive ? '#ffcc00' : 'rgba(255,255,255,0.9)'; 
+  
+  ctx.fillRect(x,y,ks,ks); 
+  ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1; ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1); 
+  let label = nameForIndex(idx); 
   ctx.fillStyle='#111'; 
-  let disp=String(label); 
-  if(disp.length>14) disp = disp.slice(0,12)+'…';
+  let disp=String(label); if(disp.length>14) disp = disp.slice(0,12)+'…';
   ctx.fillText(disp, x+ks/2, y+ks/2);
 }
 
-
-function noteOn(idx){
-  if(activeVoices.has(idx)) return;
+function noteOn(idx){ 
+  if(activeVoices.has(idx)) return; 
   
-  if (audioCtx.state === 'suspended') { audioCtx.resume(); }
-
-  const freq = frequencyForIndex(idx);
-  const wave = waveSel.value;
-  const release = parseFloat(releaseInput.value) || 120;
-
-  const voice = new Synth(audioCtx, masterGain, wave, release);
-  activeVoices.set(idx, voice);
-  voice.start(freq);
+  // NOTE: The primary resume is in pointerdown, but we keep this as a secondary check.
+  if (audioCtx.state === 'suspended') { audioCtx.resume(); } 
   
-  drawKeyActive(idx, true);
+  const freq = frequencyForIndex(idx); const wave = waveSel.value; const release = parseFloat(releaseInput.value) || 120; const voice = new Synth(audioCtx, masterGain, wave, release); activeVoices.set(idx, voice); voice.start(freq); drawKeyActive(idx, true);
 }
 
-function noteOff(idx){
-  const voice = activeVoices.get(idx);
-  if(!voice) return;
-
-  if (sustainToggle.checked) {
-    // If sustain is on, we keep the voice active in the map, 
-    // but visually show the key is no longer being pressed.
-    drawKeyActive(idx, false);
-    // Voice stays alive until stopAll is called or key is released
-  } else {
-    // If sustain is off, release the voice immediately
-    voice.release();
-    activeVoices.delete(idx);
-    drawKeyActive(idx, false);
+function noteOff(idx){ 
+  const voice = activeVoices.get(idx); if(!voice) return; 
+  if (sustainToggle.checked) { 
+    drawKeyActive(idx, false); 
+    // Keep voice active for sustain, but remove highlight
+  } else { 
+    voice.release(); 
+    activeVoices.delete(idx); 
+    drawKeyActive(idx, false); 
   }
 }
 
-function stopAllVoices() {
-    activeVoices.forEach((voice, idx) => {
-        voice.release(); // Releases all voices
-        drawKeyActive(idx, false);
-    });
-    activeVoices.clear();
+function stopAllVoices() { 
+    // Resume context before stopping all voices, just in case
+    if (audioCtx.state !== 'running') { audioCtx.resume(); }
+    
+    activeVoices.forEach((voice, idx) => { voice.release(); drawKeyActive(idx, false); }); activeVoices.clear();
 }
 
-
-function canvasPosToIndex(e) {
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  const x = (e.clientX - rect.left) * scaleX;
-  const y = (e.clientY - rect.top) * scaleY;
-  const col = Math.floor(x / gridState.keySize);
-  const row = Math.floor(y / gridState.keySize);
+function canvasPosToIndex(e) { 
+  const rect = canvas.getBoundingClientRect(); 
+  // Handle touch events
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
   
-  if (row >= 0 && row < gridState.rows && col >= 0 && col < gridState.cols) {
-    return row * gridState.cols + col;
-  }
+  const scaleX = canvas.width / rect.width; 
+  const scaleY = canvas.height / rect.height; 
+  const x = (clientX - rect.left) * scaleX; 
+  const y = (clientY - rect.top) * scaleY; 
+  const col = Math.floor(x / gridState.keySize); 
+  const row = Math.floor(y / gridState.keySize); 
+  if (row >= 0 && row < gridState.rows && col >= 0 && col < gridState.cols) { return row * gridState.cols + col; } 
   return -1;
 }
 
-function pointerdown(e) {
-  e.preventDefault();
-  const idx = canvasPosToIndex(e);
-  if(idx !== -1) {
-    pointerToIdx.set(e.pointerId, idx);
-    noteOn(idx);
+function pointerdown(e) { 
+  e.preventDefault(); 
+
+  // CRITICAL FIX: Robust resume on ANY pointerdown interaction 
+  if (audioCtx.state !== 'running') {
+      audioCtx.resume().catch(e => console.error("Audio resume failed:", e));
+  }
+  
+  const idx = canvasPosToIndex(e); 
+  if(idx !== -1) { 
+    try { canvas.setPointerCapture(e.pointerId); } catch(_) {}
+    
+    // --- NEW SUSTAIN RELEASE LOGIC ---
+    // If the key is already active AND sustain is on, treat this as a release tap
+    if (activeVoices.has(idx) && sustainToggle.checked) {
+        // Force the release and remove the voice
+        const voice = activeVoices.get(idx);
+        voice.release();
+        activeVoices.delete(idx);
+        drawKeyActive(idx, false);
+        return; // Don't proceed to start a new note
+    }
+    // --- END NEW SUSTAIN RELEASE LOGIC ---
+    
+    pointerToIdx.set(e.pointerId, idx); noteOn(idx); 
   }
 }
 
-function pointerup(e) {
+// *** FIXED POINTER MOVE LOGIC FOR JITTER AND GLISSANDO ***
+function pointermove(e) {
+  // Only process if this pointerId is currently tracking a key
+  if (!pointerToIdx.has(e.pointerId)) return;
   e.preventDefault();
-  const idx = pointerToIdx.get(e.pointerId);
-  if(idx !== undefined) {
-    noteOff(idx);
-    pointerToIdx.delete(e.pointerId);
+
+  const prevIdx = pointerToIdx.get(e.pointerId);
+  const currentIdx = canvasPosToIndex(e); // -1 if off-grid
+
+  if (currentIdx === prevIdx) return; 
+
+  // Glissando: Moving from one valid key to a different valid key.
+  if (currentIdx !== -1 && prevIdx !== -1) {
+    // Stop previous note, start new note
+    noteOff(prevIdx);
+    drawKeyActive(prevIdx, false);
+    
+    noteOn(currentIdx);
+    drawKeyActive(currentIdx, true);
+    
+    // Update tracking to the new key index
+    pointerToIdx.set(e.pointerId, currentIdx);
+    return;
+  }
+  
+  // If we move OFF the grid (currentIdx === -1) from a valid key (prevIdx !== -1)
+  if (currentIdx === -1 && prevIdx !== -1) {
+    drawKeyActive(prevIdx, false); 
+    // pointerToIdx remains set to prevIdx, which is the key that needs to stop sound on pointerup.
+    return;
+  }
+  
+  // If we move ONTO the grid from outside (prevIdx was off-grid), start a note.
+  if (currentIdx !== -1 && prevIdx === -1) {
+      noteOn(currentIdx);
+      drawKeyActive(currentIdx, true);
+      pointerToIdx.set(e.pointerId, currentIdx); // Track the new key index
+      return;
   }
 }
 
-// Attach pointer events to the canvas
+
+function pointerup(e) { 
+  e.preventDefault(); 
+  const idx = pointerToIdx.get(e.pointerId); 
+  
+  // idx will hold the *last valid key* index set by pointerdown or pointermove (even if the finger slid off the grid).
+  // We check if a voice exists for this key index before calling noteOff.
+  if (typeof idx === 'number' && idx !== undefined && idx !== -1) { 
+    // Only call noteOff if the voice exists (i.e., it wasn't already released by the sustain tap logic)
+    if (activeVoices.has(idx) && !sustainToggle.checked) {
+        noteOff(idx);
+    }
+    // Always clear the visual highlight if the pointer is lifted
+    drawKeyActive(idx, false);
+  }
+  pointerToIdx.delete(e.pointerId); 
+  try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
+}
+
 canvas.addEventListener('pointerdown', pointerdown);
+canvas.addEventListener('pointermove', pointermove); 
 canvas.addEventListener('pointerup', pointerup);
 canvas.addEventListener('pointercancel', pointerup);
 
-
-// --- BUTTON HANDLERS AND INIT ---
-
-applyBtn.addEventListener('click', () => {
-  const ok = buildStateFromUI(); if(!ok) return;
-  resizeCanvas(); renderGrid(); updateLegend();
+// --- EVENT LISTENERS ---
+applyBtn.addEventListener('click', () => { 
+    if (audioCtx.state !== 'running') { audioCtx.resume(); } // Secondary resume check
+    buildStateFromUI(); 
 });
-
+generateScaleBtn.addEventListener('click', () => {
+    if (audioCtx.state !== 'running') { audioCtx.resume(); } // Secondary resume check
+    // ... rest of logic handled by the separate listener for generateScaleBtn
+});
 stopAllBtn.addEventListener('click', stopAllVoices);
 
-tuningType.addEventListener('change', () => {
-  const v = tuningType.value;
-  edoParams.style.display = v === 'edo' ? '' : 'none';
-  nonoParams.style.display = v === 'nonoctave' ? '' : 'none';
-  jiParams.style.display = v === 'ji' ? '' : 'none';
-  // Re-build state to refresh the dropdown and grid when tuning type changes
-  buildStateFromUI();
-  resizeCanvas();
-  renderGrid();
-  updateLegend();
-});
 
-function updateLegend(){
-  const t = gridState.tuning;
-  const subsetSize = gridState.subsetPattern.length;
-  let txt = `Grid: ${gridState.rows}×${gridState.cols} (Scale size: ${subsetSize}) • Key size: ${gridState.keySize}px • Root: ${gridState.rootName} @ ${gridState.rootFreq} Hz. `;
-  
-  if(t.type === 'edo') txt += `${t.edo}-EDO underlying. `;
-  // ... (nonoctave/JI logic omitted)
-
-  txt += `Scale steps (EDO indexes): [${gridState.subsetPattern.join(', ')}]`;
-  notesLegend.textContent = txt;
-}
-
-/* init */
-buildStateFromUI();
-resizeCanvas();
-renderGrid();
-updateLegend();
+// --- INIT ---
 
 window.addEventListener('resize', () => { resizeCanvas(); renderGrid(); });
 
+document.addEventListener('DOMContentLoaded', () => {
+    buildStateFromUI();
+});
 </script>
 </body>
 </html>
+
+
