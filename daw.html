@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polyphonic Microtonal Workstation</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        #current-sequence-input {
+            overflow-x: auto;
+            white-space: pre; 
+            font-family: monospace;
+            caret-color: #4f46e5;
+        }
+        .note-key {
+            @apply inline-block px-2 py-0.5 m-0.5 text-xs font-semibold rounded-full bg-indigo-900 text-indigo-300;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            @apply bg-indigo-500;
+        }
+        input[type="range"]::-moz-range-thumb {
+            @apply bg-indigo-500;
+        }
+        .tab-button.active {
+            @apply bg-gray-700 text-white border-b-2 border-indigo-500;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 min-h-screen p-4 sm:p-8 text-gray-100">
+
+    <div id="main-container" class="max-w-5xl mx-auto">
+        <header class="mb-8">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-white mb-2">Polyphonic Microtonal Workstation</h1>
+            <p class="text-gray-400">Manage up to 4 independent parts with unique EDOs and 17 different timbres.</p>
+        </header>
+
+        <!-- Global Controls -->
+        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl mb-6 border border-gray-700">
+            <h2 class="text-xl font-semibold mb-4 text-white">Global Transport & EQ</h2>
+            
+            <!-- Global Tempo Control -->
+            <div class="mb-6 flex items-center justify-between">
+                <label for="tempo-slider" class="text-sm font-medium text-gray-300 w-3/5">Global Tempo (BPM):</label>
+                <input type="range" id="tempo-slider" min="30" max="300" value="120" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg">
+                <input type="number" id="tempo-input" min="30" max="300" value="120" class="ml-4 w-20 p-2 border border-gray-600 bg-gray-700 rounded-lg text-center font-medium">
+            </div>
+
+            <!-- Action Buttons and Status -->
+            <div class="grid grid-cols-4 gap-3 mb-6 border-t border-gray-700 pt-4">
+                <div class="col-span-2">
+                    <button id="play-button"
+                            class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow-md transition duration-200 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 text-base">
+                        Start All Parts
+                    </button>
+                </div>
+                <div>
+                    <button id="loop-button"
+                            class="w-full py-3 px-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg shadow-md transition duration-200 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50 text-sm">
+                        Loop: ON
+                    </button>
+                </div>
+                <div>
+                    <button id="export-button"
+                            class="w-full py-3 px-4 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded-lg shadow-md transition duration-200 focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-opacity-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                        Export Audio (WebM)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Playback Status -->
+            <div class="mb-2">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Status:</label>
+                <div id="current-status" class="text-xl font-mono text-center bg-gray-700 p-3 rounded-lg shadow-inner text-indigo-400">Stopped</div>
+            </div>
+
+            <!-- EQ Controls -->
+            <h3 class="text-lg font-semibold mb-3 text-white border-t border-gray-700 pt-4 mt-4">Master 3-Band EQ (Gain in dB)</h3>
+            <div id="eq-controls" class="grid grid-cols-3 gap-4 mb-2">
+                <!-- Low -->
+                <div class="text-center">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Low (300 Hz)</label>
+                    <input type="range" id="low-gain" min="-15" max="15" value="0" step="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    <span id="low-value" class="text-sm font-mono text-indigo-400">0 dB</span>
+                </div>
+                <!-- Mid -->
+                <div class="text-center">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Mid (1500 Hz)</label>
+                    <input type="range" id="mid-gain" min="-15" max="15" value="0" step="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    <span id="mid-value" class="text-sm font-mono text-indigo-400">0 dB</span>
+                </div>
+                <!-- High -->
+                <div class="text-center">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">High (4000 Hz)</label>
+                    <input type="range" id="high-gain" min="-15" max="15" value="0" step="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    <span id="high-value" class="text-sm font-mono text-indigo-400">0 dB</span>
+                </div>
+            </div>
+            <p id="audio-context-message" class="text-xs text-center text-gray-500 mt-4">Tap 'Start All Parts' to resume the audio context.</p>
+        </div>
+
+
+        <!-- PART CONTROLS -->
+        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-700">
+            <div class="flex border-b border-gray-700 mb-4">
+                <button id="tab-0" class="tab-button active flex-1 py-2 px-4 font-semibold rounded-t-lg transition" onclick="changePart(0)">Part 1</button>
+                <button id="tab-1" class="tab-button flex-1 py-2 px-4 font-semibold rounded-t-lg transition" onclick="changePart(1)">Part 2</button>
+                <button id="tab-2" class="tab-button flex-1 py-2 px-4 font-semibold rounded-t-lg transition" onclick="changePart(2)">Part 3</button>
+                <button id="tab-3" class="tab-button flex-1 py-2 px-4 font-semibold rounded-t-lg transition" onclick="changePart(3)">Part 4</button>
+            </div>
+
+            <div id="part-settings">
+                <!-- EDO Input -->
+                <div class="mb-4 grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="current-edo-input" class="block text-sm font-medium text-gray-300 mb-2">EDO (Steps per Octave):</label>
+                        <input type="number" id="current-edo-input" min="5" max="96" value="12"
+                               class="w-full border border-gray-600 bg-gray-700 focus:border-indigo-500 rounded-lg p-3 text-lg transition shadow-inner text-center font-medium">
+                    </div>
+                    <div>
+                         <label for="current-timbre-select" class="block text-sm font-medium text-gray-300 mb-2">Timbre (Instrument):</label>
+                         <select id="current-timbre-select" class="w-full border border-gray-600 bg-gray-700 focus:border-indigo-500 rounded-lg p-3 text-lg transition shadow-inner font-medium">
+                            <!-- Options filled by JS -->
+                         </select>
+                    </div>
+                </div>
+
+                <!-- Sequence Input (Textarea) -->
+                <div class="mb-6">
+                    <label for="current-sequence-input" class="block text-sm font-medium text-gray-300 mb-2">Sequence (Part <span id="current-part-label">1</span>):</label>
+                    <textarea id="current-sequence-input" rows="4"
+                           class="w-full border border-gray-600 bg-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg p-3 text-lg transition duration-150 shadow-inner"
+                           placeholder="e.g., 0 4 7(4), -1 3 6(8)"></textarea>
+                    <p id="part-error-message" class="text-sm text-red-400 mt-2 font-medium hidden"></p>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 pt-4">
+                <h2 class="text-xl font-semibold mb-4 text-white">Notation Guide</h2>
+                <ul class="list-disc list-inside text-gray-300 space-y-1 text-sm">
+                    <li><span class="font-mono">EDO Steps</span>: Integer values (e.g., 0, 4, -5) relative to the root **C4 (261.6256 Hz)**.</li>
+                    <li><span class="font-mono">0 4 7</span>: Space indicates simultaneous notes (a chord).</li>
+                    <li><span class="font-mono">0(4), 4(4)</span>: Comma separates sequential chords/notes.</li>
+                    <li><span class="font-mono">(N)</span>: Rhythm code. N is the denominator of a fraction of a whole note (4=quarter, 8=eighth, etc.).</li>
+                    <li><span class="font-mono">0(8)(8)</span>: **Tied attacks**. Chained rhythm codes back-to-back combine their durations into a single, sustained note.</li>
+                    <li><span class="note-key">a</span>: **Accent**. Increases volume for the step.</li>
+                    <li><span class="note-key">s</span>: **Staccato**. Reduces note duration (0.1s).</li>
+                    <li><span class="note-key">r</span>: **Rest**. Consumes time but produces no sound.</li>
+                </ul>
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        // --- 1. Global Constants and State ---
+        const NUM_PARTS = 4;
+        const ROOT_FREQ = 261.6256; 
+
+        // Initial Part States for 4 parts
+        const initialPartStates = [
+            { edo: 12, timbre: 'sine', sequence: '0 4 7(2)' },
+            { edo: 19, timbre: 'sawtooth', sequence: '0(8), 3(8), 6(8), 9(8)' },
+            { edo: 31, timbre: 'flute', sequence: 'r(4), 0 5 12(4)' },
+            { edo: 12, timbre: 'piano', sequence: '0 4 7(4), r(4), 0 4 7(4), r(4)' },
+        ];
+        let partStates = [...initialPartStates];
+        let currentPartIndex = 0;
+
+        let audioContext;
+        let isPlaying = false;
+        let isLooping = true;
+        let tempoBPM = 120;
+        
+        let schedulingInterval;
+        let sequenceStartTime = 0;
+        let globalLoopDuration = 0;
+        
+        // Audio Chain Nodes
+        let lowFilter, midFilter, highFilter;
+        let masterGain;
+        
+        // Recording State
+        let mediaRecorder;
+        let recordedChunks = [];
+        let destination; 
+        let isRendering = false;
+
+        const TIMBRES = [
+            'sine', 'triangle', 'sawtooth', 'square', 
+            'piano', 'violin', 'viola', 'cello', 
+            'acoustic guitar', 'classical guitar', 'electric guitar', 'bass guitar', 
+            'saxophone', 'flute', 'trumpet', 'tuba', 'accordion'
+        ];
+
+        // --- 2. DOM Element Selectors ---
+        const $playButton = document.getElementById('play-button');
+        const $loopButton = document.getElementById('loop-button');
+        const $exportButton = document.getElementById('export-button');
+        const $tempoSlider = document.getElementById('tempo-slider');
+        const $tempoInput = document.getElementById('tempo-input');
+        const $status = document.getElementById('current-status');
+        
+        const $lowGain = document.getElementById('low-gain');
+        const $midGain = document.getElementById('mid-gain');
+        const $highGain = document.getElementById('high-gain');
+        const $lowValue = document.getElementById('low-value');
+        const $midValue = document.getElementById('mid-value');
+        const $highValue = document.getElementById('high-value');
+        
+        const $currentEdoInput = document.getElementById('current-edo-input');
+        const $currentTimbreSelect = document.getElementById('current-timbre-select');
+        const $currentSequenceInput = document.getElementById('current-sequence-input');
+        const $partErrorMessage = document.getElementById('part-error-message');
+        const $currentPartLabel = document.getElementById('current-part-label');
+
+
+        // --- 3. Audio Setup & EQ Control ---
+
+        function setupAudioChain() {
+            if (masterGain) return;
+            
+            masterGain = audioContext.createGain();
+
+            // Setup EQ Filters (BiquadFilterNode)
+            lowFilter = audioContext.createBiquadFilter();
+            midFilter = audioContext.createBiquadFilter();
+            highFilter = audioContext.createBiquadFilter();
+            
+            // Set filter types and frequencies
+            lowFilter.type = 'lowshelf'; lowFilter.frequency.setValueAtTime(300, 0); 
+            midFilter.type = 'peaking'; midFilter.frequency.setValueAtTime(1500, 0); midFilter.Q.setValueAtTime(1.0, 0); 
+            highFilter.type = 'highshelf'; highFilter.frequency.setValueAtTime(4000, 0); 
+
+            // Connect nodes
+            masterGain.connect(lowFilter);
+            lowFilter.connect(midFilter);
+            midFilter.connect(highFilter);
+            
+            // Connect the final EQ output to the speakers
+            highFilter.connect(audioContext.destination);
+
+            console.log("Master Audio chain (with EQ) initialized.");
+        }
+
+        function connectNoteToMix(gainNode) {
+            if (highFilter) {
+                gainNode.connect(masterGain);
+            } else {
+                // Fallback if EQ setup failed (shouldn't happen)
+                gainNode.connect(audioContext.destination);
+            }
+        }
+
+        function updateEQ() {
+            if (!lowFilter) return;
+            
+            const lowGain = parseFloat($lowGain.value);
+            const midGain = parseFloat($midGain.value);
+            const highGain = parseFloat($highGain.value);
+            const now = audioContext.currentTime;
+
+            // Use linearRamp for smooth changes
+            lowFilter.gain.linearRampToValueAtTime(lowGain, now + 0.01);
+            midFilter.gain.linearRampToValueAtTime(midGain, now + 0.01);
+            highFilter.gain.linearRampToValueAtTime(highGain, now + 0.01);
+
+            $lowValue.textContent = `${lowGain} dB`;
+            $midValue.textContent = `${midGain} dB`;
+            $highValue.textContent = `${highGain} dB`;
+        }
+        
+        // --- 4. Instrument Synthesis (17 Timbres - Improved Stability) ---
+        
+        function calculateFrequency(step, edo) {
+            return ROOT_FREQ * Math.pow(2, step / edo);
+        }
+
+        // Helper for simple Karplus-Strong approximation (plucked strings)
+        function createPluckNoise(frequency) {
+            const bufferSize = audioContext.sampleRate * 2;
+            const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                 // Simple pseudo-random impulse for the pluck
+                 data[i] = Math.random() * 0.02 - 0.01; 
+            }
+            return buffer;
+        }
+
+        function createInstrument(timbre, time, frequency, partDuration, modifier) {
+            const output = { nodes: [], cleanup: () => {} }; // Tracks nodes for cleanup
+            const gain = audioContext.createGain();
+            connectNoteToMix(gain);
+            output.nodes.push(gain);
+            
+            let osc;
+            let auxNode = null;
+            let actualDuration = partDuration;
+            let peakVolume = 0.5;
+            const stopOffset = 0.05; // Extra time for release/cleanup
+
+            // Envelope Params (Defaults)
+            let attack = 0.01;
+            let decay = partDuration * 0.9;
+            let release = partDuration;
+
+            if (modifier === 'a') { peakVolume = 0.8; }
+            if (modifier === 's') { actualDuration = Math.min(partDuration, 0.15); }
+            
+            // --- Timbre Specific Synthesis ---
+            switch (timbre) {
+                // Basic Waveforms
+                case 'sine': case 'triangle': case 'sawtooth': case 'square':
+                    osc = audioContext.createOscillator();
+                    osc.type = timbre;
+                    peakVolume = (timbre === 'square' || timbre === 'sawtooth') ? 0.3 : 0.5;
+                    break;
+
+                case 'piano':
+                    osc = audioContext.createOscillator();
+                    osc.type = 'sawtooth';
+                    attack = 0.001; // Percussive
+                    decay = actualDuration * 0.1;
+                    release = actualDuration * 0.2;
+                    peakVolume = 0.7;
+                    break;
+
+                case 'violin': case 'viola': case 'cello':
+                    osc = audioContext.createOscillator();
+                    osc.type = 'sawtooth';
+                    attack = 0.1; // Slow attack for bowing
+                    decay = actualDuration * 0.95;
+                    peakVolume = 0.6;
+                    
+                    // Simple LFO for Vibrato
+                    const lfo = audioContext.createOscillator();
+                    lfo.frequency.setValueAtTime(5, time); // 5 Hz vibrato rate
+                    const lfoGain = audioContext.createGain();
+                    lfoGain.gain.setValueAtTime(1.5, time); // Depth
+                    lfo.connect(lfoGain).connect(osc.frequency);
+                    lfo.start(time);
+                    output.nodes.push(lfo, lfoGain);
+                    break;
+
+                case 'acoustic guitar': case 'classical guitar':
+                    // Karplus-Strong approximation (simplified)
+                    const noise = audioContext.createBufferSource();
+                    noise.buffer = createPluckNoise(frequency);
+                    
+                    const delay = audioContext.createDelay(1.0 / frequency); 
+                    delay.delayTime.setValueAtTime(1.0 / frequency, time);
+                    
+                    const feedback = audioContext.createGain();
+                    feedback.gain.setValueAtTime(0.9999, time); // High feedback for resonance
+
+                    noise.connect(delay);
+                    delay.connect(feedback).connect(delay);
+                    delay.connect(gain);
+                    
+                    noise.start(time);
+                    
+                    attack = 0.001; 
+                    decay = actualDuration * 0.5; 
+                    release = actualDuration * 0.5;
+                    peakVolume = 0.6;
+                    
+                    output.nodes.push(noise, delay, feedback);
+                    break;
+
+                case 'electric guitar': case 'bass guitar':
+                    osc = audioContext.createOscillator();
+                    osc.type = (timbre === 'bass guitar') ? 'square' : 'sawtooth'; 
+                    
+                    // Distortion Waveshaper
+                    const shaper = audioContext.createWaveShaper();
+                    const curve = new Float32Array(256); 
+                    for (let i = 0; i < 256; i++) {
+                        const x = i * 2 / 255 - 1;
+                        curve[i] = (x > 0 ? 1 : -1) * (1 - Math.exp(-6 * Math.abs(x))); // Soft clipping
+                    }
+                    shaper.curve = curve;
+                    auxNode = shaper;
+                    
+                    osc.connect(shaper).connect(gain);
+                    output.nodes.push(shaper);
+                    
+                    attack = 0.001;
+                    decay = actualDuration * 0.9;
+                    peakVolume = 0.6;
+                    break;
+
+                case 'saxophone':
+                    osc = audioContext.createOscillator();
+                    osc.type = 'sawtooth';
+                    const saxFilter = audioContext.createBiquadFilter();
+                    saxFilter.type = 'bandpass'; saxFilter.frequency.setValueAtTime(800, time); 
+                    saxFilter.Q.setValueAtTime(6, time); 
+                    auxNode = saxFilter;
+                    osc.connect(saxFilter).connect(gain);
+                    output.nodes.push(saxFilter);
+                    attack = 0.05; 
+                    decay = actualDuration * 0.8;
+                    peakVolume = 0.6;
+                    break;
+
+                case 'flute':
+                    osc = audioContext.createOscillator();
+                    osc.type = 'sine';
+                    attack = 0.15; // Slow, soft attack
+                    decay = actualDuration * 0.95;
+                    peakVolume = 0.4;
+                    break;
+
+                case 'trumpet': case 'tuba':
+                    osc = audioContext.createOscillator();
+                    osc.type = 'square';
+                    const brassFilter = audioContext.createBiquadFilter();
+                    brassFilter.type = 'bandpass'; 
+                    brassFilter.frequency.setValueAtTime(1200, time);
+                    brassFilter.Q.setValueAtTime(4, time);
+                    auxNode = brassFilter;
+                    osc.connect(brassFilter).connect(gain);
+                    output.nodes.push(brassFilter);
+
+                    attack = 0.03; 
+                    decay = actualDuration * 0.9;
+                    peakVolume = 0.7;
+                    break;
+
+                case 'accordion':
+                    // Detuned pair of sawtooth oscillators for rich, reedy sound
+                    const osc2 = audioContext.createOscillator();
+                    osc2.type = 'sawtooth';
+                    osc2.frequency.setValueAtTime(frequency * 1.005, time); // Slight detune
+                    osc2.connect(gain);
+                    osc2.start(time);
+                    osc2.stop(time + partDuration + stopOffset);
+                    output.nodes.push(osc2);
+
+                    osc = audioContext.createOscillator();
+                    osc.type = 'sawtooth';
+                    peakVolume = 0.5;
+                    attack = 0.05;
+                    decay = actualDuration * 0.98;
+                    break;
+            }
+
+            if (osc) {
+                osc.frequency.setValueAtTime(frequency, time);
+                // Connect oscillator to gain if not already connected via auxNode (like in distortion)
+                if (!auxNode) { 
+                    osc.connect(gain);
+                }
+                osc.start(time);
+                osc.stop(time + partDuration + stopOffset);
+                output.nodes.push(osc);
+            }
+            
+            // --- Apply Envelope ---
+            const env = gain.gain;
+            env.cancelScheduledValues(time);
+            env.setValueAtTime(0.0001, time); // Start just above zero to prevent clicks
+            
+            // ADSR Approximation
+            env.linearRampToValueAtTime(peakVolume, time + attack); 
+            env.linearRampToValueAtTime(peakVolume * 0.9, time + decay); 
+            env.exponentialRampToValueAtTime(0.0001, time + release); 
+
+            // Cleanup function
+            output.cleanup = () => {
+                output.nodes.forEach(node => {
+                    try {
+                        // Attempt to stop all nodes that have a stop method
+                        if (typeof node.stop === 'function' && !node.buffer) {
+                            node.stop(audioContext.currentTime); 
+                        }
+                    } catch (e) {
+                         // Ignore errors if node is already stopped/disposed
+                    }
+                    try {
+                        // Disconnect everything
+                        node.disconnect(); 
+                    } catch (e) {
+                        // Ignore errors if already disconnected
+                    }
+                });
+            };
+            
+            // Schedule cleanup after the note has finished its release
+            setTimeout(output.cleanup, (partDuration + stopOffset) * 1000); 
+
+            return output;
+        }
+        
+        function playNote(partIndex, frequency, time, duration, modifier) {
+            const timbre = partStates[partIndex].timbre;
+            createInstrument(timbre, time, frequency, duration, modifier);
+        }
+
+
+        // --- 5. Sequence Parsing ---
+        
+        function parseSequence(sequenceString, bpm, partEdo) {
+            const steps = sequenceString.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            const scheduledEvents = [];
+            let currentTimeSeconds = 0; 
+            
+            const wholeNoteDuration = (60 / bpm) * 4; 
+            const rhythmRegex = /\((\d+)\)/g;
+            const stepRegex = /^([asr]?)\s*([\-\s\d]*)\s*((\(\d+\))+)$/;
+            let maxDuration = 0;
+
+            for (const step of steps) {
+                const partsMatch = step.match(stepRegex);
+
+                if (!partsMatch) {
+                    throw new Error(`Invalid step format: "${step}". Expected '[mod] [steps](N1)(N2)...', e.g., 'a 0 4(4)' or 'r(8)'.`);
+                }
+
+                const modifier = partsMatch[1] || '';
+                const stepsString = partsMatch[2].trim();
+                
+                const edoSteps = stepsString.split(/\s+/)
+                    .filter(s => s.length > 0)
+                    .map(s => {
+                        const stepValue = parseInt(s, 10);
+                        if (isNaN(stepValue) && s !== '') { // Check if it's a valid number if present
+                             throw new Error(`Invalid EDO step value: "${s}" in step "${step}".`);
+                        }
+                        return stepValue;
+                    })
+                    .filter(s => !isNaN(s)); // Remove any remaining non-numbers if filtered out above
+
+                const rhythmGroupsString = partsMatch[3].trim();
+                let match;
+                let totalStepDuration = 0;
+                rhythmRegex.lastIndex = 0; 
+                
+                while ((match = rhythmRegex.exec(rhythmGroupsString)) !== null) {
+                    const rhythmCode = parseInt(match[1], 10);
+                    if (isNaN(rhythmCode) || rhythmCode < 1) {
+                         throw new Error(`Invalid rhythm code in step "${step}". Codes must be positive whole numbers.`);
+                    }
+                    totalStepDuration += wholeNoteDuration / rhythmCode;
+                }
+                
+                if (totalStepDuration === 0) {
+                    throw new Error(`Invalid or missing rhythm code in step "${step}". Codes must be positive whole numbers, e.g., (4) or (8)(8).`);
+                }
+
+                // Validation of content vs modifier
+                if (modifier === 'r') {
+                    if (edoSteps.length > 0) {
+                        throw new Error(`Rest ('r') must not be followed by note steps in step "${step}".`);
+                    }
+                } else if (edoSteps.length === 0) {
+                    throw new Error(`Missing note steps in step "${step}". Notes (or 'r') are required.`);
+                }
+
+
+                if (modifier !== 'r') {
+                    scheduledEvents.push({
+                        time: currentTimeSeconds, 
+                        steps: edoSteps, 
+                        duration: totalStepDuration,
+                        modifier: modifier,
+                        edo: partEdo
+                    });
+                }
+
+                currentTimeSeconds += totalStepDuration;
+                maxDuration = Math.max(maxDuration, currentTimeSeconds);
+            }
+            
+            return { events: scheduledEvents, duration: maxDuration };
+        }
+
+        // --- 6. Playback and Scheduling Logic ---
+
+        let scheduledParts = [];
+        let nextEventIndex = [];
+
+        function stopPlayback() {
+            if (!isPlaying) return;
+            
+            clearInterval(schedulingInterval);
+            if (audioContext && audioContext.state === 'running') {
+                audioContext.suspend();
+            }
+            isPlaying = false;
+            
+            $status.textContent = 'Stopped';
+            $playButton.textContent = 'Start All Parts';
+            $playButton.classList.replace('bg-red-600', 'bg-indigo-600');
+            $playButton.classList.replace('hover:bg-red-500', 'hover:bg-indigo-500');
+            $exportButton.disabled = false;
+        }
+
+        function startPlayback() {
+            if (isRendering) return;
+
+             // 1. Initialize/Resume Audio Context and Setup EQ
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                document.getElementById('audio-context-message').classList.add('hidden');
+                setupAudioChain(); 
+            }
+            audioContext.resume();
+
+            // 2. Parse sequences and validate
+            if (!reparseSequences()) return;
+
+            // 3. Start the scheduler
+            sequenceStartTime = audioContext.currentTime;
+            nextEventIndex = Array(NUM_PARTS).fill(0);
+            schedulingInterval = setInterval(scheduler, 25); 
+
+            isPlaying = true;
+            $status.textContent = `Playing ${NUM_PARTS} Parts (${tempoBPM} BPM)`;
+            $playButton.textContent = 'Stop All Parts';
+            $playButton.classList.replace('bg-indigo-600', 'bg-red-600');
+            $playButton.classList.replace('hover:bg-indigo-500', 'hover:bg-red-500');
+            $exportButton.disabled = false;
+        }
+        
+        function reparseSequences() {
+            // Update global tempo
+            tempoBPM = parseInt($tempoInput.value, 10) || 120;
+            
+            scheduledParts = [];
+            globalLoopDuration = 0;
+            let validationError = false;
+
+            partStates.forEach((part, index) => {
+                try {
+                    const cleanedSequence = part.sequence.replace(/[\r\n]+/g, ' ').trim();
+                    const result = parseSequence(cleanedSequence, tempoBPM, part.edo);
+                    scheduledParts.push({ 
+                        events: result.events, 
+                        duration: result.duration 
+                    });
+                    globalLoopDuration = Math.max(globalLoopDuration, result.duration);
+                    
+                } catch (error) {
+                    console.error(`Part ${index + 1} Error:`, error.message);
+                    if (index === currentPartIndex) {
+                        $partErrorMessage.textContent = `Error in Part ${index + 1}: ${error.message}`;
+                        $partErrorMessage.classList.remove('hidden');
+                    }
+                    validationError = true;
+                }
+            });
+
+            if (validationError) return false;
+
+            $partErrorMessage.classList.add('hidden');
+
+            if (globalLoopDuration === 0) {
+                // Only show error if the current part is empty
+                if (partStates[currentPartIndex].sequence.trim() !== '') {
+                    $partErrorMessage.textContent = `Warning: All parts are empty or contain only rests.`;
+                    $partErrorMessage.classList.remove('hidden');
+                }
+                return false;
+            }
+            return true;
+        }
+
+
+        function scheduler() {
+            if (!audioContext || audioContext.state === 'suspended' || audioContext.state === 'closed') return;
+            
+            const currentTime = audioContext.currentTime;
+            const lookahead = 0.1; // Schedule up to 100ms in advance
+            
+            // Check for loop reset or stop
+            if (currentTime >= sequenceStartTime + globalLoopDuration) {
+                if (isLooping && !isRendering) {
+                    // Loop reset
+                    sequenceStartTime += globalLoopDuration;
+                    nextEventIndex.fill(0);
+                } else {
+                    // Stop if not looping or if rendering is complete
+                    if (isRendering) {
+                        // If rendering, trigger media recorder stop
+                        if (mediaRecorder && mediaRecorder.state === 'recording') {
+                             mediaRecorder.stop();
+                        }
+                        clearInterval(schedulingInterval); 
+                        return;
+                    }
+                    stopPlayback();
+                    return;
+                }
+            }
+
+            // Iterate through all parts
+            for (let partIndex = 0; partIndex < NUM_PARTS; partIndex++) {
+                const part = scheduledParts[partIndex];
+
+                if (!part || part.events.length === 0) continue;
+
+                while (
+                    nextEventIndex[partIndex] < part.events.length && 
+                    part.events[nextEventIndex[partIndex]].time < currentTime + lookahead - sequenceStartTime
+                ) {
+                    const event = part.events[nextEventIndex[partIndex]];
+                    const scheduleTime = sequenceStartTime + event.time;
+
+                    event.steps.forEach(step => {
+                        const freq = calculateFrequency(step, event.edo);
+                        playNote(partIndex, freq, scheduleTime, event.duration, event.modifier);
+                    });
+
+                    nextEventIndex[partIndex]++;
+                }
+            }
+        }
+        
+        // --- 7. Non-Interactive Export Logic ---
+
+        function exportWAV() {
+            if (isRendering) return;
+
+            // 1. Initialize/Resume Audio Context and Setup EQ
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                document.getElementById('audio-context-message').classList.add('hidden');
+                setupAudioChain(); 
+            }
+            audioContext.resume();
+
+            if (isPlaying) stopPlayback(); // Stop playback before rendering
+
+            if (!reparseSequences() || globalLoopDuration === 0) {
+                 $status.textContent = 'Export failed: No valid sequence found or duration is zero.';
+                 return;
+            }
+            
+            isRendering = true;
+            isLooping = false;
+            
+            // UI Update: Rendering State
+            $exportButton.textContent = 'Rendering...';
+            $exportButton.disabled = true;
+            $exportButton.classList.replace('bg-gray-600', 'bg-yellow-600');
+            $exportButton.classList.replace('hover:bg-gray-500', 'hover:bg-yellow-500');
+            $status.textContent = `Rendering ${globalLoopDuration.toFixed(2)}s of audio. Please wait...`;
+
+
+            // 2. Setup Media Stream Destination
+            destination = audioContext.createMediaStreamDestination();
+            // Temporarily connect the master output to the recorder destination
+            highFilter.connect(destination);
+            
+            const mimeType = 'audio/webm; codecs=opus'; 
+            
+            // 3. Initialize MediaRecorder
+            recordedChunks = [];
+            
+            try {
+                mediaRecorder = new MediaRecorder(destination.stream, { mimeType: mimeType });
+            } catch (e) {
+                 console.error("MediaRecorder setup failed:", e);
+                 $status.textContent = `Export failed: MediaRecorder setup error.`;
+                 resetExportUI();
+                 return;
+            }
+
+            mediaRecorder.ondataavailable = function(e) {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = function() {
+                // 5. Cleanup and Download
+                highFilter.disconnect(destination); 
+                isRendering = false;
+
+                if (recordedChunks.length === 0) {
+                     $status.textContent = 'Export failed: Zero data recorded.';
+                     resetExportUI();
+                     return;
+                }
+
+                const blob = new Blob(recordedChunks, { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `microtonal_composition_${new Date().toISOString()}.webm`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                // 6. UI Reset
+                $status.textContent = 'Stopped. File exported (.webm).';
+                resetExportUI();
+            };
+            
+            function resetExportUI() {
+                $exportButton.textContent = 'Export Audio (WebM)';
+                $exportButton.disabled = false;
+                $exportButton.classList.replace('bg-yellow-600', 'bg-gray-600');
+                $exportButton.classList.replace('hover:bg-yellow-500', 'hover:bg-gray-500');
+            }
+
+            // 4. Start Scheduling and Recording
+            mediaRecorder.start();
+
+            sequenceStartTime = audioContext.currentTime;
+            nextEventIndex.fill(0);
+            
+            // Start the scheduler loop until the duration is hit
+            schedulingInterval = setInterval(scheduler, 25);
+            
+            // Scheduler will trigger mediaRecorder.stop() when globalLoopDuration is reached.
+        }
+
+        // --- 8. UI State Management and Handlers ---
+        
+        function saveCurrentPart() {
+            partStates[currentPartIndex].edo = parseInt($currentEdoInput.value, 10);
+            partStates[currentPartIndex].timbre = $currentTimbreSelect.value;
+            partStates[currentPartIndex].sequence = $currentSequenceInput.value;
+            // Attempt to re-parse the sequence to catch errors early
+            try {
+                const cleanedSequence = partStates[currentPartIndex].sequence.replace(/[\r\n]+/g, ' ').trim();
+                parseSequence(cleanedSequence, tempoBPM, partStates[currentPartIndex].edo);
+                $partErrorMessage.classList.add('hidden');
+            } catch (error) {
+                // Only show warning, don't stop the whole app
+                $partErrorMessage.textContent = `Warning in Part ${currentPartIndex + 1}: ${error.message}`;
+                $partErrorMessage.classList.remove('hidden');
+            }
+        }
+
+        function loadCurrentPart() {
+            const part = partStates[currentPartIndex];
+            $currentEdoInput.value = part.edo;
+            $currentTimbreSelect.value = part.timbre;
+            $currentSequenceInput.value = part.sequence;
+            $currentPartLabel.textContent = currentPartIndex + 1;
+            
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${currentPartIndex}`).classList.add('active');
+
+            // Re-validate the sequence when loading a part
+             try {
+                const cleanedSequence = part.sequence.replace(/[\r\n]+/g, ' ').trim();
+                parseSequence(cleanedSequence, tempoBPM, part.edo);
+                $partErrorMessage.classList.add('hidden');
+            } catch (error) {
+                $partErrorMessage.textContent = `Warning in Part ${currentPartIndex + 1}: ${error.message}`;
+                $partErrorMessage.classList.remove('hidden');
+            }
+        }
+
+        function changePart(index) {
+            saveCurrentPart();
+            currentPartIndex = index;
+            loadCurrentPart();
+        }
+
+        function togglePlayback() {
+            if (isPlaying) {
+                stopPlayback();
+            } else {
+                startPlayback();
+            }
+        }
+        
+        function toggleLooping() {
+            isLooping = !isLooping;
+            $loopButton.textContent = `Loop: ${isLooping ? 'ON' : 'OFF'}`;
+            $loopButton.classList.toggle('bg-green-600', isLooping);
+            $loopButton.classList.toggle('bg-gray-500', !isLooping);
+            $loopButton.classList.toggle('hover:bg-green-500', isLooping);
+            $loopButton.classList.toggle('hover:bg-gray-600', !isLooping);
+        }
+
+        function updateTempo(bpm) {
+            bpm = Math.max(30, Math.min(300, bpm)); // Clamp values
+            tempoBPM = bpm;
+            $tempoSlider.value = bpm;
+            $tempoInput.value = bpm;
+            if (isPlaying) { stopPlayback(); startPlayback(); }
+        }
+
+        // --- Initialization ---
+        
+        function initTimbreSelect() {
+            TIMBRES.forEach(timbre => {
+                const option = document.createElement('option');
+                option.value = timbre;
+                option.textContent = timbre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                $currentTimbreSelect.appendChild(option);
+            });
+        }
+        
+        // --- Event Listeners ---
+
+        $tempoSlider.addEventListener('input', (e) => updateTempo(parseInt(e.target.value, 10)));
+        $tempoInput.addEventListener('change', (e) => updateTempo(parseInt(e.target.value, 10)));
+        
+        $currentEdoInput.addEventListener('change', saveCurrentPart);
+        $currentTimbreSelect.addEventListener('change', saveCurrentPart);
+        $currentSequenceInput.addEventListener('input', saveCurrentPart); // Use 'input' for quicker error checks
+        
+        $lowGain.addEventListener('input', updateEQ);
+        $midGain.addEventListener('input', updateEQ);
+        $highGain.addEventListener('input', updateEQ);
+        
+        $playButton.addEventListener('click', togglePlayback);
+        $loopButton.addEventListener('click', toggleLooping); 
+        $exportButton.addEventListener('click', exportWAV);
+
+        window.onload = function() {
+            initTimbreSelect();
+            loadCurrentPart();
+            updateTempo(parseInt($tempoSlider.value, 10));
+            toggleLooping(); 
+            updateEQ(); 
+            console.log("Polyphonic Microtonal Workstation ready.");
+        }
+
+    </script>
+</body>
+</html>
+
