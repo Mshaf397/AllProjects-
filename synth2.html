@@ -1,4 +1,4 @@
-  <!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -7,13 +7,36 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   :root {
+    /* LIGHT MODE (Default) */
     --pad: 10px;
     --main-bg: #1E90FF; /* DodgerBlue */
     --control-bg: #323ddd;
-    --text-color: #f1f1f1; /* Changed for better contrast */
+    --text-color: #f1f1f1;
     --button-color: #12e34b; /* Bright green */
     --key-color: #228222; /* ForestGreen */
+    --key-text-color: #111;
+    --key-active: #ffcc00; /* Yellow */
+    --key-inactive: rgba(255,255,255,0.9);
+    --modal-bg: white;
+    --modal-text-color: #111;
+    --input-bg: white;
     font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    transition: background-color 0.3s;
+  }
+  
+  /* DARK MODE OVERRIDES */
+  .dark-mode {
+    --main-bg: #111827; /* Dark Gray */
+    --control-bg: #2C003E; /* Deep Violet */
+    --text-color: #e5e7eb; /* Light text */
+    --button-color: #BB86FC; /* Light Purple/Magenta */
+    --key-color: #6200EE; /* Medium Violet */
+    --key-text-color: #e5e7eb;
+    --key-active: #FF6E40; /* Vibrant Orange */
+    --key-inactive: rgba(255,255,255,0.1);
+    --modal-bg: #1f2937;
+    --modal-text-color: #e5e7eb;
+    --input-bg: #374151;
   }
 
   body {
@@ -21,6 +44,7 @@
     padding: var(--pad);
     background: var(--main-bg);
     color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
   }
 
   header {
@@ -28,6 +52,7 @@
     gap: 12px;
     align-items: center;
     margin-bottom: 8px;
+    justify-content: space-between; /* Added for dark mode toggle placement */
   }
 
   .controls {
@@ -39,6 +64,7 @@
     padding: 12px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    transition: background-color 0.3s;
   }
 
   label {
@@ -46,7 +72,7 @@
     display: flex;
     flex-direction: column;
     min-width: 120px;
-    color: white;
+    color: var(--text-color);
   }
 
   input[type="range"] {
@@ -60,23 +86,38 @@
     padding: 6px;
     font-size: 14px;
     border-radius: 4px;
-    color: #111;
+    color: var(--key-text-color);
+    background-color: var(--input-bg);
+    border: 1px solid rgba(255,255,255,0.1);
   }
   
   input[type="checkbox"] {
       width: 20px;
       height: 20px;
       margin-top: 5px;
+      background-color: var(--input-bg);
+      border: 1px solid rgba(255,255,255,0.3);
   }
 
   select[multiple] {
     padding: 4px;
-    border: 1px solid #ddd;
-    background: white;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: var(--input-bg);
     min-height: 100px;
     box-sizing: border-box;
+    color: var(--key-text-color);
+  }
+  
+  /* Style for multiple select options in dark mode */
+  .dark-mode select[multiple] option {
+    background: var(--input-bg);
+    color: var(--key-text-color);
+  }
+  .dark-mode select[multiple] option:checked {
+    background: var(--button-color);
     color: #111;
   }
+
 
   button {
     padding: 8px 12px;
@@ -91,19 +132,20 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
   }
   button:hover {
-    background: #0fbc3c;
+    background: var(--button-color); /* Maintain color on hover in dark mode */
+    filter: brightness(1.2); /* Use filter to slightly change color on hover */
     transform: translateY(-1px);
   }
 
   #gridWrap {
     margin-top: 12px;
     border-radius: 8px;
-    overflow: auto; /* Handles scrolling for large canvas */
+    overflow: auto;
     background: var(--control-bg);
     padding: 8px;
-    /* Limit the viewport size here, not on the canvas */
     max-height: 60vh; 
     max-width: 100%;
+    transition: background-color 0.3s;
   }
   @media (max-width: 768px) {
     #gridWrap {
@@ -115,22 +157,24 @@
     display: block;
     background: var(--key-color);
     border-radius: 4px;
-    /* Canvas size is set explicitly in JS, so we disable max-width/height here */
     width: auto; 
     height: auto;
+    transition: background-color 0.3s;
   }
 
   .small {
     font-size: 12px;
     color: var(--button-color);
+    transition: color 0.3s;
   }
   
   .status {
     margin-top: 12px;
-    color: white;
+    color: var(--text-color);
     padding: 8px;
     border-radius: 4px;
     background: rgba(0,0,0,0.2);
+    transition: color 0.3s;
   }
 
   /* MODAL STYLES */
@@ -144,18 +188,22 @@
     z-index: 1000;
   }
   .modal-content {
-    background: white;
+    background: var(--modal-bg);
     padding: 24px;
     border-radius: 8px;
     width: 90%;
     max-width: 1200px;
-    color: #111;
+    color: var(--modal-text-color);
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    font-size: 25px
+    font-size: 25px;
+    transition: background-color 0.3s, color 0.3s;
   }
   .modal-content h3 {
     margin-top: 0;
     color: var(--control-bg);
+  }
+  .dark-mode .modal-content h3 {
+     color: var(--button-color);
   }
   .modal-content .modal-controls {
     display: flex;
@@ -164,22 +212,33 @@
     gap: 10px;
   }
   .modal-content label {
-      color: #333;
+      color: var(--modal-text-color);
       margin-bottom: 8px;
       font-size: 20px;
   }
   .modal-content input {
       width: 100%;
       box-sizing: border-box;
-      color: #111;
+      color: var(--modal-text-color);
       font-size: 20px;
+      background-color: var(--input-bg);
+  }
+  
+  /* Dark Mode Toggle Button Specific Styles */
+  #darkModeToggle {
+      min-width: unset;
+      padding: 6px 10px;
+      font-size: 12px;
   }
 </style>
 </head>
 <body>
 <header>
-  <h2 style="margin:0">Grid Web Synth — Circle of Fifths Generator</h2>
-  <div class="small">Scale generation uses the currently selected EDO Steps (N) for quantization.</div>
+  <div class="flex items-center gap-3">
+    <h2 style="margin:0">Grid Web Synth — Circle of Fifths Generator</h2>
+    <div class="small">Scale generation uses the currently selected EDO Steps (N) for quantization.</div>
+  </div>
+  <button id="darkModeToggle" title="Toggle Dark/Light Mode">Enable Dark Mode</button>
 </header>
 
 <div class="controls">
@@ -421,6 +480,9 @@ class Synth {
 
 // --- UI ELEMENTS ---
 const canvas = document.getElementById('gridCanvas');
+// Added document.body reference for dark mode toggle
+const body = document.body;
+const darkModeToggle = document.getElementById('darkModeToggle');
 const ctx = canvas.getContext('2d', { alpha:false });
 const rowsInput = document.getElementById('rows');
 const colsInput = document.getElementById('cols');
@@ -949,7 +1011,11 @@ function resizeCanvas(){
 function renderGrid(){ 
   const ks = gridState.keySize, rows = gridState.rows, cols = gridState.cols; 
   // Clear the whole canvas with the overall background key color (ForestGreen)
-  ctx.fillStyle='var(--key-color)'; ctx.fillRect(0,0,canvas.width,canvas.height); 
+  const keyColor = getComputedStyle(document.documentElement).getPropertyValue('--key-color').trim();
+  const keyInactive = getComputedStyle(document.documentElement).getPropertyValue('--key-inactive').trim();
+  const keyTextColor = getComputedStyle(document.documentElement).getPropertyValue('--key-text-color').trim();
+  
+  ctx.fillStyle=keyColor; ctx.fillRect(0,0,canvas.width,canvas.height); 
   
   ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1; 
   ctx.font = Math.max(10, Math.floor(ks/5)) + 'px system-ui, sans-serif'; 
@@ -961,13 +1027,13 @@ function renderGrid(){
       const idx=r*cols+c; 
       
       // Draw key background: light gray/white, or yellow if active
-      ctx.fillStyle = activeVoices.has(idx) ? '#ffcc00' : 'rgba(255,255,255,0.9)'; 
+      ctx.fillStyle = activeVoices.has(idx) ? getComputedStyle(document.documentElement).getPropertyValue('--key-active').trim() : keyInactive; 
       
       ctx.fillRect(x,y,ks,ks); 
       ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1); 
       
       let label = nameForIndex(idx); 
-      ctx.fillStyle='#111'; 
+      ctx.fillStyle=keyTextColor; 
       let disp=String(label); if(disp.length>14) disp = disp.slice(0,12)+'…';
       ctx.fillText(disp, x+ks/2, y+ks/2); 
     } 
@@ -983,13 +1049,17 @@ function drawKeyActive(idx, isActive) {
   
   const x = c * ks; const y = r * ks; 
   
+  const keyActive = getComputedStyle(document.documentElement).getPropertyValue('--key-active').trim();
+  const keyInactive = getComputedStyle(document.documentElement).getPropertyValue('--key-inactive').trim();
+  const keyTextColor = getComputedStyle(document.documentElement).getPropertyValue('--key-text-color').trim();
+
   // Use explicit key background color when drawing active/inactive state
-  ctx.fillStyle = isActive ? '#ffcc00' : 'rgba(255,255,255,0.9)'; 
+  ctx.fillStyle = isActive ? keyActive : keyInactive; 
   
   ctx.fillRect(x,y,ks,ks); 
   ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1; ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1); 
   let label = nameForIndex(idx); 
-  ctx.fillStyle='#111'; 
+  ctx.fillStyle=keyTextColor; 
   let disp=String(label); if(disp.length>14) disp = disp.slice(0,12)+'…';
   ctx.fillText(disp, x+ks/2, y+ks/2);
 }
@@ -1131,6 +1201,29 @@ canvas.addEventListener('pointermove', pointermove);
 canvas.addEventListener('pointerup', pointerup);
 canvas.addEventListener('pointercancel', pointerup);
 
+// --- DARK MODE TOGGLE LOGIC ---
+
+function applyTheme(isDark) {
+    if (isDark) {
+        body.classList.add('dark-mode');
+        darkModeToggle.textContent = 'Disable Dark Mode';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        body.classList.remove('dark-mode');
+        darkModeToggle.textContent = 'Enable Dark Mode';
+        localStorage.setItem('theme', 'light');
+    }
+    // Re-render the grid to apply new key colors
+    renderGrid();
+}
+
+function toggleDarkMode() {
+    const isDark = !body.classList.contains('dark-mode');
+    applyTheme(isDark);
+}
+
+darkModeToggle.addEventListener('click', toggleDarkMode);
+
 // --- EVENT LISTENERS ---
 applyBtn.addEventListener('click', () => { 
     if (audioCtx.state !== 'running') { audioCtx.resume(); } // Secondary resume check
@@ -1148,10 +1241,19 @@ stopAllBtn.addEventListener('click', stopAllVoices);
 window.addEventListener('resize', () => { resizeCanvas(); renderGrid(); });
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Load theme preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        applyTheme(true);
+    } else {
+        // If no preference or light, ensure light mode is active
+        applyTheme(false); 
+    }
+    
+    // 2. Build initial state and render
     buildStateFromUI();
 });
 </script>
 </body>
 </html>
-
 
