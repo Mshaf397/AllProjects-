@@ -3,302 +3,1064 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planetary Epoch Clock</title>
-    <!-- Load Tailwind CSS -->
+    <title>Comprehensive Planetary Clock and Atmospheric Calculator</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Use Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Consolas&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-
-        /* Custom styling for text inputs to look consistent, overriding any default browser input styling */
-        .text-input {
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
+        /* Using system fonts: Inter for main text, and Consolas/monospace for the clock display */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1e293b; /* Slate 800 */
+            color: #f8fafc; /* White */
+        }
+        .mono {
+            /* Monospace font for perfect time alignment */
+            font-family: 'Consolas', 'Courier New', monospace; 
+        }
+        .card {
+            background-color: #334155; /* Slate 700 */
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .day-cell {
+            padding: 8px 0;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+        .day-cell:hover:not(.current-day):not(.border-yellow-400) {
+            background-color: #475569; /* Slate 600 on hover */
+        }
+        .current-day {
+            background-color: #6366f1; /* Indigo 500 */
+            font-weight: bold;
+            color: white;
+            border-radius: 0.375rem;
+        }
+        .result-table th, .result-table td {
+            white-space: nowrap;
+        }
+        .phase-cell {
+            background-color: #1f3747; /* Darker background for phase durations */
+            font-weight: 600;
+        }
+        /* Custom styling for the new time unit inputs */
+        .time-unit-input {
             width: 100%;
             padding: 0.5rem;
-            border: 1px solid #d1d5db; /* gray-300 */
-            border-radius: 0.5rem; /* rounded-lg */
-            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            border: 1px solid #475569;
+            background-color: #1e293b;
+            border-radius: 0.375rem;
+            font-size: 1rem;
+            color: #fff;
         }
-        .text-input:focus {
-            outline: none;
-            border-color: #4f46e5; /* indigo-600 */
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5); /* ring-indigo-500 */
+        /* Specific layout for the 10 solar events */
+        #solar-events-container {
+            grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 columns on mobile */
+        }
+        @media (min-width: 768px) {
+            #solar-events-container {
+                grid-template-columns: repeat(5, minmax(0, 1fr)); /* 5 pairs on desktop */
+            }
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+<body class="p-4 md:p-8 min-h-screen flex items-start justify-center">
 
-    <div id="app" class="max-w-4xl mx-auto">
-        <header class="text-center mb-10">
-            <h1 class="text-4xl font-extrabold text-indigo-700">Planetary Epoch Clock</h1>
-            <p class="text-gray-600 mt-2">Define the rules of your own time system and watch it tick.</p>
-        </header>
+    <div class="w-full max-w-6xl space-y-8">
+        <h1 class="text-3xl md:text-4xl font-bold text-center text-indigo-400">Custom Planetary Clock & Solar Calculator</h1>
+        <p class="text-center text-gray-400">Calculates real-time custom time and daily solar events based on orbital and atmospheric inputs.</p>
 
-        <!-- Current Planetary Time Display -->
-        <div class="bg-white p-6 md:p-10 rounded-xl shadow-2xl mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-indigo-600">Current Planetary Time (HH:MM:SS)</h2>
-            <div id="planetary-time" class="text-center font-mono text-4xl md:text-6xl text-gray-800 break-words transition duration-500 ease-in-out">
-                00:00:00
+        <!-- Dynamic Inputs Card -->
+        <div class="card p-6 md:p-8">
+            <h2 class="text-2xl font-semibold text-gray-300 mb-6 border-b border-gray-600 pb-3">Orbital & Atmospheric Inputs</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-6">
+                <!-- Latitude Input -->
+                <div>
+                    <label for="latitude" class="block text-sm font-medium text-gray-400 mb-1">
+                        Latitude ($\phi$)
+                    </label>
+                    <input type="number" id="latitude" value="45" min="0" max="90" step="1"
+                        class="w-full p-3 border border-gray-600 bg-slate-800 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-lg text-white">
+                    <p class="text-xs mt-1 text-gray-500">Location on the planet ($0^{\circ}$-$90^{\circ}$)</p>
+                </div>
+                <!-- Axial Tilt Input -->
+                <div>
+                    <label for="axialTilt" class="block text-sm font-medium text-gray-400 mb-1">
+                        Axial Tilt ($\theta_{R}$)
+                    </label>
+                    <input type="number" id="axialTilt" value="23.5" min="0" max="90" step="0.1"
+                        class="w-full p-3 border border-gray-600 bg-slate-800 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-lg text-white">
+                    <p class="text-xs mt-1 text-gray-500">Seasonal severity ($23.5^{\circ}$ is Earth)</p>
+                </div>
+                <!-- P-Day Duration Input (Earth seconds) -->
+                <div>
+                    <label for="pDaySeconds" class="block text-sm font-medium text-gray-400 mb-1">
+                        P-Day Duration (s - Earth)
+                    </label>
+                    <input type="number" id="pDaySeconds" value="86400" min="1" step="3600"
+                        class="w-full p-3 border border-gray-600 bg-slate-800 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-lg text-white">
+                    <p class="text-xs mt-1 text-gray-500">Day-night cycle ($86,400$ is Earth)</p>
+                </div>
+                <!-- Days Per Year Input -->
+                <div>
+                    <label for="daysPerYearInput" class="block text-sm font-medium text-gray-400 mb-1">
+                        Days Per Year ($N$)
+                    </label>
+                    <input type="number" id="daysPerYearInput" value="365" min="1" step="1"
+                        class="w-full p-3 border border-gray-600 bg-slate-800 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-lg text-white">
+                    <p class="text-xs mt-1 text-gray-500">Orbital Period (Leap cycle is 4-year simple)</p>
+                </div>
+                <!-- Atmospheric Pressure Input -->
+                <div>
+                    <label for="pressure" class="block text-sm font-medium text-gray-400 mb-1">
+                        Atmospheric Pressure (hPa)
+                    </label>
+                    <input type="number" id="pressure" value="1013.25" min="0" step="10"
+                        class="w-full p-3 border border-gray-600 bg-slate-800 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-lg text-white">
+                    <p class="text-xs mt-1 text-gray-500">Affects Refraction (Daylight Span).</p>
+                </div>
+                 <!-- Current Day Input -->
+                 <div>
+                    <label for="currentDayManual" class="block text-sm font-medium text-gray-400 mb-1">
+                        Override Day ($D$)
+                    </label>
+                    <input type="number" id="currentDayManual" value="1" min="1" step="1"
+                        class="w-full p-3 border border-gray-600 bg-slate-800 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-lg text-white">
+                    <p class="text-xs mt-1 text-red-400 font-semibold">Day 1 = Winter Solstice.</p>
+                </div>
             </div>
 
-            <!-- Detailed Breakdown -->
-            <div class="mt-6 text-sm md:text-base grid grid-cols-2 gap-4 text-gray-700">
-                <div class="p-3 bg-indigo-50 rounded-lg shadow-inner">
-                    <span class="font-bold text-indigo-700 block">Planetary Year:</span>
-                    <span id="p-year">0</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <!-- Cloud Composition Input (Text Box) -->
+                <div>
+                    <label for="cloudCompositionText" class="block text-sm font-medium text-gray-400 mb-1">
+                        Cloud Composition (Chemical Formula)
+                    </label>
+                    <input type="text" id="cloudCompositionText" value="H2O"
+                        class="w-full p-3 border border-gray-600 bg-slate-800 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-lg text-white">
+                    <p class="text-xs mt-1 text-gray-500">Input base chemical (e.g., H2O, H2SO4, CH4).</p>
                 </div>
-                <div class="p-3 bg-indigo-50 rounded-lg shadow-inner">
-                    <span class="font-bold text-indigo-700 block">Planetary Day (of Year):</span>
-                    <span id="p-day-of-year">0 / 0</span>
-                </div>
-                <div class="p-3 bg-indigo-50 rounded-lg shadow-inner col-span-2">
-                    <span class="font-bold text-indigo-700 block">Time Since Epoch (ms):</span>
-                    <span id="ms-elapsed">0</span>
+
+                <!-- Cloud Cover Input (Slider) -->
+                <div>
+                    <label for="cloudCover" class="block text-sm font-medium text-gray-400 mb-1">
+                        Cloud Cover / Density (%)
+                    </label>
+                    <div class="flex items-center space-x-3">
+                        <input type="range" id="cloudCover" value="100" min="0" max="100" step="1"
+                            class="flex-grow h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
+                        <span id="cloudCoverValue" class="text-lg font-bold w-12 text-right text-indigo-300">100%</span>
+                    </div>
+                    <p class="text-xs mt-1 text-gray-500">The amount of the atmosphere covered by the composition (0-100%).</p>
                 </div>
             </div>
+            <button onclick="updateClocks(true);"
+                class="mt-8 w-full py-3 px-4 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition duration-150 ease-in-out transform hover:scale-[1.01] shadow-md">
+                Update System Parameters & Calculate Solar Events
+            </button>
+        </div>
 
-            <!-- Day Progress Bar -->
-            <div class="mt-8">
-                <h3 class="text-lg font-medium mb-2 text-indigo-600">Planetary Day Progress (<span id="progress-percent">0.00</span>%)</h3>
-                <div class="w-full bg-gray-200 rounded-full h-3 shadow-inner">
-                    <div id="day-progress-bar" class="bg-indigo-500 h-3 rounded-full transition-all duration-100" style="width: 0%"></div>
+
+        <!-- Clock, Specs, and Solar Events Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Clock Display and Custom Unit Inputs -->
+            <div class="lg:col-span-2 card p-6 md:p-8 space-y-4">
+                <h2 class="text-xl font-semibold text-gray-300 mb-2">Custom Planetary Time</h2>
+
+                <!-- Custom Date -->
+                <div id="custom-date" class="text-2xl md:text-3xl mono font-semibold text-indigo-300">Year 0 Day 0</div>
+
+                <!-- Custom Time -->
+                <div id="custom-time" class="text-5xl md:text-7xl mono font-bold text-indigo-400">00:00:00</div>
+
+                <!-- Custom Time Unit Inputs -->
+                <div class="pt-4 grid grid-cols-3 gap-4 border-t border-gray-600 pt-4">
+                    <div>
+                        <label for="customSecsInMin" class="block text-xs font-medium text-gray-400 mb-1">
+                            Seconds / Minute
+                        </label>
+                        <input type="number" id="customSecsInMin" value="30" min="1" step="1"
+                            class="time-unit-input">
+                    </div>
+                    <div>
+                        <label for="customMinsInHr" class="block text-xs font-medium text-gray-400 mb-1">
+                            Minutes / Hour
+                        </label>
+                        <input type="number" id="customMinsInHr" value="100" min="1" step="1"
+                            class="time-unit-input">
+                    </div>
+                    <div>
+                        <label for="customHrsInDay" class="block text-xs font-medium text-gray-400 mb-1">
+                            Hours / Day
+                        </label>
+                        <input type="number" id="customHrsInDay" value="10" min="1" step="1"
+                            class="time-unit-input">
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="pt-4">
+                    <p class="text-sm text-gray-400 mb-1">Day Progress</p>
+                    <div class="w-full bg-gray-600 rounded-full h-4">
+                        <div id="day-progress-bar" class="bg-indigo-500 h-4 rounded-full transition-all duration-300 ease-linear" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div id="day-progress-text" class="text-sm mono text-gray-400">0.00% of the day passed</div>
+            </div>
+
+            <!-- Custom Duration Specs and UTC Clock -->
+            <div class="card p-6 md:p-8 lg:col-span-1 space-y-4">
+                <h2 class="text-xl font-semibold text-gray-300">Current Earth Time (UTC)</h2>
+                <div id="utc-clock" class="text-3xl mono font-bold text-green-400">--:--:-- UTC</div>
+                
+                <h2 class="text-xl font-semibold text-gray-300 mt-6 mb-4">Clock Specs (Calculated)</h2>
+                <div class="text-sm space-y-2">
+                    <div class="flex justify-between items-center text-yellow-300">
+                        <span>Epoch Start:</span>
+                        <span id="epoch-display" class="mono font-bold"></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>Custom Seconds/Minute:</span>
+                        <span id="spec-sec-min" class="mono font-semibold text-indigo-200"></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>Custom Minutes/Hour:</span>
+                        <span id="spec-min-hr" class="mono font-semibold text-indigo-200"></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>Custom Hours/Day:</span>
+                        <span id="spec-hr-day" class="mono font-semibold text-indigo-200"></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>Normal Days/Year:</span>
+                        <span id="spec-day-yr" class="mono font-semibold text-indigo-200"></span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Configuration Panel -->
-        <div class="bg-white p-6 md:p-8 rounded-xl shadow-xl">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Custom Planetary Settings (Resets on Refresh)</h2>
-
-            <div id="status" class="mb-4 text-sm font-medium p-2 rounded-lg bg-red-100 text-red-800">
-                Data is NOT saved between sessions. Reset to Earth defaults on page load.
+        <!-- Solar Events and Full Calculations Panel -->
+        <div class="card p-6 md:p-8">
+            <h2 id="solar-events-header" class="text-xl font-semibold text-red-400 mb-4 text-center">Solar Events (Current Day)</h2>
+            <div id="solar-events-container" class="grid gap-3 text-center text-sm mono">
+                <!-- Data injected here -->
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                <!-- EPOCH DEFINITION -->
-                <div class="md:col-span-2 p-4 bg-gray-50 rounded-lg border-l-4 border-indigo-400">
-                    <h3 class="font-bold text-lg mb-3 text-indigo-600">Epoch Definition (UTC)</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label for="epoch-date" class="block text-sm font-medium text-gray-700 mb-1">Epoch Date (YYYY-MM-DD)</label>
-                            <!-- Changed type from 'date' to 'text' -->
-                            <input type="text" id="epoch-date" value="2000-01-01" placeholder="YYYY-MM-DD" class="text-input focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-                        <div>
-                            <label for="epoch-time" class="block text-sm font-medium text-gray-700 mb-1">Epoch Time (HH:MM:SS)</label>
-                            <!-- Changed type from 'time' to 'text' -->
-                            <input type="text" id="epoch-time" value="00:00:00" placeholder="HH:MM:SS" class="text-input focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- PLANETARY DEFINITION -->
-                <div class="md:col-span-2 p-4 bg-gray-50 rounded-lg border-l-4 border-indigo-400">
-                    <h3 class="font-bold text-lg mb-3 text-indigo-600">Planetary Time System Rules</h3>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        <label class="block">
-                            <span class="text-sm font-medium text-gray-700">Days per Year (D/Y)</span>
-                            <input type="number" min="1" id="days-per-year" value="365" class="text-input mt-1" required>
-                        </label>
-                        <label class="block">
-                            <span class="text-sm font-medium text-gray-700">Hours per Day (H/D)</span>
-                            <input type="number" min="1" id="hours-per-day" value="24" class="text-input mt-1" required>
-                        </label>
-                        <label class="block">
-                            <span class="text-sm font-medium text-gray-700">Minutes per Hour (M/H)</span>
-                            <input type="number" min="1" id="minutes-per-hour" value="60" class="text-input mt-1" required>
-                        </label>
-                        <label class="block">
-                            <span class="text-sm font-medium text-gray-700">Seconds per Minute (S/M)</span>
-                            <input type="number" min="1" id="seconds-per-minute" value="60" class="text-input mt-1" required>
-                        </label>
-                        <label class="block sm:col-span-2">
-                            <span class="text-sm font-medium text-gray-700">Real Milliseconds per Planetary Second (MS/S)</span>
-                            <input type="number" min="1" id="ms-per-second" value="1000" class="text-input mt-1" required>
-                        </label>
-                    </div>
-                </div>
+            <p id="day-length-display" class="text-center text-sm text-gray-400 mt-4"></p>
+            
+            <button onclick="resetEventsView()" id="reset-events-view" class="col-span-full mt-4 p-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md transition duration-150 hidden">
+                Return to Current Day Events
+            </button>
+            
+            <!-- Full Twilight Table Output -->
+            <h3 class="text-lg font-semibold text-gray-300 mt-8 mb-4 border-t border-gray-600 pt-4">Full Twilight Cycle Calculation Details</h3>
+            <div id="solar-notes" class="mt-4 p-4 bg-slate-800 rounded-lg text-blue-300 text-sm mb-4">
+                <span id="current-solar-notes">Loading atmospheric calculations...</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-600 result-table">
+                    <thead class="bg-slate-800">
+                        <tr>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Event / Phase</th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Eff. Depression ($h_{\text{eff}}$)</th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Total Span (%)</th>
+                            <th class="px-2 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Total Span (Custom Time)</th>
+                            <th class="px-2 py-3 text-right text-xs font-medium text-green-400 uppercase tracking-wider">Phase Duration (Custom Time)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody" class="bg-slate-700 divide-y divide-gray-600 text-sm">
+                        <!-- Results injected here -->
+                    </tbody>
+                </table>
             </div>
         </div>
+        
+        <!-- Custom Calendar Grid -->
+        <div class="card p-6 md:p-8">
+            <h2 class="text-xl font-semibold text-gray-300 mb-4 text-center">Custom Continuous Calendar (Full Year View - 53 Weeks)</h2>
+            <div class="grid grid-cols-7 text-center mono text-sm font-semibold text-indigo-300 border-b border-gray-600 pb-2 mb-2">
+                <div>Day 1</div>
+                <div>Day 2</div>
+                <div>Day 3</div>
+                <div>Day 4</div>
+                <div>Day 5</div>
+                <div>Day 6</div>
+                <div>Day 7</div>
+            </div>
+            <div id="custom-calendar-grid" class="grid grid-cols-7 text-center gap-1 text-gray-300">
+                <!-- Calendar cells will be injected here -->
+            </div>
+        </div>
+
     </div>
 
-    <!-- Script Logic -->
     <script>
-        // Default Earth-based settings (always loaded on start)
-        const DEFAULT_SETTINGS = {
-            epochDate: '2000-01-01',
-            epochTime: '00:00:00',
-            daysPerYear: 365,
-            hoursPerDay: 24,
-            minutesPerHour: 60,
-            secondsPerMinute: 60,
-            msPerSecond: 1000,
+        // --- GLOBAL CONSTANTS (Clock System) ---
+        // Use Date.UTC(year, monthIndex, day, hours, minutes, seconds)
+        const CUSTOM_EPOCH_MS = Date.UTC(2000, 0, 1, 0, 0, 0);
+        const EARTH_DAY_SECONDS = 86400;
+
+        // --- Customizable Durations (Clock) - Initial values, read from inputs at runtime ---
+        let CUSTOM_MINUTES_IN_SECONDS = 30; 
+        let CUSTOM_HOURS_IN_MINUTES = 100; 
+        let CUSTOM_DAYS_IN_HOURS = 10; 
+
+        // Derived constants for the clock. Will be calculated in updateClocks().
+        let SECONDS_PER_CUSTOM_MINUTE = 0;
+        let SECONDS_PER_CUSTOM_HOUR = 0;
+        let SECONDS_PER_CUSTOM_DAY = 0;
+        const DAYS_PER_CUSTOM_WEEK = 7;
+
+        // --- GLOBAL CONSTANTS (Solar System) ---
+        const EARTH_REFRACTION_ANGLE = -0.833; 
+        const EARTH_SEA_LEVEL_PRESSURE = 1013.25;
+        const TWILIGHT_PRESSURE_SCALE = 0.5;
+        const EQUINOX_SUNRISE_PERCENT = 25; // User's Rule: Equinox sunrise is 25% of P-Day
+
+        // Base geometric twilight depression angles (h)
+        const BASE_TWILIGHT_ANGLES = {
+            'Daylight Span': 0,
+            'Civil Twilight End': -6,
+            'Nautical Twilight End': -12,
+            'Astronomical Twilight End': -18,
+            'Zodiacal Twilight End': -24
         };
 
-        let settings = { ...DEFAULT_SETTINGS };
-        let intervalId = null;
-
-        const elements = {
-            epochDate: document.getElementById('epoch-date'),
-            epochTime: document.getElementById('epoch-time'),
-            daysPerYear: document.getElementById('days-per-year'),
-            hoursPerDay: document.getElementById('hours-per-day'),
-            minutesPerHour: document.getElementById('minutes-per-hour'),
-            secondsPerMinute: document.getElementById('seconds-per-minute'),
-            msPerSecond: document.getElementById('ms-per-second'),
-            planetaryTimeDisplay: document.getElementById('planetary-time'),
-            pYear: document.getElementById('p-year'),
-            pDayOfYear: document.getElementById('p-day-of-year'),
-            msElapsed: document.getElementById('ms-elapsed'),
-            progressBar: document.getElementById('day-progress-bar'),
-            progressPercent: document.getElementById('progress-percent'),
-            status: document.getElementById('status')
+        // Chemical Composition Scattering Model (used to adjust twilight angles)
+        const CHEMICAL_SCATTERING_POTENTIAL = {
+            'H2O': 0.0, 'ICE': 0.0, 'H2SO4': -12.0, 'SO2': -10.0, 'CO2': +3.0, 'DUST': +2.0, 
+            'CH4': -18.0, 'NH3': -15.0, 'NONE': +17.5, 'AIR': +17.5, 'VACUUM': +17.5, '': +17.5
         };
 
-        // --- INITIALIZATION & INPUT HANDLING ---
+        // --- Global State Variables ---
+        let currentDayOfYearTotalIndex = -1; 
+        let currentDayOfYear = -1;           
+        let currentYearLength = 365; // Default value
+        let selectedDayTotalIndex = -1;      
+        let currentTotalCustomDays = -1; 
+        
+        // Stores the latest calculated solar data
+        let latestSolarData = null; 
 
-        function initializeApp() {
-            // Apply default settings and start the clock immediately
-            applySettingsToUI(DEFAULT_SETTINGS);
-            setupInputListeners();
-            startClock();
+        // --- DOM Elements ---
+        const utcClockEl = document.getElementById('utc-clock');
+        const customTimeEl = document.getElementById('custom-time');
+        const customDateEl = document.getElementById('custom-date');
+        const progressBarEl = document.getElementById('day-progress-bar');
+        const progressTextEl = document.getElementById('day-progress-text');
+        const calendarGridEl = document.getElementById('custom-calendar-grid');
+        const epochDisplayEl = document.getElementById('epoch-display');
+        const solarEventsContainerEl = document.getElementById('solar-events-container');
+        const dayLengthDisplayEl = document.getElementById('day-length-display');
+        const solarEventsHeaderEl = document.getElementById('solar-events-header');
+        const resetEventsButton = document.getElementById('reset-events-view');
+        const cloudCoverSlider = document.getElementById('cloudCover');
+        const cloudCoverValueEl = document.getElementById('cloudCoverValue');
+        const resultsBodyEl = document.getElementById('resultsBody');
+        const solarNotesEl = document.getElementById('current-solar-notes');
+        const daysPerYearInputEl = document.getElementById('daysPerYearInput');
+        const currentDayManualEl = document.getElementById('currentDayManual');
+        const pDaySecondsEl = document.getElementById('pDaySeconds');
+        
+        // CUSTOM TIME UNIT INPUTS
+        const customSecsInMinEl = document.getElementById('customSecsInMin');
+        const customMinsInHrEl = document.getElementById('customMinsInHr');
+        const customHrsInDayEl = document.getElementById('customHrsInDay');
+
+
+        // --- UTILITY FUNCTIONS ---
+
+        const degToRad = (degrees) => degrees * (Math.PI / 180);
+        const radToDeg = (radians) => radians * (180 / Math.PI);
+        
+        /** Converts total custom seconds into H:M:S format. */
+        function formatCustomTime(totalSeconds) {
+            // Ensure derived constants are current (copied from updateClocks for safety)
+            const CUSTOM_MINUTES_IN_SECONDS_C = parseInt(customSecsInMinEl.value) || 1;
+            const CUSTOM_HOURS_IN_MINUTES_C = parseInt(customMinsInHrEl.value) || 1;
+            const CUSTOM_DAYS_IN_HOURS_C = parseInt(customHrsInDayEl.value) || 1;
+            const SECONDS_PER_CUSTOM_HOUR_C = CUSTOM_MINUTES_IN_SECONDS_C * CUSTOM_HOURS_IN_MINUTES_C;
+            const SECONDS_PER_CUSTOM_MINUTE_C = CUSTOM_MINUTES_IN_SECONDS_C;
+
+            const absSeconds = Math.abs(totalSeconds);
+            const h = Math.floor(absSeconds / SECONDS_PER_CUSTOM_HOUR_C);
+            let rem = absSeconds % SECONDS_PER_CUSTOM_HOUR_C;
+            const m = Math.floor(rem / SECONDS_PER_CUSTOM_MINUTE_C);
+            const s = Math.round(rem % SECONDS_PER_CUSTOM_MINUTE_C);
+            const pad = (num) => String(num).padStart(2, '0');
+            const sign = totalSeconds < 0 ? "-" : "";
+            
+            // Note: If a custom second duration is > 1 Earth second, Math.round is necessary.
+            return `${sign}${pad(h)}:${pad(m)}:${pad(s)}`;
         }
 
-        function applySettingsToUI(currentSettings) {
-            elements.epochDate.value = currentSettings.epochDate;
-            elements.epochTime.value = currentSettings.epochTime;
-            elements.daysPerYear.value = currentSettings.daysPerYear;
-            elements.hoursPerDay.value = currentSettings.hoursPerDay;
-            elements.minutesPerHour.value = currentSettings.minutesPerHour;
-            elements.secondsPerMinute.value = currentSettings.secondsPerMinute;
-            elements.msPerSecond.value = currentSettings.msPerSecond;
-            settings = currentSettings; // Update global settings object
+        // --- CLOCK AND CALENDAR CORE LOGIC (Leap Year Fixed) ---
+
+        /** * Determines the number of days in a given custom year based on the standard 4-year cycle. 
+         * Assumes a leap year (Day +1) every 4th year (year 3 in 0-based index).
+         */
+        function getDaysInCustomYear(customYear) {
+            const standardDaysD = parseFloat(daysPerYearInputEl.value) || 365;
+            
+            // Check for leap year (0-based index, so year 3, 7, 11, etc. is the leap year)
+            if (customYear % 4 === 3) { 
+                return Math.round(standardDaysD) + 1; // Add one day to the standard rounded number
+            } else {
+                return Math.round(standardDaysD); // Use the standard rounded number
+            }
+        }
+        
+        /**
+         * Calculates the Solar Declination (angle of the Sun relative to the equator) for a specific day.
+         * Day 1 is Winter Solstice (max negative declination, -tilt).
+         */
+        function calculateDeclination(dayOfYear, daysPerYear, tilt) {
+            // dayOfYear is 1-based, so subtract 1 for 0-based calculation
+            const fractionalDay = (dayOfYear - 1) / daysPerYear;
+            const angleRad = 2 * Math.PI * fractionalDay;
+            // Declination: -Tilt * cos(2 * pi * FractionalDay)
+            const declination = -tilt * Math.cos(angleRad);
+            return declination;
         }
 
-        function setupInputListeners() {
-            // Get all input elements in the configuration panel
-            const configInputs = document.querySelectorAll('#app input');
+        /**
+         * Calculates the effective solar depression angles based on atmospheric physics.
+         */
+        function calculateEffectiveAngles(pressure, composition, cloudCover) {
+            const effectiveAngles = {};
+            const pressureFactor = pressure / EARTH_SEA_LEVEL_PRESSURE;
+            
+            const compositionKey = composition.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const baseShiftPotential = CHEMICAL_SCATTERING_POTENTIAL[compositionKey] !== undefined 
+                ? CHEMICAL_SCATTERING_POTENTIAL[compositionKey] 
+                : CHEMICAL_SCATTERING_POTENTIAL['NONE'];
 
-            configInputs.forEach(el => {
-                // Listen for change (e.g., blur/enter) and keyup for immediate feedback
-                el.addEventListener('change', updateSettingsFromUI);
-                el.addEventListener('keyup', updateSettingsFromUI);
+            const cloudCoverRatio = cloudCover / 100.0;
+            const finalLuminosityShift = baseShiftPotential * cloudCoverRatio;
+
+            // A) Daylight Span (h=0): Affected primarily by refraction.
+            const refractionCorrection = EARTH_REFRACTION_ANGLE * pressureFactor;
+            effectiveAngles['Daylight Span'] = refractionCorrection;
+
+            // B) Twilight Spans (h<0): Affected by Base Angle, Refraction, and Luminosity Shift.
+            for (const [key, h_base] of Object.entries(BASE_TWILIGHT_ANGLES)) {
+                if (h_base !== 0) {
+                    const h_refraction = refractionCorrection * TWILIGHT_PRESSURE_SCALE;
+                    effectiveAngles[key] = h_base + h_refraction + finalLuminosityShift;
+                }
+            }
+            
+            return { effectiveAngles, finalLuminosityShift, compositionKey };
+        }
+
+        /**
+         * Calculates the total span percentage for a given effective solar altitude (h_eff).
+         */
+        function calculateSpan(h_eff, phi, declination) {
+            const hRad = degToRad(h_eff);
+            const phiRad = degToRad(phi);
+            const declinationRad = degToRad(declination);
+
+            const numerator = Math.sin(hRad) - Math.sin(phiRad) * Math.sin(declinationRad);
+            const denominator = Math.cos(phiRad) * Math.cos(declinationRad);
+
+            if (denominator === 0) { 
+                // Directly over pole: 100% or 0% depending on declination
+                return degToRad(declination) > phiRad ? 100 : 0; 
+            }
+
+            let cosOmega = numerator / denominator;
+
+            if (cosOmega <= -1) { return 100; } // Polar Day/Continuous Light
+            else if (cosOmega >= 1) { return 0; } // Polar Night/Continuous Dark
+            else {
+                const omega = radToDeg(Math.acos(cosOmega));
+                return (2 * omega / 360) * 100; // Percentage of the 360-degree rotation
+            }
+        }
+        
+        /**
+         * Inserts data rows into the HTML table.
+         */
+        function insertTableData(body, data) {
+            body.innerHTML = '';
+            
+            // Sort by absolute h_eff to ensure phases are calculated correctly
+            const sortedData = [...data].sort((a, b) => Math.abs(parseFloat(a.h_eff)) - Math.abs(parseFloat(b.h_eff)));
+
+            let previousSpan = 0;
+            
+            sortedData.forEach((item) => {
+                const row = body.insertRow();
+                row.className = 'hover:bg-slate-600';
+                
+                let eventCell = row.insertCell();
+                eventCell.className = 'px-2 py-3 font-semibold text-white';
+                eventCell.textContent = item.event;
+
+                let hCell = row.insertCell();
+                hCell.className = 'px-2 py-3 text-gray-400 font-mono';
+                hCell.textContent = `${parseFloat(item.h_eff).toFixed(3)}°`;
+                
+                let spanCell = row.insertCell();
+                spanCell.className = 'px-2 py-3 text-white font-bold';
+                spanCell.textContent = `${parseFloat(item.span).toFixed(2)}%`;
+
+                let durationCell = row.insertCell();
+                durationCell.className = 'px-2 py-3 text-right text-gray-300 font-mono';
+                // Display total duration in custom time format
+                durationCell.textContent = formatCustomTime(item.duration);
+
+                // Calculate Phase Duration (the time between this event and the previous one)
+                const currentSpan = parseFloat(item.span);
+                // Difference in span percentage * custom day duration
+                let phaseDurationSeconds = Math.max(0, currentSpan - previousSpan) * SECONDS_PER_CUSTOM_DAY / 100;
+                
+                let phaseCell = row.insertCell();
+                phaseCell.className = `px-2 py-3 text-right font-mono text-green-400 ${item.event === 'Daylight Span' ? 'font-bold bg-indigo-900/50' : 'phase-cell'}`;
+                // Display phase duration in custom time format
+                phaseCell.textContent = formatCustomTime(phaseDurationSeconds);
+
+                previousSpan = currentSpan;
             });
         }
 
-        function updateSettingsFromUI() {
-            const newSettings = {
-                // Text inputs for date and time are used directly
-                epochDate: elements.epochDate.value,
-                epochTime: elements.epochTime.value,
-                // Ensure number values are positive integers
-                daysPerYear: Math.max(1, parseInt(elements.daysPerYear.value) || 1),
-                hoursPerDay: Math.max(1, parseInt(elements.hoursPerDay.value) || 1),
-                minutesPerHour: Math.max(1, parseInt(elements.minutesPerHour.value) || 1),
-                secondsPerMinute: Math.max(1, parseInt(elements.secondsPerMinute.value) || 1),
-                msPerSecond: Math.max(1, parseInt(elements.msPerSecond.value) || 1),
-            };
+
+        /**
+         * Main solar calculation, including the Polar Day/Night boundaries.
+         */
+        function calculateFullSolarCycle(dayOfYear1Based) {
+            const latitude = parseFloat(document.getElementById('latitude').value);
+            const tilt = parseFloat(document.getElementById('axialTilt').value);
+            const daysPerYear = parseFloat(daysPerYearInputEl.value) || 365;
+            const pressure = parseFloat(document.getElementById('pressure').value);
+            const compositionText = document.getElementById('cloudCompositionText').value;
+            const cloudCover = parseFloat(document.getElementById('cloudCover').value);
             
-            // Update global settings immediately
-            settings = newSettings; 
-            updateClock();
-        }
+            // Ensure derived constants are current for duration calculations
+            CUSTOM_MINUTES_IN_SECONDS = parseInt(customSecsInMinEl.value) || 1;
+            CUSTOM_HOURS_IN_MINUTES = parseInt(customMinsInHrEl.value) || 1;
+            CUSTOM_DAYS_IN_HOURS = parseInt(customHrsInDayEl.value) || 1;
+            SECONDS_PER_CUSTOM_MINUTE = CUSTOM_MINUTES_IN_SECONDS;
+            SECONDS_PER_CUSTOM_HOUR = SECONDS_PER_CUSTOM_MINUTE * CUSTOM_HOURS_IN_MINUTES;
+            SECONDS_PER_CUSTOM_DAY = SECONDS_PER_CUSTOM_HOUR * CUSTOM_DAYS_IN_HOURS;
+            
+            const customDaySeconds = SECONDS_PER_CUSTOM_DAY;
+            
+            // --- 1. CORE CELESTIAL CALCULATION ---
+            const declination = calculateDeclination(dayOfYear1Based, daysPerYear, tilt);
+            const { effectiveAngles, finalLuminosityShift, compositionKey } = calculateEffectiveAngles(pressure, compositionText, cloudCover);
+            
+            // --- 2. CALCULATE SPANS FOR CURRENT DAY'S DECLINATION ---
+            const currentDaySpans = {};
+            const keys = Object.keys(BASE_TWILIGHT_ANGLES);
+            let results = [];
 
-        // --- CORE CLOCK LOGIC ---
-
-        function startClock() {
-            if (intervalId) {
-                clearInterval(intervalId); // Clear existing interval if restarting
+            for (const key of keys) {
+                const h_eff = effectiveAngles[key];
+                let span = calculateSpan(h_eff, latitude, declination);
+                currentDaySpans[key] = span;
             }
-            // Start the clock update loop every 10ms for high precision
-            updateClock();
-            intervalId = setInterval(updateClock, 10); 
+
+            // --- 3. APPLY USER'S RULES (Equinox Rule) ---
+            let daylightSpanPercent = currentDaySpans['Daylight Span'];
+            
+            // Apply Equinox/Zero Tilt override
+            if (Math.abs(declination) < 0.1 || tilt === 0) { 
+                // If tilt is 0 or declination is near zero (equinox), assume 50% day and 50% night
+                // The formula assumes 50% span = 100 - (2 * SunrisePhasePercent). If SunrisePhasePercent is 25%, 100-50=50.
+                daylightSpanPercent = 100 - (2 * EQUINOX_SUNRISE_PERCENT); 
+            }
+            currentDaySpans['Daylight Span'] = daylightSpanPercent;
+
+            // --- 4. DETERMINE POLAR BOUNDARIES (Using Daylight Span) ---
+            let polarStatus = 'Normal';
+            
+            const isPolarDay = currentDaySpans['Daylight Span'] >= 99.999;
+            const isPolarNight = currentDaySpans['Daylight Span'] <= 0.001;
+
+            // Apply clamping for Polar Day/Night to ALL twilights
+            if (isPolarDay) {
+                polarStatus = 'Polar Day';
+                for (const key in currentDaySpans) { currentDaySpans[key] = 100; }
+            } else if (isPolarNight) {
+                polarStatus = 'Polar Night';
+                for (const key in currentDaySpans) { currentDaySpans[key] = 0; }
+            }
+            
+            // Helper function (find boundary days)
+            let polarDayStartDay = null;
+            let polarDayEndDay = null;
+            let polarNightStartDay = null;
+            let polarNightEndDay = null;
+
+            if (tilt > 0) {
+                 // Polar Day/Night starts are complex, but can be approximated by finding when the declination 
+                 // exceeds (90 - Latitude) for Daylight Span (h=0) or Twilight End angles (h=-18 etc.).
+                 const findBoundaryDays = (targetAngle) => {
+                    const days = [];
+                    for (let d = 1; d <= daysPerYear; d++) {
+                        const dec = calculateDeclination(d, daysPerYear, tilt);
+                        const cosOmega = (Math.sin(degToRad(targetAngle)) - Math.sin(degToRad(latitude)) * Math.sin(degToRad(dec))) / (Math.cos(degToRad(latitude)) * Math.cos(degToRad(dec)));
+                        
+                        if (cosOmega <= -1) { // Always up (Polar Day)
+                            days.push(d);
+                        }
+                    }
+                    return days.length > 0 ? { start: days[0], end: days[days.length - 1] } : null;
+                }
+
+                if (isPolarDay) {
+                    const boundaries = findBoundaryDays(effectiveAngles['Daylight Span']);
+                    if (boundaries) { polarDayStartDay = boundaries.start; polarDayEndDay = boundaries.end; }
+                }
+                if (isPolarNight) {
+                    // For night, check when Nautical Twilight ends completely (-12 or less)
+                    const boundaries = findBoundaryDays(effectiveAngles['Nautical Twilight End']);
+                     if (boundaries) { polarNightStartDay = boundaries.start; polarNightEndDay = boundaries.end; }
+                }
+            }
+
+
+            // --- 5. DATA GENERATION AND OUTPUT ---
+            // Re-order keys to be based on base angle (ascending absolute value)
+            const orderedKeys = Object.entries(BASE_TWILIGHT_ANGLES)
+                .sort(([, a], [, b]) => Math.abs(a) - Math.abs(b))
+                .map(([key]) => key);
+
+            for (const key of orderedKeys) {
+                const h_eff = effectiveAngles[key];
+                const span = currentDaySpans[key];
+                
+                results.push({
+                    event: key,
+                    h_eff: h_eff.toFixed(3),
+                    span: span.toFixed(2),
+                    duration: (span / 100) * customDaySeconds, // Total Span in Custom Seconds
+                    phaseDuration: 0, 
+                    phaseName: key
+                });
+            }
+
+            return {
+                results: results,
+                declination: declination,
+                effectiveAngles: effectiveAngles,
+                finalLuminosityShift: finalLuminosityShift,
+                compositionKey: compositionKey,
+                polarStatus: polarStatus,
+                polarDayStartDay: polarDayStartDay,
+                polarDayEndDay: polarDayEndDay,
+                polarNightStartDay: polarNightStartDay,
+                polarNightEndDay: polarNightEndDay
+            };
         }
 
-        function updateClock() {
-            // 1. Calculate Epoch Time in UTC milliseconds
-            // Combine date and time strings into ISO format with UTC suffix 'Z'
-            const epochDateTimeString = `${settings.epochDate}T${settings.epochTime}.000Z`;
-            const epochMs = Date.parse(epochDateTimeString);
 
-            // Handle invalid date/time parsing
-            if (isNaN(epochMs)) {
-                elements.planetaryTimeDisplay.textContent = 'Invalid Epoch';
+        /**
+         * Renders the solar event times for all 10 key events.
+         */
+        function renderSolarEvents(dayOfYear1Based) {
+            solarEventsContainerEl.innerHTML = '';
+            resultsBodyEl.innerHTML = '';
+
+            // Re-run full calculation to ensure time unit constants are up to date
+            const solarData = calculateFullSolarCycle(dayOfYear1Based);
+            latestSolarData = solarData; // Store globally for other functions
+            
+            // Ensure derived constants are current for duration calculations
+            const customDaySeconds = SECONDS_PER_CUSTOM_DAY;
+
+            // --- RENDER NOTES & FULL TABLE ---
+            const standardDaysD = parseFloat(daysPerYearInputEl.value) || 365;
+            let noteMessage = `<strong class="text-lg">Day ${dayOfYear1Based} / ${Math.round(standardDaysD)} (Solar Calculation)</strong><br>`;
+            noteMessage += `Latitude ($\phi$): ${parseFloat(document.getElementById('latitude').value)}^{\\circ}$. Axial Tilt ($\\theta_{R}$): ${parseFloat(document.getElementById('axialTilt').value)}^{\\circ}$.<br>`;
+            noteMessage += `Solar Declination ($\delta$): **${solarData.declination.toFixed(3)}^{\\circ}** <br>`;
+            noteMessage += `Atmospheric: ${parseFloat(document.getElementById('pressure').value).toFixed(2)} hPa (Refraction $\approx$ ${solarData.effectiveAngles['Daylight Span'].toFixed(3)}^{\\circ}$). Cloud: ${solarData.compositionKey} @ ${document.getElementById('cloudCover').value}%.<br>`;
+            noteMessage += `**Total Luminosity Shift:** **${solarData.finalLuminosityShift.toFixed(2)}^{\\circ}** (Adjusts Twilight Angles).`;
+            solarNotesEl.innerHTML = noteMessage;
+
+            insertTableData(resultsBodyEl, solarData.results);
+
+            // --- RENDER MAIN EVENT BOXES ---
+
+            if (solarData.polarStatus !== 'Normal') {
+                let statusText = solarData.polarStatus === 'Polar Day' 
+                    ? "Continuous Daylight (Polar Day)" 
+                    : "Continuous Darkness (Polar Night)";
+
+                // Add days information
+                if (solarData.polarDayStartDay !== null && solarData.polarDayEndDay !== null) {
+                    statusText += ` (Season: Day ${solarData.polarDayStartDay} to ${solarData.polarDayEndDay})`;
+                }
+                
+                solarEventsContainerEl.innerHTML = `
+                    <div class="col-span-full p-4 bg-red-800 rounded-lg text-white font-bold text-center">
+                        ${statusText}
+                    </div>
+                `;
+                dayLengthDisplayEl.textContent = solarData.polarStatus === 'Polar Day' 
+                    ? `Daylight Span: Full Day (${formatCustomTime(customDaySeconds)})`
+                    : `Daylight Span: Zero (${formatCustomTime(0)})`;
+                return; 
+            }
+
+            // --- NORMAL DAYLIGHT DISPLAY (Full 10 Event Logic) ---
+            
+            const noonSeconds = customDaySeconds / 2;
+            let keyEvents = [];
+
+            // Define all 5 spans and their corresponding display properties
+            const spanDefinitions = [
+                { key: 'Daylight Span', dawn: 'Sunrise', dusk: 'Sunset', color: 'text-red-300' },
+                { key: 'Civil Twilight End', dawn: 'Civil Dawn', dusk: 'Civil Dusk', color: 'text-orange-400' },
+                { key: 'Nautical Twilight End', dawn: 'Nautical Dawn', dusk: 'Nautical Dusk', color: 'text-yellow-300' },
+                { key: 'Astronomical Twilight End', dawn: 'Astronomic. Dawn', dusk: 'Astronomic. Dusk', color: 'text-blue-300' },
+                { key: 'Zodiacal Twilight End', dawn: 'Zodiacal Dawn', dusk: 'Zodiacal Dusk', color: 'text-purple-300' },
+            ];
+            
+            // Find all necessary span durations from the calculation results
+            const eventDurations = solarData.results.reduce((acc, result) => {
+                acc[result.event] = result.duration;
+                return acc;
+            }, {});
+
+            // Populate all 10 events
+            for (const def of spanDefinitions) {
+                const duration = eventDurations[def.key] || 0;
+                
+                // Dawn/Start Time: T_noon - (D_total / 2)
+                const startTime = noonSeconds - (duration / 2);
+                
+                // Dusk/End Time: T_noon + (D_total / 2)
+                const endTime = noonSeconds + (duration / 2);
+
+                // Only add events if they occur (duration > 0 and < customDaySeconds)
+                if (duration > 0 && duration < customDaySeconds) {
+                    keyEvents.push({ name: def.dawn, time: startTime, color: def.color });
+                    keyEvents.push({ name: def.dusk, time: endTime, color: def.color });
+                }
+            }
+
+            // Sort all events chronologically
+            keyEvents.sort((a, b) => a.time - b.time);
+
+            // Display Day Length (using the Daylight Span duration)
+            const daylightDuration = eventDurations['Daylight Span'] || 0;
+            const daylightSpanPercent = solarData.results.find(r => r.event === 'Daylight Span')?.span || '0.00';
+            dayLengthDisplayEl.textContent = `Daylight Span: ${formatCustomTime(daylightDuration)} (${daylightSpanPercent}%)`;
+            
+            // Render the sorted events
+            for (const event of keyEvents) {
+                // Round the time before formatting for clean display
+                const timeString = formatCustomTime(Math.round(event.time));
+
+                const div = document.createElement('div');
+                // Use smaller padding and text size to fit 10 events
+                div.className = 'space-y-1 p-2 bg-slate-600 rounded-md'; 
+                
+                const label = document.createElement('p');
+                label.className = 'text-xs font-light text-gray-300';
+                label.textContent = event.name;
+
+                const time = document.createElement('p');
+                time.className = `text-lg font-bold ${event.color}`;
+                time.textContent = timeString;
+
+                div.appendChild(label);
+                div.appendChild(time);
+                solarEventsContainerEl.appendChild(div);
+            }
+        }
+
+        /**
+         * Handles click events on calendar days.
+         */
+        window.handleDayClick = function(clickedDayTotalIndex, clickedDayOfYear1Based, clickedYearLength) {
+            if (clickedDayTotalIndex < 0) return;
+            
+            if (clickedDayTotalIndex === currentDayOfYearTotalIndex) {
+                resetEventsView();
                 return;
             }
 
-            // 2. Calculate elapsed real time since epoch
-            const nowMs = Date.now();
-            const msElapsedSinceEpoch = nowMs - epochMs;
-            elements.msElapsed.textContent = msElapsedSinceEpoch.toLocaleString();
-
-            if (msElapsedSinceEpoch < 0) {
-                elements.planetaryTimeDisplay.textContent = 'Future Epoch';
-                return;
+            selectedDayTotalIndex = clickedDayTotalIndex;
+            renderSolarEvents(clickedDayOfYear1Based);
+            
+            // Calculate year for display
+            let daysPassedForYearCalc = clickedDayTotalIndex;
+            let year = 0;
+            while (daysPassedForYearCalc >= getDaysInCustomYear(year)) {
+                daysPassedForYearCalc -= getDaysInCustomYear(year);
+                year++;
             }
 
-            // 3. Define Planetary Conversion Factors (Total Real MS in each custom unit)
-            const MS_PER_P_SECOND = settings.msPerSecond;
-            const MS_PER_P_MINUTE = MS_PER_P_SECOND * settings.secondsPerMinute;
-            const MS_PER_P_HOUR = MS_PER_P_MINUTE * settings.minutesPerHour;
-            const MS_PER_P_DAY = MS_PER_P_HOUR * settings.hoursPerDay;
-            const MS_PER_P_YEAR = MS_PER_P_DAY * settings.daysPerYear;
-
-            // Prevent division by zero if input values are invalid
-            if (MS_PER_P_YEAR === 0 || MS_PER_P_DAY === 0) return;
-
-
-            // 4. Calculate Planetary Time Components
-            let remainingMs = msElapsedSinceEpoch;
-
-            // Calculate Years
-            const pYears = Math.floor(remainingMs / MS_PER_P_YEAR);
-            remainingMs %= MS_PER_P_YEAR;
-
-            // Calculate Days (of Year)
-            const pDays = Math.floor(remainingMs / MS_PER_P_DAY);
-            remainingMs %= MS_PER_P_DAY;
-
-            // Calculate Hours
-            const pHours = Math.floor(remainingMs / MS_PER_P_HOUR);
-            remainingMs %= MS_PER_P_HOUR;
-
-            // Calculate Minutes
-            const pMinutes = Math.floor(remainingMs / MS_PER_P_MINUTE);
-            remainingMs %= MS_PER_P_MINUTE;
-
-            // Calculate Seconds
-            const pSeconds = Math.floor(remainingMs / MS_PER_P_SECOND);
-            // The remaining are Milliseconds (not displayed in main clock)
-
-            // 5. Update UI
-
-            // Helper function to format time components (e.g., 5 -> "05")
-            const format = (num, length) => String(num).padStart(length, '0');
-
-            // MAIN DISPLAY: HH:MM:SS (as requested, without milliseconds)
-            const formattedTime = `${format(pHours, 2)}:${format(pMinutes, 2)}:${format(pSeconds, 2)}`;
-
-            elements.planetaryTimeDisplay.textContent = formattedTime;
-            elements.pYear.textContent = pYears.toLocaleString();
-            // Days are 0-indexed (0 to DaysPerYear-1), so we add 1 for display
-            elements.pDayOfYear.textContent = `${(pDays + 1).toLocaleString()} / ${settings.daysPerYear}`;
-
-            // 6. Update Day Progress Bar
-            const msPassedToday = msElapsedSinceEpoch % MS_PER_P_DAY;
-            const progress = (msPassedToday / MS_PER_P_DAY) * 100;
-
-            elements.progressBar.style.width = `${progress}%`;
-            elements.progressPercent.textContent = progress.toFixed(2);
+            solarEventsHeaderEl.textContent = `Solar Events (Viewing Year ${year}, Day ${clickedDayOfYear1Based} / ${clickedYearLength})`;
+            solarEventsHeaderEl.classList.add('text-yellow-400', 'font-mono');
+            
+            resetEventsButton.classList.remove('hidden');
+            renderCalendar(currentDayOfYearTotalIndex, selectedDayTotalIndex);
         }
 
-        // --- INITIALIZATION ---
-        window.onload = initializeApp;
+        /**
+         * Resets the solar events view back to the current real-time day.
+         */
+        function resetEventsView() {
+            selectedDayTotalIndex = -1; 
+            
+            // The dayForSolarCalc uses the manual override value if set, otherwise the current day
+            const standardDaysD = parseFloat(daysPerYearInputEl.value) || 365;
+            const manualDay = parseInt(currentDayManualEl.value);
+            const dayForSolarCalc = manualDay > 0 ? (manualDay % standardDaysD || standardDaysD) : (currentDayOfYear + 1);
+            
+            renderSolarEvents(dayForSolarCalc); 
+            
+            solarEventsHeaderEl.textContent = 'Solar Events (Current Day)';
+            solarEventsHeaderEl.classList.remove('text-yellow-400', 'font-mono');
+            
+            resetEventsButton.classList.add('hidden');
+            renderCalendar(currentDayOfYearTotalIndex, selectedDayTotalIndex);
+        }
+        
+        /**
+         * Renders the custom calendar grid.
+         */
+        function renderCalendar(totalCustomDays, selectedDayTotalIndex = -1) {
+            // Optimization for minor state changes (like selection highlight)
+            if (totalCustomDays === currentTotalCustomDays && currentTotalCustomDays !== -1) {
+                const cells = calendarGridEl.querySelectorAll('.day-cell');
+                cells.forEach(cell => {
+                    cell.classList.remove('current-day', 'border-2', 'border-yellow-400', 'bg-slate-600', 'shadow-lg');
+                    if (parseInt(cell.dataset.dayIndex) === totalCustomDays) {
+                        cell.classList.add('current-day');
+                    }
+                    
+                    if (parseInt(cell.dataset.dayIndex) === selectedDayTotalIndex && cell.dataset.dayIndex != totalCustomDays) {
+                        cell.classList.add('border-2', 'border-yellow-400', 'bg-slate-600', 'shadow-lg');
+                    }
+                });
+                return;
+            }
+            
+            currentTotalCustomDays = totalCustomDays;
 
+            calendarGridEl.innerHTML = '';
+            
+            const DAYS_TO_SHOW = 371; // 53 weeks * 7 days
+            const weeksBefore = 26; // Show 26 weeks before the current week
+            
+            const startOfCurrentWeekDayIndex = totalCustomDays - (totalCustomDays % DAYS_PER_CUSTOM_WEEK);
+            const gridStartIndex = startOfCurrentWeekDayIndex - (weeksBefore * DAYS_PER_CUSTOM_WEEK);
+
+            // Determine the current year index for display context
+            let daysRemainingForYearCalc = totalCustomDays;
+            let currentYearIndex = 0;
+            while(daysRemainingForYearCalc >= getDaysInCustomYear(currentYearIndex)) {
+                daysRemainingForYearCalc -= getDaysInCustomYear(currentYearIndex);
+                currentYearIndex++;
+            }
+
+            for (let dayIndex = gridStartIndex; dayIndex < gridStartIndex + DAYS_TO_SHOW; dayIndex++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'day-cell p-2 text-center text-sm rounded-md';
+                dayEl.dataset.dayIndex = dayIndex; 
+
+                if (dayIndex < 0) {
+                    dayEl.classList.add('opacity-50');
+                    dayEl.title = 'Pre-Epoch Day';
+                    dayEl.textContent = '---';
+                } else {
+                    // Calculate Year and Day of Year for this cell
+                    let daysSinceEpoch = dayIndex;
+                    let year = 0;
+                    let daysInYear = getDaysInCustomYear(year);
+                    while (daysSinceEpoch >= daysInYear) {
+                        daysSinceEpoch -= daysInYear;
+                        year++;
+                        daysInYear = getDaysInCustomYear(year);
+                    }
+                    const dayOfYear0Based = daysSinceEpoch; // 0-based day of year
+                    const dayOfYear1Based = dayOfYear0Based + 1; // 1-based display
+                    
+                    dayEl.textContent = dayOfYear1Based;
+                    dayEl.title = `Year ${year}, Day ${dayOfYear1Based} / ${daysInYear}`;
+                    
+                    // Pass the calculated dayOfYear (1-based) and the current year's length to the click handler
+                    dayEl.setAttribute('onclick', `handleDayClick(${dayIndex}, ${dayOfYear1Based}, ${daysInYear})`);
+
+                    if (dayIndex === totalCustomDays) {
+                        dayEl.classList.add('current-day');
+                        const yearLabel = document.createElement('span');
+                        yearLabel.className = 'block text-xs font-normal opacity-75';
+                        yearLabel.textContent = `Y ${year}`;
+                        dayEl.prepend(yearLabel);
+                    } else if (year !== currentYearIndex) {
+                        dayEl.classList.add('opacity-75');
+                        const yearLabel = document.createElement('span');
+                        yearLabel.className = 'block text-xs font-normal text-indigo-300 opacity-50';
+                        yearLabel.textContent = `Y ${year}`;
+                        dayEl.prepend(yearLabel);
+                    } else {
+                         // Add invisible spacer to keep alignment
+                         dayEl.prepend(document.createElement('span'));
+                         dayEl.firstChild.className = 'block text-xs font-normal opacity-0';
+                         dayEl.firstChild.textContent = 'Y'; 
+                    }
+                    
+                    if (dayIndex === selectedDayTotalIndex && dayIndex !== totalCustomDays) {
+                        dayEl.classList.add('border-2', 'border-yellow-400', 'bg-slate-600', 'shadow-lg');
+                    }
+                }
+
+                calendarGridEl.appendChild(dayEl);
+            }
+        }
+
+
+        function updateClocks(forceSolarUpdate = false) {
+            // 1. Update time unit constants from UI inputs
+            CUSTOM_MINUTES_IN_SECONDS = parseInt(customSecsInMinEl.value) || 1;
+            CUSTOM_HOURS_IN_MINUTES = parseInt(customMinsInHrEl.value) || 1;
+            CUSTOM_DAYS_IN_HOURS = parseInt(customHrsInDayEl.value) || 1;
+
+            SECONDS_PER_CUSTOM_MINUTE = CUSTOM_MINUTES_IN_SECONDS;
+            SECONDS_PER_CUSTOM_HOUR = SECONDS_PER_CUSTOM_MINUTE * CUSTOM_HOURS_IN_MINUTES;
+            SECONDS_PER_CUSTOM_DAY = SECONDS_PER_CUSTOM_HOUR * CUSTOM_DAYS_IN_HOURS;
+            
+            const now = new Date();
+            const nowMs = now.getTime();
+            const standardDaysD = parseFloat(daysPerYearInputEl.value) || 365;
+            const pDaySeconds = parseFloat(pDaySecondsEl.value);
+
+            // 2. Update Current UTC Time
+            const utcTime = now.toUTCString().split(' ')[4];
+            utcClockEl.textContent = `${utcTime} UTC`;
+
+
+            // 3. Calculate Total Elapsed Custom Seconds and Days
+            const elapsedMs = nowMs - CUSTOM_EPOCH_MS;
+            
+            // CORRECTED LOGIC: 
+            // Total Earth Seconds Elapsed: totalEarthSecondsElapsed
+            // Total Custom Days Elapsed (Float): totalEarthSecondsElapsed / pDaySeconds (sidereal day duration)
+            // Total Custom Seconds Elapsed: (Total Custom Days Elapsed Float) * SECONDS_PER_CUSTOM_DAY
+            const totalEarthSecondsElapsed = Math.floor(elapsedMs / 1000);
+            const totalCustomDaysElapsedFloat = totalEarthSecondsElapsed / pDaySeconds;
+            const totalCustomSeconds = Math.floor(totalCustomDaysElapsedFloat * SECONDS_PER_CUSTOM_DAY);
+
+            const totalCustomDays = Math.floor(totalCustomSeconds / SECONDS_PER_CUSTOM_DAY);
+            
+            currentDayOfYearTotalIndex = totalCustomDays;
+
+            let remainingSecondsInDay = totalCustomSeconds % SECONDS_PER_CUSTOM_DAY;
+            
+            // 4. Leap Year-aware Date Calculation
+            let daysSinceEpoch = totalCustomDays;
+            let customYears = 0;
+            let daysInThisYear = getDaysInCustomYear(customYears);
+            
+            // Iterate until we find the current custom year
+            while(daysSinceEpoch >= daysInThisYear) {
+                daysSinceEpoch -= daysInThisYear;
+                customYears++;
+                daysInThisYear = getDaysInCustomYear(customYears);
+            }
+
+            const dayOfYear0Based = daysSinceEpoch; // 0-based day of year
+            // Update global state
+            currentDayOfYear = dayOfYear0Based;
+            currentYearLength = daysInThisYear;
+            
+            // 5. Manual Day Override (If the user provides a day number, use it for solar calc/calendar view)
+            const manualDay = parseInt(currentDayManualEl.value);
+            // Ensure the manual day wraps around the standard Days/Year input for solar calculation
+            const dayForSolarCalc = manualDay > 0 ? (manualDay % Math.round(standardDaysD) || Math.round(standardDaysD)) : (currentDayOfYear + 1);
+            
+            // 6. Calculate Custom Time (Hours, Minutes, Seconds)
+            const customHours = Math.floor(remainingSecondsInDay / SECONDS_PER_CUSTOM_HOUR);
+            remainingSecondsInDay %= SECONDS_PER_CUSTOM_HOUR;
+
+            const customMinutes = Math.floor(remainingSecondsInDay / SECONDS_PER_CUSTOM_MINUTE);
+            remainingSecondsInDay %= SECONDS_PER_CUSTOM_MINUTE;
+
+            const customSeconds = remainingSecondsInDay; 
+
+            // 7. Update Custom Display
+            customDateEl.textContent = `Year ${customYears} Day ${dayOfYear0Based + 1} / ${currentYearLength}`;
+            
+            const pad = (num) => String(num).padStart(2, '0');
+
+            customTimeEl.textContent = 
+                `${pad(customHours)}:${pad(customMinutes)}:${pad(customSeconds)}`;
+            
+            // 8. Update Progress Bar
+            const daySecondsElapsed = (customHours * SECONDS_PER_CUSTOM_HOUR) + 
+                                      (customMinutes * SECONDS_PER_CUSTOM_MINUTE) + 
+                                      customSeconds;
+            
+            const dayPercentage = (daySecondsElapsed / SECONDS_PER_CUSTOM_DAY) * 100;
+
+            progressBarEl.style.width = `${dayPercentage.toFixed(2)}%`;
+            progressTextEl.textContent = `${dayPercentage.toFixed(2)}% of the day passed`;
+            
+            // 9. Update Specs Display
+            document.getElementById('spec-sec-min').textContent = `${CUSTOM_MINUTES_IN_SECONDS}`;
+            document.getElementById('spec-min-hr').textContent = `${CUSTOM_HOURS_IN_MINUTES}`;
+            document.getElementById('spec-hr-day').textContent = `${CUSTOM_DAYS_IN_HOURS}`;
+            document.getElementById('spec-day-yr').textContent = `${Math.round(standardDaysD)}`;
+
+
+            // 10. Calculate and Update Solar Events 
+            // Only update solar events if a parameter changed (forceSolarUpdate) or if we are not viewing a historical day.
+            if (forceSolarUpdate || selectedDayTotalIndex === -1 || selectedDayTotalIndex === currentDayOfYearTotalIndex) {
+                 if (selectedDayTotalIndex !== -1) selectedDayTotalIndex = -1;
+                renderSolarEvents(dayForSolarCalc);
+                solarEventsHeaderEl.textContent = 'Solar Events (Current Day)';
+                solarEventsHeaderEl.classList.remove('text-yellow-400', 'font-mono');
+                resetEventsButton.classList.add('hidden');
+            }
+
+            // 11. Update Calendar Grid
+            renderCalendar(totalCustomDays, selectedDayTotalIndex);
+        }
+
+        // --- Initialization ---
+        
+        // 1. Display the hardcoded epoch time on load
+        function displayEpoch() {
+            const ms = CUSTOM_EPOCH_MS;
+            const epochDate = new Date(ms);
+            const year = epochDate.getUTCFullYear();
+            const monthIndex = epochDate.getUTCMonth();
+            const day = epochDate.getUTCDate();
+            const hours = String(epochDate.getUTCHours()).padStart(2, '0');
+            const minutes = String(epochDate.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(epochDate.getUTCSeconds()).padStart(2, '0');
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            epochDisplayEl.textContent = `${monthNames[monthIndex]} ${day}, ${year} ${hours}:${minutes}:${seconds} UTC`;
+        }
+
+        // 2. Set initial values for custom time unit inputs
+        function initializeCustomTimeUnits() {
+            customSecsInMinEl.value = CUSTOM_MINUTES_IN_SECONDS;
+            customMinsInHrEl.value = CUSTOM_HOURS_IN_MINUTES;
+            customHrsInDayEl.value = CUSTOM_DAYS_IN_HOURS;
+        }
+
+        // 3. Set up event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            displayEpoch();
+            initializeCustomTimeUnits();
+            
+            // Update cloud cover display
+            cloudCoverSlider.oninput = function() {
+                cloudCoverValueEl.textContent = this.value + '%';
+            }
+            
+            // Start the clock
+            updateClocks();
+            // Set up the interval timer
+            setInterval(() => updateClocks(false), 1000); // Update every Earth second, don't force solar update
+        });
     </script>
 </body>
 </html>
