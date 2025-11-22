@@ -136,6 +136,17 @@
     filter: brightness(1.2); /* Use filter to slightly change color on hover */
     transform: translateY(-1px);
   }
+  
+  /* Recording Button Styles */
+  #recordBtn {
+    background: #FF4136; /* Red for recording */
+    color: white;
+  }
+  
+  #stopRecordBtn {
+    background: #FFDC00; /* Yellow for stop */
+    color: #111;
+  }
 
   #gridWrap {
     margin-top: 12px;
@@ -176,6 +187,19 @@
     background: rgba(0,0,0,0.2);
     transition: color 0.3s;
   }
+  
+  /* Status indicators */
+  .recording-status {
+      font-weight: bold;
+      color: #FF4136; /* Red */
+      animation: pulse 1s infinite alternate;
+  }
+
+  @keyframes pulse {
+      from { opacity: 1; }
+      to { opacity: 0.5; }
+  }
+
 
   /* MODAL STYLES */
   .modal-overlay {
@@ -329,6 +353,16 @@
   <label>Release (ms)
     <input id="release" type="number" min="5" max="10000" value="120" />
   </label>
+  
+  <!-- AUDIO RECORDING CONTROLS -->
+  <div class="flex flex-col gap-2">
+      <button id="recordBtn" class="!px-4">
+          <span id="recordText">Record</span>
+      </button>
+      <button id="stopRecordBtn" disabled class="!px-4">Stop</button>
+  </div>
+  <!-- END AUDIO RECORDING CONTROLS -->
+  
 </div>
 
 <div id="gridWrap">
@@ -338,6 +372,10 @@
 <div class="status">
   <div id="tuningText">Tuning: —</div>
   <div class="small" id="notesLegend"></div>
+  <div class="small mt-1">
+      <span id="recordingStatus"></span>
+      <span id="recordingHint">The recorder exports as **WebM audio** (compressed, high-quality) and works regardless of system volume.</span>
+  </div>
 </div>
 
 <!-- SCALE GENERATOR MODAL -->
@@ -376,9 +414,25 @@ let gridState = {
 // --- WEB AUDIO API SETUP ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const masterGain = audioCtx.createGain();
-masterGain.connect(audioCtx.destination);
 
-// Synth Class for Audio Generation
+// 1. Create a MediaStreamDestinationNode for recording
+const recorderDestination = audioCtx.createMediaStreamDestination();
+
+// 2. Connect masterGain to BOTH the speakers AND the recorder destination
+masterGain.connect(audioCtx.destination);
+masterGain.connect(recorderDestination);
+
+// --- RECORDING STATE AND ELEMENTS ---
+let mediaRecorder = null;
+let recordedChunks = [];
+let isRecording = false;
+
+const recordBtn = document.getElementById('recordBtn');
+const recordText = document.getElementById('recordText');
+const stopRecordBtn = document.getElementById('stopRecordBtn');
+const recordingStatus = document.getElementById('recordingStatus');
+
+// Synth Class for Audio Generation (omitted for brevity, assume it's the same)
 class Synth {
     constructor(ctx, gainNode, waveType, releaseTime) {
         this.ctx = ctx;
@@ -513,6 +567,7 @@ const gen_udp = document.getElementById('gen_udp');
 const gen_cancelBtn = document.getElementById('gen_cancelBtn');
 const gen_applyBtn = document.getElementById('gen_applyBtn');
 const modeSelector = document.getElementById('modeSelector');
+
 
 // --- AUDIO/SYNTH STATE ---
 const activeVoices = new Map(); 
@@ -1200,6 +1255,90 @@ canvas.addEventListener('pointerdown', pointerdown);
 canvas.addEventListener('pointermove', pointermove); 
 canvas.addEventListener('pointerup', pointerup);
 canvas.addEventListener('pointercancel', pointerup);
+
+// --- AUDIO RECORDING FUNCTIONS ---
+
+function startRecording() {
+    if (isRecording) return;
+    
+    if (audioCtx.state !== 'running') {
+        audioCtx.resume().catch(e => console.error("Audio resume failed:", e));
+    }
+
+    recordedChunks = [];
+    
+    // Check if MediaRecorder is supported
+    if (typeof MediaRecorder === 'undefined') {
+        showModalMessage('Error', 'Your browser does not support the MediaRecorder API needed for recording.');
+        return;
+    }
+
+    try {
+        // Use the MediaStream from the recorderDestination node
+        mediaRecorder = new MediaRecorder(recorderDestination.stream);
+    } catch (error) {
+         console.error("MediaRecorder setup failed:", error);
+         showModalMessage('Error', 'Failed to initialize recording. Please ensure your browser supports the Web Audio API and MediaRecorder.');
+         return;
+    }
+
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+        }
+    };
+
+    mediaRecorder.onstop = () => {
+        // 1. Combine all recorded audio chunks into a single Blob
+        const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+        
+        // 2. Create a temporary link element for download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        
+        // 3. Set the download filename
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        a.download = `synth_recording_${timestamp}.webm`;
+        
+        // 4. Trigger the download and clean up
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        // Reset state and UI
+        isRecording = false;
+        recordBtn.disabled = false;
+        stopRecordBtn.disabled = true;
+        recordText.textContent = 'Record';
+        recordingStatus.textContent = '';
+        console.log("Recording successfully exported as WebM.");
+    };
+
+    // Start recording
+    mediaRecorder.start();
+    isRecording = true;
+    recordBtn.disabled = true;
+    stopRecordBtn.disabled = false;
+    recordText.innerHTML = '&#9679; RECORDING'; // Red circle unicode
+    recordingStatus.textContent = 'Recording in progress...';
+    recordingStatus.classList.add('recording-status');
+}
+
+function stopRecording() {
+    if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        recordingStatus.textContent = 'Exporting file...';
+        recordingStatus.classList.remove('recording-status');
+    }
+}
+
+// Attach recording event listeners
+recordBtn.addEventListener('click', startRecording);
+stopRecordBtn.addEventListener('click', stopRecording);
+
 
 // --- DARK MODE TOGGLE LOGIC ---
 
