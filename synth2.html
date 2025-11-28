@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Grid Web Synth — Circle of Fifths Generator</title>
+<title>Grid Web Synth — EDO Isomorphic Grid</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   :root {
@@ -52,7 +52,7 @@
     gap: 12px;
     align-items: center;
     margin-bottom: 8px;
-    justify-content: space-between; /* Added for dark mode toggle placement */
+    justify-content: space-between;
   }
 
   .controls {
@@ -132,8 +132,8 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
   }
   button:hover {
-    background: var(--button-color); /* Maintain color on hover in dark mode */
-    filter: brightness(1.2); /* Use filter to slightly change color on hover */
+    background: var(--button-color); 
+    filter: brightness(1.2);
     transform: translateY(-1px);
   }
   
@@ -259,7 +259,7 @@
 <body>
 <header>
   <div class="flex items-center gap-3">
-    <h2 style="margin:0">Grid Web Synth — Circle of Fifths Generator</h2>
+    <h2 style="margin:0">Grid Web Synth — EDO Isomorphic Grid</h2>
     <div class="small">Scale generation uses the currently selected EDO Steps (N) for quantization.</div>
   </div>
   <button id="darkModeToggle" title="Toggle Dark/Light Mode">Enable Dark Mode</button>
@@ -277,6 +277,21 @@
   <label>Key size (px)
     <input id="keySize" type="number" min="8" max="200" value="64" />
   </label>
+  
+  <!-- NEW INPUTS START -->
+  <label title="1-indexed, starting from top-left (1), wrapping by row">Root Key Index
+    <input id="rootKeyIndex" type="number" min="1" max="4294967296" value="1" />
+  </label>
+
+  <label title="Interval in scale degrees/EDO steps for one column to the right.">Horizontal Steps
+    <input id="hSteps" type="number" min="-100" max="100" value="1" />
+  </label>
+
+  <label title="Interval in scale degrees/EDO steps for one row down.">Vertical Steps
+    <input id="vSteps" type="number" min="-100" max="100" value="7" />
+  </label>
+  <!-- NEW INPUTS END -->
+
 
   <label>Tuning type
     <select id="tuningType">
@@ -313,7 +328,7 @@
   </label>
 
   <div style="display:flex;gap:8px;align-items:center;">
-    <button id="applyBtn">Apply Tuning</button>
+    <button id="applyBtn">Apply Grid & Tuning</button>
     <button id="generateScaleBtn">Generate Scale Subset</button>
     <button id="stopAllBtn" title="Stop all playing voices">Stop All</button>
   </div>
@@ -405,6 +420,11 @@
 <script>
 let gridState = {
   rows: 6, cols: 12, keySize: 64,
+  // NEW PROPERTIES
+  rootKeyIndex: 1, // 1-based index for the key that is step 0 of the mode
+  hSteps: 1, // Steps between columns
+  vSteps: 7, // Steps between rows
+  // END NEW PROPERTIES
   tuning: { type:'edo', edo: 12 },
   rootFreq: 261.6256, rootName: 'C4',
   edoNameTable: null, nonoInfo: null, jiRatios: null,
@@ -419,13 +439,10 @@ const masterGain = audioCtx.createGain();
 masterGain.connect(audioCtx.destination);
 
 // --- WAV RECORDING STATE AND ELEMENTS ---
-// The ScriptProcessorNode is used for capturing audio buffers.
-// Note: ScriptProcessorNode is deprecated but still the most reliable way 
-// to capture raw PCM in a single-file Web Audio app without using AudioWorklets.
 let audioProcessor = null;
 let recordingBuffers = [];
 let isRecording = false;
-const NUM_CHANNELS = 1; // Record in mono for simplicity and file size
+const NUM_CHANNELS = 1; 
 
 const recordBtn = document.getElementById('recordBtn');
 const recordText = document.getElementById('recordText');
@@ -535,13 +552,17 @@ class Synth {
 
 // --- UI ELEMENTS ---
 const canvas = document.getElementById('gridCanvas');
-// Added document.body reference for dark mode toggle
 const body = document.body;
 const darkModeToggle = document.getElementById('darkModeToggle');
 const ctx = canvas.getContext('2d', { alpha:false });
 const rowsInput = document.getElementById('rows');
 const colsInput = document.getElementById('cols');
 const keySizeInput = document.getElementById('keySize');
+// NEW ELEMENTS
+const rootKeyIndexInput = document.getElementById('rootKeyIndex');
+const hStepsInput = document.getElementById('hSteps');
+const vStepsInput = document.getElementById('vSteps');
+// END NEW ELEMENTS
 const tuningType = document.getElementById('tuningType');
 const edoStepsInput = document.getElementById('edoSteps');
 const nonoParams = document.getElementById('nonoParams');
@@ -572,7 +593,6 @@ const modeSelector = document.getElementById('modeSelector');
 
 // --- AUDIO/SYNTH STATE ---
 const activeVoices = new Map(); 
-// Stores {pointerId: last_valid_idx}
 const pointerToIdx = new Map(); 
 
 let baseSubsetPattern = []; 
@@ -589,12 +609,6 @@ if(volumeSlider) {
 
 // --- CORE HELPER FUNCTIONS (WAV Encoding) ---
 
-/**
- * Merges recorded audio buffers into a single Float32Array.
- * @param {Float32Array[]} buffers - Array of Float32Array buffers.
- * @param {number} totalLength - The total number of samples expected.
- * @returns {Float32Array} The merged buffer.
- */
 function mergeBuffers(buffers, totalLength) {
     const result = new Float32Array(totalLength);
     let offset = 0;
@@ -605,12 +619,6 @@ function mergeBuffers(buffers, totalLength) {
     return result;
 }
 
-/**
- * Converts raw PCM data (Float32Array) into an interleaved 16-bit PCM Blob (WAV format).
- * @param {Float32Array} interleavedData - The raw audio data.
- * @param {number} sampleRate - The audio sample rate.
- * @returns {Blob} The complete WAV Blob.
- */
 function bufferToWave(interleavedData, sampleRate) {
     const numChannels = NUM_CHANNELS;
     const bitDepth = 16;
@@ -622,7 +630,6 @@ function bufferToWave(interleavedData, sampleRate) {
     const buffer = new ArrayBuffer(44 + totalBytes);
     const view = new DataView(buffer);
 
-    /* Helper function to write a string to the DataView */
     function writeString(view, offset, string) {
         for (let i = 0; i < string.length; i++) {
             view.setUint8(offset + i, string.charCodeAt(i));
@@ -630,29 +637,28 @@ function bufferToWave(interleavedData, sampleRate) {
     }
 
     /* RIFF header */
-    writeString(view, 0, 'RIFF'); // ChunkID
-    view.setUint32(4, 36 + totalBytes, true); // ChunkSize (total file size - 8)
-    writeString(view, 8, 'WAVE'); // Format
+    writeString(view, 0, 'RIFF'); 
+    view.setUint32(4, 36 + totalBytes, true); 
+    writeString(view, 8, 'WAVE'); 
 
     /* FMT sub-chunk */
-    writeString(view, 12, 'fmt '); // Subchunk1ID
-    view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
-    view.setUint16(20, 1, true); // AudioFormat (1 for PCM)
-    view.setUint16(22, numChannels, true); // NumChannels
-    view.setUint32(24, sampleRate, true); // SampleRate
-    view.setUint32(28, byteRate, true); // ByteRate
-    view.setUint16(32, blockAlign, true); // BlockAlign
-    view.setUint16(34, bitDepth, true); // BitsPerSample
+    writeString(view, 12, 'fmt '); 
+    view.setUint32(16, 16, true); 
+    view.setUint16(20, 1, true); 
+    view.setUint16(22, numChannels, true); 
+    view.setUint32(24, sampleRate, true); 
+    view.setUint32(28, byteRate, true); 
+    view.setUint16(32, blockAlign, true); 
+    view.setUint16(34, bitDepth, true); 
 
     /* DATA sub-chunk */
-    writeString(view, 36, 'data'); // Subchunk2ID
-    view.setUint32(40, totalBytes, true); // Subchunk2Size
+    writeString(view, 36, 'data'); 
+    view.setUint32(40, totalBytes, true); 
 
     /* Write PCM data (conversion from Float32 to Int16) */
     function floatTo16BitPCM(output, offset, input) {
         for (let i = 0; i < input.length; i++, offset += 2) {
             const s = Math.max(-1, Math.min(1, input[i]));
-            // Scale to 16-bit range and write as little-endian
             output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
         }
     }
@@ -867,14 +873,14 @@ function calculateModePattern(basePattern, startIndex) {
     // 1. Calculate intervals (size intervals including the one closing the octave)
     const intervals = [];
     for (let i = 0; i < size; i++) {
-        const nextStep = (i === size - 1) ? N : basePattern[i + 1];
-        let interval = nextStep - basePattern[i];
+        const currentStep = basePattern[i];
+        const nextStepInFullEDO = (i === size - 1) ? N : basePattern[i + 1];
         
-        // This handles cases like 11 -> 0 in 12-EDO (interval is 1)
-        if (i === size - 1 && basePattern[i] !== 0) {
-            interval = N - basePattern[i]; 
-        } else if (i < size - 1 && interval < 0) {
-             // Should not happen if basePattern is correctly sorted (which it is)
+        let interval = nextStepInFullEDO - currentStep;
+        
+        if (i === size - 1 && currentStep !== 0) {
+            interval = N - currentStep; 
+        } else if (interval < 0) {
              interval += N; 
         }
         intervals.push(interval);
@@ -889,13 +895,12 @@ function calculateModePattern(basePattern, startIndex) {
     let currentStep = 0;
     
     // We only need to generate size - 1 steps (steps 1 through size-1)
-    // The final rotated interval implicitly returns us to N (the octave).
     for (let i = 0; i < size - 1; i++) { 
         currentStep = (currentStep + rotatedIntervals[i]);
         modePattern.push(currentStep);
     }
 
-    // CRITICAL: DO NOT SORT. The pattern must be the sequential list of EDO steps for the mode.
+    // This array is the list of EDO steps for the current mode, e.g., for 12-EDO, C Ionian is [0, 2, 4, 5, 7, 9, 11]
     return modePattern; 
 }
 
@@ -909,7 +914,7 @@ function applyBaseSubsetToGrid() {
         baseSubsetPattern = Array.from({length: gridState.tuning.edo}, (_, i) => i);
     }
     
-    // 1. Calculate the new mode pattern (this array is unsorted and sequential)
+    // 1. Calculate the new mode pattern 
     const modePattern = calculateModePattern(baseSubsetPattern, currentModeIndex);
     
     // 2. Apply the calculated pattern to the grid state
@@ -1012,12 +1017,12 @@ function updateLegend(){
   if(t.type === 'edo') {
       txt += `${t.edo}-EDO. `;
       if (subsetSize > 0) {
-          txt += `Scale Size: ${subsetSize}. Mode: ${modeSelector.options[currentModeIndex]?.textContent || 'Ionian'}`;
+          txt += `Scale Size: ${subsetSize}. Mode: ${modeSelector.options[currentModeIndex]?.textContent || 'Ionian'}. `;
+          txt += `Mapping: H=${gridState.hSteps} steps, V=${gridState.vSteps} steps, Root Key=${gridState.rootKeyIndex}.`;
       }
   }
   
   tuningText.textContent = `Tuning: ${txt}`;
-  // notesLegend.textContent = txt; // Combined into tuningText for simplicity
 }
 
 function buildStateFromUI(){
@@ -1027,9 +1032,19 @@ function buildStateFromUI(){
   const rootFreq = Math.max(1, parseFloat(rootFreqInput.value) || 261.6256);
   const rootName = rootNoteNameInput.value || 'root';
   const type = tuningType.value;
+  
+  // NEW: Read grid mapping parameters
+  const maxKeyIndex = rows * cols;
+  const rootKeyIndex = Math.max(1, Math.min(maxKeyIndex, parseInt(rootKeyIndexInput.value) || 1));
+  const hSteps = parseInt(hStepsInput.value) || 1;
+  const vSteps = parseInt(vStepsInput.value) || 7;
 
   gridState.rows = rows; gridState.cols = cols; gridState.keySize = keySize;
   gridState.rootFreq = rootFreq; gridState.rootName = rootName;
+  // Set new properties
+  gridState.rootKeyIndex = rootKeyIndex;
+  gridState.hSteps = hSteps;
+  gridState.vSteps = vSteps;
 
   let totalSteps = 0; 
   let tuningTextContent = '';
@@ -1073,17 +1088,66 @@ function buildStateFromUI(){
   return true;
 }
 
+/**
+ * Calculates the scale step and octave for a given key index based on the 2D grid mapping.
+ * @param {number} idx - The 0-based linear index of the key (r * cols + c).
+ * @returns {{subsetIndex: number, octaveShift: number}}
+ */
+function calculateGridMapping(idx) {
+    const { rows, cols, rootKeyIndex, hSteps, vSteps, subsetPattern, tuning } = gridState;
+    if (subsetPattern.length === 0) return { subsetIndex: 0, octaveShift: 0 };
+    
+    const subsetLength = subsetPattern.length;
+    
+    // 1. Calculate relative position from the Root Key
+    // Root key is 1-based, convert to 0-based
+    const rootIdx0 = rootKeyIndex - 1; 
+    
+    // Clamp idx for safety, though it should be valid if called correctly
+    if (idx < 0 || idx >= rows * cols) {
+        console.error("Index out of bounds:", idx);
+        return { subsetIndex: 0, octaveShift: 0 };
+    }
+    
+    // Current (r, c)
+    const r = Math.floor(idx / cols);
+    const c = idx % cols;
+    
+    // Root (r_root, c_root)
+    const r_root = Math.floor(rootIdx0 / cols);
+    const c_root = rootIdx0 % cols;
+    
+    // Difference in grid coordinates
+    const r_diff = r - r_root;
+    const c_diff = c - c_root;
+    
+    // 2. Calculate total EDO steps shift from root
+    // This is the total number of steps in the *scale subset* that this key represents
+    const gridStep = (c_diff * hSteps) + (r_diff * vSteps);
+    
+    // 3. Convert total scale steps shift into subset index and octave shift
+    // Octave shift relative to the root key of the current mode
+    const octaveShift = Math.floor(gridStep / subsetLength);
+    
+    // Index within the current scale subset (always positive)
+    const subsetIndex = mod(gridStep, subsetLength);
+    
+    return { subsetIndex, octaveShift, gridStep };
+}
+
+
 function frequencyForIndex(idx){
   const t = gridState.tuning; 
   const root = gridState.rootFreq;
-  const subset = gridState.subsetPattern; // This is now the sequential mode pattern
+  const subset = gridState.subsetPattern; 
   if (subset.length === 0) return root; 
-  const subsetIntervalIndex = idx % subset.length;
-  const intervalStep = subset[subsetIntervalIndex]; // The EDO step index
 
-  const octaveShift = Math.floor(idx / subset.length);
+  const { subsetIndex, octaveShift } = calculateGridMapping(idx);
+
+  const intervalStep = subset[subsetIndex]; // The EDO step index from the 0 of the mode
 
   if(t.type === 'edo'){
+    // The final effective step from the *full* EDO 0 (the tuning's 0)
     const effectiveStep = intervalStep + (octaveShift * t.edo);
     return root * Math.pow(2, effectiveStep / t.edo);
   }
@@ -1092,15 +1156,18 @@ function frequencyForIndex(idx){
 
 function nameForIndex(idx){
   const t = gridState.tuning;
-  const subset = gridState.subsetPattern; // The sequential mode pattern
+  const subset = gridState.subsetPattern; 
   if (subset.length === 0) return 'Error';
-  const subsetIntervalIndex = idx % subset.length;
-  const intervalStep = subset[subsetIntervalIndex]; // The EDO step index
   
+  const { subsetIndex, octaveShift } = calculateGridMapping(idx);
+  const intervalStep = subset[subsetIndex]; 
+
   // 1. Calculate Octave Shift
   const rootOctaveMatch = gridState.rootName.match(/\d/);
   const rootOctave = rootOctaveMatch ? parseInt(rootOctaveMatch[0], 10) : 4; 
-  const octaveShift = rootOctave + Math.floor(idx / subset.length);
+  
+  // Calculate the effective octave number
+  const effectiveOctave = rootOctave + octaveShift;
   
   let baseName = '';
   
@@ -1115,7 +1182,7 @@ function nameForIndex(idx){
   }
   
   if (t.type === 'edo') {
-      return `${baseName}${octaveShift}`;
+      return `${baseName}${effectiveOctave}`;
   }
   return baseName;
 }
@@ -1133,16 +1200,12 @@ function resizeCanvas(){
   const width = gridState.cols * ks; 
   const height = gridState.rows * ks; 
   
-  // Set canvas size to the full calculated dimensions
   canvas.width = width; 
   canvas.height = height; 
-  
-  // CSS takes over to handle scrolling within #gridWrap
 }
 
 function renderGrid(){ 
   const ks = gridState.keySize, rows = gridState.rows, cols = gridState.cols; 
-  // Clear the whole canvas with the overall background key color (ForestGreen)
   const keyColor = getComputedStyle(document.documentElement).getPropertyValue('--key-color').trim();
   const keyInactive = getComputedStyle(document.documentElement).getPropertyValue('--key-inactive').trim();
   const keyTextColor = getComputedStyle(document.documentElement).getPropertyValue('--key-text-color').trim();
@@ -1153,13 +1216,26 @@ function renderGrid(){
   ctx.font = Math.max(10, Math.floor(ks/5)) + 'px system-ui, sans-serif'; 
   ctx.textAlign='center'; ctx.textBaseline='middle'; 
   
+  const rootIdx0 = gridState.rootKeyIndex - 1; 
+
   for(let r=0;r<rows;r++){ 
     for(let c=0;c<cols;c++){ 
       const x=c*ks, y=r*ks; 
       const idx=r*cols+c; 
       
+      // Determine if this is the root key index (for visual emphasis)
+      const isRoot = idx === rootIdx0;
+
       // Draw key background: light gray/white, or yellow if active
-      ctx.fillStyle = activeVoices.has(idx) ? getComputedStyle(document.documentElement).getPropertyValue('--key-active').trim() : keyInactive; 
+      let bgColor = keyInactive;
+      if (activeVoices.has(idx)) {
+        bgColor = getComputedStyle(document.documentElement).getPropertyValue('--key-active').trim();
+      } else if (isRoot) {
+        // Highlight the root key position slightly
+        bgColor = 'rgba(255, 100, 100, 0.3)'; 
+      }
+      
+      ctx.fillStyle = bgColor; 
       
       ctx.fillRect(x,y,ks,ks); 
       ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1); 
@@ -1174,19 +1250,27 @@ function renderGrid(){
 
 function drawKeyActive(idx, isActive) { 
   const ks = gridState.keySize; 
-  const c = idx % gridState.cols; 
+  const cols = gridState.cols;
+  const rootIdx0 = gridState.rootKeyIndex - 1; 
   
-  // Divide by columns to get the row
-  const r = Math.floor(idx / gridState.cols); 
+  const c = idx % cols; 
+  const r = Math.floor(idx / cols); 
   
   const x = c * ks; const y = r * ks; 
+  const isRoot = idx === rootIdx0;
   
   const keyActive = getComputedStyle(document.documentElement).getPropertyValue('--key-active').trim();
   const keyInactive = getComputedStyle(document.documentElement).getPropertyValue('--key-inactive').trim();
   const keyTextColor = getComputedStyle(document.documentElement).getPropertyValue('--key-text-color').trim();
 
-  // Use explicit key background color when drawing active/inactive state
-  ctx.fillStyle = isActive ? keyActive : keyInactive; 
+  let bgColor = keyInactive;
+  if (isActive) {
+      bgColor = keyActive;
+  } else if (isRoot) {
+      bgColor = 'rgba(255, 100, 100, 0.3)'; 
+  }
+
+  ctx.fillStyle = bgColor; 
   
   ctx.fillRect(x,y,ks,ks); 
   ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1; ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1); 
@@ -1199,7 +1283,6 @@ function drawKeyActive(idx, isActive) {
 function noteOn(idx){ 
   if(activeVoices.has(idx)) return; 
   
-  // NOTE: The primary resume is in pointerdown, but we keep this as a secondary check.
   if (audioCtx.state === 'suspended') { audioCtx.resume(); } 
   
   const freq = frequencyForIndex(idx); const wave = waveSel.value; const release = parseFloat(releaseInput.value) || 120; const voice = new Synth(audioCtx, masterGain, wave, release); activeVoices.set(idx, voice); voice.start(freq); drawKeyActive(idx, true);
@@ -1209,7 +1292,6 @@ function noteOff(idx){
   const voice = activeVoices.get(idx); if(!voice) return; 
   if (sustainToggle.checked) { 
     drawKeyActive(idx, false); 
-    // Keep voice active for sustain, but remove highlight
   } else { 
     voice.release(); 
     activeVoices.delete(idx); 
@@ -1218,7 +1300,6 @@ function noteOff(idx){
 }
 
 function stopAllVoices() { 
-    // Resume context before stopping all voices, just in case
     if (audioCtx.state !== 'running') { audioCtx.resume(); }
     
     activeVoices.forEach((voice, idx) => { voice.release(); drawKeyActive(idx, false); }); activeVoices.clear();
@@ -1226,7 +1307,6 @@ function stopAllVoices() {
 
 function canvasPosToIndex(e) { 
   const rect = canvas.getBoundingClientRect(); 
-  // Handle touch events
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
   const clientY = e.touches ? e.touches[0].clientY : e.clientY;
   
@@ -1243,7 +1323,6 @@ function canvasPosToIndex(e) {
 function pointerdown(e) { 
   e.preventDefault(); 
 
-  // CRITICAL FIX: Robust resume on ANY pointerdown interaction 
   if (audioCtx.state !== 'running') {
       audioCtx.resume().catch(e => console.error("Audio resume failed:", e));
   }
@@ -1252,59 +1331,48 @@ function pointerdown(e) {
   if(idx !== -1) { 
     try { canvas.setPointerCapture(e.pointerId); } catch(_) {}
     
-    // --- NEW SUSTAIN RELEASE LOGIC ---
-    // If the key is already active AND sustain is on, treat this as a release tap
+    // Sustain logic: if key is active and sustain is on, tap releases it
     if (activeVoices.has(idx) && sustainToggle.checked) {
-        // Force the release and remove the voice
         const voice = activeVoices.get(idx);
         voice.release();
         activeVoices.delete(idx);
         drawKeyActive(idx, false);
-        return; // Don't proceed to start a new note
+        return; 
     }
-    // --- END NEW SUSTAIN RELEASE LOGIC ---
     
     pointerToIdx.set(e.pointerId, idx); noteOn(idx); 
   }
 }
 
-// *** FIXED POINTER MOVE LOGIC FOR JITTER AND GLISSANDO ***
 function pointermove(e) {
-  // Only process if this pointerId is currently tracking a key
   if (!pointerToIdx.has(e.pointerId)) return;
   e.preventDefault();
 
   const prevIdx = pointerToIdx.get(e.pointerId);
-  const currentIdx = canvasPosToIndex(e); // -1 if off-grid
+  const currentIdx = canvasPosToIndex(e);
 
   if (currentIdx === prevIdx) return; 
 
-  // Glissando: Moving from one valid key to a different valid key.
   if (currentIdx !== -1 && prevIdx !== -1) {
-    // Stop previous note, start new note
     noteOff(prevIdx);
     drawKeyActive(prevIdx, false);
     
     noteOn(currentIdx);
     drawKeyActive(currentIdx, true);
     
-    // Update tracking to the new key index
     pointerToIdx.set(e.pointerId, currentIdx);
     return;
   }
   
-  // If we move OFF the grid (currentIdx === -1) from a valid key (prevIdx !== -1)
   if (currentIdx === -1 && prevIdx !== -1) {
     drawKeyActive(prevIdx, false); 
-    // pointerToIdx remains set to prevIdx, which is the key that needs to stop sound on pointerup.
     return;
   }
   
-  // If we move ONTO the grid from outside (prevIdx was off-grid), start a note.
   if (currentIdx !== -1 && prevIdx === -1) {
       noteOn(currentIdx);
       drawKeyActive(currentIdx, true);
-      pointerToIdx.set(e.pointerId, currentIdx); // Track the new key index
+      pointerToIdx.set(e.pointerId, currentIdx); 
       return;
   }
 }
@@ -1314,14 +1382,10 @@ function pointerup(e) {
   e.preventDefault(); 
   const idx = pointerToIdx.get(e.pointerId); 
   
-  // idx will hold the *last valid key* index set by pointerdown or pointermove (even if the finger slid off the grid).
-  // We check if a voice exists for this key index before calling noteOff.
   if (typeof idx === 'number' && idx !== undefined && idx !== -1) { 
-    // Only call noteOff if the voice exists (i.e., it wasn't already released by the sustain tap logic)
     if (activeVoices.has(idx) && !sustainToggle.checked) {
         noteOff(idx);
     }
-    // Always clear the visual highlight if the pointer is lifted
     drawKeyActive(idx, false);
   }
   pointerToIdx.delete(e.pointerId); 
@@ -1342,34 +1406,24 @@ function startRecording() {
         audioCtx.resume().catch(e => console.error("Audio resume failed:", e));
     }
     
-    // Reset buffer
     recordingBuffers = [];
     
-    // Create ScriptProcessorNode to capture audio. Using a buffer size of 4096 and 1 input/output channel.
     const bufferSize = 4096;
     audioProcessor = audioCtx.createScriptProcessor(bufferSize, NUM_CHANNELS, NUM_CHANNELS);
 
-    // Audio process event handler
     audioProcessor.onaudioprocess = (e) => {
         if (!isRecording) return;
-        
-        // Capture data from the first channel (assuming mono recording)
-        // Need to create a copy of the Float32Array to avoid overwriting by the Web Audio thread.
         const channelData = e.inputBuffer.getChannelData(0);
         recordingBuffers.push(new Float32Array(channelData));
     };
 
-    // Connect the master output to the processor
     masterGain.connect(audioProcessor);
-    
-    // Connect processor to destination to prevent it from being garbage collected
     audioProcessor.connect(audioCtx.destination); 
 
-    // Update state and UI
     isRecording = true;
     recordBtn.disabled = true;
     stopRecordBtn.disabled = false;
-    recordText.innerHTML = '&#9679; RECORDING'; // Red circle unicode
+    recordText.innerHTML = '&#9679; RECORDING'; 
     recordingStatus.textContent = 'Recording in progress...';
     recordingStatus.classList.add('recording-status');
 }
@@ -1377,27 +1431,21 @@ function startRecording() {
 function stopRecording() {
     if (!isRecording) return;
     
-    // 1. Disconnect and clean up processor
     masterGain.disconnect(audioProcessor);
     audioProcessor.disconnect(audioCtx.destination);
     
-    // IMPORTANT: Clear the reference to allow garbage collection
     audioProcessor = null;
     isRecording = false;
 
     recordingStatus.textContent = 'Compiling WAV file...';
     recordingStatus.classList.remove('recording-status');
     
-    // Calculate total length
     const totalLength = recordingBuffers.reduce((sum, buffer) => sum + buffer.length, 0);
     
-    // 2. Merge buffers
     const audioData = mergeBuffers(recordingBuffers, totalLength);
     
-    // 3. Encode to WAV
     const wavBlob = bufferToWave(audioData, audioCtx.sampleRate);
     
-    // 4. Trigger download
     const url = URL.createObjectURL(wavBlob);
     const a = document.createElement('a');
     a.style.display = 'none';
@@ -1411,7 +1459,6 @@ function stopRecording() {
     URL.revokeObjectURL(url);
     document.body.removeChild(a);
 
-    // Reset UI
     recordBtn.disabled = false;
     stopRecordBtn.disabled = true;
     recordText.textContent = 'Record';
@@ -1437,7 +1484,6 @@ function applyTheme(isDark) {
         darkModeToggle.textContent = 'Enable Dark Mode';
         localStorage.setItem('theme', 'light');
     }
-    // Re-render the grid to apply new key colors
     renderGrid();
 }
 
@@ -1450,12 +1496,11 @@ darkModeToggle.addEventListener('click', toggleDarkMode);
 
 // --- EVENT LISTENERS ---
 applyBtn.addEventListener('click', () => { 
-    if (audioCtx.state !== 'running') { audioCtx.resume(); } // Secondary resume check
+    if (audioCtx.state !== 'running') { audioCtx.resume(); } 
     buildStateFromUI(); 
 });
 generateScaleBtn.addEventListener('click', () => {
-    if (audioCtx.state !== 'running') { audioCtx.resume(); } // Secondary resume check
-    // ... rest of logic handled by the separate listener for generateScaleBtn
+    if (audioCtx.state !== 'running') { audioCtx.resume(); } 
 });
 stopAllBtn.addEventListener('click', stopAllVoices);
 
@@ -1470,7 +1515,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedTheme === 'dark') {
         applyTheme(true);
     } else {
-        // If no preference or light, ensure light mode is active
         applyTheme(false); 
     }
     
