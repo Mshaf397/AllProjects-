@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quadratic Equation Solver (Simplified Radicals)</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <!-- Load MathJax for LaTeX rendering of mathematical symbols -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        /* Custom styles for the graph to ensure it's centered and takes full width */
+        #graphCanvas {
+            border: 1px solid #e5e7eb; /* Light gray border */
+            background-color: #f9fafb;
+            display: block;
+            touch-action: none; /* Prevents default touch scrolling/actions on canvas */
+        }
+        .input-field {
+            @apply appearance-none block w-full bg-white text-gray-700 border border-gray-300 rounded-lg py-3 px-4 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-4 sm:p-8 font-sans">
+
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">
+            Quadratic Solver & Grapher
+        </h1>
+        <p class="text-lg text-gray-600 mb-8 text-center">
+            Enter coefficients $a$, $b$, and $c$ for the equation $ax^2 + bx + c = 0$ to analyze and plot the parabola. Calculations will simplify radicals where possible.
+        </p>
+
+        <!-- Input and Calculation Card -->
+        <div class="bg-white shadow-xl rounded-2xl p-6 lg:p-8 mb-8 border border-gray-200">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Input Coefficients</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <!-- Input A -->
+                <div>
+                    <label for="a-input" class="block text-sm font-medium text-gray-700 mb-1">Coefficient $a$</label>
+                    <input type="number" id="a-input" value="1" placeholder="a (e.g., 1)" class="input-field" step="any">
+                </div>
+                <!-- Input B -->
+                <div>
+                    <label for="b-input" class="block text-sm font-medium text-gray-700 mb-1">Coefficient $b$</label>
+                    <input type="number" id="b-input" value="-4" placeholder="b (e.g., -4)" class="input-field" step="any">
+                </div>
+                <!-- Input C -->
+                <div>
+                    <label for="c-input" class="block text-sm font-medium text-gray-700 mb-1">Coefficient $c$</label>
+                    <input type="number" id="c-input" value="2" placeholder="c (e.g., 2)" class="input-field" step="any">
+                </div>
+            </div>
+
+            <button id="calculate-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50">
+                Calculate & Plot
+            </button>
+        </div>
+
+        <!-- Results and Graph Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Results Card -->
+            <div class="bg-white shadow-xl rounded-2xl p-6 lg:p-8 border border-gray-200 flex flex-col">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">Analysis Results</h2>
+                <div id="results" class="space-y-4 text-gray-700 flex-grow">
+                    <!-- Initial Placeholder Content -->
+                    <div class="text-center py-10">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M3 8h18M3 12h18M3 16h18M3 20h18" />
+                        </svg>
+                        <p class="mt-2 text-sm text-gray-500">Enter your coefficients and press 'Calculate & Plot'.</p>
+                    </div>
+                </div>
+                <div id="error-message" class="mt-4 text-red-600 font-medium hidden p-3 bg-red-50 rounded-lg"></div>
+            </div>
+
+            <!-- Graph Card -->
+            <div class="bg-white shadow-xl rounded-2xl p-4 lg:p-6 border border-gray-200 flex flex-col items-center justify-center">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Graph of the Parabola</h2>
+                <canvas id="graphCanvas" width="400" height="400" class="w-full max-w-lg rounded-xl"></canvas>
+            </div>
+        </div>
+        
+        <!-- Steps Card -->
+        <div class="bg-white shadow-xl rounded-2xl p-6 lg:p-8 mt-8 border border-gray-200">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Step-by-Step Calculation for Zeroes</h2>
+            <div id="steps-output" class="text-gray-700">
+                <p class="text-center py-4 text-sm text-gray-500">The detailed calculation steps will appear here after you press Calculate & Plot.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants for the canvas
+        const CANVAS_SIZE = 400;
+        const PRECISION = 15; // High precision for floating-point results
+
+        // DOM Elements
+        const aInput = document.getElementById('a-input');
+        const bInput = document.getElementById('b-input');
+        const cInput = document.getElementById('c-input');
+        const calculateBtn = document.getElementById('calculate-btn');
+        const resultsDiv = document.getElementById('results');
+        const stepsOutputDiv = document.getElementById('steps-output');
+        const errorDiv = document.getElementById('error-message');
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            canvas.width = canvas.height = CANVAS_SIZE;
+            if (typeof MathJax !== 'undefined') {
+                MathJax.startup.promise.then(calculateAndPlot);
+            } else {
+                calculateAndPlot();
+            }
+        });
+
+        calculateBtn.addEventListener('click', calculateAndPlot);
+
+        /**
+         * Formats a number: integer if possible, otherwise high precision float.
+         * @param {number} num The number to format.
+         * @returns {string} The formatted string.
+         */
+        function formatNumber(num) {
+            // Check if the number is mathematically an integer (within a small tolerance)
+            if (Math.abs(num - Math.round(num)) < 1e-12) {
+                return Math.round(num).toString();
+            }
+            // Otherwise, return with high precision
+            return num.toFixed(PRECISION);
+        }
+
+        /**
+         * Simplifies a square root: sqrt(n) -> coefficient*sqrt(radical).
+         * @param {number} n The radicand.
+         * @returns {{coefficient: number, radical: number, imaginary: boolean}} Simplified parts.
+         */
+        function simplifySquareRoot(n) {
+            const imaginary = n < 0;
+            const absN = Math.abs(n);
+
+            const sqrt = Math.sqrt(absN);
+            // Check for perfect square
+            if (Math.abs(sqrt - Math.round(sqrt)) < 1e-12) {
+                return { coefficient: Math.round(sqrt), radical: 1, imaginary: imaginary };
+            }
+
+            let maxSquare = 1;
+            // Find the largest perfect square factor
+            for (let i = Math.floor(sqrt); i >= 2; i--) {
+                const i_squared = i * i;
+                if (absN % i_squared === 0) {
+                    maxSquare = i_squared;
+                    break;
+                }
+            }
+            
+            return { 
+                coefficient: Math.sqrt(maxSquare), 
+                radical: absN / maxSquare, 
+                imaginary: imaginary 
+            };
+        }
+
+        /**
+         * Formats the simplified radical into a LaTeX string (e.g., 2\sqrt{3}i).
+         */
+        function formatRadical(simplified) {
+            let output = '';
+            const { coefficient, radical, imaginary } = simplified;
+            
+            const imagSuffix = imaginary ? 'i' : '';
+            const coefStr = formatNumber(coefficient);
+            
+            if (radical === 1) {
+                // Perfect square or 0: 4 or 4i
+                output = `${coefStr}${imagSuffix}`;
+            } else {
+                // Simplified radical: 2\sqrt{3} or 2\sqrt{3}i
+                const coefDisplay = coefficient === 1 ? '' : coefStr;
+                output = `${coefDisplay}\\sqrt{${formatNumber(radical)}}${imagSuffix}`;
+            }
+            return output;
+        }
+
+        function showStatus(text, type = 'info') {
+            errorDiv.textContent = text;
+            errorDiv.classList.remove('hidden', 'text-red-600', 'text-green-600', 'bg-red-50', 'bg-green-50');
+            errorDiv.classList.add(type === 'error' ? 'text-red-600' : 'text-green-600');
+            errorDiv.classList.add(type === 'error' ? 'bg-red-50' : 'bg-green-50');
+            if (type === 'success') {
+                 setTimeout(() => errorDiv.classList.add('hidden'), 3000);
+            }
+        }
+
+        /**
+         * Triggers MathJax to re-render the content in the results and steps blocks.
+         */
+        function renderMath() {
+            if (typeof MathJax !== 'undefined') {
+                MathJax.typesetPromise([resultsDiv, stepsOutputDiv]).catch((err) => console.log('MathJax Typeset Error: ' + err.message));
+            }
+        }
+
+        /**
+         * Generates the detailed, step-by-step breakdown for finding the zeroes.
+         */
+        function generateZeroesSteps(a, b, c, discriminant, x_v) {
+            const formattedA = formatNumber(a);
+            const formattedB = formatNumber(b);
+            const formattedC = formatNumber(c);
+            const negB = -b;
+            const twoA = 2 * a;
+
+            let steps = '';
+
+            // Step 1: State the formula
+            steps += `<p class="mb-3">We use the quadratic formula, substituting $a = ${formattedA}$, $b = ${formattedB}$, and $c = ${formattedC}$:</p>`;
+            steps += `<div class="bg-gray-100 p-3 rounded-lg text-center mb-4">
+                        <p class="text-xl font-mono">$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$</p>
+                      </div>`;
+
+            // Step 2: Calculate the Discriminant (b^2 - 4ac)
+            const b2 = b * b;
+            const fourAC = 4 * a * c;
+            const formattedB2 = formatNumber(b2);
+            const formattedFourAC = formatNumber(fourAC);
+            
+            steps += `<h4 class="font-semibold text-gray-800 mt-4">1. Calculate the Discriminant ($\Delta = b^2 - 4ac$):</h4>`;
+            steps += `<div class="bg-gray-50 p-3 rounded-lg">
+                        $$\\Delta = (${formattedB})^2 - 4(${formattedA})(${formattedC})$$
+                        $$\\Delta = ${formattedB2} - ${formattedFourAC}$$
+                        <p class="text-lg font-bold">$$\\Delta = ${formatNumber(discriminant)}$$</p>
+                      </div>`;
+                      
+            // Step 3: Solve for the Roots
+            steps += `<h4 class="font-semibold text-gray-800 mt-4">2. Solve for the Roots:</h4>`;
+            
+            const simplifiedRoot = simplifySquareRoot(discriminant);
+            const radicalStr = formatRadical(simplifiedRoot);
+            
+            // Simplified form before combining terms
+            steps += `<p class="mt-2">Substitute values back into the formula, using the simplified radical $\\sqrt{\\Delta} = ${radicalStr}$:</p>`;
+            steps += `<div class="bg-gray-50 p-3 rounded-lg">
+                        $$x = \\frac{${formatNumber(negB)} \\pm ${radicalStr}}{${formatNumber(twoA)}}$$
+                      </div>`;
+
+
+            if (discriminant > 1e-12) {
+                // Two Real Roots
+                const sqrtD = Math.sqrt(discriminant);
+                const x1 = (negB + sqrtD) / twoA;
+                const x2 = (negB - sqrtD) / twoA;
+
+                steps += `<p class="mt-2">Since $\\Delta > 0$, there are **Two Distinct Real Roots** (Decimal Approximation):</p>`;
+                
+                steps += `<h5 class="font-medium text-gray-700 mt-3">Root 1 ($+$ sign):</h5>`;
+                steps += `<div class="bg-gray-50 p-3 rounded-lg">
+                            $$x_1 = \\frac{${formatNumber(negB)} + ${formatNumber(sqrtD)}}{${formatNumber(twoA)}} = \\frac{${formatNumber(negB + sqrtD)}}{${formatNumber(twoA)}}$$
+                            <p class="text-lg font-bold">$$x_1 \\approx ${x1.toFixed(PRECISION)}$$</p>
+                          </div>`;
+
+                steps += `<h5 class="font-medium text-gray-700 mt-3">Root 2 ($-$ sign):</h5>`;
+                steps += `<div class="bg-gray-50 p-3 rounded-lg">
+                            $$x_2 = \\frac{${formatNumber(negB)} - ${formatNumber(sqrtD)}}{${formatNumber(twoA)}} = \\frac{${formatNumber(negB - sqrtD)}}{${formatNumber(twoA)}}$$
+                            <p class="text-lg font-bold">$$x_2 \\approx ${x2.toFixed(PRECISION)}$$</p>
+                          </div>`;
+                
+            } else if (Math.abs(discriminant) < 1e-12) { 
+                // One Real Root (Repeated)
+                const x = x_v; 
+                steps += `<p class="mt-2">Since $\\Delta \\approx 0$, there is **One Repeated Real Root**:</p>`;
+                steps += `<h5 class="font-medium text-gray-700 mt-3">Repeated Root:</h5>`;
+                steps += `<div class="bg-gray-50 p-3 rounded-lg">
+                            $$x = \\frac{-b}{2a} = \\frac{${formatNumber(negB)}}{${formatNumber(twoA)}}$$
+                            <p class="text-lg font-bold">$$x = ${formatNumber(x)}$$</p>
+                          </div>`;
+
+            } else {
+                // Complex Roots (Discriminant < 0)
+                const realPart = negB / twoA;
+                const imagPart = Math.sqrt(Math.abs(discriminant)) / twoA;
+
+                steps += `<p class="mt-2">Since $\\Delta < 0$, there are **Two Complex Conjugate Roots**.</p>`;
+                steps += `<h5 class="font-medium text-gray-700 mt-3">Final Form:</h5>`;
+                
+                // Final complex form
+                steps += `<div class="bg-gray-50 p-3 rounded-lg">
+                            $$x = \\frac{${formatNumber(negB)}}{${formatNumber(twoA)}} \\pm \\frac{${radicalStr}}{${formatNumber(twoA)}} = ${realPart.toFixed(PRECISION)} \\pm ${imagPart.toFixed(PRECISION)}i$$
+                          </div>`;
+            }
+
+            return steps;
+        }
+
+        /**
+         * Calculates all properties of the quadratic equation.
+         */
+        function calculateAndPlot() {
+            // 1. Get Coefficients
+            const a = parseFloat(aInput.value);
+            const b = parseFloat(bInput.value);
+            const c = parseFloat(cInput.value);
+
+            // Reset UI
+            errorDiv.classList.add('hidden');
+            resultsDiv.innerHTML = '';
+            stepsOutputDiv.innerHTML = '';
+            
+            // Validation
+            if (isNaN(a) || isNaN(b) || isNaN(c)) {
+                showStatus("Please enter valid numbers for all coefficients (a, b, and c).", 'error');
+                drawAxes(10, 10, a, b, c);
+                return;
+            }
+            
+            if (a === 0) {
+                showStatus("The coefficient 'a' cannot be zero for a quadratic equation (parabola). The graph would be a straight line (linear).", 'error');
+                drawAxes(10, 10, a, b, c);
+                return;
+            }
+
+            try {
+                // 2. Calculate Properties
+                const axisOfSymmetry = -b / (2 * a);
+                const x_v = axisOfSymmetry;
+                const y_v = a * x_v * x_v + b * x_v + c;
+                const vertex = { x: x_v, y: y_v };
+                const discriminant = b * b - 4 * a * c;
+                let zeroes = [];
+                let rootsText = '';
+
+                // Calculate Zeroes for display
+                if (discriminant > 1e-12) {
+                    const sqrtD = Math.sqrt(discriminant);
+                    const x1 = (-b + sqrtD) / (2 * a);
+                    const x2 = (-b - sqrtD) / (2 * a);
+                    zeroes.push(x1, x2);
+                    rootsText = `Two Real Roots: $$x_1 \\approx ${x1.toFixed(PRECISION)}, \\quad x_2 \\approx ${x2.toFixed(PRECISION)}$$`;
+                } else if (Math.abs(discriminant) < 1e-12) {
+                    const x = -b / (2 * a);
+                    zeroes.push(x);
+                    rootsText = `One Real Root (repeated): $$x = ${formatNumber(x)}$$`;
+                } else {
+                    const realPart = (-b / (2 * a));
+                    const imaginaryPart = (Math.sqrt(Math.abs(discriminant)) / (2 * a));
+                    rootsText = `Two Complex Conjugate Roots: $$x = ${realPart.toFixed(PRECISION)} \\pm ${imaginaryPart.toFixed(PRECISION)}i$$`;
+                }
+
+                // 3. Determine Graph Parameters (Same logic as before)
+                let xMin = x_v - 5, xMax = x_v + 5;
+                let yMin = y_v - 5, yMax = y_v + 5;
+                if (discriminant >= 0) { 
+                    zeroes.forEach(x => { xMin = Math.min(xMin, x - 1); xMax = Math.max(xMax, x + 1); });
+                }
+                yMin = Math.min(yMin, c - 1, y_v - 5);
+                yMax = Math.max(yMax, c + 1, y_v + 5);
+
+                const xRange = xMax - xMin;
+                const yRange = yMax - yMin;
+
+                if (xRange < 4) { xMin -= (4 - xRange) / 2; xMax += (4 - xRange) / 2; }
+                if (yRange < 4) { yMin -= (4 - yRange) / 2; yMax += (4 - yRange) / 2; }
+                
+                // 4. Draw the Graph
+                drawGraph(a, b, c, xMin, xMax, yMin, yMax, vertex, zeroes, discriminant);
+
+                // 5. Generate and Display Steps
+                stepsOutputDiv.innerHTML = generateZeroesSteps(a, b, c, discriminant, x_v);
+
+                // 6. Update Results Display (Summary)
+                const signB = b > 0 ? `+ ${formatNumber(b)}` : (b < 0 ? `- ${formatNumber(Math.abs(b))}` : '');
+                const signC = c > 0 ? `+ ${formatNumber(c)}` : (c < 0 ? `- ${formatNumber(Math.abs(c))}` : '');
+                const equation = `${formatNumber(a)}x^2 ${signB}x ${signC} = 0`;
+
+                resultsDiv.innerHTML = `
+                    <div class="bg-indigo-50 p-4 rounded-lg">
+                        <h3 class="font-bold text-lg text-indigo-800">Equation:</h3>
+                        <p class="text-xl font-mono">$$${equation}$$</p>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <span class="text-indigo-500 text-2xl">•</span>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-900">Axis of Symmetry:</h3>
+                            <p>$$x = ${formatNumber(x_v)}$$</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <span class="text-indigo-500 text-2xl">•</span>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-900">Vertex (Turning Point):</h3>
+                            <p>$$(${formatNumber(vertex.x)}, ${formatNumber(vertex.y)})$$</p>
+                            <p class="text-sm text-gray-500 mt-1">
+                                Parabola opens ${a > 0 ? 'Upwards' : 'Downwards'}.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3">
+                        <span class="text-indigo-500 text-2xl">•</span>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-900">Zeroes (X-Intercepts):</h3>
+                            <p class="font-bold">${rootsText}</p>
+                            <p class="text-sm text-gray-500 mt-1">
+                                Discriminant ($\Delta$): $\Delta = ${formatNumber(discriminant)}$
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3">
+                        <span class="text-indigo-500 text-2xl">•</span>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-900">Y-Intercept:</h3>
+                            <p>$$y = c = ${formatNumber(c)}$$ (at $x=0$)</p>
+                        </div>
+                    </div>
+                `;
+
+                // Re-render mathematical formulas using MathJax
+                renderMath();
+
+            } catch (e) {
+                showStatus(`An unexpected error occurred: ${e.message}`, 'error');
+            }
+        }
+
+        // --- GRAPHING FUNCTIONS (Unchanged from previous versions) ---
+
+        function toCanvasCoords(x, y, xMin, xMax, yMin, yMax) {
+            const xRange = xMax - xMin;
+            const yRange = yMax - yMin;
+            const px = (x - xMin) / xRange * CANVAS_SIZE;
+            const py = CANVAS_SIZE - ((y - yMin) / yRange * CANVAS_SIZE);
+            return { px, py };
+        }
+
+        function drawAxes(xMin, xMax, yMin, yMax, a, b, c) {
+            ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            ctx.fillStyle = '#1f2937'; 
+            ctx.font = '10px Inter';
+
+            const xRange = xMax - xMin;
+            const yRange = yMax - yMin;
+
+            const { px: originX, py: originY } = toCanvasCoords(0, 0, xMin, xMax, yMin, yMax);
+
+            // --- Draw Grid ---
+            ctx.strokeStyle = '#e5e7eb'; 
+            ctx.lineWidth = 0.5;
+            
+            const drawLine = (x1, y1, x2, y2) => {
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            };
+            
+            const xStep = Math.max(1, Math.ceil(xRange / 10)); 
+            for (let x = Math.ceil(xMin / xStep) * xStep; x <= xMax; x += xStep) {
+                const { px } = toCanvasCoords(x, 0, xMin, xMax, yMin, yMax);
+                drawLine(px, 0, px, CANVAS_SIZE);
+                ctx.fillText(formatNumber(x), px + 2, Math.min(CANVAS_SIZE - 2, Math.max(12, originY + 12)));
+            }
+
+            const yStep = Math.max(1, Math.ceil(yRange / 10));
+            for (let y = Math.ceil(yMin / yStep) * yStep; y <= yMax; y += yStep) {
+                const { py } = toCanvasCoords(0, y, xMin, xMax, yMin, yMax);
+                drawLine(0, py, CANVAS_SIZE, py);
+                ctx.fillText(formatNumber(y), Math.min(CANVAS_SIZE - 20, Math.max(2, originX + 2)), py - 2);
+            }
+
+            // --- Draw Axes (on top of grid) ---
+            ctx.strokeStyle = '#1f2937'; 
+            ctx.lineWidth = 1.5;
+
+            if (originY >= 0 && originY <= CANVAS_SIZE) {
+                drawLine(0, originY, CANVAS_SIZE, originY);
+            }
+            if (originX >= 0 && originX <= CANVAS_SIZE) {
+                drawLine(originX, 0, originX, CANVAS_SIZE);
+            }
+            
+            ctx.fillText('X', CANVAS_SIZE - 10, Math.min(CANVAS_SIZE - 2, originY + 15));
+            ctx.fillText('Y', Math.min(CANVAS_SIZE - 20, originX - 10), 10);
+        }
+
+        function drawGraph(a, b, c, xMin, xMax, yMin, yMax, vertex, zeroes, discriminant) {
+            drawAxes(xMin, xMax, yMin, yMax, a, b, c);
+
+            const f = (x) => a * x * x + b * x + c;
+
+            // 2. Draw the Parabola
+            ctx.strokeStyle = '#ef4444'; // Red for the parabola
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            for (let i = 0; i <= CANVAS_SIZE; i++) {
+                const x = xMin + (i / CANVAS_SIZE) * (xMax - xMin);
+                const y = f(x);
+                const { px, py } = toCanvasCoords(x, y, xMin, xMax, yMin, yMax);
+                
+                if (i === 0) {
+                    ctx.moveTo(px, py);
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            }
+            ctx.stroke();
+
+            // 3. Draw Key Points (Vertex and Zeroes)
+
+            const drawPoint = (x, y, color, label) => {
+                const { px, py } = toCanvasCoords(x, y, xMin, xMax, yMin, yMax);
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, 2 * Math.PI);
+                ctx.fillStyle = color;
+                ctx.fill();
+
+                ctx.fillStyle = '#1f2937';
+                ctx.fillText(label, px + 5, py - 5);
+            };
+
+            // Draw Vertex
+            drawPoint(vertex.x, vertex.y, '#3b82f6', 'V'); // Blue
+
+            // Draw Zeroes (X-intercepts) - Only plot real roots
+            if (discriminant > 1e-12 || Math.abs(discriminant) < 1e-12) {
+                zeroes.forEach((x, index) => {
+                    drawPoint(x, 0, '#10b981', `Z${index + 1}`); // Green
+                });
+            } else {
+                 // For complex roots, draw the real part of the root on the axis of symmetry as a reference point
+                 const realPart = -b / (2 * a);
+                 drawPoint(realPart, 0, '#f97316', 'Real Part'); // Orange for complex
+            }
+            
+            // Draw Y-Intercept
+            drawPoint(0, c, '#f59e0b', 'Y-int'); // Orange
+
+            // 4. Draw Axis of Symmetry Line (Dashed)
+            ctx.strokeStyle = '#3b82f6'; // Blue
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]); // Set to dashed line
+            const { px: axisPx } = toCanvasCoords(vertex.x, 0, xMin, xMax, yMin, yMax);
+            ctx.beginPath();
+            ctx.moveTo(axisPx, 0);
+            ctx.lineTo(axisPx, CANVAS_SIZE);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset line to solid
+        }
+    </script>
+</body>
+</html>
+
