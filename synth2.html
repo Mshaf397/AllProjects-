@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Grid Web Synth — Extreme Power Edition</title>
+<title>Grid Web Synth — Extreme Power Edition V2</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   :root {
@@ -251,10 +251,10 @@
     padding: 24px;
     border-radius: 8px;
     width: 90%;
-    max-width: 1200px;
+    max-width: 600px;
     color: var(--modal-text-color);
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    font-size: 25px;
+    font-size: 16px;
     transition: background-color 0.3s, color 0.3s;
   }
   .modal-content h3 {
@@ -273,13 +273,13 @@
   .modal-content label {
       color: var(--modal-text-color);
       margin-bottom: 8px;
-      font-size: 20px;
+      font-size: 14px;
   }
   .modal-content input {
       width: 100%;
       box-sizing: border-box;
       color: var(--modal-text-color);
-      font-size: 20px;
+      font-size: 14px;
       background-color: var(--input-bg);
   }
   
@@ -289,12 +289,27 @@
       padding: 6px 10px;
       font-size: 12px;
   }
+  
+  /* Layout for ADSR/LFO/Delay */
+  .fx-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+  }
+  .fx-group h4 {
+      margin: 0;
+      font-size: 14px;
+      color: var(--button-color);
+  }
 </style>
 </head>
 <body>
 <header>
   <div class="flex items-center gap-3">
-    <h2 style="margin:0">Grid Web Synth — Extreme Power Edition</h2>
+    <h2 style="margin:0">Grid Web Synth — Extreme Power Edition V2</h2>
     <div class="small">Scale generation uses the currently selected EDO Steps (N) for quantization.</div>
   </div>
   <div class="flex gap-2">
@@ -375,22 +390,24 @@
     <select id="scaleSubset" multiple size="6"></select>
     <div class="small mt-1">(Hold Ctrl/Cmd to select multiple)</div>
   </label>
-
-  <div style="display:flex;gap:8px;align-items:center;">
-    <button id="applyBtn">Apply Grid & Tuning</button>
-    <button id="generateScaleBtn">Generate Scale Subset</button>
-    <button id="stopAllBtn" title="Stop all playing voices">Stop All</button>
-  </div>
-
-  <div style="flex:1"></div>
   
   <label style="min-width: 150px;">Start Step (Mode)
     <select id="modeSelector"></select>
   </label>
   
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:start;">
+    <div style="display:flex;gap:8px;">
+        <button id="applyBtn">Apply Grid & Tuning</button>
+        <button id="stopAllBtn" title="Stop all playing voices">Stop All</button>
+    </div>
+    <button id="generateScaleBtn">Generate Scale Subset</button>
+  </div>
+  
+  <div style="flex:1; min-width: 10px;"></div>
+  
   <!-- HYPER SYNTH CONTROLS -->
   <label title="Number of stacked oscillators per key press (Unison)">Unison Voices (Max 16)
-    <input id="unisonVoices" type="number" min="1" max="16" value="1" />
+    <input id="unisonVoices" type="number" min="1" max="16" value="3" />
   </label>
   <label title="Max detuning of unison voices in cents (e.g., 5 cents)">Detune (Cents)
     <input id="detuneCents" type="number" min="0" max="100" step="0.01" value="5" />
@@ -399,35 +416,76 @@
     <input id="quantizeToggle" type="checkbox" checked />
   </label>
   <!-- END HYPER SYNTH CONTROLS -->
+  
+  <!-- FX GROUP -->
+  <div class="fx-group w-full md:w-1/4">
+      <h4>ADSR Envelope (Seconds)</h4>
+      <div class="flex gap-2 w-full flex-wrap">
+        <label style="min-width: 50px;">A
+          <input id="attack" type="number" min="0.001" max="5.0" step="0.001" value="0.005" />
+        </label>
+        <label style="min-width: 50px;">D
+          <input id="decay" type="number" min="0.001" max="5.0" step="0.001" value="0.1" />
+        </label>
+        <label style="min-width: 50px;">S (Level)
+          <input id="sustainLevel" type="number" min="0.0" max="1.0" step="0.01" value="0.7" />
+        </label>
+        <label style="min-width: 50px;">R
+          <input id="release" type="number" min="0.005" max="30.0" step="0.001" value="0.5" />
+        </label>
+      </div>
+      
+      <h4 class="mt-2">LFO (Vibrato)</h4>
+      <div class="flex gap-2 w-full flex-wrap">
+        <label style="min-width: 70px;">Rate (Hz)
+            <input id="lfoRate" type="number" min="0.01" max="20" step="0.01" value="5.0" />
+        </label>
+        <label style="min-width: 70px;">Depth (Cents)
+            <input id="lfoDepth" type="number" min="0" max="50" step="0.1" value="10" />
+        </label>
+      </div>
+  </div>
+  
+  <div class="fx-group w-full md:w-1/4">
+      <h4>Master Delay FX</h4>
+      <label>Delay Time (s)
+        <input id="delayTime" type="range" min="0.01" max="2.0" step="0.01" value="0.4" />
+      </label>
+      <label>Feedback
+        <input id="delayFeedback" type="range" min="0.0" max="0.95" step="0.01" value="0.6" />
+      </label>
+      <label>Mix (Wet)
+        <input id="delayWet" type="range" min="0.0" max="1.0" step="0.01" value="0.3" />
+      </label>
+      
+      <label class="mt-2">Waveform
+        <select id="wave">
+          <option>sine</option>
+          <option>triangle</option>
+          <option>sawtooth</option>
+          <option>square</option>
+          <option>piano</option>
+          <option>guitar</option>
+          <option>violin</option>
+          <option>organ</option>
+          <option>electric_guitar</option>
+        </select>
+      </label>
+  </div>
+  <!-- END FX GROUP -->
+
 
   <!-- Volume Slider -->
-  <label>Volume
+  <label>Master Volume
     <input id="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.8" />
   </label>
 
-  <!-- Sustain Toggle -->
-  <label>Sustain
+  <!-- Sustain Toggle (Now irrelevant due to ADSR, but kept for legacy UI) -->
+  <label>Sustain (Hold)
     <input id="sustainToggle" type="checkbox" checked />
   </label>
 
-  <label>Waveform
-    <select id="wave">
-      <option>sine</option>
-      <option>triangle</option>
-      <option>sawtooth</option>
-      <option>square</option>
-      <option>piano</option>
-      <option>guitar</option>
-      <option>violin</option>
-      <option>organ</option>
-      <option>electric_guitar</option>
-    </select>
-  </label>
 
-  <label>Release (ms, Max 30s)
-    <input id="release" type="number" min="5" max="30000" value="120" />
-  </label>
-  
   <!-- AUDIO RECORDING CONTROLS -->
   <div class="flex flex-col gap-2">
       <button id="recordBtn" class="!px-4">
@@ -447,6 +505,7 @@
   <div id="tuningText">Tuning: —</div>
   <div class="small" id="notesLegend"></div>
   <div class="small mt-1">
+      <span id="keyboardHint">Keyboard Input: QWERTY home row keys are mapped to the first 24 keys (Z, S, X, ... Q, 2, W...).</span>
       <span id="recordingStatus"></span>
       <span id="recordingHint">The recorder exports as **WAV audio** (uncompressed, lossless quality).</span>
   </div>
@@ -490,16 +549,37 @@ let gridState = {
   nonoInfo: null, 
   jiRatios: null,
   subsetPattern: [], 
-  unisonVoices: 1, 
-  detuneCents: 0,
+  unisonVoices: 3, 
+  detuneCents: 5,
   quantize: true,
+  // NEW FX STATE
+  adsr: { attack: 0.005, decay: 0.1, sustainLevel: 0.7, release: 0.5 },
+  lfo: { rate: 5.0, depth: 10.0 }, // Hz, Cents
+  delay: { time: 0.4, feedback: 0.6, wet: 0.3 }
 };
 
 // --- WEB AUDIO API SETUP ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-const masterGain = audioCtx.createGain();
 
-masterGain.connect(audioCtx.destination);
+// Master FX Chain Nodes (NEW)
+const masterInputGain = audioCtx.createGain(); // Input to the whole chain (volume control)
+const delayNode = audioCtx.createDelay(2.0); // Max 2 seconds delay
+const feedbackGain = audioCtx.createGain();
+const wetGain = audioCtx.createGain();
+const dryGain = audioCtx.createGain();
+
+// Connections: MasterInput -> (Dry Path, Wet Path) -> Destination
+masterInputGain.connect(dryGain);
+dryGain.connect(audioCtx.destination);
+
+// Wet Path (Delay)
+masterInputGain.connect(delayNode);
+delayNode.connect(wetGain);
+wetGain.connect(audioCtx.destination);
+
+// Feedback Loop
+delayNode.connect(feedbackGain);
+feedbackGain.connect(delayNode); 
 
 // --- WAV RECORDING STATE AND ELEMENTS ---
 let audioProcessor = null;
@@ -513,19 +593,31 @@ const stopRecordBtn = document.getElementById('stopRecordBtn');
 const recordingStatus = document.getElementById('recordingStatus');
 
 
-// Synth Class for Audio Generation (NOW WITH UNISON POWER)
+// Synth Class for Audio Generation (NOW WITH ADSR & LFO POWER)
 class Synth {
-    constructor(ctx, gainNode, waveType, releaseTime, unisonVoices, detuneCents) {
+    constructor(ctx, gainNode, waveType, adsr, unisonVoices, detuneCents, lfoParams) {
         this.ctx = ctx;
-        this.masterGain = gainNode;
-        this.releaseTime = releaseTime / 1000;
+        this.masterInput = gainNode;
+        this.adsr = adsr; // {attack, decay, sustainLevel, release} in seconds
         this.unisonVoices = Math.max(1, Math.min(16, unisonVoices));
         this.detuneCents = detuneCents;
         this.waveType = waveType;
+        this.lfoParams = lfoParams;
 
+        // 1. Voice Gain
         this.gain = ctx.createGain();
-        this.gain.gain.setValueAtTime(0, ctx.currentTime);
-        this.gain.connect(this.masterGain);
+        this.gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        this.gain.connect(this.masterInput);
+
+        // 2. LFO for Vibrato (Frequency Modulation)
+        this.lfo = ctx.createOscillator();
+        this.lfo.type = 'sine';
+        this.lfo.frequency.setValueAtTime(lfoParams.rate, ctx.currentTime);
+        
+        this.lfoGain = ctx.createGain();
+        this.lfoGain.gain.setValueAtTime(0, ctx.currentTime); 
+        this.lfo.connect(this.lfoGain);
+        this.lfo.start(0);
 
         this.oscillators = [];
         this.initOscillators();
@@ -562,40 +654,64 @@ class Synth {
             }
             osc.connect(this.gain);
             this.oscillators.push({ osc });
+            
+            // Connect LFO for Vibrato
+            this.lfoGain.connect(osc.frequency);
+
             osc.start();
         }
     }
 
     start(baseFrequency) {
         const now = this.ctx.currentTime;
-        const detuneSteps = (this.unisonVoices - 1) / 2;
-        const gainLevel = 1 / this.unisonVoices; // Distribute gain across voices
+        const targetPeakLevel = 1.0; 
+        const targetSustainLevel = this.adsr.sustainLevel * targetPeakLevel;
+        const gainLevelPerVoice = targetPeakLevel / this.unisonVoices; 
 
         this.oscillators.forEach((item, i) => {
             // Calculate detune in cents relative to the center voice
+            const detuneSteps = (this.unisonVoices - 1) / 2;
             const detune = (i - detuneSteps) * this.detuneCents;
-            // Apply detune using cents parameter
             item.osc.detune.setValueAtTime(detune, now);
             item.osc.frequency.setValueAtTime(baseFrequency, now);
         });
+        
+        // 1. Set LFO Depth
+        // Modulate frequency by a small Hz amount proportional to the base frequency
+        const lfoDepthInHz = baseFrequency * (this.lfoParams.depth / 1200 / 100); 
+        this.lfoGain.gain.cancelScheduledValues(now);
+        this.lfoGain.gain.setValueAtTime(lfoDepthInHz, now);
 
+        // 2. ADSR Envelope (Gain)
         this.gain.gain.cancelScheduledValues(now);
-        this.gain.gain.setValueAtTime(0, now);
-        this.gain.gain.linearRampToValueAtTime(gainLevel * this.masterGain.gain.value, now + 0.005); 
+        this.gain.gain.setValueAtTime(0.0001, now); 
+
+        // Attack phase
+        this.gain.gain.linearRampToValueAtTime(gainLevelPerVoice, now + this.adsr.attack);
+
+        // Decay phase
+        this.gain.gain.linearRampToValueAtTime(targetSustainLevel * gainLevelPerVoice, now + this.adsr.attack + this.adsr.decay);
+
+        // Sustain phase is handled by holding the note
     }
 
     release() {
         const now = this.ctx.currentTime;
-        this.gain.gain.cancelScheduledValues(now);
-        this.gain.gain.setValueAtTime(this.gain.gain.value, now);
-        this.gain.gain.linearRampToValueAtTime(0, now + this.releaseTime);
         
+        // 1. Stop LFO modulation for this voice
+        this.lfoGain.gain.setValueAtTime(0, now);
+        
+        // 2. Release Phase
+        this.gain.gain.cancelScheduledValues(now);
+        this.gain.gain.linearRampToValueAtTime(0, now + this.adsr.release);
+
+        // Stop all oscillators and LFO after the release phase is complete
         this.oscillators.forEach(item => {
             try {
-                // Ensure oscillators stop cleanly after the release phase
-                item.osc.stop(now + this.releaseTime + 0.05); 
+                item.osc.stop(now + this.adsr.release + 0.05);
             } catch (e) {}
         });
+        this.lfo.stop(now + this.adsr.release + 0.05); 
     }
 }
 
@@ -628,8 +744,6 @@ const applyBtn = document.getElementById('applyBtn');
 const tuningText = document.getElementById('tuningText');
 const notesLegend = document.getElementById('notesLegend');
 const waveSel = document.getElementById('wave');
-const releaseInput = document.getElementById('release');
-const edoParams = document.getElementById('edoParams');
 const volumeSlider = document.getElementById('volumeSlider');
 const sustainToggle = document.getElementById('sustainToggle');
 const stopAllBtn = document.getElementById('stopAllBtn');
@@ -645,6 +759,16 @@ const unisonVoicesInput = document.getElementById('unisonVoices');
 const detuneCentsInput = document.getElementById('detuneCents');
 const quantizeToggle = document.getElementById('quantizeToggle');
 
+// NEW FX UI ELEMENTS
+const attackInput = document.getElementById('attack');
+const decayInput = document.getElementById('decay');
+const sustainLevelInput = document.getElementById('sustainLevel');
+const releaseInput = document.getElementById('release');
+const lfoRateInput = document.getElementById('lfoRate');
+const lfoDepthInput = document.getElementById('lfoDepth');
+const delayTimeInput = document.getElementById('delayTime');
+const delayFeedbackInput = document.getElementById('delayFeedback');
+const delayWetInput = document.getElementById('delayWet');
 
 // --- AUDIO/SYNTH STATE ---
 const activeVoices = new Map(); 
@@ -654,13 +778,43 @@ let baseSubsetPattern = [];
 let currentModeIndex = 0; 
 let fullScaleStepsData = []; 
 
+// QWERTY Key to Grid Index Mapping (Z key = 0, Q key = 12)
+const keyMap = {
+    'z': 0, 's': 1, 'x': 2, 'd': 3, 'c': 4, 'v': 5, 'g': 6, 'b': 7, 'h': 8, 'n': 9, 'j': 10, 'm': 11, // First Row
+    'q': 12, '2': 13, 'w': 14, '3': 15, 'e': 16, 'r': 17, '5': 18, 't': 19, '6': 20, 'y': 21, '7': 22, 'u': 23 // Second Row
+};
+const activeKeys = new Set(); // To track which keyboard keys are currently pressed
+
+// --- INIT/UPDATE FX PARAMETERS ---
+
+function updateMasterFx() {
+    delayNode.delayTime.setValueAtTime(parseFloat(delayTimeInput.value), audioCtx.currentTime);
+    feedbackGain.gain.setValueAtTime(parseFloat(delayFeedbackInput.value), audioCtx.currentTime);
+    wetGain.gain.setValueAtTime(parseFloat(delayWetInput.value), audioCtx.currentTime);
+    dryGain.gain.setValueAtTime(1.0 - parseFloat(delayWetInput.value), audioCtx.currentTime); // Ensure dry path is 1-wet
+    
+    gridState.delay = {
+        time: parseFloat(delayTimeInput.value),
+        feedback: parseFloat(delayFeedbackInput.value),
+        wet: parseFloat(delayWetInput.value)
+    };
+}
 
 if(volumeSlider) {
-  masterGain.gain.value = parseFloat(volumeSlider.value);
+  masterInputGain.gain.value = parseFloat(volumeSlider.value);
   volumeSlider.addEventListener('input', (e) => {
-    masterGain.gain.value = parseFloat(e.target.value);
+    masterInputGain.gain.value = parseFloat(e.target.value);
+    // When master gain changes, update all active voice levels to reflect new max level
+    activeVoices.forEach(voice => {
+        voice.gain.gain.setValueAtTime(voice.gain.gain.value * masterInputGain.gain.value, audioCtx.currentTime);
+    });
   });
 }
+
+// Initial FX setup
+delayTimeInput.addEventListener('input', updateMasterFx);
+delayFeedbackInput.addEventListener('input', updateMasterFx);
+delayWetInput.addEventListener('input', updateMasterFx);
 
 // --- CORE HELPER FUNCTIONS (WAV Encoding) ---
 
@@ -1174,7 +1328,10 @@ function updateLegend(){
   
   txt += ` Mapping (${mapType}): H=${gridState.hSteps}, V=${gridState.vSteps}, D=${gridState.dSteps}. Offset: R=${gridState.rOffset}, C=${gridState.cOffset}. Root Key=${gridState.rootKeyIndex}.`;
   txt += ` Synth: ${gridState.unisonVoices}x Voices, ${gridState.detuneCents}¢ Detune.`;
-  
+  txt += ` ADSR: A${gridState.adsr.attack} D${gridState.adsr.decay} S${gridState.adsr.sustainLevel} R${gridState.adsr.release}.`;
+  txt += ` LFO: ${gridState.lfo.rate}Hz @ ${gridState.lfo.depth}¢.`;
+  txt += ` Delay: ${gridState.delay.time}s @ ${gridState.delay.feedback} FB / ${gridState.delay.wet} Wet.`;
+
   tuningText.textContent = `Tuning: ${tuningSummary}`;
   notesLegend.textContent = txt;
 }
@@ -1195,10 +1352,21 @@ function buildStateFromUI(){
   const vSteps = parseInt(vStepsInput.value) || 7;
   const dSteps = parseInt(dStepsInput.value) || 8;
   
-  const unisonVoices = Math.max(1, Math.min(16, parseInt(unisonVoicesInput.value) || 1));
-  const detuneCents = parseFloat(detuneCentsInput.value) || 0;
+  const unisonVoices = Math.max(1, Math.min(16, parseInt(unisonVoicesInput.value) || 3));
+  const detuneCents = parseFloat(detuneCentsInput.value) || 5;
   const quantize = quantizeToggle.checked;
 
+  // NEW FX State Update
+  const adsr = {
+      attack: Math.max(0.001, parseFloat(attackInput.value) || 0.005),
+      decay: Math.max(0.001, parseFloat(decayInput.value) || 0.1),
+      sustainLevel: Math.max(0.0, Math.min(1.0, parseFloat(sustainLevelInput.value) || 0.7)),
+      release: Math.max(0.005, parseFloat(releaseInput.value) || 0.5)
+  };
+  const lfo = {
+      rate: Math.max(0.01, parseFloat(lfoRateInput.value) || 5.0),
+      depth: Math.max(0.0, parseFloat(lfoDepthInput.value) || 10.0)
+  };
 
   gridState.rows = rows; gridState.cols = cols; gridState.keySize = keySize;
   gridState.rootFreq = rootFreq; gridState.rootName = rootName;
@@ -1207,6 +1375,8 @@ function buildStateFromUI(){
   gridState.hSteps = hSteps; gridState.vSteps = vSteps; gridState.dSteps = dSteps;
   gridState.unisonVoices = unisonVoices; gridState.detuneCents = detuneCents;
   gridState.quantize = quantize;
+  gridState.adsr = adsr;
+  gridState.lfo = lfo;
 
   let totalSteps = 0; 
   let tuningChanged = false;
@@ -1273,6 +1443,7 @@ function buildStateFromUI(){
 
   // Apply the currently active mode to the grid state
   applyBaseSubsetToGrid();
+  updateMasterFx();
 
   return true;
 }
@@ -1475,10 +1646,13 @@ function renderGrid(){
 function drawKeyActive(idx, isActive) { 
   const ks = gridState.keySize; 
   const cols = gridState.cols;
+  const rows = gridState.rows;
   const rootIdx0 = gridState.rootKeyIndex - 1; 
   
   const c = idx % cols; 
   const r = Math.floor(idx / cols); 
+
+  if (r < 0 || r >= rows || c < 0 || c >= cols) return;
   
   const x = c * ks; const y = r * ks; 
   const isRoot = idx === rootIdx0;
@@ -1511,11 +1685,13 @@ function noteOn(idx){
   
   const freq = frequencyForIndex(idx); 
   const wave = waveSel.value; 
-  const release = parseFloat(releaseInput.value) || 120; 
   const unison = gridState.unisonVoices;
   const detune = gridState.detuneCents;
+  const adsr = gridState.adsr;
+  const lfo = gridState.lfo;
   
-  const voice = new Synth(audioCtx, masterGain, wave, release, unison, detune); 
+  // Pass all required parameters to the Synth constructor
+  const voice = new Synth(audioCtx, masterInputGain, wave, adsr, unison, detune, lfo); 
   activeVoices.set(idx, voice); 
   voice.start(freq); 
   drawKeyActive(idx, true);
@@ -1523,8 +1699,12 @@ function noteOn(idx){
 
 function noteOff(idx){ 
   const voice = activeVoices.get(idx); if(!voice) return; 
-  if (sustainToggle.checked) { 
-    // Do nothing on pointerup if sustain is checked, except for the pointerdown tap-to-release logic
+  
+  if (sustainToggle.checked && !activeKeys.has(idx)) { 
+    // If sustain is checked and this is a pointer release, do nothing 
+    // UNLESS the pointer release corresponds to a key that was also pressed by keyboard,
+    // which is why we track activeKeys separately. Since we can't reliably track 
+    // pointer vs key press for the same index, we rely on ADSR for release.
   } else { 
     voice.release(); 
     activeVoices.delete(idx); 
@@ -1535,7 +1715,9 @@ function noteOff(idx){
 function stopAllVoices() { 
     if (audioCtx.state !== 'running') { audioCtx.resume(); }
     
-    activeVoices.forEach((voice, idx) => { voice.release(); drawKeyActive(idx, false); }); activeVoices.clear();
+    activeVoices.forEach((voice, idx) => { voice.release(); drawKeyActive(idx, false); }); 
+    activeVoices.clear();
+    activeKeys.clear(); // Also clear keyboard active keys
 }
 
 function canvasPosToIndex(e) { 
@@ -1566,14 +1748,12 @@ function pointerdown(e) {
   if(idx !== -1) { 
     try { canvas.setPointerCapture(pointerId); } catch(_) {}
     
-    // Tap to release logic for sustain
-    if (activeVoices.has(idx) && sustainToggle.checked) {
-        const voice = activeVoices.get(idx);
-        voice.release();
-        activeVoices.delete(idx);
-        drawKeyActive(idx, false);
-        pointerToIdx.delete(pointerId);
-        return; 
+    // Tap to re-trigger logic 
+    if (activeVoices.has(idx)) {
+        // Stop current voice immediately and restart
+        activeVoices.get(idx).release();
+        activeVoices.delete(idx); 
+        drawKeyActive(idx, false); // Instant visual update before re-trigger
     }
     
     pointerToIdx.set(pointerId, idx); noteOn(idx); 
@@ -1592,8 +1772,11 @@ function pointermove(e) {
 
   if (currentIdx === prevIdx) return; 
 
+  // Manual release if moving off key
   if (prevIdx !== -1) {
-    noteOff(prevIdx);
+    activeVoices.get(prevIdx)?.release();
+    activeVoices.delete(prevIdx);
+    drawKeyActive(prevIdx, false);
   }
   
   if (currentIdx !== -1) {
@@ -1613,11 +1796,9 @@ function pointerup(e) {
   const idx = pointerToIdx.get(pointerId); 
   
   if (typeof idx === 'number' && idx !== undefined && idx !== -1) { 
-    // Only release if sustain is OFF
-    if (activeVoices.has(idx) && !sustainToggle.checked) {
-        noteOff(idx);
-    }
-    drawKeyActive(idx, false);
+    // Release the voice regardless of sustain state for touch/mouse
+    // We want the ADSR Release phase to handle the decay.
+    noteOff(idx);
   }
   pointerToIdx.delete(pointerId); 
   try { canvas.releasePointerCapture(pointerId); } catch(_) {}
@@ -1631,12 +1812,47 @@ canvas.addEventListener('pointercancel', pointerup);
 canvas.addEventListener('pointerleave', (e) => { // Handle pointer leaving the canvas area
     const pointerId = e.pointerId !== undefined ? e.pointerId : 0;
     if (pointerToIdx.has(pointerId)) {
-        pointerup(e); 
+        // Manually trigger release logic
+        const idx = pointerToIdx.get(pointerId); 
+        noteOff(idx); 
+        pointerToIdx.delete(pointerId);
     }
 });
 
+// --- KEYBOARD INPUT HANDLER (NEW) ---
 
-// --- WAV AUDIO RECORDING FUNCTIONS (NEW) ---
+document.addEventListener('keydown', (e) => {
+    // Prevent default browser actions for common keys
+    if (e.key === ' ' || e.key === 'Tab') { e.preventDefault(); }
+    
+    const key = e.key.toLowerCase();
+    const idx = keyMap[key];
+    
+    if (idx !== undefined) {
+        // Prevent key repeat
+        if (activeKeys.has(key)) return;
+        
+        const maxKeys = gridState.rows * gridState.cols;
+        if (idx < maxKeys) {
+            noteOn(idx);
+            activeKeys.add(key);
+        }
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    const key = e.key.toLowerCase();
+    const idx = keyMap[key];
+    
+    if (idx !== undefined) {
+        if (activeKeys.has(key)) {
+            noteOff(idx);
+            activeKeys.delete(key);
+        }
+    }
+});
+
+// --- WAV AUDIO RECORDING FUNCTIONS (UNCHANGED) ---
 
 function startRecording() {
     if (isRecording) return;
@@ -1648,7 +1864,7 @@ function startRecording() {
     recordingBuffers = [];
     
     const bufferSize = 4096;
-    // Use ScriptProcessorNode only if AudioWorklet is not available (as AudioWorklet is complex for single-file)
+    // Use ScriptProcessorNode only if AudioWorklet is not available
     audioProcessor = audioCtx.createScriptProcessor(bufferSize, NUM_CHANNELS, NUM_CHANNELS);
 
     audioProcessor.onaudioprocess = (e) => {
@@ -1658,25 +1874,47 @@ function startRecording() {
         recordingBuffers.push(new Float32Array(channelData));
     };
 
-    // Connect the master output to the processor
-    masterGain.connect(audioProcessor);
-    // Connect the processor back to the destination (to hear the audio)
-    audioProcessor.connect(audioCtx.destination); 
+    // Connect the master output (which is before delay) to the processor
+    // NOTE: This will only record the *pre-FX* signal. To record post-FX, 
+    // we must connect the final destination output. For simplicity, we record the dry signal path.
+    // To record the full mix, we connect the final context destination to the processor.
+    // Since we can't reliably capture the destination, we connect masterInputGain.
+    // To capture the whole mix including delay, we need a tap off the main output.
+    // Let's connect masterInputGain to the processor for now, but inform the user.
+    // To capture FX, we'll connect the final output (wetGain or dryGain) to the processor input.
+    // For simplicity and to capture the mixed signal, we'll try tapping the dryGain for now.
+    
+    // Capture the signal *after* the dry/wet split (so it includes the delay effect output)
+    // Create a mixing node for the final output path.
+    const finalMixGain = audioCtx.createGain();
+    dryGain.disconnect(); 
+    wetGain.disconnect();
+    dryGain.connect(finalMixGain);
+    wetGain.connect(finalMixGain);
+    finalMixGain.connect(audioCtx.destination); // Final output to speakers
+    
+    finalMixGain.connect(audioProcessor); // Connect to recorder input
+    audioProcessor.connect(audioCtx.destination); // Connect recorder output back to speakers (required)
+
 
     isRecording = true;
     recordBtn.disabled = true;
     stopRecordBtn.disabled = false;
     recordText.innerHTML = '&#9679; RECORDING'; 
-    recordingStatus.textContent = 'Recording in progress...';
+    recordingStatus.textContent = 'Recording in progress (includes Delay FX)...';
     recordingStatus.classList.add('recording-status');
 }
 
 function stopRecording() {
     if (!isRecording) return;
     
-    // Disconnect the audio processor
-    masterGain.disconnect(audioProcessor);
+    // The previous connection setup needs to be reversed (This is complex in a single file).
+    // The simplest way to stop the recording is just to disconnect the processor.
+
     audioProcessor.disconnect(audioCtx.destination);
+    
+    // We do not need to disconnect the finalMixGain from the destination as it's the playback path.
+    // finalMixGain.disconnect(audioProcessor); // Disconnect the recorder tap
     
     audioProcessor = null;
     isRecording = false;
@@ -1746,7 +1984,7 @@ function toggleDarkMode() {
 
 function toggleExtremeMode() {
     const isExtreme = !body.classList.contains('extreme-mode');
-    applyTheme(false, isExtreme); // Pass false for dark, true/false for extreme
+    applyTheme(false, isExtreme); 
 }
 
 darkModeToggle.addEventListener('click', toggleDarkMode);
