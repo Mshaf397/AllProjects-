@@ -31,7 +31,7 @@
             transition: transform 0.05s, background-color 0.1s;
             cursor: pointer;
             user-select: none;
-            overflow: hidden; /* Hide overflow arrow text */
+            overflow: hidden; 
             position: relative;
         }
         .synth-key:hover {
@@ -70,12 +70,12 @@
             <div class="space-y-4">
                 <h2 class="text-xl font-semibold border-b border-gray-700 pb-2 text-emerald-300">Tuning & Scale</h2>
                 <div>
-                    <label for="edo-input" class="block text-sm font-medium text-gray-300">EDO (Equal Division of the Octave):</label>
+                    <label for="edo-input" class="block text-sm font-medium text-gray-300">Period (EDO Steps):</label>
                     <input type="number" id="edo-input" value="12" min="1" max="2147483647" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" onchange="initializeSynth()">
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                    <!-- Base Frequency Input: Now Read-only and enforces C4_FREQ_REF -->
+                    <!-- Base Frequency Input: Read-only -->
                     <div>
                         <label for="base-freq-input" class="block text-sm font-medium text-gray-300">Fixed C4 Frequency (Hz):</label>
                         <input type="number" id="base-freq-input" value="261.6256" step="0.0001" min="10" max="20000" 
@@ -84,14 +84,37 @@
                         <p class="text-xs text-gray-500 mt-1">C4 is fixed to 261.6256 Hz.</p>
                     </div>
                     <div>
-                        <label for="root-key-input" class="block text-sm font-medium text-gray-300">C-Note Grid Index (0 to Keys-1):</label>
+                        <label for="root-key-input" class="block text-sm font-medium text-gray-300">Root Key Grid Index (0 to Keys-1):</label>
                         <input type="number" id="root-key-input" value="0" min="0" max="31" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" onchange="updateTuningParameters()">
+                        <p class="text-xs text-gray-500 mt-1">Key that plays the scale root (C4).</p>
                     </div>
                 </div>
 
+                <!-- Generator Scale Inputs -->
+                <div class="space-y-4 pt-4 border-t border-gray-700">
+                    <h2 class="text-xl font-semibold text-indigo-300">Generator Scale Builder</h2>
+                    <div>
+                        <label for="generator-steps" class="block text-sm font-medium text-gray-300">Generator Interval (EDO steps):</label>
+                        <input type="number" id="generator-steps" value="7" min="1" max="2147483647" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="generators-up" class="block text-sm font-medium text-gray-300">Generators Up (x):</label>
+                            <input type="number" id="generators-up" value="7" min="0" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label for="generators-down" class="block text-sm font-medium text-gray-300">Generators Down (y):</label>
+                            <input type="number" id="generators-down" value="5" min="0" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                        </div>
+                    </div>
+                    <button onclick="generateScale()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow transition duration-150">
+                        Generate Scale
+                    </button>
+                </div>
+
                 <!-- Scale Output -->
-                <div class="space-y-2">
-                    <h3 class="text-md font-medium text-gray-300">EDO Scale (Steps 0 to EDO-1):</h3>
+                <div class="space-y-2 pt-4 border-t border-gray-700">
+                    <h3 class="text-md font-medium text-gray-300">Current Scale Definition:</h3>
                     <div id="scale-output" class="scale-output-box h-40 overflow-y-auto bg-gray-900 p-3 rounded-lg text-xs font-mono border border-gray-700">
                         Loading scale...
                     </div>
@@ -118,27 +141,50 @@
                 <p class="text-xs text-gray-500 pt-2">Total Keys: <span id="total-keys">32</span></p>
             </div>
 
-            <!-- Audio Controls -->
+            <!-- Audio Controls & Recording -->
             <div class="space-y-4">
-                <h2 class="text-xl font-semibold border-b border-gray-700 pb-2 text-emerald-300">Audio Controls</h2>
+                <h2 class="text-xl font-semibold border-b border-gray-700 pb-2 text-emerald-300">Audio Controls & Recording</h2>
+
+                <!-- Waveform Selector -->
+                <div>
+                    <label for="waveform-select" class="block text-sm font-medium text-gray-300">Waveform:</label>
+                    <select id="waveform-select" onchange="updateWaveform()" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                        <option value="sine">Sine</option>
+                        <option value="square">Square</option>
+                        <option value="triangle">Triangle</option>
+                        <option value="sawtooth" selected>Sawtooth</option>
+                    </select>
+                </div>
+                
                 <div>
                     <label for="volume-slider" class="block text-sm font-medium text-gray-300">Volume (dB): <span id="volume-value">-10</span></label>
                     <input type="range" id="volume-slider" min="-60" max="0" value="-10" class="w-full mt-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="updateVolume()">
                 </div>
-                <div class="flex items-center justify-between">
-                    <label for="sustain-toggle" class="text-sm font-medium text-gray-300">Sustain On/Off (Tap to Release)</label>
-                    <input type="checkbox" id="sustain-toggle" class="h-6 w-10 rounded-full appearance-none bg-gray-700 checked:bg-emerald-500 transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-emerald-500" onclick="updateSustain()">
+
+                <!-- Sustain & Stop All -->
+                <div class="space-y-3 pt-2 border-t border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <label for="sustain-toggle" class="text-sm font-medium text-gray-300">Sustain On/Off (Tap to Release)</label>
+                        <input type="checkbox" id="sustain-toggle" class="h-6 w-10 rounded-full appearance-none bg-gray-700 checked:bg-emerald-500 transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-emerald-500" onclick="updateSustain()">
+                    </div>
+                    <button id="stop-all-button" onclick="stopAllNotes()" class="w-full py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg shadow transition duration-150 flex items-center justify-center" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 mr-2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 9.563C9 9.357 9.177 9.18 9.39 9.18h.442c.213 0 .388.177.388.388v.442c0 .213-.175.388-.388.388h-.442c-.213 0-.39-.175-.39-.388v-.442Zm0 4.88c0-.213.177-.39.39-.39h.442c.213 0 .388.177.388.388v.442c0 .213-.175.388-.388.388h-.442c-.213 0-.39-.175-.39-.388v-.442ZM15 9.563c0-.213.177-.39.39-.39h.442c.213 0 .388.177.388.388v.442c0 .213-.175.388-.388.388h-.442c-.213 0-.39-.175-.39-.388v-.442ZM15 14.442c0-.213.177-.39.39-.39h.442c.213 0 .388.177.388.388v.442c0 .213-.175.388-.388.388h-.442c-.213 0-.39-.175-.39-.388v-.442Z" />
+                        </svg>
+                        Stop All Notes
+                    </button>
                 </div>
-                <div class="mt-4 p-3 bg-gray-900 rounded-lg text-sm text-center">
-                    <p class="text-gray-400">Touch/Click a playing key to release it when Sustain is ON.</p>
+
+                <!-- Recording Button -->
+                <div class="mt-4 pt-4 border-t border-gray-700">
+                     <button id="record-button" onclick="toggleRecording()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg transition duration-150 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2">
+                            <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 9a.75.75 0 0 0-1.5 0v3.75h-3.75a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 .75-.75V9Z" clip-rule="evenodd" />
+                        </svg>
+                        Record Audio
+                    </button>
                 </div>
-                <!-- Play button for initial Tone.js start -->
-                <button id="start-audio" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg transition duration-150">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 inline-block mr-2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.35 1.576-.877l8.835 6.007a1.125 1.125 0 0 1 0 1.754l-8.835 6.007a1.125 1.125 0 0 1-1.576-.877V5.653Z" />
-                    </svg>
-                    Start Audio (Required)
-                </button>
             </div>
         </div>
 
@@ -146,7 +192,7 @@
         <div id="keyboard-container" class="p-4 bg-gray-800 rounded-xl shadow-2xl flex justify-center items-center overflow-x-auto overflow-y-hidden">
             <div id="keyboard-grid" class="flex flex-wrap border-2 border-gray-700 rounded-lg">
                 <!-- Keys will be dynamically injected here -->
-                <p class="text-gray-500 p-10">Press 'Start Audio' and set EDO/Layout to generate the keyboard.</p>
+                <p class="text-gray-500 p-10">Set EDO/Layout and interact with the window to initialize the synth.</p>
             </div>
         </div>
 
@@ -154,7 +200,6 @@
 
     <script>
         // --- GLOBAL STATE & CONSTANTS ---
-        // The C4 reference frequency is now the fixed, enforced frequency for the key named 'C4'.
         const C4_FREQ_REF = 261.6256; 
         const P5_CENTS = 701.9550009; // Target perfect fifth in cents
         const CENTS_PER_OCTAVE = 1200;
@@ -166,26 +211,32 @@
         ];
 
         let EDO = 12;
-        // baseFreq is the calculated frequency of the first key (grid index 0) required to enforce C4_FREQ_REF.
-        let baseFreq = C4_FREQ_REF; 
-        // This stores the index of the grid key (0 to totalKeys-1) that maps to EDO step 0 ('C').
-        let cNoteGridIndex = 0; 
         let scaleData = []; // Array of {step, name} for EDO steps 0 to EDO-1
+        let generatorScaleSteps = null; // null for EDO default, array of steps for generated scale
+        let cNoteGridIndex = 0; // The index of the grid key that maps to the scale root (C4)
+        
         let synth = null;
         let gainNode = null;
+        let recorder = null;
+        let audioContextStarted = false;
         let sustainActive = false;
+        let recordingState = 'idle'; // 'idle', 'recording', 'exporting'
+        
         let currentNotes = new Map(); // Tracks currently playing notes: Map<keyIndex, boolean>
 
         // --- SYNTH AUDIO SETUP (Tone.js) ---
 
-        /** Initializes the Tone.js context, gain, and basic synth. */
+        /** Initializes the Tone.js context, gain, basic synth, and recorder. */
         function setupAudio() {
             if (synth) return;
 
+            // 1. Setup Master Gain
             gainNode = new Tone.Gain(Tone.dbToGain(-10)).toDestination();
-
+            
+            // 2. Setup Synth
+            const initialWaveform = document.getElementById('waveform-select').value;
             synth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: "sawtooth" },
+                oscillator: { type: initialWaveform },
                 envelope: {
                     attack: 0.005,
                     decay: 0.1,
@@ -194,18 +245,32 @@
                 }
             }).connect(gainNode);
 
+            // 3. Setup Recorder (connects BEFORE the destination)
+            recorder = new Tone.Recorder();
+            gainNode.connect(recorder);
+            
             updateVolume();
             console.log("Audio setup complete.");
         }
 
-        /** Starts the Tone.js audio context on user interaction. */
-        document.getElementById('start-audio').addEventListener('click', async () => {
-            await Tone.start();
-            setupAudio();
-            document.getElementById('start-audio').style.display = 'none';
-            console.log("Audio Context Started.");
-            initializeSynth();
-        });
+        /** Starts the Tone.js audio context on the first user interaction. */
+        async function startAudioContext() {
+            if (!audioContextStarted) {
+                // Use Tone.start() which handles the initial state transition from suspended
+                await Tone.start(); 
+                audioContextStarted = true;
+                document.getElementById('stop-all-button').disabled = false;
+                console.log("Audio Context Started.");
+            }
+        }
+
+        /** Updates the oscillator type of the running synth. */
+        function updateWaveform() {
+            if (!synth) return;
+            const newWaveform = document.getElementById('waveform-select').value;
+            synth.set({ oscillator: { type: newWaveform } });
+            console.log(`Waveform set to: ${newWaveform}`);
+        }
 
         /** Updates the global volume (in dB). */
         function updateVolume() {
@@ -221,24 +286,44 @@
         /** Toggles the sustain mode. */
         function updateSustain() {
             sustainActive = document.getElementById('sustain-toggle').checked;
-            console.log('Sustain:', sustainActive);
+            console.log('Sustain:', sustainActive ? 'ON' : 'OFF');
+        }
+        
+        /** Stops all notes and transport events. */
+        function stopAllNotes() {
+            if (!synth) return;
+
+            // Release all notes tracked in currentNotes
+            const keysToRelease = Array.from(currentNotes.keys());
+            keysToRelease.forEach((keyIndex) => {
+                const keyElement = document.getElementById(`key-${keyIndex}`);
+                if (keyElement) {
+                    const freq = parseFloat(keyElement.getAttribute('data-freq'));
+                    // releaseNote handles Tone.js triggerRelease and UI/currentNotes cleanup
+                    releaseNote(keyIndex, freq); 
+                }
+            });
+
+            // Stop any Tone.js transport events (though none are explicitly used here, good practice)
+            Tone.Transport.stop();
+            console.log("All notes and transport stopped.");
         }
 
+
         /** Plays a note. */
-        function playNote(keyIndex, freq) {
-            if (!synth) return;
+        async function playNote(keyIndex, freq) {
+            // Setup audio and start context on first interaction
+            if (!synth) setupAudio();
+            if (!audioContextStarted) await startAudioContext();
             
-            // Check for "Tap to Release" functionality
             if (currentNotes.has(keyIndex)) {
                 if (sustainActive) {
-                    // Note is playing and sustain is ON: Release it.
+                    // If sustain is on, tapping an active key should release it
                     releaseNote(keyIndex, freq);
                 }
-                // If sustain is OFF, we ignore subsequent play events until keyup/touchend
-                return;
+                return; // Don't re-trigger attack if key is already playing
             }
 
-            // Start the note
             synth.triggerAttack(freq, Tone.now(), 1); 
             currentNotes.set(keyIndex, true); 
             const keyElement = document.getElementById(`key-${keyIndex}`);
@@ -247,21 +332,20 @@
             }
         }
 
-        /** Stops a note. */
+        /** Stops a note (if sustain is off). */
         function stopNote(keyIndex, freq) {
             if (!synth || !currentNotes.has(keyIndex)) return;
 
-            // In non-sustain mode, we release on keyup/touchend/mouseleave
             if (!sustainActive) {
                 releaseNote(keyIndex, freq);
             }
-            // If sustain is ON, only the tap-to-release logic inside playNote can stop it.
+            // If sustain is active, the note remains playing until a subsequent playNote/releaseNote call.
         }
 
         /** Performs the actual Tone.js release and UI update. */
         function releaseNote(keyIndex, freq) {
             if (!currentNotes.has(keyIndex)) return;
-            synth.triggerRelease(freq);
+            synth.triggerRelease(freq); 
             currentNotes.delete(keyIndex);
             
             const keyElement = document.getElementById(`key-${keyIndex}`);
@@ -269,11 +353,74 @@
                 keyElement.classList.remove('active');
             }
         }
+        
+        // --- RECORDING FUNCTIONS ---
+
+        async function toggleRecording() {
+            if (!recorder) setupAudio();
+            if (!audioContextStarted) await startAudioContext();
+
+            const recordButton = document.getElementById('record-button');
+            const stopAllButton = document.getElementById('stop-all-button');
+            
+            if (recordingState === 'idle') {
+                // Start recording
+                try {
+                    await recorder.start();
+                    recordingState = 'recording';
+                    recordButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2"><path fill-rule="evenodd" d="M19.898 3.07a3 3 0 0 1 .46 1.402v15.056c0 .546-.22 1.076-.613 1.458a3 3 0 0 1-1.397.608h-11.4a3 3 0 0 1-1.404-.617 3 3 0 0 1-.61-1.458V4.472a3 3 0 0 1 2.057-2.813c.275-.05.556-.073.837-.073h9.617a3 3 0 0 1 2.376 1.144Z" clip-rule="evenodd" /><path d="M9.75 7.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V7.5ZM12 7.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V7.5ZM14.25 7.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V7.5ZM16.5 7.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V7.5ZM9.75 10.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V10.5ZM12 10.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V10.5ZM14.25 10.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V10.5ZM16.5 10.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V10.5Z" /></svg>Stop & Export Recording`;
+                    recordButton.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+                    recordButton.classList.add('bg-red-600', 'hover:bg-red-500');
+                    stopAllButton.disabled = true;
+                    console.log("Recording started.");
+                } catch (e) {
+                    console.error("Failed to start recorder (needs user gesture first):", e);
+                    // Reset to idle
+                    recordingState = 'idle';
+                    recordButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2"><path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 9a.75.75 0 0 0-1.5 0v3.75h-3.75a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 .75-.75V9Z" clip-rule="evenodd" /></svg>Record Audio`;
+                    recordButton.classList.remove('bg-red-600', 'hover:bg-red-500');
+                    recordButton.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+                }
+            } else if (recordingState === 'recording') {
+                // Stop recording and export
+                stopAllNotes(); // Stop any playing notes
+                recordingState = 'exporting';
+                recordButton.textContent = "Exporting...";
+                recordButton.disabled = true;
+                stopAllButton.disabled = false;
+                
+                try {
+                    const recordingBlob = await recorder.stop();
+                    const url = URL.createObjectURL(recordingBlob);
+                    const anchor = document.createElement("a");
+                    anchor.download = `synth_recording_${Date.now()}.wav`;
+                    anchor.href = url;
+                    anchor.click();
+                    URL.revokeObjectURL(url);
+                    
+                    // Reset state and button
+                    recordingState = 'idle';
+                    recordButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2"><path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 9a.75.75 0 0 0-1.5 0v3.75h-3.75a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 .75-.75V9Z" clip-rule="evenodd" /></svg>Record Audio`;
+                    recordButton.classList.remove('bg-red-600', 'hover:bg-red-500');
+                    recordButton.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+                    recordButton.disabled = false;
+                    console.log("Recording exported.");
+                } catch (e) {
+                    console.error("Failed to stop or export recording:", e);
+                    // Handle failure
+                    recordingState = 'idle';
+                    recordButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2"><path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 9a.75.75 0 0 0-1.5 0v3.75h-3.75a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 .75-.75V9Z" clip-rule="evenodd" /></svg>Record Audio (Failed)`;
+                    recordButton.classList.remove('bg-red-600', 'hover:bg-red-500');
+                    recordButton.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+                    recordButton.disabled = false;
+                }
+            }
+        }
 
         // --- CORE LOGIC: TUNING AND NAMING ---
 
         /**
-         * Calculates the EDO scale naming scheme.
+         * Calculates the EDO scale naming scheme (for all EDO steps).
          * @param {number} EDO - The equal division of the octave.
          * @returns {Array<object>} - Scale data with {step, name}.
          */
@@ -283,16 +430,16 @@
             const stepSizeCents = CENTS_PER_OCTAVE / EDO;
             const P5Steps = Math.round(P5_CENTS / stepSizeCents);
             const scale = [];
-            const namedSteps = new Map(); // Map<step, {name, fifthSpan}>
+            const namedSteps = new Map();
 
-            // Initialize scale array (only name required here)
+            // Initialize scale array
             for (let k = 0; k < EDO; k++) {
                 scale.push({ step: k, name: '' });
             }
 
             // 1. Apply Chain of Fifths Naming (Fbb to Gx)
             for (let i = 0; i < FIFTH_CHAIN.length; i++) {
-                const fifthSpan = i - 15; // C is index 15
+                const fifthSpan = i - 15;
                 let edoStep = (fifthSpan * P5Steps) % EDO;
                 if (edoStep < 0) {
                     edoStep += EDO;
@@ -301,7 +448,6 @@
                 const absFifthSpan = Math.abs(fifthSpan);
 
                 if (!namedSteps.has(edoStep) || namedSteps.get(edoStep).fifthSpan > absFifthSpan) {
-                    // Tie-breaker: keep the name with the smallest absolute fifth span
                     namedSteps.set(edoStep, { name: name, fifthSpan: absFifthSpan });
                 }
             }
@@ -334,7 +480,6 @@
                         const arrow = diff > 0 ? '^' : 'v';
                         const arrows = arrow.repeat(Math.abs(diff));
                         
-                        // Arrows applied before the letter name
                         scale[k].name = arrows + baseName;
                     }
                 }
@@ -343,17 +488,102 @@
             return scale;
         }
 
+        // --- GENERATOR SCALE FUNCTIONS ---
+
+        /** Generates a scale based on a generator, period, and span. */
+        function generateScale() {
+            // 1. Get EDO/Period (from existing input)
+            const periodInput = document.getElementById('edo-input');
+            const period = parseInt(periodInput.value, 10);
+            
+            // 2. Get Generator steps
+            const generator = parseInt(document.getElementById('generator-steps').value, 10);
+            
+            // 3. Get Span (x, y)
+            const generatorsUp = parseInt(document.getElementById('generators-up').value, 10);
+            const generatorsDown = parseInt(document.getElementById('generators-down').value, 10);
+
+            if (isNaN(period) || period <= 0 || isNaN(generator) || isNaN(generatorsUp) || generatorsUp < 0 || isNaN(generatorsDown) || generatorsDown < 0) {
+                console.error("Invalid input for scale generation.");
+                return;
+            }
+
+            // Ensure EDO state is correct for naming/frequency calculations
+            if (EDO !== period) {
+                // If EDO changed, re-initialize EDO/scaleData
+                initializeSynth(period); 
+            }
+            
+            // 4. Calculate unique steps: (k * G) mod P for k in [-y, x]
+            const steps = new Set();
+            
+            // Generators up (k=0 to x)
+            for (let k = 0; k <= generatorsUp; k++) {
+                steps.add((k * generator) % period);
+            }
+            
+            // Generators down (k=-1 to -y)
+            for (let k = -1; k >= -generatorsDown; k--) {
+                let step = (k * generator) % period;
+                if (step < 0) {
+                    step += period; // Correct for negative modulo result
+                }
+                steps.add(step);
+            }
+
+            // 5. Store sorted unique steps
+            generatorScaleSteps = Array.from(steps).sort((a, b) => a - b);
+            
+            // 6. Update UI
+            renderGeneratorOutput();
+            updateKeyLayout();
+        }
+
+        /** Renders the generated scale steps in the output box. */
+        function renderGeneratorOutput() {
+            const output = document.getElementById('scale-output');
+            
+            if (!generatorScaleSteps || generatorScaleSteps.length === 0) {
+                renderScaleOutput(); // Fallback to standard EDO scale display
+                return;
+            }
+
+            const scaleLength = generatorScaleSteps.length;
+            let html = `<div class="text-indigo-400 font-bold">--- GENERATED SCALE (${scaleLength} notes) ---</div>`;
+            html += `<div>Period (EDO): ${EDO} | Generator: ${document.getElementById('generator-steps').value} | Span: ${document.getElementById('generators-up').value},${document.getElementById('generators-down').value}</div>`;
+            
+            generatorScaleSteps.forEach((edoStep, index) => {
+                // Get the EDO name for this step from the pre-calculated EDO scaleData
+                const name = scaleData[edoStep] ? scaleData[edoStep].name : 'N/A';
+                // Theoretical C4 frequency (based on the step's ratio)
+                const freqRatio = Math.pow(2, edoStep / EDO);
+                
+                html += `<div>[${String(index).padStart(String(scaleLength).length, '0')}] EDO Step ${edoStep} (${name.padEnd(8, ' ')}) | Ratio: ${freqRatio.toFixed(6)}</div>`;
+            });
+
+            html += `<button onclick="clearGeneratorScale()" class="mt-2 py-1 px-3 bg-red-700 hover:bg-red-600 text-white text-xs font-bold rounded-lg shadow transition duration-150">
+                Reset to Full EDO Scale
+            </button>`;
+            
+            output.innerHTML = html;
+        }
+
+        /** Resets the synth back to the full linear EDO scale. */
+        function clearGeneratorScale() {
+            generatorScaleSteps = null;
+            renderScaleOutput(); // Render the full EDO steps
+            updateTuningParameters(); // Forces layout update
+        }
+
         // --- UI & EVENT HANDLERS ---
 
         /** Updates tuning parameters and re-initializes the layout. */
         function updateTuningParameters() {
             const cNoteGridInput = document.getElementById('root-key-input');
-            const baseFreqInput = document.getElementById('base-freq-input'); // Read-only for display
-
-            // 1. The target C4 frequency is FIXED as requested
+            const baseFreqInput = document.getElementById('base-freq-input'); 
             const c4FixedFreq = C4_FREQ_REF;
 
-            // 2. Update C-Note Grid Index (the grid key that will be C4)
+            // 1. Update C-Note Grid Index
             const newCNoteGridIndex = parseInt(cNoteGridInput.value, 10);
             if (!isNaN(newCNoteGridIndex) && newCNoteGridIndex >= 0) {
                 cNoteGridIndex = newCNoteGridIndex;
@@ -361,29 +591,27 @@
                 cNoteGridInput.value = cNoteGridIndex;
             }
             
-            // 3. CRUCIAL STEP: Recalculate BaseFreq (Freq of Key 0) 
-            // We need BaseFreq * 2^(cNoteGridIndex / EDO) = c4FixedFreq
-            // Therefore: BaseFreq = c4FixedFreq * Math.pow(2, -cNoteGridIndex / EDO)
-            baseFreq = c4FixedFreq * Math.pow(2, -cNoteGridIndex / EDO);
-
-            // 4. Update Displays
+            // 2. Update Displays
             document.getElementById('base-freq-display').textContent = c4FixedFreq.toFixed(4);
-            // Ensure the readonly input field also displays the fixed value
             baseFreqInput.value = c4FixedFreq.toFixed(4); 
 
-            updateKeyLayout(); // This handles updating the layout and clamping index
+            updateKeyLayout();
         }
 
-
         /** Initializes the synth by updating EDO and rebuilding the scale names. */
-        function initializeSynth() {
+        function initializeSynth(edoValueOverride) {
             const edoInput = document.getElementById('edo-input');
-            const newEDO = parseInt(edoInput.value, 10);
+            const newEDO = edoValueOverride || parseInt(edoInput.value, 10);
             
             if (isNaN(newEDO) || newEDO <= 0 || newEDO > 2147483647) {
                 console.error("Invalid EDO value.");
-                edoInput.value = EDO; // Restore last valid EDO
+                edoInput.value = EDO;
                 return;
+            }
+
+            // If EDO changes, invalidate the generated scale
+            if (EDO !== newEDO) {
+                generatorScaleSteps = null;
             }
 
             EDO = newEDO;
@@ -392,20 +620,22 @@
             document.getElementById('current-edo').textContent = EDO;
 
             renderScaleOutput();
-            updateTuningParameters(); // This handles recalculating baseFreq and updating the layout
+            updateTuningParameters(); 
         }
 
-        /** Renders the calculated scale data (names and virtual frequencies) in the output box. */
+        /** Renders the calculated full EDO scale data. (Used when generator scale is inactive) */
         function renderScaleOutput() {
             const output = document.getElementById('scale-output');
             const stepSizeCents = CENTS_PER_OCTAVE / EDO;
+            const P5Steps = Math.round(P5_CENTS / stepSizeCents);
 
-            let html = `<div>EDO: ${EDO} steps | P5 Steps: ${Math.round(P5_CENTS / stepSizeCents)}</div>`;
+            let html = `<div class="text-emerald-400 font-bold">--- FULL EDO SCALE (${EDO} notes) ---</div>`;
+            html += `<div>P5 Steps: ${P5Steps} | Step Size: ${(stepSizeCents).toFixed(3)} cents</div>`;
             
             scaleData.forEach(s => {
-                // Calculate the theoretical C4 frequency for display, based on C4_FREQ_REF
-                const freq = C4_FREQ_REF * Math.pow(2, s.step / EDO);
-                html += `<div>[${String(s.step).padStart(String(EDO).length, '0')}] ${s.name.padEnd(8, ' ')} ${freq.toFixed(4)} Hz</div>`;
+                // Theoretical C4 frequency (based on the step's ratio)
+                const freqRatio = Math.pow(2, s.step / EDO);
+                html += `<div>[${String(s.step).padStart(String(EDO).length, '0')}] ${s.name.padEnd(8, ' ')} | Ratio: ${freqRatio.toFixed(6)}</div>`;
             });
             output.innerHTML = html;
         }
@@ -420,35 +650,38 @@
             const rows = parseInt(rowsInput.value) || 1;
             const cols = parseInt(colsInput.value) || 1;
             const keySize = parseInt(sizeSlider.value) || 50;
+            const totalKeys = rows * cols;
 
             document.getElementById('key-size-value').textContent = keySize;
-            const totalKeys = rows * cols;
             document.getElementById('total-keys').textContent = totalKeys;
 
             const grid = document.getElementById('keyboard-grid');
             grid.innerHTML = ''; // Clear existing keys
             grid.style.gridTemplateColumns = `repeat(${cols}, ${keySize}px)`;
             grid.style.gridTemplateRows = `repeat(${rows}, ${keySize}px)`;
-            grid.classList.add('grid', 'gap-0.5'); // Ensure grid properties are present
+            grid.classList.add('grid', 'gap-0.5');
 
             if (scaleData.length === 0) {
                  grid.innerHTML = `<p class="text-gray-500 p-10">Scale not initialized (EDO = ${EDO} not calculated).</p>`;
                  return;
             }
             
-            // --- NEW LOGIC FOR CLAMPING C-Note Grid Index ---
+            // Determine the scale steps to use (Generated or Full EDO)
+            const scaleToUse = generatorScaleSteps || Array.from({ length: EDO }, (_, i) => i);
+            const scaleLength = scaleToUse.length;
+            
+            // --- C-NOTE CLAMPING AND REFERENCE POINT ---
             if (cNoteGridIndex >= totalKeys) {
                 cNoteGridIndex = Math.max(0, totalKeys - 1); // Clamp to the last key or 0
                 cNoteGridInput.value = cNoteGridIndex;
-                updateTuningParameters(); // Recalculate baseFreq based on new clamped index
-                return; // Redraw happens after successful calculation/initialization
+                // Recursive call to ensure parameters are consistent before building
+                updateTuningParameters(); 
+                return;
             }
             cNoteGridInput.max = totalKeys - 1; 
-            // --------------------------------------------------
 
             // Stop all currently playing notes before redrawing
             currentNotes.forEach((_, keyIndex) => {
-                // We need to look up the frequency from the old key element if it still exists
                 const keyElement = document.getElementById(`key-${keyIndex}`);
                 if (keyElement) {
                     const freq = parseFloat(keyElement.getAttribute('data-freq'));
@@ -459,28 +692,33 @@
 
             for (let i = 0; i < totalKeys; i++) {
                 
-                // 1. Calculate the total steps away from the C-Note key (cNoteGridIndex).
-                const stepFromCNote = i - cNoteGridIndex;
+                // 1. Determine the EDO Step and Octave Index for key i using the defined scale
+                const stepInScaleIndex = i % scaleLength;
+                const octaveIndex = Math.floor(i / scaleLength);
+                const currentEdoStepValue = scaleToUse[stepInScaleIndex];
                 
-                // 2. Calculate the EDO step index (0 to EDO-1) for naming purposes
-                let edoIndex = stepFromCNote % EDO;
-                if (edoIndex < 0) {
-                    edoIndex += EDO; // Ensure positive EDO index
-                }
+                // 2. Calculate the Total EDO Steps from the absolute root (0) for key i
+                const totalEdoSteps = currentEdoStepValue + (octaveIndex * EDO);
                 
-                // 3. Calculate actual frequency: BaseFreq is the frequency of key 0 (i=0).
-                // The frequency calculation is relative to the calculated baseFreq (Freq of key 0).
-                const totalStepsFromKeyZero = i;
-                const actualFreq = baseFreq * Math.pow(2, totalStepsFromKeyZero / EDO);
-                
-                // 4. Determine the octave number for naming (4 is the C octave at the base freq region)
-                // The octave shift is based on the total steps from the C-Note key (cNoteGridIndex).
-                const octaveShift = Math.floor(stepFromCNote / EDO);
-                const octaveNum = 4 + octaveShift;
+                // 3. Calculate Actual Frequency (relative to the fixed C4_FREQ_REF)
+                // Find the EDO step value that is the C4 reference note (the scale root at the C4 position)
+                const c4KeyIndexInScale = cNoteGridIndex % scaleLength;
+                const c4EdoStepValue = scaleToUse[c4KeyIndexInScale]; 
+                const c4OctaveIndex = Math.floor(cNoteGridIndex / scaleLength);
+                const c4TotalEdoSteps = c4EdoStepValue + (c4OctaveIndex * EDO); // Total EDO steps from EDO 0
 
-                // 5. Get the name from the calculated scale names
-                const stepData = scaleData[edoIndex];
+                // The difference in EDO steps dictates the frequency ratio
+                const stepsDifference = totalEdoSteps - c4TotalEdoSteps;
+                const actualFreq = C4_FREQ_REF * Math.pow(2, stepsDifference / EDO);
                 
+                // 4. Determine the octave number for naming (Octave 4 starts at C4)
+                // The octave number is derived from the step difference in full octaves (EDO) from C4's EDO step value
+                const totalOctaveDifference = Math.floor((totalEdoSteps - c4EdoStepValue) / EDO);
+                const octaveNum = 4 + totalOctaveDifference;
+
+                // 5. Get the name from the full EDO scale data
+                const stepData = scaleData[currentEdoStepValue];
+
                 // 6. Create the key element
                 const key = document.createElement('div');
                 key.id = `key-${i}`;
@@ -490,54 +728,34 @@
                 key.setAttribute('data-freq', actualFreq);
                 key.setAttribute('data-key-index', i);
                 
-                // Highlight the C-Note key
-                if (i === cNoteGridIndex && octaveNum === 4) {
+                // Highlight the C4-Note key
+                const isC4 = (i === cNoteGridIndex);
+                if (isC4) {
                     key.style.backgroundColor = '#059669'; /* Darker Emerald for C4-note */
-                    key.innerHTML = `<span class="key-name text-white font-bold">${stepData.name}${octaveNum} (C4)</span>`;
-                    
-                    // Sanity check: Log the C4 frequency
-                    if (Math.abs(actualFreq - C4_FREQ_REF) > 0.000001) {
-                         console.warn(`C4 note frequency mismatch: Expected ${C4_FREQ_REF}, Got ${actualFreq}`);
-                    }
+                    key.innerHTML = `<span class="key-name text-white font-bold">${stepData.name}${octaveNum} (Root/C4)</span>`;
                 } else {
                     key.innerHTML = `<span class="key-name">${stepData.name}${octaveNum}</span>`;
                 }
 
-
                 // Add event listeners for both mouse and touch
-                // MOUSE DOWN: Play or Tap-to-Release
                 key.addEventListener('mousedown', (e) => {
-                    // Prevent text selection on click/drag, which is fine for desktop UX.
                     e.preventDefault(); 
-                    if (Tone.context.state !== 'running') return; 
                     playNote(i, actualFreq);
                 });
-                // MOUSE UP: Stop only if not sustaining
                 key.addEventListener('mouseup', () => {
                     stopNote(i, actualFreq);
                 });
-                // MOUSE LEAVE: Stop only if not sustaining
                 key.addEventListener('mouseleave', () => {
                     stopNote(i, actualFreq);
                 });
 
-                // --- MODIFIED TOUCH LISTENERS FOR SCROLLING ---
-                // Removed e.preventDefault() from touchstart/touchend to allow vertical page scrolling
-                // to start even when the initial touch point is on a key.
-                
-                // TOUCH START: Play or Tap-to-Release
                 key.addEventListener('touchstart', (e) => {
-                    // e.preventDefault() REMOVED to allow scrolling
-                    if (Tone.context.state !== 'running') return; 
                     playNote(i, actualFreq);
                 }, { passive: true });
                 
-                // TOUCH END: Stop only if not sustaining
                 key.addEventListener('touchend', (e) => {
-                    // e.preventDefault() REMOVED to allow scrolling
                     stopNote(i, actualFreq);
                 }, { passive: true });
-                // --- END MODIFIED TOUCH LISTENERS ---
 
                 grid.appendChild(key);
             }
@@ -549,13 +767,16 @@
                 console.error("Tone.js not loaded. Cannot start synth.");
                 return;
             }
+            
             // Set initial control values
             document.getElementById('rows-input').value = 4;
             document.getElementById('cols-input').value = 8;
             document.getElementById('key-size').value = 50;
-            // baseFreq input is now readonly, reflecting C4_FREQ_REF
             document.getElementById('base-freq-input').value = C4_FREQ_REF;
             document.getElementById('root-key-input').value = cNoteGridIndex; 
+            document.getElementById('generator-steps').value = 7;
+            document.getElementById('generators-up').value = 7;
+            document.getElementById('generators-down').value = 5;
 
             // Update range display immediately
             updateVolume();
@@ -563,20 +784,38 @@
                 document.getElementById('key-size-value').textContent = document.getElementById('key-size').value;
             });
             
-            // Set up initial scale and layout
-            initializeSynth();
-            
+            // Initial setup of EDO and layout (Audio context will start on first user interaction)
+            initializeSynth(); 
+            setupAudio(); // Initialize all Tone objects (synth, gain, recorder)
+
+            // --- WEB AUDIO CONTEXT STABILITY FIX ---
+            // Listen for visibility changes to stop notes and resume the context.
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    // When the tab is backgrounded, stop all currently playing notes.
+                    // This prevents notes from hanging or causing glitches when the context is suspended.
+                    stopAllNotes(); 
+                    console.log("Tab hidden (context likely suspended), stopping all notes.");
+                } else {
+                    // When the tab returns to the foreground, attempt to resume the context.
+                    // This ensures the audio engine restarts reliably.
+                    if (audioContextStarted && Tone.context.state !== 'running') {
+                        Tone.context.resume().then(() => {
+                            console.log("Audio Context resumed from background.");
+                        });
+                    }
+                }
+            });
+
+
             // Allow keyboard input (using bottom rows of keys)
             const keyboardMap = {
-                // Lower row (start at key 0)
                 'z': 0, 'x': 1, 'c': 2, 'v': 3, 'b': 4, 'n': 5, 'm': 6, ',': 7, 
-                // Upper row (start at key 8)
                 'a': 8, 's': 9, 'd': 10, 'f': 11, 'g': 12, 'h': 13, 'j': 14, 'k': 15,
-                // Top row (start at key 16)
                 'q': 16, 'w': 17, 'e': 18, 'r': 19, 't': 20, 'y': 21, 'u': 22, 'i': 23
             };
 
-            const keyStates = new Map(); // Tracks physical key presses 
+            const keyStates = new Map();
 
             document.addEventListener('keydown', (e) => {
                 const keyIndex = keyboardMap[e.key.toLowerCase()];
@@ -587,7 +826,7 @@
                         
                         if (!keyStates.has(e.key.toLowerCase())) {
                             keyStates.set(e.key.toLowerCase(), true);
-                            playNote(keyIndex, freq); // Calls playNote which handles tap-to-release
+                            playNote(keyIndex, freq);
                         }
                     }
                 }
@@ -600,7 +839,6 @@
                     const keyElement = document.getElementById(`key-${keyIndex}`);
                     if (keyElement) {
                         const freq = parseFloat(keyElement.getAttribute('data-freq'));
-                        // This uses stopNote, which respects the sustain setting
                         stopNote(keyIndex, freq); 
                     }
                 }
