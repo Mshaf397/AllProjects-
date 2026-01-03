@@ -1321,34 +1321,38 @@
                 output.nodes.push(osc);
             }
 
-            // --- Apply Envelope ---
+                        // --- Apply Envelope ---
             const env = gain.gain;
             env.cancelScheduledValues(time);
             env.setValueAtTime(0.0001, time); 
             
             const finalDuration = isDrum ? decay : Math.max(attack, release); 
-            
+            const endTime = time + Math.max(partDuration, finalDuration) + stopOffset;
+
             env.linearRampToValueAtTime(peakVolume, time + attack); 
             env.linearRampToValueAtTime(peakVolume * 0.9, time + decay); 
-            env.exponentialRampToValueAtTime(0.0001, time + release); 
+            env.exponentialRampToValueAtTime(0.0001, endTime); 
 
-            output.cleanup = () => {
-                output.nodes.forEach(node => {
-                    try {
-                        if (typeof node.stop === 'function') {
-                            node.stop(audioContext.currentTime); 
-                        }
-                    } catch (e) {}
-                    try {
-                        node.disconnect(); 
-                    } catch (e) {}
-                });
-            };
-            
-            setTimeout(output.cleanup, (finalDuration + stopOffset + 0.1) * 1000); 
+            // Use the oscillator's onended event instead of setTimeout for cleanup
+            // This is more reliable for long exports and background rendering
+            if (osc) {
+                osc.onended = () => {
+                    output.nodes.forEach(node => {
+                        try { node.disconnect(); } catch (e) {}
+                    });
+                };
+            } else {
+                // Fallback for buffer-based instruments (like guitar/drums)
+                setTimeout(() => {
+                    output.nodes.forEach(node => {
+                        try { node.disconnect(); } catch (e) {}
+                    });
+                }, (endTime - time + 0.5) * 1000);
+            }
 
             return output;
         }
+
         
         function playNote(partIndex, frequency, time, duration, modifier) {
             const timbre = partStates[partIndex].timbre;
