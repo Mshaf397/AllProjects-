@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhoneRank | Smartphone Rating Database</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
+    <style>
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2 cursor-pointer" id="logo-home">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+                <h1 class="font-bold text-xl tracking-tight">PhoneRank</h1>
+            </div>
+            <div id="user-id-display" class="text-[10px] text-slate-400 font-mono bg-slate-100 px-2 py-1 rounded">Connecting...</div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Home View -->
+        <div id="home-view" class="space-y-12">
+            <!-- Form -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center gap-2 mb-6 text-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="16"/><line x1="8" x2="16" y1="12" y2="12"/></svg>
+                    <h2 class="text-lg font-semibold">Add New Device</h2>
+                </div>
+                <form id="phone-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-500 uppercase px-1">Brand</label>
+                        <input required id="f-brand" placeholder="e.g. Apple" class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-500 uppercase px-1">Model Name</label>
+                        <input required id="f-model" placeholder="e.g. iPhone 15 Pro" class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-500 uppercase px-1">Release Date</label>
+                        <input required id="f-date" type="date" class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-500 uppercase px-1">Score (0-100)</label>
+                        <input required id="f-score" type="number" min="0" max="100" placeholder="85" class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                    </div>
+                    <button type="submit" id="submit-btn" class="md:col-span-2 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50">
+                        Submit Rating
+                    </button>
+                </form>
+            </section>
+
+            <!-- Brands Grid -->
+            <section>
+                <div class="flex items-center gap-2 mb-6 text-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                    <h2 class="text-lg font-semibold">Browse by Brand</h2>
+                </div>
+                <div id="brands-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    <!-- Brands injected here -->
+                </div>
+            </section>
+        </div>
+
+        <!-- Brand Detail View -->
+        <div id="brand-view" class="hidden space-y-6">
+            <button id="back-to-home" class="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                Back to Brands
+            </button>
+            <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-end mb-8">
+                    <h2 id="view-brand-name" class="text-4xl font-extrabold text-slate-900">Brand</h2>
+                    <span id="view-brand-count" class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">0 Devices</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="text-left border-b border-slate-100">
+                                <th class="pb-4 font-bold text-slate-400 text-xs uppercase tracking-wider">Model</th>
+                                <th class="pb-4 font-bold text-slate-400 text-xs uppercase tracking-wider">Released</th>
+                                <th class="pb-4 font-bold text-slate-400 text-xs uppercase tracking-wider text-right">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="phones-table-body" class="divide-y divide-slate-50">
+                            <!-- Rows injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        // --- Config & Init ---
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'phone-db-html';
+
+        let currentUser = null;
+        let allPhones = [];
+        let currentBrand = null;
+
+        // UI References
+        const homeView = document.getElementById('home-view');
+        const brandView = document.getElementById('brand-view');
+        const phonesTableBody = document.getElementById('phones-table-body');
+        const brandsContainer = document.getElementById('brands-container');
+        const phoneForm = document.getElementById('phone-form');
+        const userIdDisplay = document.getElementById('user-id-display');
+
+        // --- Auth Workflow (RULE 3) ---
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Auth Failed", err);
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                userIdDisplay.textContent = `UID: ${user.uid.slice(0, 8)}`;
+                setupDataListener();
+            }
+        });
+
+        // --- Data Listener (RULE 1 & 2) ---
+        function setupDataListener() {
+            if (!currentUser) return;
+            
+            const phonesCol = collection(db, 'artifacts', appId, 'public', 'data', 'phones');
+            
+            // Real-time snapshot (No complex queries - RULE 2)
+            onSnapshot(phonesCol, (snapshot) => {
+                allPhones = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderBrands();
+                if (currentBrand) renderBrandDetails(currentBrand);
+            }, (err) => console.error("Firestore Error:", err));
+        }
+
+        // --- Rendering Logic ---
+        function renderBrands() {
+            const brands = [...new Set(allPhones.map(p => p.brand))].sort();
+            brandsContainer.innerHTML = '';
+
+            if (brands.length === 0) {
+                brandsContainer.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400 border border-dashed border-slate-300 rounded-2xl">No brands added yet.</div>`;
+                return;
+            }
+
+            brands.forEach(brand => {
+                const btn = document.createElement('button');
+                btn.className = "group p-6 bg-white border border-slate-200 rounded-2xl text-center hover:border-blue-500 hover:shadow-md transition-all active:scale-95";
+                btn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 mx-auto mb-3 text-slate-300 group-hover:text-blue-500 transition-colors"><path d="M12 2H2v10h10V2z"/><path d="m17 15 3 3-3 3"/><path d="M11 18h7"/><path d="M21 2h-10v10h10V2z"/></svg>
+                    <span class="font-bold text-slate-700 group-hover:text-blue-600">${brand}</span>
+                `;
+                btn.onclick = () => showBrand(brand);
+                brandsContainer.appendChild(btn);
+            });
+        }
+
+        function renderBrandDetails(brand) {
+            currentBrand = brand;
+            const filtered = allPhones
+                .filter(p => p.brand === brand)
+                .sort((a, b) => new Date(b.releaseDate) - new Date(a.releaseDate));
+
+            document.getElementById('view-brand-name').textContent = brand;
+            document.getElementById('view-brand-count').textContent = `${filtered.length} Devices`;
+            
+            phonesTableBody.innerHTML = '';
+            filtered.forEach(p => {
+                const scoreClass = p.score >= 80 ? 'bg-green-100 text-green-700' : p.score >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
+                const row = document.createElement('tr');
+                row.className = "group hover:bg-slate-50/50 transition-colors";
+                row.innerHTML = `
+                    <td class="py-5 font-bold text-slate-800">${p.model}</td>
+                    <td class="py-5 text-slate-500 text-sm">${p.releaseDate}</td>
+                    <td class="py-5 text-right">
+                        <span class="text-sm font-black px-2.5 py-1 rounded-lg ${scoreClass}">${p.score}</span>
+                    </td>
+                `;
+                phonesTableBody.appendChild(row);
+            });
+        }
+
+        // --- Navigation ---
+        function showBrand(brand) {
+            homeView.classList.add('hidden');
+            brandView.classList.remove('hidden');
+            renderBrandDetails(brand);
+            window.scrollTo(0, 0);
+        }
+
+        document.getElementById('back-to-home').onclick = () => {
+            brandView.classList.add('hidden');
+            homeView.classList.remove('hidden');
+            currentBrand = null;
+        };
+
+        document.getElementById('logo-home').onclick = () => {
+            brandView.classList.add('hidden');
+            homeView.classList.remove('hidden');
+            currentBrand = null;
+        };
+
+        // --- Form Submission ---
+        phoneForm.onsubmit = async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<div class="flex items-center justify-center gap-2"><div class="loading-spinner"></div> Saving...</div>`;
+
+            try {
+                const payload = {
+                    brand: document.getElementById('f-brand').value,
+                    model: document.getElementById('f-model').value,
+                    releaseDate: document.getElementById('f-date').value,
+                    score: parseInt(document.getElementById('f-score').value),
+                    timestamp: Date.now()
+                };
+
+                const phonesCol = collection(db, 'artifacts', appId, 'public', 'data', 'phones');
+                await addDoc(phonesCol, payload);
+                phoneForm.reset();
+            } catch (err) {
+                console.error("Save error", err);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Submit Rating";
+            }
+        };
+
+        // Start App
+        initAuth();
+
+    </script>
+</body>
+</html>
+
