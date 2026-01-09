@@ -1362,11 +1362,12 @@
         // --- Export & Other utility functions (Replicated) ---
 
         function bufferToWav(abuffer) {
-    let numOfChan = abuffer.numberOfChannels,
-        length = abuffer.length * numOfChan * 2 + 44,
-        buffer = new ArrayBuffer(length),
-        view = new DataView(buffer),
-        channels = [], i, sample, offset = 0, pos = 0;
+    const numOfChan = abuffer.numberOfChannels;
+    const length = abuffer.length * numOfChan * 4 + 44;
+    const buffer = new ArrayBuffer(length);
+    const view = new DataView(buffer);
+    const channels = [];
+    let pos = 0;
 
     const setUint16 = (data) => { view.setUint16(pos, data, true); pos += 2; };
     const setUint32 = (data) => { view.setUint32(pos, data, true); pos += 4; };
@@ -1376,56 +1377,64 @@
     setUint32(0x45564157);                         // "WAVE"
     setUint32(0x20746d66);                         // "fmt " chunk
     setUint32(16);                                 // length = 16
-    setUint16(1);                                  // PCM
+    setUint16(3);                                  // 3 = IEEE Float (Better than 1 = PCM for quality)
     setUint16(numOfChan);
     setUint32(abuffer.sampleRate);
-    setUint32(abuffer.sampleRate * 2 * numOfChan);
-    setUint16(numOfChan * 2);
-    setUint16(16);                                 // 16-bit
+    setUint32(abuffer.sampleRate * 4 * numOfChan);
+    setUint16(numOfChan * 4);
+    setUint16(32);                                 // 32-bit
     setUint32(0x61746164);                         // "data"
     setUint32(length - pos - 4);
 
-    for(i = 0; i < numOfChan; i++) channels.push(abuffer.getChannelData(i));
-    while(pos < length) {
-        for(i = 0; i < numOfChan; i++) {
-            sample = Math.max(-1, Math.min(1, channels[i][offset]));
-            sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
-            view.setInt16(pos, sample, true);
-            pos += 2;
+    for (let i = 0; i < numOfChan; i++) channels.push(abuffer.getChannelData(i));
+    
+    let offset = 0;
+    while (pos < length) {
+        for (let i = 0; i < numOfChan; i++) {
+            // Write raw float32 samples directly
+            view.setFloat32(pos, channels[i][offset], true);
+            pos += 4;
         }
         offset++;
     }
-    return new Blob([buffer], {type: "audio/wav"});
+    return new Blob([buffer], { type: "audio/wav" });
 }
+
 
 
         
         async function exportAudio() {
     if (isRendering || !$exportButton) return;
 
-    if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    // Use current hardware sample rate for best fidelity
+    const sampleRate = audioContext ? audioContext.sampleRate : 44100;
     if (isPlaying) stopPlayback();
-
     if (!reparseSequences() || globalLoopDuration === 0) return;
 
     isRendering = true;
-    $exportButton.textContent = 'Rendering WAV...';
+    $exportButton.textContent = 'Rendering High-Res...';
     $exportButton.disabled = true;
-    if ($status) $status.textContent = 'Rendering high-quality WAV...';
 
-    // 1. Create the Offline Context
-    const offlineCtx = new OfflineAudioContext(2, Math.ceil(audioContext.sampleRate * globalLoopDuration), audioContext.sampleRate);
+    // 1. Create the Offline Context with matching sample rate
+    const offlineCtx = new OfflineAudioContext(2, Math.ceil(sampleRate * globalLoopDuration), sampleRate);
     
-    // 2. Temporarily point the global audioContext to the offline one so createInstrument() uses it
+    // 2. Temporarily redirect global state
     const liveCtx = audioContext;
-    audioContext = offlineCtx;
+    const liveMasterGain = masterGain;
+    const liveFilters = { low: lowFilter, mid: midFilter, high: highFilter };
     
-    // Reset the audio chain on the offline context
-    masterGain = null;
+    audioContext = offlineCtx;
+    masterGain = null; // Forces setupAudioChain to rebuild on offlineCtx
+    
     setupAudioChain();
+    
+    // Copy EQ settings from UI to the offline filters
+    lowFilter.gain.setValueAtTime(parseFloat($lowGain.value), 0);
+    midFilter.gain.setValueAtTime(parseFloat($midGain.value), 0);
+    highFilter.gain.setValueAtTime(parseFloat($highGain.value), 0);
 
-    // 3. Schedule all parts onto the offline context
-    partStates.forEach((part, partIndex) => {
+    // 3. Schedule events
+    partStates.forEach((part) => {
         const result = parseSequence(part.sequence.replace(/[\r\n]+/g, ' ').trim(), tempoBPM, part);
         result.events.forEach(event => {
             event.steps.forEach(step => {
@@ -1435,26 +1444,29 @@
         });
     });
 
-    // 4. Render and Export
+    // 4. Render
     const renderedBuffer = await offlineCtx.startRendering();
     
-    // Restore the live context
+    // 5. Restore live environment
     audioContext = liveCtx;
-    masterGain = null;
-    setupAudioChain();
+    masterGain = liveMasterGain;
+    lowFilter = liveFilters.low;
+    midFilter = liveFilters.mid;
+    highFilter = liveFilters.high;
 
     const wavBlob = bufferToWav(renderedBuffer);
     const url = URL.createObjectURL(wavBlob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `microtonal_workstation_${new Date().getTime()}.wav`;
+    a.download = `high_quality_render_${new Date().getTime()}.wav`;
     a.click();
 
     isRendering = false;
     $exportButton.textContent = 'Export Audio (WAV)';
     $exportButton.disabled = false;
-    if ($status) $status.textContent = 'Export Complete (WAV)';
+    if ($status) $status.textContent = 'High-Res Export Complete';
 }
+
 
 
         function toggleLooping(forceUpdate = false) {
