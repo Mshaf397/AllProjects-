@@ -1363,7 +1363,7 @@
 
         function bufferToWav(abuffer) {
     const numOfChan = abuffer.numberOfChannels;
-    const length = abuffer.length * numOfChan * 4 + 44;
+    const length = abuffer.length * numOfChan * 8 + 44; // 8 bytes for 64-bit
     const buffer = new ArrayBuffer(length);
     const view = new DataView(buffer);
     const channels = [];
@@ -1377,26 +1377,27 @@
     setUint32(0x45564157);                         // "WAVE"
     setUint32(0x20746d66);                         // "fmt " chunk
     setUint32(16);                                 // length = 16
-    setUint16(3);                                  // 3 = IEEE Float (Better than 1 = PCM for quality)
-    setUint16(numOfChan);
-    setUint32(abuffer.sampleRate);
-    setUint32(abuffer.sampleRate * 4 * numOfChan);
-    setUint16(numOfChan * 4);
-    setUint16(32);                                 // 32-bit
+    // Change format tag from 3 (32-bit float) to 3 (standard float) but ensure bits are set
+setUint16(3);                                  // 3 = IEEE Float
+setUint16(numOfChan);
+setUint32(abuffer.sampleRate);
+setUint32(abuffer.sampleRate * 8 * numOfChan); // 8 bytes per sample for 64-bit
+setUint16(numOfChan * 8);                      // 8 bytes per sample
+setUint16(64);                                 // 64-bit depth
     setUint32(0x61746164);                         // "data"
     setUint32(length - pos - 4);
 
     for (let i = 0; i < numOfChan; i++) channels.push(abuffer.getChannelData(i));
     
     let offset = 0;
-    while (pos < length) {
-        for (let i = 0; i < numOfChan; i++) {
-            // Write raw float32 samples directly
-            view.setFloat32(pos, channels[i][offset], true);
-            pos += 4;
-        }
-        offset++;
+while (pos < length) {
+    for (let i = 0; i < numOfChan; i++) {
+        // Use setFloat64 for the 64-bit floating point standard
+        view.setFloat64(pos, channels[i][offset], true);
+        pos += 8;
     }
+    offset++;
+}
     return new Blob([buffer], { type: "audio/wav" });
 }
 
@@ -1407,7 +1408,7 @@
     if (isRendering || !$exportButton) return;
 
     // Use current hardware sample rate for best fidelity
-    const sampleRate = audioContext ? audioContext.sampleRate : 44100;
+    const sampleRate = audioContext ? audioContext.sampleRate : 96000;
     if (isPlaying) stopPlayback();
     if (!reparseSequences() || globalLoopDuration === 0) return;
 
