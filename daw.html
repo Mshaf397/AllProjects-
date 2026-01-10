@@ -248,7 +248,7 @@
 
     <script>
         // --- 1. Global Constants and State ---
-        const MAX_PARTS = 32;
+        const MAX_PARTS = 256;
         const DEFAULT_ROOT_FREQ = 261.6256; 
         
         // Initial Part State: Added note naming properties
@@ -257,7 +257,7 @@
                 edo: 31, 
                 timbre: 'triangle', 
                 // Example sequence using multiple micro accidentals for 31edo
-                sequence: 'C4 Eb4 G4(2), ^^A4 vvB4(4), F3 Bb3(4)', 
+                sequence: 'C4 Eb4 G4(1)', 
                 customScale: [], 
                 isScaleMode: false, 
                 scaleInputText: '',
@@ -300,7 +300,7 @@
         const DEFAULT_NEW_PART = {
             edo: 12,
             timbre: 'triangle',
-            sequence: 'C4 E4 G4(4), D4 F#4 A4(4)',
+            sequence: 'C4 Eb4 G4(1)',
             customScale: [],
             isScaleMode: false,
             scaleInputText: '',
@@ -373,7 +373,8 @@
                 'Fbb': -15, 'Cbb': -14, 'Gbb': -13, 'Dbb': -12, 'Abb': -11, 'Ebb': -10, 'Bbb': -9, 'Fb': -8,
                 'Cb': -7, 'Gb': -6, 'Db': -5, 'Ab': -4, 'Eb': -3, 'Bb': -2, 'F': -1, 'C': 0, 'G': 1, 
                 'D': 2, 'A': 3, 'E': 4, 'B': 5, 'F#': 6, 'C#': 7, 'G#': 8, 'D#': 9, 'A#': 10, 
-                'E#': 11, 'B#': 12, 'Fx': 13, 'Cx': 14, 'Gx': 15, 'Dx': 16, 'Ax': 17, 'Ex': 18, 'Bx': 19
+                'E#': 11, 'B#': 12, 'Fx': 13, 'Cx': 14, 'Gx': 15, 'Dx': 16, 'Ax': 17, 'Ex': 18, 'Bx': 19,
+                'Fx#': 20, 'Cx#': 21, 'Gx#': 22, 'Dx#': 23, 'Ax#': 24, 'Ex#': 25, 'Bx#': 26
             };
             
             // 2. Map all note names to EDO steps relative to C-natural (0 to EDO-1)
