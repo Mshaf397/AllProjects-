@@ -370,6 +370,8 @@
 
             // Base notes and their index in the circle of fifths (C=0). Covers Fbb (-15) to Bx (+19).
             const fifthsIndex = {
+                'Fbbbb': -29, 'Cbbbb': -28, 'Gbbbb': -27, 'Dbbbb': -26, 'Abbbb': -25, 'Ebbbb': -24, 'Bbbbb': -23,
+                'Fbbb': -22, 'Cbbb': -21, 'Gbbb': -20, 'Dbbb': -19, 'Abbb': -18, 'Ebbb': -17, 'Bbbb': -16,
                 'Fbb': -15, 'Cbb': -14, 'Gbb': -13, 'Dbb': -12, 'Abb': -11, 'Ebb': -10, 'Bbb': -9, 'Fb': -8,
                 'Cb': -7, 'Gb': -6, 'Db': -5, 'Ab': -4, 'Eb': -3, 'Bb': -2, 'F': -1, 'C': 0, 'G': 1, 
                 'D': 2, 'A': 3, 'E': 4, 'B': 5, 'F#': 6, 'C#': 7, 'G#': 8, 'D#': 9, 'A#': 10, 
@@ -384,7 +386,6 @@
                 
                 // Ensure step is positive (0 to EDO-1)
                 let step = (cStep < 0 ? cStep + edo : cStep);
-
                 result.noteToStep[name] = step;
                 
                 // For stepToNote, prefer the name with the fewest accidentals (shortest string)
@@ -1187,8 +1188,8 @@
                     osc = audioContext.createOscillator();
                     osc.type = 'sawtooth';
                     attack = 0.001; 
-                    decay = actualDuration * 0.1;
-                    release = actualDuration * 0.2;
+                    decay = actualDuration * 0.45;
+                    release = actualDuration * 0.5;
                     peakVolume = 0.7;
                     break;
 
