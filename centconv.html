@@ -22,7 +22,7 @@
         const decimalToFraction = (decimal) => {
             if (decimal === 0) return '0/1';
 
-            const tolerance = 1.0E-6; // Set a tolerance for floating point errors
+            const tolerance = 1.0E-30; // Set a tolerance for floating point errors
             let numerator = 1;
             let denominator = 1;
             let error = Math.abs(decimal - numerator / denominator);
@@ -234,7 +234,7 @@
             const cents = ratioToCents(ratio);
 
             // Display the result, formatted to a few decimal places for readability
-            centsResult.textContent = cents.toFixed(4);
+            centsResult.textContent = cents.toFixed(10);
         }
 
         // Add event listener to the cents input for 'Enter' key press
