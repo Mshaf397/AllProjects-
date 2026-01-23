@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Leap Year System Generator</title>
+    <title>Custom Leap Year & Calendar Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .custom-scrollbar::-webkit-scrollbar {
@@ -18,29 +18,35 @@
         }
         .year-card {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
         }
         .year-card:hover {
             transform: translateY(-2px);
         }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+        }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-900 font-sans">
+<body class="bg-slate-50 min-h-screen text-slate-900 font-sans pb-20">
 
-    <div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto px-4 py-8">
         <header class="mb-10 text-center">
             <h1 class="text-4xl font-extrabold text-indigo-700 tracking-tight mb-2">
-                Leap Year Engine
+                Orbital Engine & Calendar
             </h1>
-            <p class="text-slate-500 italic">Generate perfectly distributed orbital calendars</p>
+            <p class="text-slate-500 italic">Define cycles, distribute years, and generate planetary calendars</p>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <!-- Sidebar Controls -->
-            <aside class="md:col-span-1 space-y-6">
+            <aside class="lg:col-span-4 space-y-6">
+                <!-- Leap Year Settings -->
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                     <h2 class="text-lg font-bold mb-4 flex items-center text-slate-700">
                         <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        Parameters
+                        Leap Year Settings
                     </h2>
                     
                     <div class="space-y-4">
@@ -53,48 +59,76 @@
                             <input id="yearsInput" type="number" value="4" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-mono">
                         </div>
                     </div>
+                </div>
 
-                    <div class="mt-8 p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                        <h3 class="text-xs font-bold text-indigo-700 uppercase mb-2">The Rulebook</h3>
-                        <ul class="text-[11px] text-indigo-900 space-y-2 leading-relaxed opacity-80">
-                            <li>• $d = \text{round}(\text{days} / \text{years})$</li>
-                            <li>• Round Down $\rightarrow$ Leap is $d + 1$</li>
-                            <li>• Round Up $\rightarrow$ Leap is $d - 1$</li>
-                            <li>• Distribution uses Bresenham spacing</li>
-                        </ul>
+                <!-- Calendar Settings -->
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                    <h2 class="text-lg font-bold mb-4 flex items-center text-slate-700">
+                        <svg class="w-5 h-5 mr-2 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Calendar Settings
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Months per Year</label>
+                            <input id="monthsInput" type="number" value="12" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Target Year (to view)</label>
+                            <div class="flex gap-2">
+                                <input id="targetYearInput" type="number" value="1" min="1" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-mono">
+                                <button id="viewBtn" class="bg-emerald-600 text-white px-4 rounded-xl hover:bg-emerald-700 transition-colors">View</button>
+                            </div>
+                        </div>
                     </div>
+                </div>
+
+                <div class="p-4 bg-slate-100 rounded-2xl border border-slate-200">
+                    <h3 class="text-xs font-bold text-slate-700 uppercase mb-2">Technical Note</h3>
+                    <p class="text-[11px] text-slate-600 leading-relaxed">
+                        Year 1 is the first year of the first cycle. If days are not divisible by months, the generator distributes the "extra" days to the earliest months of the year. Weeks are fixed at 7 days.
+                    </p>
                 </div>
             </aside>
 
-            <!-- Main Content -->
-            <main class="md:col-span-2 space-y-6">
-                <!-- Summary Stats -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Common Year</span>
-                        <div id="commonYearResult" class="text-3xl font-black text-slate-700">--</div>
+            <!-- Main Content Area -->
+            <main class="lg:col-span-8 space-y-6">
+                
+                <!-- Quick Look Section -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase block">Common Year</span>
+                        <div id="commonYearResult" class="text-xl font-black text-slate-700">--</div>
                     </div>
-                    <div class="bg-indigo-600 p-5 rounded-3xl shadow-indigo-200 shadow-xl">
-                        <span class="text-[10px] font-bold text-indigo-200 uppercase tracking-widest block mb-1">Leap Year</span>
-                        <div id="leapYearResult" class="text-3xl font-black text-white">--</div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase block">Leap Year</span>
+                        <div id="leapYearResult" class="text-xl font-black text-indigo-600">--</div>
+                    </div>
+                    <div id="currentYearDisplay" class="bg-indigo-600 p-4 rounded-2xl shadow-xl col-span-2">
+                        <span class="text-[9px] font-bold text-indigo-200 uppercase block">Viewing Calendar Year</span>
+                        <div id="viewingYearText" class="text-xl font-black text-white">Year 1</div>
                     </div>
                 </div>
 
-                <!-- Visual Timeline -->
+                <!-- Calendar View (Generated dynamically) -->
+                <div id="calendarDisplay" class="space-y-8">
+                    <!-- Months will appear here -->
+                    <div class="bg-white p-12 text-center rounded-3xl border border-dashed border-slate-300 text-slate-400">
+                        Click "View" or change parameters to see the calendar.
+                    </div>
+                </div>
+
+                <!-- Cycle Distribution (The Original Bottom View) -->
                 <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                        <h2 class="font-bold text-slate-700">Cycle Distribution</h2>
+                        <h2 class="font-bold text-slate-700">Cycle Overview</h2>
                         <span id="cycleInfo" class="text-xs font-medium text-slate-500"></span>
                     </div>
-                    
-                    <div id="scheduleGrid" class="p-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto custom-scrollbar">
-                        <!-- Years injected here -->
+                    <div id="scheduleGrid" class="p-6 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+                        <!-- Cycle Years injected here -->
                     </div>
                 </div>
 
-                <div id="emptyState" class="hidden p-12 text-center bg-white rounded-3xl border border-dashed border-slate-300 text-slate-400">
-                    Enter valid numbers to view the cycle.
-                </div>
             </main>
         </div>
     </div>
@@ -102,76 +136,180 @@
     <script>
         const daysInput = document.getElementById('daysInput');
         const yearsInput = document.getElementById('yearsInput');
+        const monthsInput = document.getElementById('monthsInput');
+        const targetYearInput = document.getElementById('targetYearInput');
+        const viewBtn = document.getElementById('viewBtn');
+
         const commonYearResult = document.getElementById('commonYearResult');
         const leapYearResult = document.getElementById('leapYearResult');
         const scheduleGrid = document.getElementById('scheduleGrid');
         const cycleInfo = document.getElementById('cycleInfo');
-        const emptyState = document.getElementById('emptyState');
+        const calendarDisplay = document.getElementById('calendarDisplay');
+        const viewingYearText = document.getElementById('viewingYearText');
 
-        function updateGenerator() {
+        function getYearData(targetYear) {
+            const daysCycle = parseFloat(daysInput.value);
+            const yearsCycle = parseInt(yearsInput.value);
+            
+            if (isNaN(daysCycle) || isNaN(yearsCycle) || yearsCycle <= 0) return null;
+
+            const exactAverage = daysCycle / yearsCycle;
+            const commonDays = Math.round(exactAverage);
+            const isRoundUp = commonDays > exactAverage;
+            const leapDays = isRoundUp ? commonDays - 1 : commonDays + 1;
+            const numLeapYears = Math.abs(daysCycle - (commonDays * yearsCycle));
+
+            // Position in cycle (1-based)
+            const position = ((targetYear - 1) % yearsCycle) + 1;
+            
+            // Distribute leaps
+            let isLeap = false;
+            let currentDayCount = 0;
+            let accumulator = 0;
+            for(let y = 1; y <= position; y++) {
+                accumulator += numLeapYears;
+                isLeap = false;
+                if (accumulator >= yearsCycle) {
+                    isLeap = true;
+                    accumulator -= yearsCycle;
+                }
+                currentDayCount = isLeap ? leapDays : commonDays;
+            }
+
+            // Calculate total days passed before this year to find weekday start
+            // Weeks are 7 days. Weekday start = (TotalDaysPassed) % 7
+            let totalDaysBefore = 0;
+            let accBefore = 0;
+            for(let y = 1; y < targetYear; y++) {
+                accBefore += numLeapYears;
+                let yLeap = false;
+                if (accBefore >= yearsCycle) {
+                    yLeap = true;
+                    accBefore -= yearsCycle;
+                }
+                totalDaysBefore += yLeap ? leapDays : commonDays;
+            }
+
+            return {
+                commonDays,
+                leapDays,
+                numLeapYears,
+                yearsCycle,
+                currentDayCount,
+                isLeap,
+                startWeekday: totalDaysBefore % 7 
+            };
+        }
+
+        function generateCalendar() {
+            const targetYear = parseInt(targetYearInput.value) || 1;
+            const monthsCount = parseInt(monthsInput.value) || 1;
+            const data = getYearData(targetYear);
+
+            if (!data || monthsCount <= 0) return;
+
+            viewingYearText.innerText = `Year ${targetYear} (${data.currentDayCount} days)`;
+            
+            // Determine days per month
+            const baseDaysPerMonth = Math.floor(data.currentDayCount / monthsCount);
+            const extraDays = data.currentDayCount % monthsCount;
+            
+            let monthLayout = [];
+            for(let i = 0; i < monthsCount; i++) {
+                // Add extra days to early months
+                monthLayout.push(baseDaysPerMonth + (i < extraDays ? 1 : 0));
+            }
+
+            let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">';
+            let currentWeekday = data.startWeekday;
+            const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+            monthLayout.forEach((daysInMonth, idx) => {
+                html += `
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                        <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2 flex justify-between items-center">
+                            <span>Month ${idx + 1}</span>
+                            <span class="text-xs font-normal text-slate-400">${daysInMonth} days</span>
+                        </h3>
+                        <div class="calendar-grid text-center text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-2">
+                            ${weekdays.map(d => `<div>${d}</div>`).join('')}
+                        </div>
+                        <div class="calendar-grid gap-1">
+                `;
+
+                // Padding for start of month
+                for(let p = 0; p < currentWeekday; p++) {
+                    html += `<div class="aspect-square"></div>`;
+                }
+
+                // Days
+                for(let d = 1; d <= daysInMonth; d++) {
+                    html += `
+                        <div class="aspect-square flex items-center justify-center text-sm font-medium rounded-lg bg-slate-50 border border-slate-100 text-slate-600">
+                            ${d}
+                        </div>
+                    `;
+                }
+
+                html += `</div></div>`;
+                // Update weekday for next month
+                currentWeekday = (currentWeekday + daysInMonth) % 7;
+            });
+
+            html += '</div>';
+            calendarDisplay.innerHTML = html;
+        }
+
+        function updateLeapCycleView() {
             const days = parseFloat(daysInput.value);
             const years = parseInt(yearsInput.value);
 
             if (isNaN(days) || isNaN(years) || years <= 0 || days <= 0) {
                 scheduleGrid.innerHTML = '';
-                emptyState.classList.remove('hidden');
                 commonYearResult.innerText = '--';
                 leapYearResult.innerText = '--';
                 return;
             }
 
-            emptyState.classList.add('hidden');
+            const data = getYearData(1); // Get system info
+            commonYearResult.innerText = `${data.commonDays}d`;
+            leapYearResult.innerText = `${data.leapDays}d`;
+            cycleInfo.innerText = `${data.numLeapYears} leap years / ${data.yearsCycle} years`;
 
-            const exactAverage = days / years;
-            const commonDays = Math.round(exactAverage);
-            const isRoundUp = commonDays > exactAverage;
-            
-            // Logic based on rounding direction
-            const leapDays = isRoundUp ? commonDays - 1 : commonDays + 1;
-            
-            // Find L: (Common * (Years - L)) + (Leap * L) = Days
-            // Days = Common*Years - Common*L + Leap*L
-            // Days - Common*Years = L(Leap - Common)
-            const numLeapYears = Math.abs(days - (commonDays * years));
-
-            commonYearResult.innerText = `${commonDays}d`;
-            leapYearResult.innerText = `${leapDays}d`;
-            cycleInfo.innerText = `${numLeapYears} leap years / ${years} years`;
-
-            // Distribution Logic
             let html = '';
             let accumulator = 0;
-
-            for (let y = 1; y <= years; y++) {
-                accumulator += numLeapYears;
+            for (let y = 1; y <= data.yearsCycle; y++) {
+                accumulator += data.numLeapYears;
                 let isLeap = false;
-                if (accumulator >= years) {
+                if (accumulator >= data.yearsCycle) {
                     isLeap = true;
-                    accumulator -= years;
+                    accumulator -= data.yearsCycle;
                 }
-
-                const dayCount = isLeap ? leapDays : commonDays;
+                const dayCount = isLeap ? data.leapDays : data.commonDays;
                 
                 html += `
-                    <div class="year-card p-4 rounded-2xl border ${isLeap ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-100'}">
-                        <div class="flex justify-between items-start mb-1">
-                            <span class="text-[10px] font-bold text-slate-400">YR ${y}</span>
-                            ${isLeap ? '<span class="bg-indigo-600 text-[8px] text-white px-1.5 py-0.5 rounded-full font-bold uppercase">Leap</span>' : ''}
-                        </div>
-                        <div class="text-xl font-mono font-black ${isLeap ? 'text-indigo-700' : 'text-slate-600'}">
+                    <div onclick="document.getElementById('targetYearInput').value=${y}; generateCalendar();" 
+                         class="year-card p-3 rounded-2xl border ${isLeap ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-100'}">
+                        <div class="text-[9px] font-bold text-slate-400 mb-1">YR ${y}</div>
+                        <div class="text-md font-mono font-black ${isLeap ? 'text-indigo-700' : 'text-slate-600'}">
                             ${dayCount}d
                         </div>
                     </div>
                 `;
             }
-
             scheduleGrid.innerHTML = html;
         }
 
-        [daysInput, yearsInput].forEach(el => el.addEventListener('input', updateGenerator));
+        function handleRefresh() {
+            updateLeapCycleView();
+            generateCalendar();
+        }
 
-        // Init
-        updateGenerator();
+        [daysInput, yearsInput, monthsInput].forEach(el => el.addEventListener('input', handleRefresh));
+        viewBtn.addEventListener('click', generateCalendar);
+
+        // Initial Build
+        handleRefresh();
     </script>
 </body>
 </html>
