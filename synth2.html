@@ -2,849 +2,431 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Microtonal EDO Synthesizer</title>
-    <!-- Load Tailwind CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Microtonal Ups/Downs Synth</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Tone.js for Web Audio -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
     <style>
-        /* Custom scrollbar for scale definition output */
-        .scale-output-box::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+        :root {
+            --bg-color: #020617;
+            --card-bg: #1e293b;
+            --accent: #3b82f6;
         }
-        .scale-output-box::-webkit-scrollbar-thumb {
-            background-color: #4b5563; /* Gray-600 */
-            border-radius: 4px;
-        }
-        .scale-output-box::-webkit-scrollbar-track {
-            background-color: #1f2937; /* Gray-800 */
-        }
-        /* Style for the keyboard keys */
-        .synth-key {
+        body {
+            background-color: var(--bg-color);
+            color: #f8fafc;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            touch-action: none;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
             display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            background-color: #374151; /* Gray-700 */
-            border: 1px solid #1f2937; /* Gray-800 */
-            transition: transform 0.05s, background-color 0.1s;
-            cursor: pointer;
-            user-select: none;
-            overflow: hidden; 
+            flex-direction: column;
+        }
+        .grid-container {
+            flex-grow: 1;
+            overflow: auto;
             position: relative;
+            background: #000;
+            cursor: grab;
+            -ms-overflow-style: none;
+            scrollbar-width: thin;
         }
-        .synth-key:hover {
-            background-color: #4b5563; /* Gray-600 */
+        .grid-container:active {
+            cursor: grabbing;
         }
-        .synth-key.active {
-            background-color: #10b981; /* Emerald-500 */
-            transform: scale(0.98);
-            box-shadow: 0 0 10px #10b981;
+        .synth-grid {
+            display: grid;
+            position: relative;
+            min-width: min-content;
+            min-height: min-content;
         }
-        .key-name {
-            font-size: 0.75rem; /* text-xs */
-            color: #d1d5db; /* Gray-300 */
-            padding-bottom: 0.25rem;
-            line-height: 1;
+        .key {
+            border: 1px solid #11457b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            user-select: none;
+            background: #0f1ffa;
+            transition: background 0.05s;
+            pointer-events: auto;
+            touch-action: none; /* Critical for preventing browser scroll/zoom interference */
+        }
+        .key.active {
+            background-color: var(--accent) !important;
+            color: white;
+        }
+        .controls-panel {
+            background: #def827;
+            border-top: 1px solid #3dfd51;
+            padding: 1rem;
+            max-height: 45vh;
+            overflow-y: auto;
+            z-index: 50;
+        }
+        input[type="number"], input[type="text"] {
+            background: #1f5937;
+            border: 1px solid #4b6f63;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            width: 100%;
+        }
+        .custom-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #004151;
+            border-radius: 5px;
+            outline: none;
+        }
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent);
+            cursor: pointer;
+            border-radius: 50%;
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-4 font-sans antialiased">
+<body>
 
-    <!-- Main Container -->
-    <div id="app" class="max-w-7xl mx-auto space-y-6">
+    <div id="grid-viewport" class="grid-container">
+        <div id="synth-grid" class="synth-grid"></div>
+    </div>
 
-        <!-- Header and Global Controls -->
-        <header class="text-center">
-            <h1 class="text-4xl font-extrabold text-emerald-400 mb-2">Microtonal EDO Synth</h1>
-            <p class="text-sm text-gray-400">
-                Tuning: <span id="current-edo">12</span>-EDO | C4 Freq: <span id="base-freq-display">261.6256</span> Hz (Fixed)
-            </p>
-        </header>
-
-        <!-- Controls Section -->
-        <div class="bg-gray-800 p-4 sm:p-6 rounded-xl shadow-2xl grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            <!-- EDO and Scale Definition -->
-            <div class="space-y-4">
-                <h2 class="text-xl font-semibold border-b border-gray-700 pb-2 text-emerald-300">Tuning & Scale</h2>
-                <div>
-                    <label for="edo-input" class="block text-sm font-medium text-gray-300">Period (EDO Steps):</label>
-                    <input type="number" id="edo-input" value="12" min="1" max="2147483647" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" onchange="initializeSynth()">
+    <div class="controls-panel">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="space-y-3">
+                <h3 class="text-blue-400 font-bold uppercase text-[10px] tracking-widest">Oscillator & Volume</h3>
+                <div class="flex items-center justify-between gap-4">
+                    <label class="text-xs">EDO</label>
+                    <input type="number" id="edo-input" value="12" min="1" class="w-24">
                 </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <!-- Base Frequency Input: Read-only -->
-                    <div>
-                        <label for="base-freq-input" class="block text-sm font-medium text-gray-300">Fixed C4 Frequency (Hz):</label>
-                        <input type="number" id="base-freq-input" value="261.6256" step="0.0001" min="10" max="20000" 
-                               class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 cursor-not-allowed" 
-                               readonly>
-                        <p class="text-xs text-gray-500 mt-1">C4 is fixed to 261.6256 Hz.</p>
-                    </div>
-                    <div>
-                        <label for="root-key-input" class="block text-sm font-medium text-gray-300">Root Key Grid Index (0 to Keys-1):</label>
-                        <input type="number" id="root-key-input" value="0" min="0" max="31" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" onchange="updateTuningParameters()">
-                        <p class="text-xs text-gray-500 mt-1">Key that plays the scale root (C4).</p>
-                    </div>
+                <div class="flex items-center justify-between gap-4">
+                    <label class="text-xs">Volume</label>
+                    <input type="range" id="volume-slider" class="custom-slider w-24" min="0" max="1" step="0.01" value="0.5">
                 </div>
-
-                <!-- Generator Scale Inputs -->
-                <div class="space-y-4 pt-4 border-t border-gray-700">
-                    <h2 class="text-xl font-semibold text-indigo-300">Generator Scale Builder</h2>
-                    <div>
-                        <label for="generator-steps" class="block text-sm font-medium text-gray-300">Generator Interval (EDO steps):</label>
-                        <input type="number" id="generator-steps" value="7" min="1" max="2147483647" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label for="generators-up" class="block text-sm font-medium text-gray-300">Generators Up (x):</label>
-                            <input type="number" id="generators-up" value="7" min="0" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
-                        </div>
-                        <div>
-                            <label for="generators-down" class="block text-sm font-medium text-gray-300">Generators Down (y):</label>
-                            <input type="number" id="generators-down" value="5" min="0" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
-                        </div>
-                    </div>
-                    <button onclick="generateScale()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow transition duration-150">
-                        Generate Scale
-                    </button>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="sustain-toggle">
+                    <label for="sustain-toggle" class="text-xs">Sustain (Sticky Keys)</label>
                 </div>
-
-                <!-- Scale Output -->
-                <div class="space-y-2 pt-4 border-t border-gray-700">
-                    <h3 class="text-md font-medium text-gray-300">Current Scale Definition:</h3>
-                    <div id="scale-output" class="scale-output-box h-40 overflow-y-auto bg-gray-900 p-3 rounded-lg text-xs font-mono border border-gray-700">
-                        Loading scale...
-                    </div>
+                <div class="flex items-center justify-between gap-4">
+                    <label class="text-xs">Key Size (px)</label>
+                    <input type="number" id="key-size-input" value="70" min="20" class="w-24">
                 </div>
             </div>
 
-            <!-- Keyboard Layout -->
-            <div class="space-y-4">
-                <h2 class="text-xl font-semibold border-b border-gray-700 pb-2 text-emerald-300">Keyboard Layout</h2>
-                <div>
-                    <label for="key-size" class="block text-sm font-medium text-gray-300">Key Size (px): <span id="key-size-value">50</span>px</label>
-                    <input type="range" id="key-size" min="30" max="100" value="50" class="w-full mt-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="updateKeyLayout()">
+            <div class="space-y-3">
+                <h3 class="text-blue-400 font-bold uppercase text-[10px] tracking-widest">Grid Layout</h3>
+                <div class="flex items-center justify-between gap-4">
+                    <label class="text-xs">Columns</label>
+                    <input type="number" id="cols-input" value="24" min="1" class="w-24">
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label for="rows-input" class="block text-sm font-medium text-gray-300">Rows:</label>
-                        <input type="number" id="rows-input" value="4" min="1" max="2147483647" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" onchange="updateKeyLayout()">
-                    </div>
-                    <div>
-                        <label for="cols-input" class="block text-sm font-medium text-gray-300">Columns:</label>
-                        <input type="number" id="cols-input" value="8" min="1" max="2147483647" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" onchange="updateKeyLayout()">
-                    </div>
+                <div class="flex items-center justify-between gap-4">
+                    <label class="text-xs">Rows</label>
+                    <input type="number" id="rows-input" value="10" min="1" class="w-24">
                 </div>
-                <p class="text-xs text-gray-500 pt-2">Total Keys: <span id="total-keys">32</span></p>
+                <div class="flex items-center justify-between gap-4">
+                    <label class="text-xs">Row Step Offset</label>
+                    <input type="number" id="row-offset-input" value="7" class="w-24">
+                </div>
+                <button id="refresh-grid" class="w-full bg-blue-600 hover:bg-blue-700 py-1.5 rounded text-xs font-bold transition">Update Grid</button>
             </div>
 
-            <!-- Audio Controls & Recording -->
-            <div class="space-y-4">
-                <h2 class="text-xl font-semibold border-b border-gray-700 pb-2 text-emerald-300">Audio Controls & Recording</h2>
-
-                <!-- Waveform Selector -->
-                <div>
-                    <label for="waveform-select" class="block text-sm font-medium text-gray-300">Waveform:</label>
-                    <select id="waveform-select" onchange="updateWaveform()" class="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
-                        <option value="sine">Sine</option>
-                        <option value="square">Square</option>
-                        <option value="triangle">Triangle</option>
-                        <option value="sawtooth" selected>Sawtooth</option>
-                    </select>
+            <div class="space-y-3">
+                <h3 class="text-blue-400 font-bold uppercase text-[10px] tracking-widest">Note Logic</h3>
+                <p class="text-[9px] text-slate-400">C4 = 261.6256 Hz</p>
+                <div id="status-info" class="text-[9px] text-slate-300 bg-black/40 p-2 rounded leading-tight border border-slate-700">
+                    Initializing...
                 </div>
-                
-                <div>
-                    <label for="volume-slider" class="block text-sm font-medium text-gray-300">Volume (dB): <span id="volume-value">-10</span></label>
-                    <input type="range" id="volume-slider" min="-60" max="0" value="-10" class="w-full mt-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="updateVolume()">
-                </div>
-
-                <!-- Sustain & Stop All -->
-                <div class="space-y-3 pt-2 border-t border-gray-700">
-                    <div class="flex items-center justify-between">
-                        <label for="sustain-toggle" class="text-sm font-medium text-gray-300">Sustain On/Off (Tap to Release)</label>
-                        <input type="checkbox" id="sustain-toggle" class="h-6 w-10 rounded-full appearance-none bg-gray-700 checked:bg-emerald-500 transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-emerald-500" onclick="updateSustain()">
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px]">Find Note (Cents / Ratio / Step)</label>
+                    <div class="flex gap-1">
+                        <input type="text" id="calc-input" placeholder="3/2 or 702c" class="text-xs">
+                        <button id="calc-btn" class="bg-slate-700 hover:bg-slate-600 px-3 rounded text-xs">Find</button>
                     </div>
-                    <button id="stop-all-button" onclick="stopAllNotes()" class="w-full py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg shadow transition duration-150 flex items-center justify-center" disabled>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 mr-2">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 9.563C9 9.357 9.177 9.18 9.39 9.18h.442c.213 0 .388.177.388.388v.442c0 .213-.175.388-.388.388h-.442c-.213 0-.39-.175-.39-.388v-.442Zm0 4.88c0-.213.177-.39.39-.39h.442c.213 0 .388.177.388.388v.442c0 .213-.175.388-.388.388h-.442c-.213 0-.39-.175-.39-.388v-.442ZM15 9.563c0-.213.177-.39.39-.39h.442c.213 0 .388.177.388.388v.442c0 .213-.175.388-.388.388h-.442c-.213 0-.39-.175-.39-.388v-.442ZM15 14.442c0-.213.177-.39.39-.39h.442c.213 0 .388.177.388.388v.442c0 .213-.175.388-.388.388h-.442c-.213 0-.39-.175-.39-.388v-.442Z" />
-                        </svg>
-                        Stop All Notes
-                    </button>
-                </div>
-
-                <!-- Recording Button -->
-                <div class="mt-4 pt-4 border-t border-gray-700">
-                     <button id="record-button" onclick="toggleRecording()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg transition duration-150 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2">
-                            <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 9a.75.75 0 0 0-1.5 0v3.75h-3.75a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 .75-.75V9Z" clip-rule="evenodd" />
-                        </svg>
-                        Record Audio
-                    </button>
+                    <div id="calc-result" class="text-[10px] text-blue-300 italic"></div>
                 </div>
             </div>
         </div>
-
-        <!-- Keyboard Display Area -->
-        <div id="keyboard-container" class="p-4 bg-gray-800 rounded-xl shadow-2xl flex justify-center items-center overflow-x-auto overflow-y-hidden">
-            <div id="keyboard-grid" class="flex flex-wrap border-2 border-gray-700 rounded-lg">
-                <!-- Keys will be dynamically injected here -->
-                <p class="text-gray-500 p-10">Set EDO/Layout and interact with the window to initialize the synth.</p>
-            </div>
-        </div>
-
     </div>
 
     <script>
-        // --- GLOBAL STATE & CONSTANTS ---
-        const C4_FREQ_REF = 261.6256; 
-        const P5_CENTS = 701.9550009; // Target perfect fifth in cents
-        const CENTS_PER_OCTAVE = 1200;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const masterGain = audioCtx.createGain();
+        masterGain.connect(audioCtx.destination);
+        masterGain.gain.value = 0.5;
 
-        // The 31-limit chain of fifths, centered at C (index 15)
-        const FIFTH_CHAIN = [
-            'Fbb', 'Cbb', 'Gbb', 'Dbb', 'Abb', 'Ebb', 'Bbb', 'Fb', 'Cb', 'Gb', 'Db', 'Ab', 'Eb', 'Bb', 'F',
-            'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'G#', 'D#', 'A#', 'E#', 'B#', 'Fx', 'Cx', 'Gx'
+        const activeOscs = new Map();
+        const C4_FREQ = 261.6256;
+
+        const CHAIN_OF_FIFTHS = [
+            "Fbb", "Cbb", "Gbb", "Dbb", "Abb", "Ebb", "Bbb", 
+            "Fb", "Cb", "Gb", "Db", "Ab", "Eb", "Bb", 
+            "F", "C", "G", "D", "A", "E", "B", 
+            "F#", "C#", "G#", "D#", "A#", "E#", "B#", 
+            "Fx", "Cx", "Gx"
         ];
+        const C_INDEX = 15;
 
-        let EDO = 12;
-        let scaleData = []; // Array of {step, name} for EDO steps 0 to EDO-1
-        let generatorScaleSteps = null; // null for EDO default, array of steps for generated scale
-        let cNoteGridIndex = 0; // The index of the grid key that maps to the scale root (C4)
-        
-        let synth = null;
-        let gainNode = null;
-        let recorder = null;
-        let audioContextStarted = false;
-        let sustainActive = false;
-        let recordingState = 'idle'; // 'idle', 'recording', 'exporting'
-        
-        let currentNotes = new Map(); // Tracks currently playing notes: Map<keyIndex, boolean>
+        const state = {
+            edo: 12,
+            cols: 24,
+            rows: 10,
+            rowOffset: 7,
+            keySize: 70,
+            sustain: false
+        };
 
-        // --- SYNTH AUDIO SETUP (Tone.js) ---
+        let isDragging = false;
+        let startX, startY, scrollLeft, scrollTop;
 
-        /** Initializes the Tone.js context, gain, basic synth, and recorder. */
-        function setupAudio() {
-            if (synth) return;
+        function setupPanning() {
+            const slider = document.getElementById('grid-viewport');
 
-            // 1. Setup Master Gain
-            gainNode = new Tone.Gain(Tone.dbToGain(-10)).toDestination();
-            
-            // 2. Setup Synth
-            const initialWaveform = document.getElementById('waveform-select').value;
-            synth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: initialWaveform },
-                envelope: {
-                    attack: 0.005,
-                    decay: 0.1,
-                    sustain: 0.5,
-                    release: 1.0
-                }
-            }).connect(gainNode);
-
-            // 3. Setup Recorder (connects BEFORE the destination)
-            recorder = new Tone.Recorder();
-            gainNode.connect(recorder);
-            
-            updateVolume();
-            console.log("Audio setup complete.");
-        }
-
-        /** Starts the Tone.js audio context on the first user interaction. */
-        async function startAudioContext() {
-            if (!audioContextStarted) {
-                // Use Tone.start() which handles the initial state transition from suspended
-                await Tone.start(); 
-                audioContextStarted = true;
-                document.getElementById('stop-all-button').disabled = false;
-                console.log("Audio Context Started.");
-            }
-        }
-
-        /** Updates the oscillator type of the running synth. */
-        function updateWaveform() {
-            if (!synth) return;
-            const newWaveform = document.getElementById('waveform-select').value;
-            synth.set({ oscillator: { type: newWaveform } });
-            console.log(`Waveform set to: ${newWaveform}`);
-        }
-
-        /** Updates the global volume (in dB). */
-        function updateVolume() {
-            const slider = document.getElementById('volume-slider');
-            const valueDisplay = document.getElementById('volume-value');
-            const volumeDb = parseFloat(slider.value);
-            valueDisplay.textContent = volumeDb;
-            if (gainNode) {
-                gainNode.gain.rampTo(Tone.dbToGain(volumeDb), 0.05);
-            }
-        }
-
-        /** Toggles the sustain mode. */
-        function updateSustain() {
-            sustainActive = document.getElementById('sustain-toggle').checked;
-            console.log('Sustain:', sustainActive ? 'ON' : 'OFF');
-        }
-        
-        /** Stops all notes and transport events. */
-        function stopAllNotes() {
-            if (!synth) return;
-
-            // Release all notes tracked in currentNotes
-            const keysToRelease = Array.from(currentNotes.keys());
-            keysToRelease.forEach((keyIndex) => {
-                const keyElement = document.getElementById(`key-${keyIndex}`);
-                if (keyElement) {
-                    const freq = parseFloat(keyElement.getAttribute('data-freq'));
-                    // releaseNote handles Tone.js triggerRelease and UI/currentNotes cleanup
-                    releaseNote(keyIndex, freq); 
-                }
+            // Mouse Events
+            slider.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('key')) return;
+                isDragging = true;
+                startX = e.pageX - slider.offsetLeft;
+                startY = e.pageY - slider.offsetTop;
+                scrollLeft = slider.scrollLeft;
+                scrollTop = slider.scrollTop;
             });
 
-            // Stop any Tone.js transport events (though none are explicitly used here, good practice)
-            Tone.Transport.stop();
-            console.log("All notes and transport stopped.");
-        }
-
-
-        /** Plays a note. */
-        async function playNote(keyIndex, freq) {
-            // Setup audio and start context on first interaction
-            if (!synth) setupAudio();
-            if (!audioContextStarted) await startAudioContext();
-            
-            if (currentNotes.has(keyIndex)) {
-                if (sustainActive) {
-                    // If sustain is on, tapping an active key should release it
-                    releaseNote(keyIndex, freq);
-                }
-                return; // Don't re-trigger attack if key is already playing
-            }
-
-            synth.triggerAttack(freq, Tone.now(), 1); 
-            currentNotes.set(keyIndex, true); 
-            const keyElement = document.getElementById(`key-${keyIndex}`);
-            if (keyElement) {
-                keyElement.classList.add('active');
-            }
-        }
-
-        /** Stops a note (if sustain is off). */
-        function stopNote(keyIndex, freq) {
-            if (!synth || !currentNotes.has(keyIndex)) return;
-
-            if (!sustainActive) {
-                releaseNote(keyIndex, freq);
-            }
-            // If sustain is active, the note remains playing until a subsequent playNote/releaseNote call.
-        }
-
-        /** Performs the actual Tone.js release and UI update. */
-        function releaseNote(keyIndex, freq) {
-            if (!currentNotes.has(keyIndex)) return;
-            synth.triggerRelease(freq); 
-            currentNotes.delete(keyIndex);
-            
-            const keyElement = document.getElementById(`key-${keyIndex}`);
-            if (keyElement) {
-                keyElement.classList.remove('active');
-            }
-        }
-        
-        // --- RECORDING FUNCTIONS ---
-
-        async function toggleRecording() {
-            if (!recorder) setupAudio();
-            if (!audioContextStarted) await startAudioContext();
-
-            const recordButton = document.getElementById('record-button');
-            const stopAllButton = document.getElementById('stop-all-button');
-            
-            if (recordingState === 'idle') {
-                // Start recording
-                try {
-                    await recorder.start();
-                    recordingState = 'recording';
-                    recordButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2"><path fill-rule="evenodd" d="M19.898 3.07a3 3 0 0 1 .46 1.402v15.056c0 .546-.22 1.076-.613 1.458a3 3 0 0 1-1.397.608h-11.4a3 3 0 0 1-1.404-.617 3 3 0 0 1-.61-1.458V4.472a3 3 0 0 1 2.057-2.813c.275-.05.556-.073.837-.073h9.617a3 3 0 0 1 2.376 1.144Z" clip-rule="evenodd" /><path d="M9.75 7.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V7.5ZM12 7.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V7.5ZM14.25 7.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V7.5ZM16.5 7.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V7.5ZM9.75 10.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V10.5ZM12 10.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V10.5ZM14.25 10.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V10.5ZM16.5 10.5a.75.75 0 0 0-1.5 0v.102a.75.75 0 0 0 1.5 0V10.5Z" /></svg>Stop & Export Recording`;
-                    recordButton.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
-                    recordButton.classList.add('bg-red-600', 'hover:bg-red-500');
-                    stopAllButton.disabled = true;
-                    console.log("Recording started.");
-                } catch (e) {
-                    console.error("Failed to start recorder (needs user gesture first):", e);
-                    // Reset to idle
-                    recordingState = 'idle';
-                    recordButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2"><path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 9a.75.75 0 0 0-1.5 0v3.75h-3.75a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 .75-.75V9Z" clip-rule="evenodd" /></svg>Record Audio`;
-                    recordButton.classList.remove('bg-red-600', 'hover:bg-red-500');
-                    recordButton.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
-                }
-            } else if (recordingState === 'recording') {
-                // Stop recording and export
-                stopAllNotes(); // Stop any playing notes
-                recordingState = 'exporting';
-                recordButton.textContent = "Exporting...";
-                recordButton.disabled = true;
-                stopAllButton.disabled = false;
-                
-                try {
-                    const recordingBlob = await recorder.stop();
-                    const url = URL.createObjectURL(recordingBlob);
-                    const anchor = document.createElement("a");
-                    anchor.download = `synth_recording_${Date.now()}.wav`;
-                    anchor.href = url;
-                    anchor.click();
-                    URL.revokeObjectURL(url);
-                    
-                    // Reset state and button
-                    recordingState = 'idle';
-                    recordButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2"><path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 9a.75.75 0 0 0-1.5 0v3.75h-3.75a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 .75-.75V9Z" clip-rule="evenodd" /></svg>Record Audio`;
-                    recordButton.classList.remove('bg-red-600', 'hover:bg-red-500');
-                    recordButton.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
-                    recordButton.disabled = false;
-                    console.log("Recording exported.");
-                } catch (e) {
-                    console.error("Failed to stop or export recording:", e);
-                    // Handle failure
-                    recordingState = 'idle';
-                    recordButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2"><path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 9a.75.75 0 0 0-1.5 0v3.75h-3.75a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 .75-.75V9Z" clip-rule="evenodd" /></svg>Record Audio (Failed)`;
-                    recordButton.classList.remove('bg-red-600', 'hover:bg-red-500');
-                    recordButton.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
-                    recordButton.disabled = false;
-                }
-            }
-        }
-
-        // --- CORE LOGIC: TUNING AND NAMING ---
-
-        /**
-         * Calculates the EDO scale naming scheme (for all EDO steps).
-         * @param {number} EDO - The equal division of the octave.
-         * @returns {Array<object>} - Scale data with {step, name}.
-         */
-        function calculateScaleNames(EDO) {
-            if (EDO < 1) return [];
-
-            const stepSizeCents = CENTS_PER_OCTAVE / EDO;
-            const P5Steps = Math.round(P5_CENTS / stepSizeCents);
-            const scale = [];
-            const namedSteps = new Map();
-
-            // Initialize scale array
-            for (let k = 0; k < EDO; k++) {
-                scale.push({ step: k, name: '' });
-            }
-
-            // 1. Apply Chain of Fifths Naming (Fbb to Gx)
-            for (let i = 0; i < FIFTH_CHAIN.length; i++) {
-                const fifthSpan = i - 15;
-                let edoStep = (fifthSpan * P5Steps) % EDO;
-                if (edoStep < 0) {
-                    edoStep += EDO;
-                }
-                const name = FIFTH_CHAIN[i];
-                const absFifthSpan = Math.abs(fifthSpan);
-
-                if (!namedSteps.has(edoStep) || namedSteps.get(edoStep).fifthSpan > absFifthSpan) {
-                    namedSteps.set(edoStep, { name: name, fifthSpan: absFifthSpan });
-                }
-            }
-
-            // 2. Apply names and handle remaining steps with arrows
-            for (let k = 0; k < EDO; k++) {
-                if (namedSteps.has(k)) {
-                    scale[k].name = namedSteps.get(k).name;
-                } else {
-                    let nearestStep = -1;
-                    let minDiff = Infinity;
-
-                    for (const step of namedSteps.keys()) {
-                        let diff = Math.abs(k - step);
-                        diff = Math.min(diff, EDO - diff); // Wrap-around difference
-
-                        if (diff < minDiff) {
-                            minDiff = diff;
-                            nearestStep = step;
-                        }
-                    }
-
-                    if (nearestStep !== -1) {
-                        let diff = k - nearestStep;
-                        if (Math.abs(diff) > EDO / 2) {
-                            diff = diff > 0 ? diff - EDO : diff + EDO;
-                        }
-
-                        const baseName = namedSteps.get(nearestStep).name;
-                        const arrow = diff > 0 ? '^' : 'v';
-                        const arrows = arrow.repeat(Math.abs(diff));
-                        
-                        scale[k].name = arrows + baseName;
-                    }
-                }
-            }
-            
-            return scale;
-        }
-
-        // --- GENERATOR SCALE FUNCTIONS ---
-
-        /** Generates a scale based on a generator, period, and span. */
-        function generateScale() {
-            // 1. Get EDO/Period (from existing input)
-            const periodInput = document.getElementById('edo-input');
-            const period = parseInt(periodInput.value, 10);
-            
-            // 2. Get Generator steps
-            const generator = parseInt(document.getElementById('generator-steps').value, 10);
-            
-            // 3. Get Span (x, y)
-            const generatorsUp = parseInt(document.getElementById('generators-up').value, 10);
-            const generatorsDown = parseInt(document.getElementById('generators-down').value, 10);
-
-            if (isNaN(period) || period <= 0 || isNaN(generator) || isNaN(generatorsUp) || generatorsUp < 0 || isNaN(generatorsDown) || generatorsDown < 0) {
-                console.error("Invalid input for scale generation.");
-                return;
-            }
-
-            // Ensure EDO state is correct for naming/frequency calculations
-            if (EDO !== period) {
-                // If EDO changed, re-initialize EDO/scaleData
-                initializeSynth(period); 
-            }
-            
-            // 4. Calculate unique steps: (k * G) mod P for k in [-y, x]
-            const steps = new Set();
-            
-            // Generators up (k=0 to x)
-            for (let k = 0; k <= generatorsUp; k++) {
-                steps.add((k * generator) % period);
-            }
-            
-            // Generators down (k=-1 to -y)
-            for (let k = -1; k >= -generatorsDown; k--) {
-                let step = (k * generator) % period;
-                if (step < 0) {
-                    step += period; // Correct for negative modulo result
-                }
-                steps.add(step);
-            }
-
-            // 5. Store sorted unique steps
-            generatorScaleSteps = Array.from(steps).sort((a, b) => a - b);
-            
-            // 6. Update UI
-            renderGeneratorOutput();
-            updateKeyLayout();
-        }
-
-        /** Renders the generated scale steps in the output box. */
-        function renderGeneratorOutput() {
-            const output = document.getElementById('scale-output');
-            
-            if (!generatorScaleSteps || generatorScaleSteps.length === 0) {
-                renderScaleOutput(); // Fallback to standard EDO scale display
-                return;
-            }
-
-            const scaleLength = generatorScaleSteps.length;
-            let html = `<div class="text-indigo-400 font-bold">--- GENERATED SCALE (${scaleLength} notes) ---</div>`;
-            html += `<div>Period (EDO): ${EDO} | Generator: ${document.getElementById('generator-steps').value} | Span: ${document.getElementById('generators-up').value},${document.getElementById('generators-down').value}</div>`;
-            
-            generatorScaleSteps.forEach((edoStep, index) => {
-                // Get the EDO name for this step from the pre-calculated EDO scaleData
-                const name = scaleData[edoStep] ? scaleData[edoStep].name : 'N/A';
-                // Theoretical C4 frequency (based on the step's ratio)
-                const freqRatio = Math.pow(2, edoStep / EDO);
-                
-                html += `<div>[${String(index).padStart(String(scaleLength).length, '0')}] EDO Step ${edoStep} (${name.padEnd(8, ' ')}) | Ratio: ${freqRatio.toFixed(6)}</div>`;
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
             });
 
-            html += `<button onclick="clearGeneratorScale()" class="mt-2 py-1 px-3 bg-red-700 hover:bg-red-600 text-white text-xs font-bold rounded-lg shadow transition duration-150">
-                Reset to Full EDO Scale
-            </button>`;
-            
-            output.innerHTML = html;
-        }
-
-        /** Resets the synth back to the full linear EDO scale. */
-        function clearGeneratorScale() {
-            generatorScaleSteps = null;
-            renderScaleOutput(); // Render the full EDO steps
-            updateTuningParameters(); // Forces layout update
-        }
-
-        // --- UI & EVENT HANDLERS ---
-
-        /** Updates tuning parameters and re-initializes the layout. */
-        function updateTuningParameters() {
-            const cNoteGridInput = document.getElementById('root-key-input');
-            const baseFreqInput = document.getElementById('base-freq-input'); 
-            const c4FixedFreq = C4_FREQ_REF;
-
-            // 1. Update C-Note Grid Index
-            const newCNoteGridIndex = parseInt(cNoteGridInput.value, 10);
-            if (!isNaN(newCNoteGridIndex) && newCNoteGridIndex >= 0) {
-                cNoteGridIndex = newCNoteGridIndex;
-            } else {
-                cNoteGridInput.value = cNoteGridIndex;
-            }
-            
-            // 2. Update Displays
-            document.getElementById('base-freq-display').textContent = c4FixedFreq.toFixed(4);
-            baseFreqInput.value = c4FixedFreq.toFixed(4); 
-
-            updateKeyLayout();
-        }
-
-        /** Initializes the synth by updating EDO and rebuilding the scale names. */
-        function initializeSynth(edoValueOverride) {
-            const edoInput = document.getElementById('edo-input');
-            const newEDO = edoValueOverride || parseInt(edoInput.value, 10);
-            
-            if (isNaN(newEDO) || newEDO <= 0 || newEDO > 2147483647) {
-                console.error("Invalid EDO value.");
-                edoInput.value = EDO;
-                return;
-            }
-
-            // If EDO changes, invalidate the generated scale
-            if (EDO !== newEDO) {
-                generatorScaleSteps = null;
-            }
-
-            EDO = newEDO;
-            scaleData = calculateScaleNames(EDO);
-
-            document.getElementById('current-edo').textContent = EDO;
-
-            renderScaleOutput();
-            updateTuningParameters(); 
-        }
-
-        /** Renders the calculated full EDO scale data. (Used when generator scale is inactive) */
-        function renderScaleOutput() {
-            const output = document.getElementById('scale-output');
-            const stepSizeCents = CENTS_PER_OCTAVE / EDO;
-            const P5Steps = Math.round(P5_CENTS / stepSizeCents);
-
-            let html = `<div class="text-emerald-400 font-bold">--- FULL EDO SCALE (${EDO} notes) ---</div>`;
-            html += `<div>P5 Steps: ${P5Steps} | Step Size: ${(stepSizeCents).toFixed(3)} cents</div>`;
-            
-            scaleData.forEach(s => {
-                // Theoretical C4 frequency (based on the step's ratio)
-                const freqRatio = Math.pow(2, s.step / EDO);
-                html += `<div>[${String(s.step).padStart(String(EDO).length, '0')}] ${s.name.padEnd(8, ' ')} | Ratio: ${freqRatio.toFixed(6)}</div>`;
+            slider.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                const x = e.pageX - slider.offsetLeft;
+                const y = e.pageY - slider.offsetTop;
+                const walkX = (x - startX) * 1.5;
+                const walkY = (y - startY) * 1.5;
+                slider.scrollLeft = scrollLeft - walkX;
+                slider.scrollTop = scrollTop - walkY;
             });
-            output.innerHTML = html;
+
+            // Touch Events (for areas NOT on keys)
+            slider.addEventListener('touchstart', (e) => {
+                if (e.target.classList.contains('key')) return;
+                isDragging = true;
+                startX = e.touches[0].pageX - slider.offsetLeft;
+                startY = e.touches[0].pageY - slider.offsetTop;
+                scrollLeft = slider.scrollLeft;
+                scrollTop = slider.scrollTop;
+            }, {passive: true});
+
+            slider.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                const x = e.touches[0].pageX - slider.offsetLeft;
+                const y = e.touches[0].pageY - slider.offsetTop;
+                const walkX = (x - startX);
+                const walkY = (y - startY);
+                slider.scrollLeft = scrollLeft - walkX;
+                slider.scrollTop = scrollTop - walkY;
+            }, {passive: true});
         }
 
-        /** Rerenders the keyboard grid based on current settings. */
-        function updateKeyLayout() {
-            const rowsInput = document.getElementById('rows-input');
-            const colsInput = document.getElementById('cols-input');
-            const sizeSlider = document.getElementById('key-size');
-            const cNoteGridInput = document.getElementById('root-key-input');
+        function getBestFifth(edo) {
+            return Math.round((701.9550009 / 1200) * edo);
+        }
+
+        function getNoteName(step, edo) {
+            const best5th = getBestFifth(edo);
+            let candidates = [];
+            for (let i = 0; i < CHAIN_OF_FIFTHS.length; i++) {
+                const fifthSpan = i - C_INDEX;
+                const baseStep = ((fifthSpan * best5th) % edo + edo) % edo;
+                let diff = step - baseStep;
+                if (diff > edo / 2) diff -= edo;
+                if (diff < -edo / 2) diff += edo;
+                candidates.push({
+                    name: CHAIN_OF_FIFTHS[i],
+                    arrows: diff,
+                    absArrows: Math.abs(diff),
+                    absFifthSpan: Math.abs(fifthSpan)
+                });
+            }
+            candidates.sort((a, b) => {
+                if (a.absArrows !== b.absArrows) return a.absArrows - b.absArrows;
+                return a.absFifthSpan - b.absFifthSpan;
+            });
+            const best = candidates[0];
+            let finalName = best.name;
+            if (best.arrows > 0) finalName = "^".repeat(best.arrows) + finalName;
+            if (best.arrows < 0) finalName = "v".repeat(Math.abs(best.arrows)) + finalName;
+            return finalName;
+        }
+
+        function getFrequency(totalStep, edo) {
+            return C4_FREQ * Math.pow(2, totalStep / edo);
+        }
+
+        function playNote(totalStep) {
+            if (activeOscs.has(totalStep)) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             
-            const rows = parseInt(rowsInput.value) || 1;
-            const cols = parseInt(colsInput.value) || 1;
-            const keySize = parseInt(sizeSlider.value) || 50;
-            const totalKeys = rows * cols;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(getFrequency(totalStep, state.edo), audioCtx.currentTime);
+            
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02);
+            
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+            
+            activeOscs.set(totalStep, { osc, gain });
+            const el = document.querySelector(`[data-step="${totalStep}"]`);
+            if (el) el.classList.add('active');
+        }
 
-            document.getElementById('key-size-value').textContent = keySize;
-            document.getElementById('total-keys').textContent = totalKeys;
+        function stopNote(totalStep) {
+            const entry = activeOscs.get(totalStep);
+            if (entry) {
+                entry.gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.03);
+                setTimeout(() => {
+                    try {
+                        entry.osc.stop();
+                        entry.osc.disconnect();
+                    } catch(e) {}
+                }, 150);
+                activeOscs.delete(totalStep);
+                const el = document.querySelector(`[data-step="${totalStep}"]`);
+                if (el) el.classList.remove('active');
+            }
+        }
 
-            const grid = document.getElementById('keyboard-grid');
-            grid.innerHTML = ''; // Clear existing keys
+        function render() {
+            const grid = document.getElementById('synth-grid');
+            grid.innerHTML = '';
+            
+            const { edo, rows, cols, rowOffset, keySize } = state;
             grid.style.gridTemplateColumns = `repeat(${cols}, ${keySize}px)`;
-            grid.style.gridTemplateRows = `repeat(${rows}, ${keySize}px)`;
-            grid.classList.add('grid', 'gap-0.5');
+            grid.style.width = `${cols * keySize}px`;
 
-            if (scaleData.length === 0) {
-                 grid.innerHTML = `<p class="text-gray-500 p-10">Scale not initialized (EDO = ${EDO} not calculated).</p>`;
-                 return;
-            }
-            
-            // Determine the scale steps to use (Generated or Full EDO)
-            const scaleToUse = generatorScaleSteps || Array.from({ length: EDO }, (_, i) => i);
-            const scaleLength = scaleToUse.length;
-            
-            // --- C-NOTE CLAMPING AND REFERENCE POINT ---
-            if (cNoteGridIndex >= totalKeys) {
-                cNoteGridIndex = Math.max(0, totalKeys - 1); // Clamp to the last key or 0
-                cNoteGridInput.value = cNoteGridIndex;
-                // Recursive call to ensure parameters are consistent before building
-                updateTuningParameters(); 
-                return;
-            }
-            cNoteGridInput.max = totalKeys - 1; 
+            for (let r = rows - 1; r >= 0; r--) {
+                for (let c = 0; c < cols; c++) {
+                    const totalStep = (r * rowOffset) + c;
+                    const key = document.createElement('div');
+                    key.className = 'key';
+                    key.style.width = `${keySize}px`;
+                    key.style.height = `${keySize}px`;
+                    key.dataset.step = totalStep;
 
-            // Stop all currently playing notes before redrawing
-            currentNotes.forEach((_, keyIndex) => {
-                const keyElement = document.getElementById(`key-${keyIndex}`);
-                if (keyElement) {
-                    const freq = parseFloat(keyElement.getAttribute('data-freq'));
-                    releaseNote(keyIndex, freq);
+                    const octave = Math.floor(totalStep / edo) + 4;
+                    const stepInOctave = ((totalStep % edo) + edo) % edo;
+                    const name = getNoteName(stepInOctave, edo);
+
+                    key.innerHTML = `
+                        <span class="font-bold text-blue-100">${name}${octave}</span>
+                        <span class="text-[8px] opacity-40 mt-1">${getFrequency(totalStep, edo).toFixed(2)}</span>
+                    `;
+
+                    // Consolidated Event Handler to prevent double triggers
+                    const onActionDown = (e) => {
+                        // Prevent the browser from firing secondary events (like mousedown after touchstart)
+                        if (e.cancelable) e.preventDefault();
+                        
+                        if (state.sustain) {
+                            if (activeOscs.has(totalStep)) stopNote(totalStep);
+                            else playNote(totalStep);
+                        } else {
+                            playNote(totalStep);
+                        }
+                    };
+
+                    const onActionUp = (e) => {
+                        if (!state.sustain) stopNote(totalStep);
+                    };
+
+                    // Use touchstart and mousedown but prevent mousedown if touch happened
+                    key.addEventListener('touchstart', onActionDown, { passive: false });
+                    key.addEventListener('mousedown', (e) => {
+                        // On desktop, touch events won't fire, so this proceeds.
+                        // On mobile, touchstart's preventDefault() stops this from firing.
+                        onActionDown(e);
+                    });
+
+                    key.addEventListener('touchend', onActionUp);
+                    key.addEventListener('mouseup', onActionUp);
+                    key.addEventListener('mouseleave', onActionUp);
+
+                    grid.appendChild(key);
                 }
-            });
-
-
-            for (let i = 0; i < totalKeys; i++) {
-                
-                // 1. Determine the EDO Step and Octave Index for key i using the defined scale
-                const stepInScaleIndex = i % scaleLength;
-                const octaveIndex = Math.floor(i / scaleLength);
-                const currentEdoStepValue = scaleToUse[stepInScaleIndex];
-                
-                // 2. Calculate the Total EDO Steps from the absolute root (0) for key i
-                const totalEdoSteps = currentEdoStepValue + (octaveIndex * EDO);
-                
-                // 3. Calculate Actual Frequency (relative to the fixed C4_FREQ_REF)
-                // Find the EDO step value that is the C4 reference note (the scale root at the C4 position)
-                const c4KeyIndexInScale = cNoteGridIndex % scaleLength;
-                const c4EdoStepValue = scaleToUse[c4KeyIndexInScale]; 
-                const c4OctaveIndex = Math.floor(cNoteGridIndex / scaleLength);
-                const c4TotalEdoSteps = c4EdoStepValue + (c4OctaveIndex * EDO); // Total EDO steps from EDO 0
-
-                // The difference in EDO steps dictates the frequency ratio
-                const stepsDifference = totalEdoSteps - c4TotalEdoSteps;
-                const actualFreq = C4_FREQ_REF * Math.pow(2, stepsDifference / EDO);
-                
-                // 4. Determine the octave number for naming (Octave 4 starts at C4)
-                // The octave number is derived from the step difference in full octaves (EDO) from C4's EDO step value
-                const totalOctaveDifference = Math.floor((totalEdoSteps - c4EdoStepValue) / EDO);
-                const octaveNum = 4 + totalOctaveDifference;
-
-                // 5. Get the name from the full EDO scale data
-                const stepData = scaleData[currentEdoStepValue];
-
-                // 6. Create the key element
-                const key = document.createElement('div');
-                key.id = `key-${i}`;
-                key.className = 'synth-key rounded-lg shadow-md';
-                key.style.width = `${keySize}px`;
-                key.style.height = `${keySize}px`;
-                key.setAttribute('data-freq', actualFreq);
-                key.setAttribute('data-key-index', i);
-                
-                // Highlight the C4-Note key
-                const isC4 = (i === cNoteGridIndex);
-                if (isC4) {
-                    key.style.backgroundColor = '#059669'; /* Darker Emerald for C4-note */
-                    key.innerHTML = `<span class="key-name text-white font-bold">${stepData.name}${octaveNum} (Root/C4)</span>`;
-                } else {
-                    key.innerHTML = `<span class="key-name">${stepData.name}${octaveNum}</span>`;
-                }
-
-                // Add event listeners for both mouse and touch
-                key.addEventListener('mousedown', (e) => {
-                    e.preventDefault(); 
-                    playNote(i, actualFreq);
-                });
-                key.addEventListener('mouseup', () => {
-                    stopNote(i, actualFreq);
-                });
-                key.addEventListener('mouseleave', () => {
-                    stopNote(i, actualFreq);
-                });
-
-                key.addEventListener('touchstart', (e) => {
-                    playNote(i, actualFreq);
-                }, { passive: true });
-                
-                key.addEventListener('touchend', (e) => {
-                    stopNote(i, actualFreq);
-                }, { passive: true });
-
-                grid.appendChild(key);
             }
+
+            const fifth = getBestFifth(edo);
+            const cents = (fifth * 1200 / edo).toFixed(4);
+            document.getElementById('status-info').innerHTML = 
+                `EDO: ${edo}<br>Best 5th: Step ${fifth} (${cents}c)`;
         }
 
-        // --- INITIALIZATION ON LOAD ---
-        window.onload = function() {
-            if (typeof Tone === 'undefined') {
-                console.error("Tone.js not loaded. Cannot start synth.");
-                return;
+        function parseScaleInput(val, edo) {
+            if (val.includes('/')) {
+                const [n, d] = val.split('/').map(Number);
+                const cents = 1200 * Math.log2(n / d);
+                const step = Math.round((cents / 1200) * edo);
+                return { step, cents };
             }
-            
-            // Set initial control values
-            document.getElementById('rows-input').value = 4;
-            document.getElementById('cols-input').value = 8;
-            document.getElementById('key-size').value = 50;
-            document.getElementById('base-freq-input').value = C4_FREQ_REF;
-            document.getElementById('root-key-input').value = cNoteGridIndex; 
-            document.getElementById('generator-steps').value = 7;
-            document.getElementById('generators-up').value = 7;
-            document.getElementById('generators-down').value = 5;
+            if (val.toLowerCase().endsWith('c')) {
+                const cents = parseFloat(val);
+                const step = Math.round((cents / 1200) * edo);
+                return { step, cents };
+            }
+            const step = parseInt(val);
+            return { step, cents: step * (1200 / edo) };
+        }
 
-            // Update range display immediately
-            updateVolume();
-            document.getElementById('key-size').addEventListener('input', () => {
-                document.getElementById('key-size-value').textContent = document.getElementById('key-size').value;
-            });
-            
-            // Initial setup of EDO and layout (Audio context will start on first user interaction)
-            initializeSynth(); 
-            setupAudio(); // Initialize all Tone objects (synth, gain, recorder)
+        window.onload = () => {
+            render();
+            setupPanning();
 
-            // --- WEB AUDIO CONTEXT STABILITY FIX ---
-            // Listen for visibility changes to stop notes and resume the context.
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden) {
-                    // When the tab is backgrounded, stop all currently playing notes.
-                    // This prevents notes from hanging or causing glitches when the context is suspended.
-                    stopAllNotes(); 
-                    console.log("Tab hidden (context likely suspended), stopping all notes.");
-                } else {
-                    // When the tab returns to the foreground, attempt to resume the context.
-                    // This ensures the audio engine restarts reliably.
-                    if (audioContextStarted && Tone.context.state !== 'running') {
-                        Tone.context.resume().then(() => {
-                            console.log("Audio Context resumed from background.");
-                        });
-                    }
-                }
-            });
-
-
-            // Allow keyboard input (using bottom rows of keys)
-            const keyboardMap = {
-                'z': 0, 'x': 1, 'c': 2, 'v': 3, 'b': 4, 'n': 5, 'm': 6, ',': 7, 
-                'a': 8, 's': 9, 'd': 10, 'f': 11, 'g': 12, 'h': 13, 'j': 14, 'k': 15,
-                'q': 16, 'w': 17, 'e': 18, 'r': 19, 't': 20, 'y': 21, 'u': 22, 'i': 23
+            document.getElementById('refresh-grid').onclick = () => {
+                state.edo = parseInt(document.getElementById('edo-input').value) || 12;
+                state.cols = parseInt(document.getElementById('cols-input').value) || 12;
+                state.rows = parseInt(document.getElementById('rows-input').value) || 5;
+                state.rowOffset = parseInt(document.getElementById('row-offset-input').value) || 0;
+                state.keySize = parseInt(document.getElementById('key-size-input').value) || 70;
+                
+                // Clear existing notes
+                const keysToStop = Array.from(activeOscs.keys());
+                keysToStop.forEach(s => stopNote(s));
+                render();
             };
 
-            const keyStates = new Map();
+            document.getElementById('volume-slider').oninput = (e) => {
+                masterGain.gain.value = parseFloat(e.target.value);
+            };
 
-            document.addEventListener('keydown', (e) => {
-                const keyIndex = keyboardMap[e.key.toLowerCase()];
-                if (keyIndex !== undefined) {
-                    const keyElement = document.getElementById(`key-${keyIndex}`);
-                    if (keyElement) {
-                        const freq = parseFloat(keyElement.getAttribute('data-freq'));
-                        
-                        if (!keyStates.has(e.key.toLowerCase())) {
-                            keyStates.set(e.key.toLowerCase(), true);
-                            playNote(keyIndex, freq);
-                        }
-                    }
+            document.getElementById('sustain-toggle').onchange = (e) => {
+                state.sustain = e.target.checked;
+                if (!state.sustain) {
+                    const keysToStop = Array.from(activeOscs.keys());
+                    keysToStop.forEach(s => stopNote(s));
                 }
-            });
+            };
 
-            document.addEventListener('keyup', (e) => {
-                const keyIndex = keyboardMap[e.key.toLowerCase()];
-                if (keyIndex !== undefined) {
-                    keyStates.delete(e.key.toLowerCase());
-                    const keyElement = document.getElementById(`key-${keyIndex}`);
-                    if (keyElement) {
-                        const freq = parseFloat(keyElement.getAttribute('data-freq'));
-                        stopNote(keyIndex, freq); 
-                    }
-                }
-            });
+            document.getElementById('calc-btn').onclick = () => {
+                const val = document.getElementById('calc-input').value;
+                if (!val) return;
+                const { step, cents } = parseScaleInput(val, state.edo);
+                const stepInOct = ((step % state.edo) + state.edo) % state.edo;
+                const name = getNoteName(stepInOct, state.edo);
+                const currentCents = (step * 1200 / state.edo).toFixed(2);
+                document.getElementById('calc-result').innerText = 
+                    `Step ${step} (${name}) ≈ ${currentCents}c (Err: ${(cents - currentCents).toFixed(2)}c)`;
+            };
         };
     </script>
 </body>
 </html>
-
