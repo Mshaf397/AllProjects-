@@ -1,432 +1,1527 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Microtonal Ups/Downs Synth</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        :root {
-            --bg-color: #020617;
-            --card-bg: #1e293b;
-            --accent: #3b82f6;
-        }
-        body {
-            background-color: var(--bg-color);
-            color: #f8fafc;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            touch-action: none;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            flex-direction: column;
-        }
-        .grid-container {
-            flex-grow: 1;
-            overflow: auto;
-            position: relative;
-            background: #000;
-            cursor: grab;
-            -ms-overflow-style: none;
-            scrollbar-width: thin;
-        }
-        .grid-container:active {
-            cursor: grabbing;
-        }
-        .synth-grid {
-            display: grid;
-            position: relative;
-            min-width: min-content;
-            min-height: min-content;
-        }
-        .key {
-            border: 1px solid #11457b;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            user-select: none;
-            background: #0f1ffa;
-            transition: background 0.05s;
-            pointer-events: auto;
-            touch-action: none; /* Critical for preventing browser scroll/zoom interference */
-        }
-        .key.active {
-            background-color: var(--accent) !important;
-            color: white;
-        }
-        .controls-panel {
-            background: #def827;
-            border-top: 1px solid #3dfd51;
-            padding: 1rem;
-            max-height: 45vh;
-            overflow-y: auto;
-            z-index: 50;
-        }
-        input[type="number"], input[type="text"] {
-            background: #1f5937;
-            border: 1px solid #4b6f63;
-            color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            width: 100%;
-        }
-        .custom-slider {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 6px;
-            background: #004151;
-            border-radius: 5px;
-            outline: none;
-        }
-        .custom-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            background: var(--accent);
-            cursor: pointer;
-            border-radius: 50%;
-        }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Grid Web Synth — EDO Isomorphic Grid</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    /* LIGHT MODE (Default) */
+    --pad: 10px;
+    --main-bg: #1E90FF; /* DodgerBlue */
+    --control-bg: #323ddd;
+    --text-color: #f1f1f1;
+    --button-color: #12e34b; /* Bright green */
+    --key-color: #228222; /* ForestGreen */
+    --key-text-color: #111;
+    --key-active: #ffcc00; /* Yellow */
+    --key-inactive: rgba(255,255,255,0.9);
+    --modal-bg: white;
+    --modal-text-color: #111;
+    --input-bg: white;
+    font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    transition: background-color 0.3s;
+  }
+  
+  /* DARK MODE OVERRIDES */
+  .dark-mode {
+    --main-bg: #111827; /* Dark Gray */
+    --control-bg: #2C003E; /* Deep Violet */
+    --text-color: #e5e7eb; /* Light text */
+    --button-color: #BB86FC; /* Light Purple/Magenta */
+    --key-color: #6200EE; /* Medium Violet */
+    --key-text-color: #e5e7eb;
+    --key-active: #FF6E40; /* Vibrant Orange */
+    --key-inactive: rgba(255,255,255,0.1);
+    --modal-bg: #1f2937;
+    --modal-text-color: #e5e7eb;
+    --input-bg: #374151;
+  }
+
+  body {
+    margin: 0;
+    padding: var(--pad);
+    background: var(--main-bg);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  header {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 8px;
+    justify-content: space-between;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: end;
+    background: var(--control-bg);
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    transition: background-color 0.3s;
+  }
+
+  label {
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    min-width: 120px;
+    color: var(--text-color);
+  }
+
+  input[type="range"] {
+    height: 30px;
+    cursor: grab;
+  }
+
+  input[type="number"],
+  input[type="text"],
+  select {
+    padding: 6px;
+    font-size: 14px;
+    border-radius: 4px;
+    color: var(--key-text-color);
+    background-color: var(--input-bg);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  
+  input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-top: 5px;
+      background-color: var(--input-bg);
+      border: 1px solid rgba(255,255,255,0.3);
+  }
+
+  select[multiple] {
+    padding: 4px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: var(--input-bg);
+    min-height: 100px;
+    box-sizing: border-box;
+    color: var(--key-text-color);
+  }
+  
+  /* Style for multiple select options in dark mode */
+  .dark-mode select[multiple] option {
+    background: var(--input-bg);
+    color: var(--key-text-color);
+  }
+  .dark-mode select[multiple] option:checked {
+    background: var(--button-color);
+    color: #111;
+  }
+
+
+  button {
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    background: var(--button-color);
+    color: var(--control-bg);
+    border: none;
+    font-weight: bold;
+    transition: background 0.1s, transform 0.1s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  button:hover {
+    background: var(--button-color); 
+    filter: brightness(1.2);
+    transform: translateY(-1px);
+  }
+  
+  /* Recording Button Styles */
+  #recordBtn {
+    background: #FF4136; /* Red for recording */
+    color: white;
+  }
+  
+  #stopRecordBtn {
+    background: #FFDC00; /* Yellow for stop */
+    color: #111;
+  }
+
+  #gridWrap {
+    margin-top: 12px;
+    border-radius: 8px;
+    overflow: auto;
+    background: var(--control-bg);
+    padding: 8px;
+    max-height: 60vh; 
+    max-width: 100%;
+    transition: background-color 0.3s;
+  }
+  @media (max-width: 768px) {
+    #gridWrap {
+      max-height: 40vh;
+    }
+  }
+
+  canvas {
+    display: block;
+    background: var(--key-color);
+    border-radius: 4px;
+    width: auto; 
+    height: auto;
+    transition: background-color 0.3s;
+  }
+
+  .small {
+    font-size: 12px;
+    color: var(--button-color);
+    transition: color 0.3s;
+  }
+  
+  .status {
+    margin-top: 12px;
+    color: var(--text-color);
+    padding: 8px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.2);
+    transition: color 0.3s;
+  }
+  
+  /* Status indicators */
+  .recording-status {
+      font-weight: bold;
+      color: #FF4136; /* Red */
+      animation: pulse 1s infinite alternate;
+  }
+
+  @keyframes pulse {
+      from { opacity: 1; }
+      to { opacity: 0.5; }
+  }
+
+
+  /* MODAL STYLES */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  .modal-content {
+    background: var(--modal-bg);
+    padding: 24px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 1200px;
+    color: var(--modal-text-color);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    font-size: 25px;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  .modal-content h3 {
+    margin-top: 0;
+    color: var(--control-bg);
+  }
+  .dark-mode .modal-content h3 {
+     color: var(--button-color);
+  }
+  .modal-content .modal-controls {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+    gap: 10px;
+  }
+  .modal-content label {
+      color: var(--modal-text-color);
+      margin-bottom: 8px;
+      font-size: 20px;
+  }
+  .modal-content input {
+      width: 100%;
+      box-sizing: border-box;
+      color: var(--modal-text-color);
+      font-size: 20px;
+      background-color: var(--input-bg);
+  }
+  
+  /* Dark Mode Toggle Button Specific Styles */
+  #darkModeToggle {
+      min-width: unset;
+      padding: 6px 10px;
+      font-size: 12px;
+  }
+</style>
 </head>
 <body>
+<header>
+  <div class="flex items-center gap-3">
+    <h2 style="margin:0">Grid Web Synth — EDO Isomorphic Grid</h2>
+    <div class="small">Scale generation uses the currently selected EDO Steps (N) for quantization.</div>
+  </div>
+  <button id="darkModeToggle" title="Toggle Dark/Light Mode">Enable Dark Mode</button>
+</header>
 
-    <div id="grid-viewport" class="grid-container">
-        <div id="synth-grid" class="synth-grid"></div>
-    </div>
+<div class="controls">
+  <label>Rows
+    <input id="rows" type="number" min="1" max="4294967296" value="6" />
+  </label>
 
-    <div class="controls-panel">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="space-y-3">
-                <h3 class="text-blue-400 font-bold uppercase text-[10px] tracking-widest">Oscillator & Volume</h3>
-                <div class="flex items-center justify-between gap-4">
-                    <label class="text-xs">EDO</label>
-                    <input type="number" id="edo-input" value="12" min="1" class="w-24">
-                </div>
-                <div class="flex items-center justify-between gap-4">
-                    <label class="text-xs">Volume</label>
-                    <input type="range" id="volume-slider" class="custom-slider w-24" min="0" max="1" step="0.01" value="0.5">
-                </div>
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" id="sustain-toggle">
-                    <label for="sustain-toggle" class="text-xs">Sustain (Sticky Keys)</label>
-                </div>
-                <div class="flex items-center justify-between gap-4">
-                    <label class="text-xs">Key Size (px)</label>
-                    <input type="number" id="key-size-input" value="70" min="20" class="w-24">
-                </div>
-            </div>
+  <label>Cols
+    <input id="cols" type="number" min="1" max="4294967296" value="12" />
+  </label>
 
-            <div class="space-y-3">
-                <h3 class="text-blue-400 font-bold uppercase text-[10px] tracking-widest">Grid Layout</h3>
-                <div class="flex items-center justify-between gap-4">
-                    <label class="text-xs">Columns</label>
-                    <input type="number" id="cols-input" value="24" min="1" class="w-24">
-                </div>
-                <div class="flex items-center justify-between gap-4">
-                    <label class="text-xs">Rows</label>
-                    <input type="number" id="rows-input" value="10" min="1" class="w-24">
-                </div>
-                <div class="flex items-center justify-between gap-4">
-                    <label class="text-xs">Row Step Offset</label>
-                    <input type="number" id="row-offset-input" value="7" class="w-24">
-                </div>
-                <button id="refresh-grid" class="w-full bg-blue-600 hover:bg-blue-700 py-1.5 rounded text-xs font-bold transition">Update Grid</button>
-            </div>
+  <label>Key size (px)
+    <input id="keySize" type="number" min="8" max="200" value="64" />
+  </label>
+  
+  <!-- NEW INPUTS START -->
+  <label title="1-indexed, starting from top-left (1), wrapping by row">Root Key Index
+    <input id="rootKeyIndex" type="number" min="1" max="4294967296" value="1" />
+  </label>
 
-            <div class="space-y-3">
-                <h3 class="text-blue-400 font-bold uppercase text-[10px] tracking-widest">Note Logic</h3>
-                <p class="text-[9px] text-slate-400">C4 = 261.6256 Hz</p>
-                <div id="status-info" class="text-[9px] text-slate-300 bg-black/40 p-2 rounded leading-tight border border-slate-700">
-                    Initializing...
-                </div>
-                <div class="flex flex-col gap-1">
-                    <label class="text-[10px]">Find Note (Cents / Ratio / Step)</label>
-                    <div class="flex gap-1">
-                        <input type="text" id="calc-input" placeholder="3/2 or 702c" class="text-xs">
-                        <button id="calc-btn" class="bg-slate-700 hover:bg-slate-600 px-3 rounded text-xs">Find</button>
-                    </div>
-                    <div id="calc-result" class="text-[10px] text-blue-300 italic"></div>
-                </div>
-            </div>
+  <label title="Interval in scale degrees/EDO steps for one column to the right.">Horizontal Steps
+    <input id="hSteps" type="number" min="-100" max="100" value="1" />
+  </label>
+
+  <label title="Interval in scale degrees/EDO steps for one row down.">Vertical Steps
+    <input id="vSteps" type="number" min="-100" max="100" value="7" />
+  </label>
+  <!-- NEW INPUTS END -->
+
+
+  <label>Tuning type
+    <select id="tuningType">
+      <option value="edo">EDO</option>
+      <!-- Non-octave and JI tunings are currently placeholders -->
+      <option value="nonoctave">Nonoctave (xedY)</option>
+      <option value="ji">Just Intonation (prime limit)</option>
+    </select>
+  </label>
+
+  <label id="edoParams">EDO steps (N)
+    <input id="edoSteps" type="number" min="2" max="4294967296" value="12" />
+  </label>
+
+  <label id="nonoParams" style="display:none">Nonoctave (format `xedY`, e.g. `13ed3`)
+    <input id="nonoSpec" type="text" placeholder="13ed3" value="13ed3" />
+  </label>
+
+  <label id="jiParams" style="display:none">Prime limit
+    <input id="jiPrime" type="number" min="2" max="97" value="5" />
+  </label>
+
+  <label>Root note (name)
+    <input id="rootNoteName" type="text" value="C4" />
+  </label>
+
+  <label>Root frequency (Hz)
+    <input id="rootFreq" type="number" min="1" max="20000" value="261.6256" step="0.0001" />
+  </label>
+
+  <label style="min-width: 250px;">Scale Subset (Select Notes)
+    <select id="scaleSubset" multiple size="6"></select>
+    <div class="small mt-1">(Hold Ctrl/Cmd to select multiple)</div>
+  </label>
+
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button id="applyBtn">Apply Grid & Tuning</button>
+    <button id="generateScaleBtn">Generate Scale Subset</button>
+    <button id="stopAllBtn" title="Stop all playing voices">Stop All</button>
+  </div>
+
+  <div style="flex:1"></div>
+  
+  <!-- NEW MODE ROTATION DROPDOWN -->
+  <label style="min-width: 150px;">Start Step (Mode)
+    <select id="modeSelector"></select>
+  </label>
+  <!-- END NEW DROPDOWN -->
+
+  <!-- Volume Slider -->
+  <label>Volume
+    <input id="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.8" />
+  </label>
+
+  <!-- Sustain Toggle -->
+  <label>Sustain
+    <input id="sustainToggle" type="checkbox" checked />
+  </label>
+
+  <label>Waveform
+    <select id="wave">
+      <option>sine</option>
+      <option>triangle</option>
+      <option>sawtooth</option>
+      <option>square</option>
+      <option>piano</option>
+      <option>guitar</option>
+      <option>violin</option>
+      <option>organ</option>
+      <option>electric_guitar</option>
+    </select>
+  </label>
+
+  <label>Release (ms)
+    <input id="release" type="number" min="5" max="10000" value="120" />
+  </label>
+  
+  <!-- AUDIO RECORDING CONTROLS -->
+  <div class="flex flex-col gap-2">
+      <button id="recordBtn" class="!px-4">
+          <span id="recordText">Record</span>
+      </button>
+      <button id="stopRecordBtn" disabled class="!px-4">Stop</button>
+  </div>
+  <!-- END AUDIO RECORDING CONTROLS -->
+  
+</div>
+
+<div id="gridWrap">
+  <canvas id="gridCanvas"></canvas>
+</div>
+
+<div class="status">
+  <div id="tuningText">Tuning: —</div>
+  <div class="small" id="notesLegend"></div>
+  <div class="small mt-1">
+      <span id="recordingStatus"></span>
+      <span id="recordingHint">The recorder exports as **WAV audio** (uncompressed, lossless quality).</span>
+  </div>
+</div>
+
+<!-- SCALE GENERATOR MODAL -->
+<div id="scaleGeneratorModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Circle-of-Fifths Scale Generator</h3>
+        <p class="small" style="color:#666;">This tool uses the current **EDO Steps (N)** value for quantization.</p>
+
+        <label>Generator (Ratio x/y, Cents, or EDO Steps x\y, e.g., 3/2 or 7\12):
+          <input id="gen_generator" value="700">
+        </label>
+        <label>Period (Ratio x/y, Cents, or EDO Steps x\y, eg., 2/1 or 12\12):
+          <input id="gen_period" value="1200">
+        </label>
+        <label>UDP (e.g., up|down(periods), like 3|3(1)):
+          <input id="gen_udp" value="3|3(1)">
+        </label>
+
+        <div class="modal-controls">
+            <button id="gen_cancelBtn" style="background:#ccc; color:#333;">Cancel</button>
+            <button id="gen_applyBtn">Generate & Apply</button>
         </div>
     </div>
+</div>
+<!-- /MODAL -->
 
-    <script>
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const masterGain = audioCtx.createGain();
-        masterGain.connect(audioCtx.destination);
-        masterGain.gain.value = 0.5;
+<script>
+let gridState = {
+  rows: 6, cols: 12, keySize: 64,
+  // NEW PROPERTIES
+  rootKeyIndex: 1, // 1-based index for the key that is step 0 of the mode
+  hSteps: 1, // Steps between columns
+  vSteps: 7, // Steps between rows
+  // END NEW PROPERTIES
+  tuning: { type:'edo', edo: 12 },
+  rootFreq: 261.6256, rootName: 'C4',
+  edoNameTable: null, nonoInfo: null, jiRatios: null,
+  subsetPattern: [], // Initially populated in buildStateFromUI
+};
 
-        const activeOscs = new Map();
-        const C4_FREQ = 261.6256;
+// --- WEB AUDIO API SETUP ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const masterGain = audioCtx.createGain();
 
-        const CHAIN_OF_FIFTHS = [
-            "Fbb", "Cbb", "Gbb", "Dbb", "Abb", "Ebb", "Bbb", 
-            "Fb", "Cb", "Gb", "Db", "Ab", "Eb", "Bb", 
-            "F", "C", "G", "D", "A", "E", "B", 
-            "F#", "C#", "G#", "D#", "A#", "E#", "B#", 
-            "Fx", "Cx", "Gx"
-        ];
-        const C_INDEX = 15;
+// Connect masterGain only to speakers
+masterGain.connect(audioCtx.destination);
 
-        const state = {
-            edo: 12,
-            cols: 24,
-            rows: 10,
-            rowOffset: 7,
-            keySize: 70,
-            sustain: false
+// --- WAV RECORDING STATE AND ELEMENTS ---
+let audioProcessor = null;
+let recordingBuffers = [];
+let isRecording = false;
+const NUM_CHANNELS = 1; 
+
+const recordBtn = document.getElementById('recordBtn');
+const recordText = document.getElementById('recordText');
+const stopRecordBtn = document.getElementById('stopRecordBtn');
+const recordingStatus = document.getElementById('recordingStatus');
+
+
+// Synth Class for Audio Generation (same as before)
+class Synth {
+    constructor(ctx, gainNode, waveType, releaseTime) {
+        this.ctx = ctx;
+        this.masterGain = gainNode;
+        this.releaseTime = releaseTime / 1000;
+        this.gain = ctx.createGain();
+        this.gain.gain.setValueAtTime(0, ctx.currentTime);
+        this.gain.connect(this.masterGain);
+
+        this.oscillators = [];
+        this.waveType = waveType;
+        
+        this.initOscillators();
+    }
+    
+    initOscillators() {
+        // Defines the harmonic structure for custom waveforms
+        const getPeriodicWave = (type) => {
+            const maxHarmonics = 16;
+            const real = new Array(maxHarmonics + 1).fill(0);
+            
+            // Set fundamental (1st harmonic)
+            real[1] = 1.0; 
+            
+            if (type === 'piano') {
+                // Quick decay, complex lower harmonics for percussive sound
+                real[2] = 0.5; real[3] = 0.4; real[4] = 0.3; real[5] = 0.2; real[6] = 0.1;
+                real[7] = 0.05; real[8] = 0.02; real[9] = 0.01; real[10] = 0.005; real[11] = 0.002;
+                real[12] = 0.001; real[13] = 0.0005; real[14] = 0.0002; real[15] = 0.0001; real[16] = 0.00005;
+            } else if (type === 'guitar') {
+                // Strong odd harmonics for twang, quick high-end drop
+                real[2] = 0.1; real[3] = 0.7; real[4] = 0.0; real[5] = 0.4; real[6] = 0.0;
+                real[7] = 0.2; real[8] = 0.0; real[9] = 0.1; real[10] = 0.0; real[11] = 0.05;
+                real[12] = 0.0; real[13] = 0.0; real[14] = 0.0; real[15] = 0.03; real[16] = 0.0;
+            } else if (type === 'violin') {
+                // Rich high-frequency content for bright, sustained, bowed sound
+                real[2] = 0.8; real[3] = 0.6; real[4] = 0.5; real[5] = 0.4; real[6] = 0.3;
+                real[7] = 0.25; real[8] = 0.2; real[9] = 0.15; real[10] = 0.1; real[11] = 0.08;
+                real[12] = 0.05; real[13] = 0.04; real[14] = 0.03; real[15] = 0.02; real[16] = 0.01;
+            } else if (type === 'organ') {
+                // Drawbar approximation: 8', 4', 2 2/3' (1st, 2nd, 3rd harmonics)
+                real[2] = 0.6; real[3] = 0.4; real[4] = 0.2; real[5] = 0.1;
+            } else if (type === 'electric_guitar') {
+                // Heavy odd harmonics for distortion/compression effect
+                real[2] = 0.1; real[3] = 0.8; real[4] = 0.1; real[5] = 0.6; real[7] = 0.4; real[9] = 0.2;
+            }
+            
+            // Imaginary parts typically kept at zero for symmetric waveforms
+            const imag = new Array(maxHarmonics + 1).fill(0);
+            return this.ctx.createPeriodicWave(real, imag, { disableNormalization: false });
         };
-
-        let isDragging = false;
-        let startX, startY, scrollLeft, scrollTop;
-
-        function setupPanning() {
-            const slider = document.getElementById('grid-viewport');
-
-            // Mouse Events
-            slider.addEventListener('mousedown', (e) => {
-                if (e.target.classList.contains('key')) return;
-                isDragging = true;
-                startX = e.pageX - slider.offsetLeft;
-                startY = e.pageY - slider.offsetTop;
-                scrollLeft = slider.scrollLeft;
-                scrollTop = slider.scrollTop;
-            });
-
-            window.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
-
-            slider.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                e.preventDefault();
-                const x = e.pageX - slider.offsetLeft;
-                const y = e.pageY - slider.offsetTop;
-                const walkX = (x - startX) * 1.5;
-                const walkY = (y - startY) * 1.5;
-                slider.scrollLeft = scrollLeft - walkX;
-                slider.scrollTop = scrollTop - walkY;
-            });
-
-            // Touch Events (for areas NOT on keys)
-            slider.addEventListener('touchstart', (e) => {
-                if (e.target.classList.contains('key')) return;
-                isDragging = true;
-                startX = e.touches[0].pageX - slider.offsetLeft;
-                startY = e.touches[0].pageY - slider.offsetTop;
-                scrollLeft = slider.scrollLeft;
-                scrollTop = slider.scrollTop;
-            }, {passive: true});
-
-            slider.addEventListener('touchmove', (e) => {
-                if (!isDragging) return;
-                const x = e.touches[0].pageX - slider.offsetLeft;
-                const y = e.touches[0].pageY - slider.offsetTop;
-                const walkX = (x - startX);
-                const walkY = (y - startY);
-                slider.scrollLeft = scrollLeft - walkX;
-                slider.scrollTop = scrollTop - walkY;
-            }, {passive: true});
+        
+        // Use a single oscillator for custom waveforms
+        if (this.waveType === 'piano' || this.waveType === 'guitar' || this.waveType === 'violin' || this.waveType === 'organ' || this.waveType === 'electric_guitar') {
+            const osc = this.ctx.createOscillator();
+            osc.setPeriodicWave(getPeriodicWave(this.waveType));
+            osc.connect(this.gain);
+            this.oscillators.push({ osc, multiplier: 1 });
+        } else {
+            // Standard wave forms
+            const osc = this.ctx.createOscillator();
+            osc.type = this.waveType;
+            osc.connect(this.gain);
+            this.oscillators.push({ osc, multiplier: 1 });
         }
 
-        function getBestFifth(edo) {
-            return Math.round((701.9550009 / 1200) * edo);
+        this.oscillators.forEach(item => {
+            item.osc.start();
+        });
+    }
+
+    start(frequency) {
+        const now = this.ctx.currentTime;
+        
+        this.oscillators.forEach(item => {
+            const freq = frequency * (item.multiplier || 1);
+            item.osc.frequency.setValueAtTime(freq, now);
+        });
+
+        this.gain.gain.cancelScheduledValues(now);
+        this.gain.gain.setValueAtTime(0, now);
+        this.gain.gain.linearRampToValueAtTime(1 * this.masterGain.gain.value, now + 0.005); 
+    }
+
+    release() {
+        const now = this.ctx.currentTime;
+        this.gain.gain.cancelScheduledValues(now);
+        this.gain.gain.setValueAtTime(this.gain.gain.value, now);
+        this.gain.gain.linearRampToValueAtTime(0, now + this.releaseTime);
+        
+        this.oscillators.forEach(item => {
+            try {
+                item.osc.stop(now + this.releaseTime + 0.05); 
+            } catch (e) {}
+        });
+    }
+}
+
+
+// --- UI ELEMENTS ---
+const canvas = document.getElementById('gridCanvas');
+const body = document.body;
+const darkModeToggle = document.getElementById('darkModeToggle');
+const ctx = canvas.getContext('2d', { alpha:false });
+const rowsInput = document.getElementById('rows');
+const colsInput = document.getElementById('cols');
+const keySizeInput = document.getElementById('keySize');
+// NEW ELEMENTS
+const rootKeyIndexInput = document.getElementById('rootKeyIndex');
+const hStepsInput = document.getElementById('hSteps');
+const vStepsInput = document.getElementById('vSteps');
+// END NEW ELEMENTS
+const tuningType = document.getElementById('tuningType');
+const edoStepsInput = document.getElementById('edoSteps');
+const nonoParams = document.getElementById('nonoParams');
+const nonoSpecInput = document.getElementById('nonoSpec');
+const jiParams = document.getElementById('jiParams');
+const jiPrimeInput = document.getElementById('jiPrime');
+const rootFreqInput = document.getElementById('rootFreq');
+const rootNoteNameInput = document.getElementById('rootNoteName');
+const scaleSubsetSelect = document.getElementById('scaleSubset');
+const applyBtn = document.getElementById('applyBtn');
+const tuningText = document.getElementById('tuningText');
+const notesLegend = document.getElementById('notesLegend');
+const waveSel = document.getElementById('wave');
+const releaseInput = document.getElementById('release');
+const edoParams = document.getElementById('edoParams');
+const volumeSlider = document.getElementById('volumeSlider');
+const sustainToggle = document.getElementById('sustainToggle');
+const stopAllBtn = document.getElementById('stopAllBtn');
+const generateScaleBtn = document.getElementById('generateScaleBtn'); 
+const scaleGeneratorModal = document.getElementById('scaleGeneratorModal');
+const gen_generator = document.getElementById('gen_generator');
+const gen_period = document.getElementById('gen_period');
+const gen_udp = document.getElementById('gen_udp');
+const gen_cancelBtn = document.getElementById('gen_cancelBtn');
+const gen_applyBtn = document.getElementById('gen_applyBtn');
+const modeSelector = document.getElementById('modeSelector');
+
+
+// --- AUDIO/SYNTH STATE ---
+const activeVoices = new Map(); 
+const pointerToIdx = new Map(); 
+
+let baseSubsetPattern = []; 
+let currentModeIndex = 0; 
+let fullScaleStepsData = []; 
+
+
+if(volumeSlider) {
+  masterGain.gain.value = parseFloat(volumeSlider.value);
+  volumeSlider.addEventListener('input', (e) => {
+    masterGain.gain.value = parseFloat(e.target.value);
+  });
+}
+
+// --- CORE HELPER FUNCTIONS (WAV Encoding) ---
+
+function mergeBuffers(buffers, totalLength) {
+    const result = new Float32Array(totalLength);
+    let offset = 0;
+    for (let i = 0; i < buffers.length; i++) {
+        result.set(buffers[i], offset);
+        offset += buffers[i].length;
+    }
+    return result;
+}
+
+function bufferToWave(interleavedData, sampleRate) {
+    const numChannels = NUM_CHANNELS;
+    const bitDepth = 16;
+    const bytesPerSample = bitDepth / 8;
+    const blockAlign = numChannels * bytesPerSample;
+    const byteRate = sampleRate * blockAlign;
+    const totalBytes = interleavedData.length * bytesPerSample;
+
+    const buffer = new ArrayBuffer(44 + totalBytes);
+    const view = new DataView(buffer);
+
+    function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
         }
+    }
 
-        function getNoteName(step, edo) {
-            const best5th = getBestFifth(edo);
-            let candidates = [];
-            for (let i = 0; i < CHAIN_OF_FIFTHS.length; i++) {
-                const fifthSpan = i - C_INDEX;
-                const baseStep = ((fifthSpan * best5th) % edo + edo) % edo;
-                let diff = step - baseStep;
-                if (diff > edo / 2) diff -= edo;
-                if (diff < -edo / 2) diff += edo;
-                candidates.push({
-                    name: CHAIN_OF_FIFTHS[i],
-                    arrows: diff,
-                    absArrows: Math.abs(diff),
-                    absFifthSpan: Math.abs(fifthSpan)
-                });
-            }
-            candidates.sort((a, b) => {
-                if (a.absArrows !== b.absArrows) return a.absArrows - b.absArrows;
-                return a.absFifthSpan - b.absFifthSpan;
-            });
-            const best = candidates[0];
-            let finalName = best.name;
-            if (best.arrows > 0) finalName = "^".repeat(best.arrows) + finalName;
-            if (best.arrows < 0) finalName = "v".repeat(Math.abs(best.arrows)) + finalName;
-            return finalName;
+    /* RIFF header */
+    writeString(view, 0, 'RIFF'); 
+    view.setUint32(4, 36 + totalBytes, true); 
+    writeString(view, 8, 'WAVE'); 
+
+    /* FMT sub-chunk */
+    writeString(view, 12, 'fmt '); 
+    view.setUint32(16, 16, true); 
+    view.setUint16(20, 1, true); 
+    view.setUint16(22, numChannels, true); 
+    view.setUint32(24, sampleRate, true); 
+    view.setUint32(28, byteRate, true); 
+    view.setUint16(32, blockAlign, true); 
+    view.setUint16(34, bitDepth, true); 
+
+    /* DATA sub-chunk */
+    writeString(view, 36, 'data'); 
+    view.setUint32(40, totalBytes, true); 
+
+    /* Write PCM data (conversion from Float32 to Int16) */
+    function floatTo16BitPCM(output, offset, input) {
+        for (let i = 0; i < input.length; i++, offset += 2) {
+            const s = Math.max(-1, Math.min(1, input[i]));
+            output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
         }
+    }
+    floatTo16BitPCM(view, 44, interleavedData);
 
-        function getFrequency(totalStep, edo) {
-            return C4_FREQ * Math.pow(2, totalStep / edo);
+    return new Blob([view], { type: 'audio/wav' });
+}
+
+
+// --- CORE HELPER FUNCTIONS (Tuning/Grid) ---
+
+function centsOfRatio(r){ return 1200 * Math.log2(r); }
+
+function parseInterval(input) {
+  input = input.trim();
+  if(!input) return NaN;
+
+  if (input.includes('\\')) {
+    const parts = input.split('\\').map(x => parseFloat(x.trim()));
+    if (parts.length === 2 && isFinite(parts[0]) && isFinite(parts[1]) && parts[1] !== 0) {
+      return 1200 * (parts[0] / parts[1]); 
+    }
+    return NaN;
+  } 
+  
+  if (input.includes('/')){
+    const [a,b] = input.split('/').map(x=>parseFloat(x.trim()));
+    if(isFinite(a) && isFinite(b) && b!==0) return centsOfRatio(a/b);
+    return NaN;
+  } 
+  
+  const v = parseFloat(input);
+  return isFinite(v) ? v : NaN; 
+}
+
+function centsToEDOStepRaw(cents, N) {
+  if (N === 0) return 0;
+  return Math.round((cents / 1200) * N);
+}
+
+function parseUDP(udpStr) {
+  const match = udpStr.match(/(\d+)\|(\d+)\((\d+)\)/);
+  if (!match) return null;
+  return {
+    up: parseInt(match[1]),
+    down: parseInt(match[2]),
+    periods: parseInt(match[3])
+  };
+}
+
+function mod(a, b) {
+  return ((a % b) + b) % b;
+}
+
+const canonicalChainOfFifths = ["Dbb", "Abb", "Ebb", "Bbb", "Fb","Cb","Gb","Db","Ab","Eb","Bb","F","C","G","D","A","E","B","F#","C#","G#","D#","A#","E#","B#", "Fx", "Cx"];
+const fifthspanMap = {};
+canonicalChainOfFifths.forEach((name, i) => { const span = i - canonicalChainOfFifths.indexOf("C"); fifthspanMap[name] = span; });
+
+function generateEDONaming(N){ 
+  const kfloat = N * Math.log2(3/2); const k = Math.round(kfloat); const wholeTone = (2 * k) % N; const chromaticRaw = (7 * k) - (4 * N); const chromatic = ((chromaticRaw % N) + N) % N; const diatonic = ((wholeTone - chromatic) % N + N) % N;
+  const fifthOffsets = { 'C':0, 'G':1, 'D':2, 'A':3, 'E':4, 'B':5, 'F':-1 }; const letterSteps = {};
+  for(const [L, offs] of Object.entries(fifthOffsets)){ let pos = (offs * k) % N; pos = (pos + N) % N; letterSteps[L] = pos; }
+  function canonicalNameToStep(name){ const letter = name[0]; const rest = name.slice(1); let base = letterSteps[letter] ?? 0; for(const ch of rest){ if(ch === '#') base = (base + chromatic) % N; else if(ch === 'b') base = (base - chromatic + N) % N; } return (base + N) % N; }
+  const stepToCanonicalNames = new Map();
+  for(const cname of canonicalChainOfFifths){ const s = canonicalNameToStep(cname); if(!stepToCanonicalNames.has(s)) stepToCanonicalNames.set(s, []); stepToCanonicalNames.get(s).push(cname); }
+  const canonicalSteps = Array.from(stepToCanonicalNames.keys());
+  const names = Array.from({length:N}, ()=>[]);
+  for(const [s,list] of stepToCanonicalNames.entries()) names[s] = [...new Set(list)];
+  for(let s=0; s<N; s++){
+    if(names[s].length > 0) continue;
+    let best = null; let bestAbs = Infinity; let bestSigned = 0; let bestCanonicalStep = null;
+    for(const cs of canonicalSteps){
+      let signed = ((s - cs + N) % N);
+      if(signed > N/2) signed -= N;
+      const absd = Math.abs(signed);
+      if(absd < bestAbs){ bestAbs = absd; bestSigned = signed; bestCanonicalStep = cs; }
+    }
+    const baseNames = stepToCanonicalNames.get(bestCanonicalStep) || ['?'];
+    const prefList = baseNames.map(bn => {
+      if(bestSigned > 0) return '^'.repeat(bestSigned) + bn;
+      if(bestSigned < 0) return 'v'.repeat(-bestSigned) + bn;
+      return bn;
+    });
+    names[s] = prefList;
+  }
+  return { names, info: {k, wholeTone, chromaticRaw, chromatic, diatonic} };
+}
+
+function pickSimplestName(list){ 
+  if(!Array.isArray(list) || list.length===0) return '?';
+  const uniq = Array.from(new Set(list));
+  function analyze(n){
+    let s = n; let prefixShift = 0;
+    while(s[0] === '^' || s[0] === 'v'){ prefixShift += (s[0] === '^' ? 1 : -1); s = s.slice(1); }
+    const core = s; const spanFromC = (fifthspanMap[core] ?? 0) + prefixShift; const absSpan = Math.abs(spanFromC);
+    const isNatural = /^[A-G]$/.test(core); const sharps = (core.match(/#/g)||[]).length; const flats = (core.match(/b/g)||[]).length;
+    const accidentalCount = sharps + flats; const kindScore = isNatural ? 0 : (sharps>0 ? 1 : (flats>0 ? 2 : 3));
+    return {orig: n, absSpan, kindScore, accidentalCount, length: n.length};
+  }
+  const analyzed = uniq.map(s => ({s, a: analyze(s)}));
+  analyzed.sort((A,B)=>{
+    if(A.a.absSpan !== B.a.absSpan) return A.a.absSpan - B.a.absSpan;  
+    if(A.a.kindScore !== B.a.kindScore) return A.a.kindScore - B.a.kindScore;
+    if(A.a.accidentalCount !== B.a.accidentalCount) return A.a.accidentalCount - B.a.accidentalCount;
+    if(A.a.length !== B.a.length) return A.a.length - B.a.length;
+    return A.s.localeCompare(B.s);
+  });
+  return analyzed[0].s;
+}
+
+
+// --- MODAL CONTROLS ---
+
+function showModal() { scaleGeneratorModal.style.display = 'flex'; }
+function hideModal() { scaleGeneratorModal.style.display = 'none'; }
+function showModalMessage(title, message) {
+    const existing = document.getElementById('temp-modal');
+    if (existing) existing.remove();
+    
+    const modalHtml = `
+      <div id="temp-modal" class="modal-overlay" style="display:flex;">
+          <div class="modal-content">
+              <h3>${title}</h3><p>${message}</p>
+              <div class="modal-controls">
+                  <button onclick="document.getElementById('temp-modal').remove()" style="background:#f00; color:white;">Close</button>
+              </div>
+          </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+generateScaleBtn.addEventListener('click', () => {
+    // Resume audio on button click (secondary check)
+    if (audioCtx.state !== 'running') { audioCtx.resume().catch(e => console.error("Audio resume failed:", e)); }
+    
+    if (tuningType.value !== 'edo') {
+        showModalMessage('Action Required', 'The scale generator only works when **Tuning Type** is set to **EDO**.');
+        return;
+    }
+    showModal();
+});
+gen_cancelBtn.addEventListener('click', hideModal);
+gen_applyBtn.addEventListener('click', () => {
+    generateAndApplyScale(gen_generator.value, gen_period.value, gen_udp.value);
+});
+
+
+// --- SCALE GENERATOR & MODE LOGIC ---
+
+function generateAndApplyScale(generatorStr, periodStr, udpStr) {
+    const N = parseInt(edoStepsInput.value);
+
+    if (tuningType.value !== 'edo' || !N || N < 2) {
+        showModalMessage('Error', 'Please ensure Tuning Type is EDO and EDO steps (N) is a valid number (> 1).');
+        return;
+    }
+
+    const generatorCents = parseInterval(generatorStr);
+    const periodCents = parseInterval(periodStr);
+    const udp = parseUDP(udpStr);
+
+    if (!udp || isNaN(generatorCents) || isNaN(periodCents)) {
+        showModalMessage('Error', 'Invalid input for Generator, Period, or UDP format. Please check your values.');
+        return;
+    }
+
+    const generatorStepRaw = centsToEDOStepRaw(generatorCents, N);
+    const periodStepRaw = centsToEDOStepRaw(periodCents, N);
+
+    if (Math.abs(periodStepRaw) < 1) {
+        showModalMessage('Error', 'The Period interval cannot quantize to zero EDO steps. It must represent at least one full step.');
+        return;
+    }
+
+    const pitchesEDOSteps = new Set();
+    
+    for (let p = 0; p < udp.periods; p++) {
+        const periodOffset = p * periodStepRaw; 
+        for (let i = -udp.down; i <= udp.up; i++) {
+            let step = (i * generatorStepRaw) + periodOffset; 
+            step = mod(step, N); 
+            pitchesEDOSteps.add(step);
         }
+    }
+    
+    // The base pattern MUST be sorted for interval calculation and UI
+    const finalScale = Array.from(pitchesEDOSteps).sort((a, b) => a - b);
+    
+    if (finalScale.length < 2) {
+        showModalMessage('Error', 'The generated scale has fewer than 2 unique steps. Try different parameters.');
+        return;
+    }
 
-        function playNote(totalStep) {
-            if (activeOscs.has(totalStep)) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(getFrequency(totalStep, state.edo), audioCtx.currentTime);
-            
-            gain.gain.setValueAtTime(0, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02);
-            
-            osc.connect(gain);
-            gain.connect(masterGain);
-            osc.start();
-            
-            activeOscs.set(totalStep, { osc, gain });
-            const el = document.querySelector(`[data-step="${totalStep}"]`);
-            if (el) el.classList.add('active');
+    // Set the BASE pattern and reset the mode
+    baseSubsetPattern = finalScale;
+    currentModeIndex = 0;
+    
+    applyBaseSubsetToGrid(); // Applies mode 0 and updates UI
+    hideModal();
+}
+
+/**
+ * Calculates the current mode pattern by rotating the intervals of the base scale.
+ * The result is an UNSORTED array of EDO steps in sequential order.
+ */
+function calculateModePattern(basePattern, startIndex) {
+    if (basePattern.length === 0) return [];
+    
+    const N = gridState.tuning.edo;
+    const size = basePattern.length;
+    
+    // 1. Calculate intervals (size intervals including the one closing the octave)
+    const intervals = [];
+    for (let i = 0; i < size; i++) {
+        const currentStep = basePattern[i];
+        const nextStepInFullEDO = (i === size - 1) ? N : basePattern[i + 1];
+        
+        let interval = nextStepInFullEDO - currentStep;
+        
+        if (i === size - 1 && currentStep !== 0) {
+            interval = N - currentStep; 
+        } else if (interval < 0) {
+             interval += N; 
         }
+        intervals.push(interval);
+    }
+    
+    // 2. Rotate intervals based on the start index
+    const rotationAmount = startIndex % size;
+    const rotatedIntervals = intervals.slice(rotationAmount).concat(intervals.slice(0, rotationAmount));
+    
+    // 3. Reconstruct the steps starting from EDO step 0
+    const modePattern = [0];
+    let currentStep = 0;
+    
+    // We only need to generate size - 1 steps (steps 1 through size-1)
+    for (let i = 0; i < size - 1; i++) { 
+        currentStep = (currentStep + rotatedIntervals[i]);
+        modePattern.push(currentStep);
+    }
 
-        function stopNote(totalStep) {
-            const entry = activeOscs.get(totalStep);
-            if (entry) {
-                entry.gain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.03);
-                setTimeout(() => {
-                    try {
-                        entry.osc.stop();
-                        entry.osc.disconnect();
-                    } catch(e) {}
-                }, 150);
-                activeOscs.delete(totalStep);
-                const el = document.querySelector(`[data-step="${totalStep}"]`);
-                if (el) el.classList.remove('active');
-            }
+    // This array is the list of EDO steps for the current mode, e.g., for 12-EDO, C Ionian is [0, 2, 4, 5, 7, 9, 11]
+    return modePattern; 
+}
+
+/**
+ * Applies the base pattern and current mode index to the grid state, 
+ * then updates all related UI elements.
+ */
+function applyBaseSubsetToGrid() {
+    // If the base pattern is empty, default to full scale (0..N-1)
+    if (baseSubsetPattern.length === 0 && gridState.tuning.edo) {
+        baseSubsetPattern = Array.from({length: gridState.tuning.edo}, (_, i) => i);
+    }
+    
+    // 1. Calculate the new mode pattern 
+    const modePattern = calculateModePattern(baseSubsetPattern, currentModeIndex);
+    
+    // 2. Apply the calculated pattern to the grid state
+    gridState.subsetPattern = modePattern;
+    
+    // 3. Update the UI controls
+    populateModeSelector(baseSubsetPattern);
+    applySubsetPatternToUI(baseSubsetPattern); // Updates the check marks in the multi-select (shows the original scale notes)
+    
+    // RENDER
+    updateLegend();
+    resizeCanvas();
+    renderGrid();
+}
+
+// --- STATE MANAGEMENT AND UI UPDATES ---
+
+function generateFullScaleSteps(tuning, edoNameTable, jiRatios) {
+  let steps = []; let N = 0; 
+  if (tuning.type === 'edo') {
+    N = tuning.edo;
+    for (let i = 0; i < N; i++) {
+      steps.push({ index: i, name: pickSimplestName(edoNameTable[i] || ['?']) });
+    }
+  } 
+  return { steps, N };
+}
+
+function populateScaleSubsetSelect(fullSteps) {
+  const select = document.getElementById('scaleSubset');
+  select.innerHTML = ''; 
+  if (fullSteps.length === 0) {
+    select.innerHTML = '<option disabled>No steps available</option>';
+    return;
+  }
+  
+  // Update the label to show item count
+  const labelDiv = select.parentNode.querySelector('.small');
+  if (labelDiv) {
+      labelDiv.previousSibling.textContent = `Scale Subset (Select Notes) [${fullSteps.length} Items]`;
+  }
+  
+  for (const step of fullSteps) {
+    const option = document.createElement('option');
+    option.value = step.index; 
+    option.textContent = `[${step.index}] ${step.name}`; 
+    select.appendChild(option);
+  }
+}
+
+function populateModeSelector(subsetSteps) {
+    modeSelector.innerHTML = '';
+    
+    if (subsetSteps.length === 0) {
+        modeSelector.innerHTML = '<option disabled>No steps</option>';
+        return;
+    }
+
+    const fullStepsDataMap = new Map(fullScaleStepsData.map(s => [s.index, s.name]));
+
+    subsetSteps.forEach((step, index) => {
+        const option = document.createElement('option');
+        const name = fullStepsDataMap.get(step) || `Step ${step}`;
+        option.value = index; // We store the index into the baseSubsetPattern
+        option.textContent = `${name} (${step})`;
+        modeSelector.appendChild(option);
+    });
+    
+    // Restore mode index selection
+    modeSelector.value = currentModeIndex;
+}
+
+function applySubsetPatternToUI(pattern) {
+    for (const option of scaleSubsetSelect.options) { option.selected = false; }
+    const patternSet = new Set(pattern.map(String)); 
+    for (const option of scaleSubsetSelect.options) {
+        if (patternSet.has(option.value)) {
+            option.selected = true;
         }
+    }
+}
 
-        function render() {
-            const grid = document.getElementById('synth-grid');
-            grid.innerHTML = '';
-            
-            const { edo, rows, cols, rowOffset, keySize } = state;
-            grid.style.gridTemplateColumns = `repeat(${cols}, ${keySize}px)`;
-            grid.style.width = `${cols * keySize}px`;
+function getSelectedSubset() {
+    const selections = [];
+    for (const option of scaleSubsetSelect.options) {
+      if (option.selected) {
+        selections.push(parseInt(option.value, 10));
+      }
+    }
+    // Final pattern must always contain 0 and be sorted to correctly represent the base scale steps.
+    const finalPattern = [...new Set([0, ...selections])].sort((a, b) => a - b);
+    return finalPattern;
+}
 
-            for (let r = rows - 1; r >= 0; r--) {
-                for (let c = 0; c < cols; c++) {
-                    const totalStep = (r * rowOffset) + c;
-                    const key = document.createElement('div');
-                    key.className = 'key';
-                    key.style.width = `${keySize}px`;
-                    key.style.height = `${keySize}px`;
-                    key.dataset.step = totalStep;
+function updateLegend(){
+  const t = gridState.tuning;
+  const subsetSize = gridState.subsetPattern.length;
+  let txt = `Grid: ${gridState.rows}×${gridState.cols} • Key size: ${gridState.keySize}px • Root: ${gridState.rootName} @ ${gridState.rootFreq} Hz. `;
+  
+  if(t.type === 'edo') {
+      txt += `${t.edo}-EDO. `;
+      if (subsetSize > 0) {
+          txt += `Scale Size: ${subsetSize}. Mode: ${modeSelector.options[currentModeIndex]?.textContent || 'Ionian'}. `;
+          txt += `Mapping: H=${gridState.hSteps} steps, V=${gridState.vSteps} steps, Root Key=${gridState.rootKeyIndex}.`;
+      }
+  }
+  
+  tuningText.textContent = `Tuning: ${txt}`;
+}
 
-                    const octave = Math.floor(totalStep / edo) + 4;
-                    const stepInOctave = ((totalStep % edo) + edo) % edo;
-                    const name = getNoteName(stepInOctave, edo);
+function buildStateFromUI(){
+  const rows = Math.max(1, parseInt(rowsInput.value) || 6);
+  const cols = Math.max(1, parseInt(colsInput.value) || 12);
+  const keySize = Math.max(8, parseInt(keySizeInput.value) || 64);
+  const rootFreq = Math.max(1, parseFloat(rootFreqInput.value) || 261.6256);
+  const rootName = rootNoteNameInput.value || 'root';
+  const type = tuningType.value;
+  
+  // NEW: Read grid mapping parameters
+  const maxKeyIndex = rows * cols;
+  const rootKeyIndex = Math.max(1, Math.min(maxKeyIndex, parseInt(rootKeyIndexInput.value) || 1));
+  const hSteps = parseInt(hStepsInput.value) || 1;
+  const vSteps = parseInt(vStepsInput.value) || 7;
 
-                    key.innerHTML = `
-                        <span class="font-bold text-blue-100">${name}${octave}</span>
-                        <span class="text-[8px] opacity-40 mt-1">${getFrequency(totalStep, edo).toFixed(2)}</span>
-                    `;
+  gridState.rows = rows; gridState.cols = cols; gridState.keySize = keySize;
+  gridState.rootFreq = rootFreq; gridState.rootName = rootName;
+  // Set new properties
+  gridState.rootKeyIndex = rootKeyIndex;
+  gridState.hSteps = hSteps;
+  gridState.vSteps = vSteps;
 
-                    // Consolidated Event Handler to prevent double triggers
-                    const onActionDown = (e) => {
-                        // Prevent the browser from firing secondary events (like mousedown after touchstart)
-                        if (e.cancelable) e.preventDefault();
-                        
-                        if (state.sustain) {
-                            if (activeOscs.has(totalStep)) stopNote(totalStep);
-                            else playNote(totalStep);
-                        } else {
-                            playNote(totalStep);
-                        }
-                    };
+  let totalSteps = 0; 
+  let tuningTextContent = '';
 
-                    const onActionUp = (e) => {
-                        if (!state.sustain) stopNote(totalStep);
-                    };
+  if(type === 'edo'){
+    const N = Math.max(2, parseInt(edoStepsInput.value) || 12);
+    gridState.tuning = { type:'edo', edo: N };
+    gridState.edoNameTable = generateEDONaming(N).names;
+    gridState.nonoInfo = null; gridState.jiRatios = null;
+    tuningTextContent = `${N}-EDO (names generated from chain-of-fifths)`;
+  } 
+  
+  const fullStepsResult = generateFullScaleSteps(
+    gridState.tuning, 
+    gridState.edoNameTable, 
+    gridState.jiRatios
+  );
+  fullScaleStepsData = fullStepsResult.steps; // Update global list
+  totalSteps = fullStepsResult.N;
 
-                    // Use touchstart and mousedown but prevent mousedown if touch happened
-                    key.addEventListener('touchstart', onActionDown, { passive: false });
-                    key.addEventListener('mousedown', (e) => {
-                        // On desktop, touch events won't fire, so this proceeds.
-                        // On mobile, touchstart's preventDefault() stops this from firing.
-                        onActionDown(e);
-                    });
+  const oldSubsetLength = scaleSubsetSelect.options.length;
+  const tuningChanged = totalSteps !== oldSubsetLength;
 
-                    key.addEventListener('touchend', onActionUp);
-                    key.addEventListener('mouseup', onActionUp);
-                    key.addEventListener('mouseleave', onActionUp);
+  if (tuningChanged || totalSteps === 0) {
+      populateScaleSubsetSelect(fullScaleStepsData);
+      // Default to full scale selection visually
+      for (const option of scaleSubsetSelect.options) { option.selected = true; }
+  }
+  
+  // Update base pattern from manual selection
+  const manuallySelectedSubset = getSelectedSubset();
+  if (JSON.stringify(manuallySelectedSubset) !== JSON.stringify(baseSubsetPattern)) {
+      baseSubsetPattern = manuallySelectedSubset;
+      currentModeIndex = 0; // Reset mode when base scale changes
+  }
 
-                    grid.appendChild(key);
-                }
-            }
+  // Apply the currently active mode to the grid state
+  applyBaseSubsetToGrid();
 
-            const fifth = getBestFifth(edo);
-            const cents = (fifth * 1200 / edo).toFixed(4);
-            document.getElementById('status-info').innerHTML = 
-                `EDO: ${edo}<br>Best 5th: Step ${fifth} (${cents}c)`;
-        }
+  tuningText.textContent = tuningTextContent;
+  return true;
+}
 
-        function parseScaleInput(val, edo) {
-            if (val.includes('/')) {
-                const [n, d] = val.split('/').map(Number);
-                const cents = 1200 * Math.log2(n / d);
-                const step = Math.round((cents / 1200) * edo);
-                return { step, cents };
-            }
-            if (val.toLowerCase().endsWith('c')) {
-                const cents = parseFloat(val);
-                const step = Math.round((cents / 1200) * edo);
-                return { step, cents };
-            }
-            const step = parseInt(val);
-            return { step, cents: step * (1200 / edo) };
-        }
+/**
+ * Calculates the scale step and octave for a given key index based on the 2D grid mapping.
+ * @param {number} idx - The 0-based linear index of the key (r * cols + c).
+ * @returns {{subsetIndex: number, octaveShift: number}}
+ */
+function calculateGridMapping(idx) {
+    const { rows, cols, rootKeyIndex, hSteps, vSteps, subsetPattern, tuning } = gridState;
+    if (subsetPattern.length === 0) return { subsetIndex: 0, octaveShift: 0 };
+    
+    const subsetLength = subsetPattern.length;
+    
+    // 1. Calculate relative position from the Root Key
+    // Root key is 1-based, convert to 0-based
+    const rootIdx0 = rootKeyIndex - 1; 
+    
+    // Clamp idx for safety, though it should be valid if called correctly
+    if (idx < 0 || idx >= rows * cols) {
+        console.error("Index out of bounds:", idx);
+        return { subsetIndex: 0, octaveShift: 0 };
+    }
+    
+    // Current (r, c)
+    const r = Math.floor(idx / cols);
+    const c = idx % cols;
+    
+    // Root (r_root, c_root)
+    const r_root = Math.floor(rootIdx0 / cols);
+    const c_root = rootIdx0 % cols;
+    
+    // Difference in grid coordinates
+    const r_diff = r - r_root;
+    const c_diff = c - c_root;
+    
+    // 2. Calculate total EDO steps shift from root
+    // This is the total number of steps in the *scale subset* that this key represents
+    const gridStep = (c_diff * hSteps) + (r_diff * vSteps);
+    
+    // 3. Convert total scale steps shift into subset index and octave shift
+    // Octave shift relative to the root key of the current mode
+    const octaveShift = Math.floor(gridStep / subsetLength);
+    
+    // Index within the current scale subset (always positive)
+    const subsetIndex = mod(gridStep, subsetLength);
+    
+    return { subsetIndex, octaveShift, gridStep };
+}
 
-        window.onload = () => {
-            render();
-            setupPanning();
 
-            document.getElementById('refresh-grid').onclick = () => {
-                state.edo = parseInt(document.getElementById('edo-input').value) || 12;
-                state.cols = parseInt(document.getElementById('cols-input').value) || 12;
-                state.rows = parseInt(document.getElementById('rows-input').value) || 5;
-                state.rowOffset = parseInt(document.getElementById('row-offset-input').value) || 0;
-                state.keySize = parseInt(document.getElementById('key-size-input').value) || 70;
-                
-                // Clear existing notes
-                const keysToStop = Array.from(activeOscs.keys());
-                keysToStop.forEach(s => stopNote(s));
-                render();
-            };
+function frequencyForIndex(idx){
+  const t = gridState.tuning; 
+  const root = gridState.rootFreq;
+  const subset = gridState.subsetPattern; 
+  if (subset.length === 0) return root; 
 
-            document.getElementById('volume-slider').oninput = (e) => {
-                masterGain.gain.value = parseFloat(e.target.value);
-            };
+  const { subsetIndex, octaveShift } = calculateGridMapping(idx);
 
-            document.getElementById('sustain-toggle').onchange = (e) => {
-                state.sustain = e.target.checked;
-                if (!state.sustain) {
-                    const keysToStop = Array.from(activeOscs.keys());
-                    keysToStop.forEach(s => stopNote(s));
-                }
-            };
+  const intervalStep = subset[subsetIndex]; // The EDO step index from the 0 of the mode
 
-            document.getElementById('calc-btn').onclick = () => {
-                const val = document.getElementById('calc-input').value;
-                if (!val) return;
-                const { step, cents } = parseScaleInput(val, state.edo);
-                const stepInOct = ((step % state.edo) + state.edo) % state.edo;
-                const name = getNoteName(stepInOct, state.edo);
-                const currentCents = (step * 1200 / state.edo).toFixed(2);
-                document.getElementById('calc-result').innerText = 
-                    `Step ${step} (${name}) ≈ ${currentCents}c (Err: ${(cents - currentCents).toFixed(2)}c)`;
-            };
-        };
-    </script>
+  if(t.type === 'edo'){
+    // The final effective step from the *full* EDO 0 (the tuning's 0)
+    const effectiveStep = intervalStep + (octaveShift * t.edo);
+    return root * Math.pow(2, effectiveStep / t.edo);
+  }
+  return root;
+}
+
+function nameForIndex(idx){
+  const t = gridState.tuning;
+  const subset = gridState.subsetPattern; 
+  if (subset.length === 0) return 'Error';
+  
+  const { subsetIndex, octaveShift } = calculateGridMapping(idx);
+  const intervalStep = subset[subsetIndex]; 
+
+  // 1. Calculate Octave Shift
+  const rootOctaveMatch = gridState.rootName.match(/\d/);
+  const rootOctave = rootOctaveMatch ? parseInt(rootOctaveMatch[0], 10) : 4; 
+  
+  // Calculate the effective octave number
+  const effectiveOctave = rootOctave + octaveShift;
+  
+  let baseName = '';
+  
+  if(t.type === 'edo'){
+    // Step is used to look up the name in the full EDO table (0 to N-1)
+    const step = ((intervalStep % t.edo) + t.edo) % t.edo;
+    const candidates = gridState.edoNameTable[step] || [];
+    baseName = pickSimplestName(candidates);
+    
+    // Ensure the baseName does not include any number from the EDO naming generator
+    baseName = baseName.replace(/\d/g, ''); 
+  }
+  
+  if (t.type === 'edo') {
+      return `${baseName}${effectiveOctave}`;
+  }
+  return baseName;
+}
+
+// --- MODE SELECTOR HANDLER ---
+modeSelector.addEventListener('change', () => {
+    currentModeIndex = parseInt(modeSelector.value, 10);
+    applyBaseSubsetToGrid();
+});
+
+// --- CANVAS DRAWING & INTERACTION ---
+
+function resizeCanvas(){ 
+  const ks = gridState.keySize; 
+  const width = gridState.cols * ks; 
+  const height = gridState.rows * ks; 
+  
+  canvas.width = width; 
+  canvas.height = height; 
+}
+
+function renderGrid(){ 
+  const ks = gridState.keySize, rows = gridState.rows, cols = gridState.cols; 
+  const keyColor = getComputedStyle(document.documentElement).getPropertyValue('--key-color').trim();
+  const keyInactive = getComputedStyle(document.documentElement).getPropertyValue('--key-inactive').trim();
+  const keyTextColor = getComputedStyle(document.documentElement).getPropertyValue('--key-text-color').trim();
+  
+  ctx.fillStyle=keyColor; ctx.fillRect(0,0,canvas.width,canvas.height); 
+  
+  ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1; 
+  ctx.font = Math.max(10, Math.floor(ks/5)) + 'px system-ui, sans-serif'; 
+  ctx.textAlign='center'; ctx.textBaseline='middle'; 
+  
+  const rootIdx0 = gridState.rootKeyIndex - 1; 
+
+  for(let r=0;r<rows;r++){ 
+    for(let c=0;c<cols;c++){ 
+      const x=c*ks, y=r*ks; 
+      const idx=r*cols+c; 
+      
+      // Determine if this is the root key index (for visual emphasis)
+      const isRoot = idx === rootIdx0;
+
+      // Draw key background: light gray/white, or yellow if active
+      let bgColor = keyInactive;
+      if (activeVoices.has(idx)) {
+        bgColor = getComputedStyle(document.documentElement).getPropertyValue('--key-active').trim();
+      } else if (isRoot) {
+        // Highlight the root key position slightly
+        bgColor = 'rgba(255, 100, 100, 0.3)'; 
+      }
+      
+      ctx.fillStyle = bgColor; 
+      
+      ctx.fillRect(x,y,ks,ks); 
+      ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1); 
+      
+      let label = nameForIndex(idx); 
+      ctx.fillStyle=keyTextColor; 
+      let disp=String(label); if(disp.length>14) disp = disp.slice(0,12)+'…';
+      ctx.fillText(disp, x+ks/2, y+ks/2); 
+    } 
+  }
+}
+
+function drawKeyActive(idx, isActive) { 
+  const ks = gridState.keySize; 
+  const cols = gridState.cols;
+  const rootIdx0 = gridState.rootKeyIndex - 1; 
+  
+  const c = idx % cols; 
+  const r = Math.floor(idx / cols); 
+  
+  const x = c * ks; const y = r * ks; 
+  const isRoot = idx === rootIdx0;
+  
+  const keyActive = getComputedStyle(document.documentElement).getPropertyValue('--key-active').trim();
+  const keyInactive = getComputedStyle(document.documentElement).getPropertyValue('--key-inactive').trim();
+  const keyTextColor = getComputedStyle(document.documentElement).getPropertyValue('--key-text-color').trim();
+
+  let bgColor = keyInactive;
+  if (isActive) {
+      bgColor = keyActive;
+  } else if (isRoot) {
+      bgColor = 'rgba(255, 100, 100, 0.3)'; 
+  }
+
+  ctx.fillStyle = bgColor; 
+  
+  ctx.fillRect(x,y,ks,ks); 
+  ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1; ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1); 
+  let label = nameForIndex(idx); 
+  ctx.fillStyle=keyTextColor; 
+  let disp=String(label); if(disp.length>14) disp = disp.slice(0,12)+'…';
+  ctx.fillText(disp, x+ks/2, y+ks/2);
+}
+
+function noteOn(idx){ 
+  if(activeVoices.has(idx)) return; 
+  
+  if (audioCtx.state === 'suspended') { audioCtx.resume(); } 
+  
+  const freq = frequencyForIndex(idx); const wave = waveSel.value; const release = parseFloat(releaseInput.value) || 120; const voice = new Synth(audioCtx, masterGain, wave, release); activeVoices.set(idx, voice); voice.start(freq); drawKeyActive(idx, true);
+}
+
+function noteOff(idx){ 
+  const voice = activeVoices.get(idx); if(!voice) return; 
+  if (sustainToggle.checked) { 
+    drawKeyActive(idx, false); 
+  } else { 
+    voice.release(); 
+    activeVoices.delete(idx); 
+    drawKeyActive(idx, false); 
+  }
+}
+
+function stopAllVoices() { 
+    if (audioCtx.state !== 'running') { audioCtx.resume(); }
+    
+    activeVoices.forEach((voice, idx) => { voice.release(); drawKeyActive(idx, false); }); activeVoices.clear();
+}
+
+function canvasPosToIndex(e) { 
+  const rect = canvas.getBoundingClientRect(); 
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  
+  const scaleX = canvas.width / rect.width; 
+  const scaleY = canvas.height / rect.height; 
+  const x = (clientX - rect.left) * scaleX; 
+  const y = (clientY - rect.top) * scaleY; 
+  const col = Math.floor(x / gridState.keySize); 
+  const row = Math.floor(y / gridState.keySize); 
+  if (row >= 0 && row < gridState.rows && col >= 0 && col < gridState.cols) { return row * gridState.cols + col; } 
+  return -1;
+}
+
+function pointerdown(e) { 
+  e.preventDefault(); 
+
+  if (audioCtx.state !== 'running') {
+      audioCtx.resume().catch(e => console.error("Audio resume failed:", e));
+  }
+  
+  const idx = canvasPosToIndex(e); 
+  if(idx !== -1) { 
+    try { canvas.setPointerCapture(e.pointerId); } catch(_) {}
+    
+    // Sustain logic: if key is active and sustain is on, tap releases it
+    if (activeVoices.has(idx) && sustainToggle.checked) {
+        const voice = activeVoices.get(idx);
+        voice.release();
+        activeVoices.delete(idx);
+        drawKeyActive(idx, false);
+        return; 
+    }
+    
+    pointerToIdx.set(e.pointerId, idx); noteOn(idx); 
+  }
+}
+
+function pointermove(e) {
+  if (!pointerToIdx.has(e.pointerId)) return;
+  e.preventDefault();
+
+  const prevIdx = pointerToIdx.get(e.pointerId);
+  const currentIdx = canvasPosToIndex(e);
+
+  if (currentIdx === prevIdx) return; 
+
+  if (currentIdx !== -1 && prevIdx !== -1) {
+    noteOff(prevIdx);
+    drawKeyActive(prevIdx, false);
+    
+    noteOn(currentIdx);
+    drawKeyActive(currentIdx, true);
+    
+    pointerToIdx.set(e.pointerId, currentIdx);
+    return;
+  }
+  
+  if (currentIdx === -1 && prevIdx !== -1) {
+    drawKeyActive(prevIdx, false); 
+    return;
+  }
+  
+  if (currentIdx !== -1 && prevIdx === -1) {
+      noteOn(currentIdx);
+      drawKeyActive(currentIdx, true);
+      pointerToIdx.set(e.pointerId, currentIdx); 
+      return;
+  }
+}
+
+
+function pointerup(e) { 
+  e.preventDefault(); 
+  const idx = pointerToIdx.get(e.pointerId); 
+  
+  if (typeof idx === 'number' && idx !== undefined && idx !== -1) { 
+    if (activeVoices.has(idx) && !sustainToggle.checked) {
+        noteOff(idx);
+    }
+    drawKeyActive(idx, false);
+  }
+  pointerToIdx.delete(e.pointerId); 
+  try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
+}
+
+canvas.addEventListener('pointerdown', pointerdown);
+canvas.addEventListener('pointermove', pointermove); 
+canvas.addEventListener('pointerup', pointerup);
+canvas.addEventListener('pointercancel', pointerup);
+
+// --- WAV AUDIO RECORDING FUNCTIONS (NEW) ---
+
+function startRecording() {
+    if (isRecording) return;
+    
+    if (audioCtx.state !== 'running') {
+        audioCtx.resume().catch(e => console.error("Audio resume failed:", e));
+    }
+    
+    recordingBuffers = [];
+    
+    const bufferSize = 4096;
+    audioProcessor = audioCtx.createScriptProcessor(bufferSize, NUM_CHANNELS, NUM_CHANNELS);
+
+    audioProcessor.onaudioprocess = (e) => {
+        if (!isRecording) return;
+        const channelData = e.inputBuffer.getChannelData(0);
+        recordingBuffers.push(new Float32Array(channelData));
+    };
+
+    masterGain.connect(audioProcessor);
+    audioProcessor.connect(audioCtx.destination); 
+
+    isRecording = true;
+    recordBtn.disabled = true;
+    stopRecordBtn.disabled = false;
+    recordText.innerHTML = '&#9679; RECORDING'; 
+    recordingStatus.textContent = 'Recording in progress...';
+    recordingStatus.classList.add('recording-status');
+}
+
+function stopRecording() {
+    if (!isRecording) return;
+    
+    masterGain.disconnect(audioProcessor);
+    audioProcessor.disconnect(audioCtx.destination);
+    
+    audioProcessor = null;
+    isRecording = false;
+
+    recordingStatus.textContent = 'Compiling WAV file...';
+    recordingStatus.classList.remove('recording-status');
+    
+    const totalLength = recordingBuffers.reduce((sum, buffer) => sum + buffer.length, 0);
+    
+    const audioData = mergeBuffers(recordingBuffers, totalLength);
+    
+    const wavBlob = bufferToWave(audioData, audioCtx.sampleRate);
+    
+    const url = URL.createObjectURL(wavBlob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    a.download = `synth_recording_${timestamp}.wav`;
+    
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    recordBtn.disabled = false;
+    stopRecordBtn.disabled = true;
+    recordText.textContent = 'Record';
+    recordingStatus.textContent = '';
+    
+    console.log("Recording successfully exported as WAV.");
+}
+
+// Attach recording event listeners
+recordBtn.addEventListener('click', startRecording);
+stopRecordBtn.addEventListener('click', stopRecording);
+
+
+// --- DARK MODE TOGGLE LOGIC ---
+
+function applyTheme(isDark) {
+    if (isDark) {
+        body.classList.add('dark-mode');
+        darkModeToggle.textContent = 'Disable Dark Mode';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        body.classList.remove('dark-mode');
+        darkModeToggle.textContent = 'Enable Dark Mode';
+        localStorage.setItem('theme', 'light');
+    }
+    renderGrid();
+}
+
+function toggleDarkMode() {
+    const isDark = !body.classList.contains('dark-mode');
+    applyTheme(isDark);
+}
+
+darkModeToggle.addEventListener('click', toggleDarkMode);
+
+// --- EVENT LISTENERS ---
+applyBtn.addEventListener('click', () => { 
+    if (audioCtx.state !== 'running') { audioCtx.resume(); } 
+    buildStateFromUI(); 
+});
+generateScaleBtn.addEventListener('click', () => {
+    if (audioCtx.state !== 'running') { audioCtx.resume(); } 
+});
+stopAllBtn.addEventListener('click', stopAllVoices);
+
+
+// --- INIT ---
+
+window.addEventListener('resize', () => { resizeCanvas(); renderGrid(); });
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Load theme preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        applyTheme(true);
+    } else {
+        applyTheme(false); 
+    }
+    
+    // 2. Build initial state and render
+    buildStateFromUI();
+});
+</script>
 </body>
 </html>
+
