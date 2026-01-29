@@ -423,7 +423,7 @@ let gridState = {
   // NEW PROPERTIES
   rootKeyIndex: 1, // 1-based index for the key that is step 0 of the mode
   hSteps: 1, // Steps between columns
-  vSteps: 7, // Steps between rows
+  vSteps: 12, // Steps between rows
   // END NEW PROPERTIES
   tuning: { type:'edo', edo: 12 },
   rootFreq: 261.6256, rootName: 'C4',
@@ -713,7 +713,7 @@ function mod(a, b) {
   return ((a % b) + b) % b;
 }
 
-const canonicalChainOfFifths = ["Dbb", "Abb", "Ebb", "Bbb", "Fb","Cb","Gb","Db","Ab","Eb","Bb","F","C","G","D","A","E","B","F#","C#","G#","D#","A#","E#","B#", "Fx", "Cx"];
+const canonicalChainOfFifths = ["Cbb", "Gbb", "Dbb", "Abb", "Ebb", "Bbb", "Fb","Cb","Gb","Db","Ab","Eb","Bb","F","C","G","D","A","E","B","F#","C#","G#","D#","A#","E#","B#", "Fx", "Cx"];
 const fifthspanMap = {};
 canonicalChainOfFifths.forEach((name, i) => { const span = i - canonicalChainOfFifths.indexOf("C"); fifthspanMap[name] = span; });
 
