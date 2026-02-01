@@ -667,6 +667,140 @@ function bufferToWave(interleavedData, sampleRate) {
     return new Blob([view], { type: 'audio/wav' });
 }
 
+// --- AudioWorklet Processor code as a string ---
+const recorderProcessorCode = `
+class RecorderProcessor extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.port.onmessage = (event) => {
+      if (event.data === 'stop') {
+        this.recording = false;
+      } else if (event.data === 'start') {
+        this.recording = true;
+      }
+    };
+    this.recording = false;
+  }
+
+  process(inputs) {
+    if (!this.recording) return true;
+
+    const input = inputs[0];
+    if (input.length === 0) return true;
+
+    this.port.postMessage(input);
+
+    return true;
+  }
+}
+
+registerProcessor('recorder-processor', RecorderProcessor);
+`;
+
+// --- Globals ---
+let audioWorkletNode = null;
+let recordedBuffers = [];
+let recording = false;
+
+// Assuming these are defined elsewhere in your code:
+const num_channels = 1; // or 2 for stereo
+// audioCtx and masterGain must be your existing AudioContext and master gain node
+// recordBtn and stopRecordBtn are your UI buttons
+
+// --- Setup AudioWorklet Recorder ---
+async function setupRecorder() {
+  if (!audioCtx.audioWorklet) {
+    alert('AudioWorklet not supported in this browser.');
+    return;
+  }
+
+  const blob = new Blob([recorderProcessorCode], { type: 'application/javascript' });
+  const blobURL = URL.createObjectURL(blob);
+
+  await audioCtx.audioWorklet.addModule(blobURL);
+
+  URL.revokeObjectURL(blobURL);
+
+  audioWorkletNode = new AudioWorkletNode(audioCtx, 'recorder-processor', {
+    numberOfInputs: 1,
+    numberOfOutputs: 0,
+    channelCount: NUM_CHANNELS,
+  });
+
+  audioWorkletNode.port.onmessage = (event) => {
+    const inputChannels = event.data;
+    for (let ch = 0; ch < inputChannels.length; ch++) {
+      recordedBuffers[ch] = recordedBuffers[ch] || [];
+      recordedBuffers[ch].push(new Float32Array(inputChannels[ch]));
+    }
+  };
+
+  masterGain.connect(audioWorkletNode);
+}
+
+// --- Start Recording ---
+function startRecording() {
+  if (!audioWorkletNode) {
+    console.error('Recorder not initialized');
+    return;
+  }
+  recordedBuffers = [];
+  recording = true;
+  audioWorkletNode.port.postMessage('start');
+  console.log('Recording started');
+}
+
+// --- Stop Recording and Export WAV ---
+function stopRecording() {
+  if (!recording) return;
+  recording = false;
+  audioWorkletNode.port.postMessage('stop');
+  console.log('Recording stopped');
+
+  // Merge buffers per channel
+  const mergedBuffers = [];
+  let totalLength = 0;
+  for (let ch = 0; ch < recordedBuffers.length; ch++) {
+    const merged = mergeBuffers(recordedBuffers[ch], recordedBuffers[ch].reduce((acc, b) => acc + b.length, 0));
+    mergedBuffers.push(merged);
+    totalLength = merged.length; // All channels have same length
+  }
+
+  // Interleave channels
+  const interleaved = new Float32Array(totalLength * NUM_CHANNELS);
+  for (let i = 0; i < totalLength; i++) {
+    for (let ch = 0; ch < NUM_CHANNELS; ch++) {
+      interleaved[i * NUM_CHANNELS + ch] = mergedBuffers[ch][i];
+    }
+  }
+
+  // Encode WAV
+  const wavBlob = bufferToWave(interleaved, audioCtx.sampleRate);
+
+  // Trigger download
+  const url = URL.createObjectURL(wavBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'synth_recording.wav';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// --- Hook up UI buttons ---
+recordBtn.onclick = async () => {
+  if (audioCtx.state === 'suspended') await audioCtx.resume();
+  if (!audioWorkletNode) await setupRecorder();
+  startRecording();
+  recordBtn.disabled = true;
+  stopRecordBtn.disabled = false;
+};
+
+stopRecordBtn.onclick = () => {
+  stopRecording();
+  recordBtn.disabled = false;
+  stopRecordBtn.disabled = true;
+};
+
 
 // --- CORE HELPER FUNCTIONS (Tuning/Grid) ---
 
