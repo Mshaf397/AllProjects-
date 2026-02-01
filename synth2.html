@@ -441,8 +441,7 @@ masterGain.connect(audioCtx.destination);
 // --- WAV RECORDING STATE AND ELEMENTS ---
 let audioProcessor = null;
 let recordingBuffers = [];
-let isRecording = false;
-const NUM_CHANNELS = 1; 
+let isRecording = false; 
 
 const recordBtn = document.getElementById('recordBtn');
 const recordText = document.getElementById('recordText');
@@ -703,7 +702,7 @@ let recordedBuffers = [];
 let recording = false;
 
 // Assuming these are defined elsewhere in your code:
-const num_channels = 1; // or 2 for stereo
+const NUM_CHANNELS = 1; // or 2 for stereo
 // audioCtx and masterGain must be your existing AudioContext and master gain node
 // recordBtn and stopRecordBtn are your UI buttons
 
