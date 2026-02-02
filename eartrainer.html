@@ -91,7 +91,7 @@
 <script>
 (() => {
   // Constants
-  const C4 = 261.625;
+  const C4 = 261.6256;
   const IDEAL_FIFTH_CENTS = 701.955;
 
   // State
@@ -209,7 +209,7 @@
         let marks = '';
         if (delta > 0) marks = '^'.repeat(delta);
         else if (delta < 0) marks = 'v'.repeat(Math.abs(delta));
-        indexToLabel[i] = baseName + marks;
+        indexToLabel[i] = marks + baseName;
       }
     }
     // Frequencies for one octave span [C4, C5)
