@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chordal Timbre Synthesizer</title>
+    <title>Precision Harmonic Synthesizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -11,91 +11,94 @@
             color: #f1f5f9;
             font-family: system-ui, -apple-system, sans-serif;
         }
-        .slider-thumb::-webkit-slider-thumb {
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            background: #3b82f6;
-            cursor: pointer;
-            border-radius: 50%;
-            border: 2px solid white;
-        }
         .canvas-container {
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(15, 23, 42, 0.9);
             border-radius: 12px;
             border: 1px solid #334155;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.7);
         }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        
-        /* Node Toggle Animation */
         .node-active { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+        
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="p-4 md:p-6">
-    <div class="max-w-6xl mx-auto">
+    <div class="max-w-7xl mx-auto">
         <header class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Chordal Timbre Synthesizer</h1>
-                <p class="text-slate-400 text-sm">Experiment with intervals, clusters, and harmonic color.</p>
+                <h1 class="text-3xl font-bold text-blue-400">Precision Timbre Synthesizer</h1>
+                <p class="text-slate-400 text-sm">Design harmonic structures with up to 8 decimal places of volume precision.</p>
             </div>
             <div class="flex gap-2">
-                <button id="playBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2 rounded-lg transition-all shadow-lg shadow-blue-900/20">START AUDIO</button>
+                <button id="playBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2 rounded-lg transition-all">START AUDIO</button>
                 <button id="stopBtn" class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-6 py-2 rounded-lg transition-all">STOP</button>
                 <button id="openExportModal" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    Export
+                    Export 64-bit WAV
                 </button>
             </div>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            <!-- LEFT: VOICE NODES (The 7 Waves) -->
-            <div class="lg:col-span-4 space-y-4">
+            <!-- VOICE NODES -->
+            <div class="lg:col-span-3 space-y-4">
                 <section class="bg-slate-800 p-5 rounded-xl border border-slate-700">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-semibold text-blue-300">Voice Nodes (Up to 7)</h2>
-                        <span class="text-[10px] text-slate-500 uppercase tracking-widest">Polyphonic Base</span>
-                    </div>
+                    <h2 class="text-lg font-semibold text-blue-300 mb-4">Voice Nodes</h2>
                     <div id="voiceNodes" class="space-y-3">
-                        <!-- Voices 1-7 injected here -->
+                        <!-- Nodes 1-7 -->
                     </div>
                     <div class="mt-4 pt-4 border-t border-slate-700">
-                        <label class="block text-[10px] uppercase text-slate-500 mb-2 font-bold">Master Mix Volume</label>
-                        <input type="range" id="masterVol" min="0" max="1" step="0.01" value="0.4" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider-thumb">
+                        <label class="block text-[10px] uppercase text-slate-500 mb-2 font-bold">Master Gain</label>
+                        <input type="range" id="masterVol" min="0" max="1" step="0.01" value="0.3" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer">
                     </div>
                 </section>
 
                 <section class="bg-slate-800 p-5 rounded-xl border border-slate-700">
-                    <h2 class="text-lg font-semibold mb-3 text-slate-300">Timbre Presets</h2>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="applyPreset('sine')" class="text-xs bg-slate-700 p-2 rounded hover:bg-slate-600 border border-transparent hover:border-slate-500 transition-all">Pure Sine</button>
-                        <button onclick="applyPreset('nigun')" class="text-xs bg-blue-900/40 p-2 rounded hover:bg-blue-800/40 border border-blue-500/30 text-blue-200">Nigun (Warm)</button>
-                        <button onclick="applyPreset('organ')" class="text-xs bg-slate-700 p-2 rounded hover:bg-slate-600 border border-transparent">Pipe Organ</button>
-                        <button onclick="applyPreset('bell')" class="text-xs bg-slate-700 p-2 rounded hover:bg-slate-600 border border-transparent">Metallic Bell</button>
+                    <h2 class="text-lg font-semibold mb-3 text-slate-300">Presets</h2>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button onclick="applyPreset('sine')" class="text-left text-xs bg-slate-700 p-2 rounded hover:bg-slate-600">Pure Sine</button>
+                        <button onclick="applyPreset('square')" class="text-left text-xs bg-slate-700 p-2 rounded hover:bg-slate-600">Square (1/n Odds)</button>
+                        <button onclick="applyPreset('saw')" class="text-left text-xs bg-slate-700 p-2 rounded hover:bg-slate-600">Sawtooth (1/n All)</button>
+                        <button onclick="applyPreset('nigun')" class="text-left text-xs bg-blue-900/40 p-2 rounded hover:bg-blue-800/40 border border-blue-500/30 text-blue-200">Elul Nigun (Spirit)</button>
                     </div>
                 </section>
             </div>
 
-            <!-- RIGHT: TIMBRE & VISUALIZER -->
-            <div class="lg:col-span-8 space-y-6">
+            <!-- OVERTONE LIST -->
+            <div class="lg:col-span-9 space-y-6">
                 <div class="canvas-container p-4">
-                    <canvas id="visualizer" class="w-full h-40 rounded"></canvas>
+                    <canvas id="visualizer" class="w-full h-32 rounded"></canvas>
                 </div>
 
                 <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
                     <div class="flex justify-between items-center mb-6">
                         <div>
-                            <h2 class="text-xl font-semibold text-slate-200">Common Overtone Structure</h2>
-                            <p class="text-xs text-slate-500">Applied to all active voice nodes</p>
+                            <h2 class="text-xl font-semibold text-slate-200">Harmonic Profile</h2>
+                            <p class="text-xs text-slate-500">Define partials by ratio and exact volume percentage.</p>
                         </div>
-                        <button id="addOvertone" class="bg-blue-600 hover:bg-blue-500 text-sm px-4 py-2 rounded-full font-bold transition-all">+ Add Harmonic</button>
+                        <button id="addOvertone" class="bg-blue-600 hover:bg-blue-500 text-sm px-4 py-2 rounded-full font-bold transition-all">+ Add Partial</button>
                     </div>
                     
-                    <div id="overtoneList" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                        <!-- Overtones injected here -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="text-[10px] uppercase text-slate-500 tracking-wider">
+                                    <th class="pb-3 pl-2">Partial</th>
+                                    <th class="pb-3">Ratio (Frequency Multiplier)</th>
+                                    <th class="pb-3">Volume (%)</th>
+                                    <th class="pb-3 w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="overtoneList" class="divide-y divide-slate-700">
+                                <!-- Partial rows -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -105,32 +108,30 @@
     <!-- Export Modal -->
     <div id="exportModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-50">
         <div class="bg-slate-800 border border-slate-700 p-8 rounded-2xl max-w-sm w-full shadow-2xl">
-            <h3 class="text-xl font-bold mb-2 text-emerald-400">Export WAV</h3>
-            <p class="text-slate-400 text-sm mb-6">High-fidelity 64-bit Float PCM rendering.</p>
+            <h3 class="text-xl font-bold mb-2">Export Audio</h3>
             <div class="mb-6">
-                <label class="block text-sm font-medium mb-2">Duration (seconds)</label>
-                <input type="number" id="exportDuration" value="3.0" step="0.5" min="0.25" max="60" 
-                    class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 outline-none focus:border-blue-500">
+                <label class="block text-sm font-medium mb-2 text-slate-400">Duration (seconds)</label>
+                <input type="number" id="exportDuration" value="2.0" step="0.1" min="0.1" max="60" 
+                    class="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 outline-none">
             </div>
             <div class="flex gap-3">
-                <button id="cancelExport" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg">Cancel</button>
-                <button id="startExport" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg font-bold">Download</button>
+                <button id="cancelExport" class="flex-1 bg-slate-700 py-2 rounded-lg">Cancel</button>
+                <button id="startExport" class="flex-1 bg-emerald-600 py-2 rounded-lg font-bold">Download WAV</button>
             </div>
-            <div id="exportStatus" class="hidden mt-4 text-center text-sm text-blue-400 animate-pulse">Rendering...</div>
+            <div id="exportStatus" class="hidden mt-4 text-center text-sm text-blue-400">Rendering...</div>
         </div>
     </div>
 
     <script>
-        let audioCtx;
-        let masterGain;
-        let analyzer;
+        let audioCtx, masterGain, analyzer;
         let isPlaying = false;
+        let activeOscillators = [];
 
-        // State
+        // State initialization
         let voices = [
-            { active: true, freq: 220 },
-            { active: false, freq: 261.63 },
-            { active: false, freq: 329.63 },
+            { active: true, freq: 220.00 },
+            { active: false, freq: 277.18 }, // C#3 (Major 3rd)
+            { active: false, freq: 329.63 }, // E3 (Perfect 5th)
             { active: false, freq: 392.00 },
             { active: false, freq: 440.00 },
             { active: false, freq: 523.25 },
@@ -138,14 +139,11 @@
         ];
 
         let overtones = [
-            { ratio: 1, volume: 1.0 },
-            { ratio: 2, volume: 0.5 },
-            { ratio: 3, volume: 0.25 }
+            { ratio: 1.0, volumePct: 100.00 },
+            { ratio: 2.0, volumePct: 50.00 },
+            { ratio: 3.0, volumePct: 33.33333333 }
         ];
 
-        let activeOscillators = []; // Stores {osc, gain} objects
-
-        // Elements
         const voiceContainer = document.getElementById('voiceNodes');
         const overtoneList = document.getElementById('overtoneList');
         const playBtn = document.getElementById('playBtn');
@@ -172,14 +170,14 @@
                 const div = document.createElement('div');
                 div.className = `p-3 rounded-lg border transition-all flex items-center gap-3 ${v.active ? 'node-active border-blue-500' : 'bg-slate-900/30 border-slate-700'}`;
                 div.innerHTML = `
-                    <input type="checkbox" ${v.active ? 'checked' : ''} onchange="toggleVoice(${i})" class="w-5 h-5 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500">
+                    <input type="checkbox" ${v.active ? 'checked' : ''} onchange="toggleVoice(${i})" class="w-4 h-4">
                     <div class="flex-1">
                         <div class="flex justify-between items-center mb-1">
-                            <span class="text-[10px] text-slate-500 font-bold">NODE ${i+1}</span>
-                            <span class="text-xs font-mono text-blue-400">${v.freq.toFixed(1)}Hz</span>
+                            <span class="text-[9px] text-slate-500 font-bold uppercase">Voice ${i+1}</span>
+                            <span class="text-[10px] font-mono text-blue-400">${v.freq.toFixed(2)}Hz</span>
                         </div>
-                        <input type="number" step="0.1" value="${v.freq}" onchange="updateVoiceFreq(${i}, this.value)" 
-                            class="w-full bg-slate-950/50 border border-slate-700 rounded px-2 py-1 text-xs outline-none focus:border-blue-400">
+                        <input type="number" step="0.01" value="${v.freq}" onchange="updateVoiceFreq(${i}, this.value)" 
+                            class="w-full bg-slate-950/50 border border-slate-700 rounded px-2 py-1 text-xs outline-none">
                     </div>
                 `;
                 voiceContainer.appendChild(div);
@@ -190,23 +188,28 @@
         function renderOvertones() {
             overtoneList.innerHTML = '';
             overtones.forEach((ov, i) => {
-                const div = document.createElement('div');
-                div.className = "bg-slate-900/50 p-3 rounded-lg border border-slate-700 space-y-2";
-                div.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <span class="text-[10px] text-slate-500 uppercase">Ratio x${ov.ratio}</span>
-                        <button onclick="removeOvertone(${i})" class="text-slate-600 hover:text-red-400">
+                const tr = document.createElement('tr');
+                tr.className = "group hover:bg-slate-700/30 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-3 pl-2 text-xs font-bold text-slate-400">#${i+1}</td>
+                    <td class="py-3">
+                        <input type="number" step="0.00000001" value="${ov.ratio}" onchange="updateOvertone(${i}, 'ratio', this.value)"
+                            class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm w-32 focus:border-blue-500 outline-none">
+                    </td>
+                    <td class="py-3">
+                        <div class="flex items-center gap-2">
+                            <input type="number" step="0.00000001" value="${ov.volumePct}" onchange="updateOvertone(${i}, 'volumePct', this.value)"
+                                class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm w-48 focus:border-emerald-500 outline-none font-mono">
+                            <span class="text-xs text-slate-500">%</span>
+                        </div>
+                    </td>
+                    <td class="py-3 text-right pr-2">
+                        <button onclick="removeOvertone(${i})" class="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <input type="number" step="0.01" value="${ov.ratio}" onchange="updateOvertone(${i}, 'ratio', this.value)"
-                            class="w-16 bg-slate-800 border border-slate-700 rounded px-1 py-1 text-xs outline-none">
-                        <input type="range" min="0" max="1" step="0.01" value="${ov.volume}" oninput="updateOvertone(${i}, 'volume', this.value)"
-                            class="flex-1 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer slider-thumb">
-                    </div>
+                    </td>
                 `;
-                overtoneList.appendChild(div);
+                overtoneList.appendChild(tr);
             });
             if (isPlaying) restartAudio();
         }
@@ -218,7 +221,7 @@
         
         document.getElementById('addOvertone').onclick = () => {
             const last = overtones.length > 0 ? overtones[overtones.length-1].ratio : 1;
-            overtones.push({ ratio: Math.round(last + 1), volume: 0.2 });
+            overtones.push({ ratio: parseFloat((last + 1).toFixed(2)), volumePct: 10.0 });
             renderOvertones();
         };
 
@@ -228,13 +231,17 @@
             activeOscillators = [];
 
             const now = audioCtx.currentTime;
-            voices.filter(v => v.active).forEach(v => {
+            const activeVoices = voices.filter(v => v.active);
+            
+            activeVoices.forEach(v => {
                 overtones.forEach(ov => {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(v.freq * ov.ratio, now);
-                    gain.gain.setValueAtTime(ov.volume / voices.filter(x => x.active).length, now); // Normalize gain by voice count
+                    // Convert % to 0.0-1.0 and normalize by total voice count
+                    const volumeMultiplier = (ov.volumePct / 100) / (activeVoices.length || 1);
+                    gain.gain.setValueAtTime(volumeMultiplier, now);
                     
                     osc.connect(gain);
                     gain.connect(masterGain);
@@ -250,7 +257,7 @@
             isPlaying = true;
             restartAudio();
             masterGain.gain.setTargetAtTime(masterVolInput.value, audioCtx.currentTime, 0.05);
-            playBtn.classList.add('ring-2', 'ring-blue-400');
+            playBtn.classList.add('bg-green-600');
             draw();
         };
 
@@ -260,7 +267,7 @@
             setTimeout(() => {
                 activeOscillators.forEach(o => o.osc.stop());
                 isPlaying = false;
-                playBtn.classList.remove('ring-2', 'ring-blue-400');
+                playBtn.classList.remove('bg-green-600');
             }, 100);
         };
 
@@ -270,49 +277,57 @@
 
         function applyPreset(type) {
             if (type === 'sine') {
-                overtones = [{ ratio: 1, volume: 1 }];
+                overtones = [{ ratio: 1.0, volumePct: 100.0 }];
+            } else if (type === 'square') {
+                overtones = [
+                    { ratio: 1, volumePct: 100 },
+                    { ratio: 3, volumePct: 33.33333333 },
+                    { ratio: 5, volumePct: 20 },
+                    { ratio: 7, volumePct: 14.28571429 },
+                    { ratio: 9, volumePct: 11.11111111 }
+                ];
+            } else if (type === 'saw') {
+                overtones = Array.from({length: 10}, (_, i) => ({ 
+                    ratio: i + 1, 
+                    volumePct: parseFloat((100 / (i + 1)).toFixed(8)) 
+                }));
             } else if (type === 'nigun') {
                 overtones = [
-                    { ratio: 1, volume: 1 }, { ratio: 2, volume: 0.65 }, { ratio: 3, volume: 0.45 },
-                    { ratio: 4, volume: 0.1 }, { ratio: 5, volume: 0.2 }, { ratio: 6, volume: 0.05 }
+                    { ratio: 1, volumePct: 100 }, 
+                    { ratio: 2, volumePct: 62.5 }, 
+                    { ratio: 3, volumePct: 44.44444444 },
+                    { ratio: 4, volumePct: 8.33333333 }, 
+                    { ratio: 5, volumePct: 18.75 }, 
+                    { ratio: 6, volumePct: 4.16666667 }
                 ];
-            } else if (type === 'organ') {
-                overtones = [
-                    { ratio: 0.5, volume: 0.6 }, { ratio: 1, volume: 1 }, { ratio: 1.5, volume: 0.4 },
-                    { ratio: 2, volume: 0.5 }, { ratio: 3, volume: 0.2 }, { ratio: 4, volume: 0.1 }
-                ];
-            } else if (type === 'bell') {
-                overtones = [
-                    { ratio: 1, volume: 1 }, { ratio: 2.76, volume: 0.5 }, { ratio: 5.4, volume: 0.3 },
-                    { ratio: 8.9, volume: 0.2 }, { ratio: 11.35, volume: 0.15 }
-                ];
+                voices[0].freq = 146.83; // D3
             }
             renderOvertones();
         }
 
-        // --- Export & Visualization ---
-        
+        // --- Export & WAV Generation ---
+
         document.getElementById('openExportModal').onclick = () => { document.getElementById('exportModal').style.display = 'flex'; };
         document.getElementById('cancelExport').onclick = () => { document.getElementById('exportModal').style.display = 'none'; };
 
         document.getElementById('startExport').onclick = async () => {
-            const duration = Math.max(0.25, Math.min(60, parseFloat(document.getElementById('exportDuration').value)));
+            const duration = Math.max(0.1, Math.min(60, parseFloat(document.getElementById('exportDuration').value)));
             const status = document.getElementById('exportStatus');
             status.classList.remove('hidden');
             
             try {
-                const sampleRate = 44100;
-                const offlineCtx = new OfflineAudioContext(1, sampleRate * duration, sampleRate);
+                const sr = 44100;
+                const offlineCtx = new OfflineAudioContext(1, sr * duration, sr);
                 const offlineGain = offlineCtx.createGain();
-                const masterVol = parseFloat(masterVolInput.value);
-                const activeVoiceCount = voices.filter(v => v.active).length || 1;
+                const master = parseFloat(masterVolInput.value);
+                const activeV = voices.filter(v => v.active);
 
-                voices.filter(v => v.active).forEach(v => {
+                activeV.forEach(v => {
                     overtones.forEach(ov => {
                         const osc = offlineCtx.createOscillator();
                         const g = offlineCtx.createGain();
                         osc.frequency.setValueAtTime(v.freq * ov.ratio, 0);
-                        g.gain.setValueAtTime(ov.volume / activeVoiceCount, 0);
+                        g.gain.setValueAtTime((ov.volumePct / 100) / (activeV.length || 1), 0);
                         osc.connect(g);
                         g.connect(offlineGain);
                         osc.start(0);
@@ -321,15 +336,15 @@
 
                 offlineGain.connect(offlineCtx.destination);
                 offlineGain.gain.setValueAtTime(0, 0);
-                offlineGain.gain.linearRampToValueAtTime(masterVol, 0.05);
-                offlineGain.gain.setValueAtTime(masterVol, duration - 0.05);
+                offlineGain.gain.linearRampToValueAtTime(master, 0.05);
+                offlineGain.gain.setValueAtTime(master, duration - 0.05);
                 offlineGain.gain.linearRampToValueAtTime(0, duration);
 
-                const renderedBuffer = await offlineCtx.startRendering();
-                const wavBlob = bufferTo64BitWav(renderedBuffer);
+                const buffer = await offlineCtx.startRendering();
+                const wavBlob = bufferTo64BitWav(buffer);
                 const url = URL.createObjectURL(wavBlob);
                 const a = document.createElement('a');
-                a.href = url; a.download = `timbre-chord-${Date.now()}.wav`; a.click();
+                a.href = url; a.download = `precision-synth-${Date.now()}.wav`; a.click();
             } catch (err) { console.error(err); } 
             finally { status.classList.add('hidden'); document.getElementById('exportModal').style.display = 'none'; }
         };
@@ -337,19 +352,11 @@
         function bufferTo64BitWav(buffer) {
             const samples = buffer.getChannelData(0);
             const view = new DataView(new ArrayBuffer(44 + samples.length * 8));
-            const writeString = (view, offset, str) => { for (let i=0; i<str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); };
-            writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + samples.length * 8, true);
-            writeString(view, 8, 'WAVE');
-            writeString(view, 12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 3, true); // IEEE Float
-            view.setUint16(22, 1, true);
-            view.setUint32(24, 44100, true);
-            view.setUint32(28, 44100 * 8, true);
-            view.setUint16(32, 8, true);
-            view.setUint16(34, 64, true);
-            writeString(view, 36, 'data');
+            const s = (v, o, str) => { for (let i=0; i<str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+            s(view, 0, 'RIFF'); view.setUint32(4, 36 + samples.length * 8, true); s(view, 8, 'WAVE');
+            s(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 3, true); // 3 = Float
+            view.setUint16(22, 1, true); view.setUint32(24, 44100, true); view.setUint32(28, 44100 * 8, true);
+            view.setUint16(32, 8, true); view.setUint16(34, 64, true); s(view, 36, 'data');
             view.setUint32(40, samples.length * 8, true);
             for (let i = 0; i < samples.length; i++) view.setFloat64(44 + i*8, samples[i], true);
             return new Blob([view], { type: 'audio/wav' });
@@ -358,26 +365,24 @@
         function draw() {
             if (!isPlaying) return;
             requestAnimationFrame(draw);
-            const dataArray = new Uint8Array(analyzer.frequencyBinCount);
-            analyzer.getByteTimeDomainData(dataArray);
+            const data = new Uint8Array(analyzer.frequencyBinCount);
+            analyzer.getByteTimeDomainData(data);
             canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
             canvasCtx.lineWidth = 2;
-            canvasCtx.strokeStyle = '#60a5fa';
+            canvasCtx.strokeStyle = '#3b82f6';
             canvasCtx.beginPath();
-            const sliceWidth = canvas.width / analyzer.frequencyBinCount;
+            const sw = canvas.width / analyzer.frequencyBinCount;
             let x = 0;
             for (let i = 0; i < analyzer.frequencyBinCount; i++) {
-                const v = dataArray[i] / 128.0;
-                const y = v * canvas.height / 2;
+                const y = (data[i] / 128.0) * canvas.height / 2;
                 if (i === 0) canvasCtx.moveTo(x, y); else canvasCtx.lineTo(x, y);
-                x += sliceWidth;
+                x += sw;
             }
             canvasCtx.stroke();
         }
 
-        function resize() { canvas.width = canvas.parentElement.clientWidth; canvas.height = 160; }
-        window.addEventListener('resize', resize);
-        resize();
+        window.addEventListener('resize', () => { canvas.width = canvas.parentElement.clientWidth; canvas.height = 128; });
+        canvas.width = canvas.parentElement.clientWidth; canvas.height = 128;
         renderVoices();
         renderOvertones();
     </script>
