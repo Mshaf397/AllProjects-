@@ -52,12 +52,12 @@
         <section class="glass rounded-3xl p-6 shadow-2xl border border-white/10">
             <div class="space-y-4">
                 <div class="flex justify-between items-end">
-                    <label for="numberInput" class="text-sm font-semibold text-slate-400 ml-1">BIG INTEGER INPUT</label>
+                    <label for="numberInput" class="text-sm font-semibold text-slate-400 ml-1 uppercase tracking-widest">Input Integer</label>
                     <button onclick="clearInput()" class="text-xs text-slate-500 hover:text-sky-400 transition-colors">Clear</button>
                 </div>
                 <textarea 
                     id="numberInput" 
-                    placeholder="Enter a massive number..." 
+                    placeholder="Enter number (separators like , and . are ignored)" 
                     class="w-full bg-slate-950/50 border border-slate-700 rounded-2xl p-5 text-sky-300 font-mono focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 outline-none transition-all resize-none h-32 text-lg"
                 ></textarea>
                 
@@ -91,7 +91,7 @@
                 <div class="flex justify-between items-center">
                     <h2 class="text-lg font-bold text-sky-300 flex items-center gap-2">
                         Scale Degrees
-                        <span class="text-[10px] bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full uppercase tracking-tighter">Relative to Base</span>
+                        <span class="text-[10px] bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full uppercase tracking-tighter">Unique Steps</span>
                     </h2>
                     <button id="copyBtn" onclick="copyToClipboard()" class="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl text-slate-300 transition-all border border-white/5">
                         Copy Steps
@@ -110,7 +110,10 @@
 
     <script>
         function calculateScale() {
-            const input = document.getElementById('numberInput').value.trim();
+            // Clean input by removing commas and periods
+            const rawInput = document.getElementById('numberInput').value.trim();
+            const cleanedInput = rawInput.replace(/[,.]/g, '');
+            
             const errorDiv = document.getElementById('errorMessage');
             const resultsDiv = document.getElementById('results');
             const stepsContainer = document.getElementById('stepsContainer');
@@ -119,16 +122,17 @@
             errorDiv.classList.add('hidden');
             
             try {
-                if (!input) throw new Error("Please enter a numerical value.");
+                if (!cleanedInput) throw new Error("Please enter a numerical value.");
                 
-                const num = BigInt(input);
+                // Validate if the result is actually a number string
+                if (!/^\d+$/.test(cleanedInput)) throw new Error("Input contains invalid non-numeric characters.");
+
+                const num = BigInt(cleanedInput);
                 if (num <= 0n) throw new Error("Value must be a positive integer.");
 
                 const binaryStr = num.toString(2);
                 const bitLength = binaryStr.length;
                 
-                // Consistency with your original logic:
-                // If input is 67 (1000011), bits=7, EDO=7.
                 const edo = bitLength; 
                 const maxStep = edo - 1;
 
@@ -152,10 +156,8 @@
                 }
 
                 stepsContainer.innerHTML = steps.map(s => `
-                    <div class="group relative cursor-default">
-                        <div class="bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 px-3 py-1.5 rounded-lg text-sm font-mono text-sky-200 transition-all">
-                            ${s}
-                        </div>
+                    <div class="step-chip bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 px-3 py-1.5 rounded-lg text-sm font-mono text-sky-200 transition-all">
+                        ${s}
                     </div>
                 `).join('');
 
@@ -171,9 +173,12 @@
 
         async function copyToClipboard() {
             const btn = document.getElementById('copyBtn');
-            const steps = Array.from(document.querySelectorAll('#stepsContainer div')).map(el => el.innerText.trim());
-            const text = steps.join(', ');
+            // Target only the inner text of the chips to avoid duplication
+            const chips = Array.from(document.querySelectorAll('.step-chip'));
+            const text = chips.map(el => el.innerText.trim()).join(', ');
             
+            if (!text) return;
+
             try {
                 await navigator.clipboard.writeText(text);
                 const originalText = btn.innerText;
