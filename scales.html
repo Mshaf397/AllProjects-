@@ -1,145 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Microtonal Circle-of-"Fifths" Generator</title>
-  <style>
-    body { font-family: sans-serif; padding: 1em; max-width: 700px; }
-    input, button { padding: 0.5em; margin: 0.5em 0.2em; font-size: 1em; }
-    table { border-collapse: collapse; margin-top: 1em; width: 100%; }
-    th, td { border: 1px solid #aaa; padding: 0.4em; text-align: right; }
-    th { background-color: #f0f0f0; }
-  </style>
-</head>
-<body>
-  <h1>Microtonal Circle-of-"Fifths" Generator</h1>
-
-  <label>Generator: <input id="generator" value="3/2"></label><br>
-  <label>Period: <input id="period" value="2/1"></label><br>
-  <label>UDP (e.g. 3|3(1)): <input id="udp" value="3|3(1)"></label><br>
-  <label>Decimal places: <input id="decimals" type="number" value="4" min="0" max="10"></label><br>
-  <button onclick="generateScale()">Generate Scale</button>
-  <button onclick="playScale()">Play Scale</button>
-
-  <table id="output" style="display:none">
-    <thead>
-      <tr><th>#</th><th>Cents</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <script>
-    let currentScaleCents = [];
-
-    function parseInterval(input) {
-      input = input.trim();
-      if (input.includes('\\')) {
-        const [steps, edo] = input.split('\\').map(Number);
-        return 1200 * (steps / edo);
-      } else if (input.includes('/')) {
-        const [num, den] = input.split('/').map(Number);
-        return 1200 * Math.log2(num / den);
-      } else {
-        return parseFloat(input); // assume cents
-      }
-    }
-
-    function parseUDP(udpStr) {
-      const match = udpStr.match(/(\d+)\|(\d+)\((\d+)\)/);
-      if (!match) return null;
-      return {
-        up: parseInt(match[1]),
-        down: parseInt(match[2]),
-        periods: parseInt(match[3])
-      };
-    }
-
-    function mod(a, b) {
-      return ((a % b) + b) % b;
-    }
-
-    function generateScale() {
-      const generatorStr = document.getElementById("generator").value;
-      const periodStr = document.getElementById("period").value;
-      const udpStr = document.getElementById("udp").value;
-      const decimals = parseInt(document.getElementById("decimals").value);
-
-      const generator = parseInterval(generatorStr);
-      const period = parseInterval(periodStr);
-      const udp = parseUDP(udpStr);
-
-      if (!udp) {
-        alert("Invalid UDP format. Use format like '3|3(1)'.");
-        return;
-      }
-
-      // Generate notes in a single period
-      const pitches = new Set();
-      for (let i = -udp.down; i <= udp.up; i++) {
-        const cents = i * generator;
-        const wrapped = mod(cents, period);
-        pitches.add(wrapped);
-      }
-
-      let scale = Array.from(pitches).sort((a, b) => a - b);
-      scale.push(period * udp.periods); // Add final note
-
-      // Extend to full octave
-      const fullScale = [];
-      const octave = 1200;
-      const repeats = Math.ceil(octave / period);
-
-      for (let i = 0; i < repeats; i++) {
-        const offset = i * period;
-        for (let j = 0; j < scale.length; j++) {
-          const note = scale[j] + offset;
-          if (note <= octave) fullScale.push(note);
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Scale Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            background: radial-gradient(circle at top center, #1e293b 0%, #0f172a 100%);
+            color: #f8fafc;
+            font-family: ui-sans-serif, system-ui, sans-serif;
         }
-      }
 
-      currentScaleCents = fullScale;
+        .glass {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
 
-      const tbody = document.querySelector("#output tbody");
-      tbody.innerHTML = "";
-      fullScale.forEach((cent, i) => {
-        const row = document.createElement("tr");
-        const td1 = document.createElement("td");
-        td1.textContent = i;
-        const td2 = document.createElement("td");
-        td2.textContent = cent.toFixed(decimals);
-        row.appendChild(td1);
-        row.appendChild(td2);
-        tbody.appendChild(row);
-      });
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
 
-      document.getElementById("output").style.display = "table";
-    }
+        .bit-active {
+            text-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+        }
 
-    function playScale() {
-      if (!currentScaleCents.length) {
-        alert("Generate a scale first!");
-        return;
-      }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-results { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
 
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const baseFreq = 261.626; // A4
+    <div class="max-w-3xl w-full space-y-6">
+        <header class="text-center space-y-2 mb-8">
+            <h1 class="text-5xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-indigo-400">
+                Binary Scale
+            </h1>
+            <p class="text-slate-400 font-medium">Map large integers to EDO microtonal structures.</p>
+        </header>
 
-      currentScaleCents.forEach((cents, i) => {
-        const freq = baseFreq * Math.pow(2, cents / 1200);
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+        <section class="glass rounded-3xl p-6 shadow-2xl border border-white/10">
+            <div class="space-y-4">
+                <div class="flex justify-between items-end">
+                    <label for="numberInput" class="text-sm font-semibold text-slate-400 ml-1">BIG INTEGER INPUT</label>
+                    <button onclick="clearInput()" class="text-xs text-slate-500 hover:text-sky-400 transition-colors">Clear</button>
+                </div>
+                <textarea 
+                    id="numberInput" 
+                    placeholder="Enter a massive number..." 
+                    class="w-full bg-slate-950/50 border border-slate-700 rounded-2xl p-5 text-sky-300 font-mono focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 outline-none transition-all resize-none h-32 text-lg"
+                ></textarea>
+                
+                <button 
+                    onclick="calculateScale()"
+                    class="w-full bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg hover:shadow-sky-500/20 active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                    Generate Scale
+                </button>
+            </div>
+        </section>
 
-        osc.type = "sine";
-        osc.frequency.value = freq;
-        gain.gain.value = 0.3;
+        <div id="errorMessage" class="hidden animate-results bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-2xl text-sm text-center"></div>
 
-        osc.connect(gain).connect(audioCtx.destination);
-        const start = audioCtx.currentTime + i * 0.5;
-        const stop = start + 0.45;
-        osc.start(start);
-        osc.stop(stop);
-      });
-    }
-  </script>
+        <main id="results" class="hidden space-y-6 animate-results">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="glass p-5 rounded-2xl ring-1 ring-white/5">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Tuning System</span>
+                    <p id="edoValue" class="text-2xl md:text-3xl font-bold text-white mt-1"></p>
+                </div>
+                <div class="glass p-5 rounded-2xl ring-1 ring-white/5">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Bit Complexity</span>
+                    <p id="bitLength" class="text-2xl md:text-3xl font-bold text-white mt-1"></p>
+                </div>
+            </div>
+
+            <div class="glass p-6 rounded-3xl space-y-4 relative overflow-hidden">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-sky-300 flex items-center gap-2">
+                        Scale Degrees
+                        <span class="text-[10px] bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full uppercase tracking-tighter">Relative to Base</span>
+                    </h2>
+                    <button id="copyBtn" onclick="copyToClipboard()" class="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl text-slate-300 transition-all border border-white/5">
+                        Copy Steps
+                    </button>
+                </div>
+                <div id="stepsContainer" class="flex flex-wrap gap-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    </div>
+            </div>
+
+            <div class="glass p-5 rounded-2xl">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] block mb-3">Binary Sequence Map</span>
+                <div id="binaryVisual" class="font-mono text-xs break-all text-slate-600 leading-relaxed tracking-widest bg-black/20 p-4 rounded-xl"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function calculateScale() {
+            const input = document.getElementById('numberInput').value.trim();
+            const errorDiv = document.getElementById('errorMessage');
+            const resultsDiv = document.getElementById('results');
+            const stepsContainer = document.getElementById('stepsContainer');
+            const binaryVisual = document.getElementById('binaryVisual');
+            
+            errorDiv.classList.add('hidden');
+            
+            try {
+                if (!input) throw new Error("Please enter a numerical value.");
+                
+                const num = BigInt(input);
+                if (num <= 0n) throw new Error("Value must be a positive integer.");
+
+                const binaryStr = num.toString(2);
+                const bitLength = binaryStr.length;
+                
+                // Consistency with your original logic:
+                // If input is 67 (1000011), bits=7, EDO=7.
+                const edo = bitLength; 
+                const maxStep = edo - 1;
+
+                document.getElementById('edoValue').innerText = `${edo}-EDO`;
+                document.getElementById('bitLength').innerText = `${bitLength}-bit`;
+
+                let steps = [];
+                let visualHtml = '';
+
+                for (let i = 0; i < bitLength; i++) {
+                    const bit = binaryStr[i];
+                    const position = bitLength - 1 - i;
+                    const edoStep = maxStep - position;
+
+                    if (bit === '1') {
+                        steps.push(edoStep);
+                        visualHtml += `<span class="text-sky-400 font-bold bit-active">${bit}</span>`;
+                    } else {
+                        visualHtml += `<span>${bit}</span>`;
+                    }
+                }
+
+                stepsContainer.innerHTML = steps.map(s => `
+                    <div class="group relative cursor-default">
+                        <div class="bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 px-3 py-1.5 rounded-lg text-sm font-mono text-sky-200 transition-all">
+                            ${s}
+                        </div>
+                    </div>
+                `).join('');
+
+                binaryVisual.innerHTML = visualHtml;
+                resultsDiv.classList.remove('hidden');
+
+            } catch (e) {
+                errorDiv.innerText = e.message;
+                errorDiv.classList.remove('hidden');
+                resultsDiv.classList.add('hidden');
+            }
+        }
+
+        async function copyToClipboard() {
+            const btn = document.getElementById('copyBtn');
+            const steps = Array.from(document.querySelectorAll('#stepsContainer div')).map(el => el.innerText.trim());
+            const text = steps.join(', ');
+            
+            try {
+                await navigator.clipboard.writeText(text);
+                const originalText = btn.innerText;
+                btn.innerText = "Copied!";
+                btn.classList.add('bg-emerald-600', 'text-white');
+                
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.classList.remove('bg-emerald-600', 'text-white');
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+            }
+        }
+
+        function clearInput() {
+            document.getElementById('numberInput').value = '';
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+        }
+    </script>
 </body>
 </html>
