@@ -846,7 +846,7 @@ function mod(a, b) {
   return ((a % b) + b) % b;
 }
 
-const canonicalChainOfFifths = ["Fbb", "Cbb", "Gbb", "Dbb", "Abb", "Ebb", "Bbb", "Fb","Cb","Gb","Db","Ab","Eb","Bb","F","C","G","D","A","E","B","F#","C#","G#","D#","A#","E#","B#", "Fx", "Cx", "Gx", "Dx", "Ax", "Ex", "Bx"];
+const canonicalChainOfFifths = ["Fbb", "Cbb", "Gbb", "Dbb", "Abb", "Ebb", "Bbb", "Fb","Cb","Gb","Db","Ab","Eb","Bb","F","C","G","D","A","E","B","F#","C#","G#","D#","A#","E#","B#", "F##", "C##", "G##", "D##", "A##", "E##", "B##"];
 const fifthspanMap = {};
 canonicalChainOfFifths.forEach((name, i) => { const span = i - canonicalChainOfFifths.indexOf("C"); fifthspanMap[name] = span; });
 
