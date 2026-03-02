@@ -2,623 +2,374 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hyper-Grid EDO Synth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDO Lab: Microtonal Guitar Explorer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --zinc-950: #09090b; --zinc-900: #18181b; }
-        body { 
-            background-color: var(--zinc-950); 
-            color: #f4f4f5; 
-            margin: 0; 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column;
-            overflow: hidden;
-            font-family: ui-sans-serif, system-ui, sans-serif;
-            touch-action: none; 
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
         
-        .scroll-viewport {
-            flex-grow: 1;
-            overflow: auto;
-            position: relative;
-            background: #000;
-        }
-
-        .grid-container {
-            display: grid;
-            gap: 1px;
-            background-color: #27272a;
-            width: max-content;
-            height: max-content;
-        }
-
-        .grid-cell {
-            background-color: #111113;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f1f5f9;
             user-select: none;
-            transition: background-color 0.1s;
+            -webkit-user-select: none;
         }
 
-        .grid-cell.active {
-            background-color: #3f3f46;
-            color: #fff;
-            box-shadow: inset 0 0 20px rgba(255,255,255,0.1);
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #020617; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+        input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.9);
-            z-index: 100;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(8px);
+        .fret-btn {
+            touch-action: none;
         }
 
-        .modal-content {
-            background: #18181b;
-            border: 1px solid #3f3f46;
-            padding: 1.5rem;
-            border-radius: 12px;
-            width: 95%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
+        .sustain-active {
+            background-color: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #10b981;
         }
 
-        input[type="number"], input[type="text"], select {
-            background: #09090b;
-            border: 1px solid #3f3f46;
-            color: white;
-            padding: 12px;
-            border-radius: 6px;
-            width: 100%;
-            font-family: monospace;
-            font-size: 1rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.25rem;
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #a1a1aa;
-        }
-
-        .partial-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr 40px;
-            gap: 8px;
-            margin-bottom: 8px;
-            align-items: end;
-        }
-
-        .btn-action {
-            background: #27272a;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.7rem;
-            border: 1px solid #3f3f46;
-            text-transform: uppercase;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-
-        .btn-action:hover { background: #3f3f46; }
-
-        .btn-record {
-            background: #450a0a;
-            border-color: #991b1b;
-            color: #fca5a5;
-        }
-        .btn-record.active {
-            background: #991b1b;
-            color: white;
-            animation: pulse 1.5s infinite;
+        .sustain-active .icon-inf {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.6; }
-            100% { opacity: 1; }
-        }
-
-        .step-pill {
-            padding: 8px;
-            border: 1px solid #3f3f46;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 0.75rem;
-            cursor: pointer;
-            background: #09090b;
-        }
-        .step-pill.selected {
-            background: #10b981;
-            border-color: #34d399;
-            color: #064e3b;
-            font-weight: bold;
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
         }
     </style>
 </head>
-<body>
-
-    <div class="flex items-center justify-between p-2 sm:p-3 bg-zinc-900 border-b border-zinc-800 shrink-0 z-50 overflow-x-auto">
-        <div class="flex items-center gap-2 sm:gap-3 shrink-0 mr-2">
-            <h1 class="text-[10px] sm:text-xs font-black tracking-widest uppercase text-zinc-400">Hyper-Grid</h1>
-            <button id="recordBtn" class="btn-action btn-record">REC</button>
-            <button id="downloadBtn" class="btn-action hidden">SAVE .WAV</button>
-        </div>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto space-y-6">
         
-        <div class="flex gap-1.5 sm:gap-2">
-            <button id="openTuning" class="btn-action">Tuning</button>
-            <button id="openScale" class="btn-action">Scale</button>
-            <button id="openTimbre" class="btn-action">Layout</button>
-            <button id="sustainBtn" class="btn-action !bg-zinc-800">Sus: OFF</button>
-            <div class="w-16 sm:w-24 hidden xs:block">
-                <input type="range" id="masterVol" min="0" max="1" step="0.01" value="0.3" class="w-full mt-2">
-            </div>
-        </div>
-    </div>
-
-    <div class="scroll-viewport" id="viewport">
-        <div id="gridWrapper" class="grid-container"></div>
-    </div>
-
-    <!-- Tuning Modal -->
-    <div id="tuningModal" class="modal">
-        <div class="modal-content space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-lg font-bold text-emerald-400">System Tuning</h2>
-                <button onclick="closeModals()" class="text-zinc-500 hover:text-white text-2xl">&times;</button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label>EDO (Steps per Octave)</label>
-                    <input type="number" id="edoInput" value="12">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 p-6 rounded-3xl border border-slate-800 shadow-2xl">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-blue-500/20 rounded-2xl text-blue-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
                 </div>
                 <div>
-                    <label>Reference Frequency (Hz for C4)</label>
-                    <input type="number" id="baseFreq" value="261.63" step="0.01">
+                    <h1 class="text-2xl font-black tracking-tighter text-white uppercase italic">EDO Lab</h1>
+                    <p class="text-slate-500 text-[10px] font-mono uppercase tracking-[0.3em]">Microtonal Explorer</p>
                 </div>
-            </div>
-            <button onclick="saveAndApply()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg hover:bg-emerald-500">Apply Tuning</button>
-        </div>
-    </div>
-
-    <!-- Scale Modal -->
-    <div id="scaleModal" class="modal">
-        <div class="modal-content space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-lg font-bold">Scale Generation</h2>
-                <button onclick="closeModals()" class="text-zinc-500 hover:text-white text-2xl">&times;</button>
             </div>
             
-            <div class="flex bg-zinc-950 p-1 rounded-lg">
-                <button id="tabGenerator" class="flex-1 py-2 text-[10px] uppercase font-bold rounded bg-zinc-800 text-white">Generator Chain</button>
-                <button id="tabManual" class="flex-1 py-2 text-[10px] uppercase font-bold rounded text-zinc-500">Manual Selection</button>
+            <div class="flex items-center gap-3">
+                <button id="stop-all-btn" class="p-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                </button>
+                <button id="init-audio-btn" class="px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20">
+                    Start Engine
+                </button>
             </div>
+        </header>
 
-            <div id="modeGenerator" class="space-y-4">
-                <div>
-                    <label>Generator (EDO Steps)</label>
-                    <input type="number" id="scaleGenerator" value="7">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label>Gens Up</label><input type="number" id="scaleGensUp" value="6"></div>
-                    <div><label>Gens Down</label><input type="number" id="scaleGensDown" value="0"></div>
-                </div>
-            </div>
-
-            <div id="modeManual" class="hidden space-y-4">
-                <label>Select EDO Steps for Octave</label>
-                <div id="stepPicker" class="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-48 overflow-y-auto p-1"></div>
-            </div>
-
-            <div class="flex items-center justify-between border-t border-zinc-800 pt-4">
-                <p class="text-[10px] text-zinc-400 italic">Notes in Scale: <span id="scaleTotalSize">0</span></p>
-                <button onclick="clearScale()" class="text-[10px] text-red-400 uppercase font-bold">Reset Chromatic</button>
-            </div>
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
             
-            <button id="applyScaleBtn" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg hover:bg-emerald-500 uppercase tracking-widest text-sm">Apply Scale Mapping</button>
-        </div>
-    </div>
-
-    <!-- Layout & Timbre Modal -->
-    <div id="timbreModal" class="modal">
-        <div class="modal-content space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-lg font-bold">Layout & Sound</h2>
-                <button onclick="closeModals()" class="text-zinc-500 hover:text-white text-2xl">&times;</button>
-            </div>
-            <div class="space-y-6">
-                <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-800">
-                    <h3 class="text-[10px] uppercase tracking-widest text-emerald-400 font-bold mb-3">Isomorphic Grid Logic</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label>Horizontal Gap</label>
-                            <input type="number" id="hGap" value="1">
+            <!-- Sidebar -->
+            <aside class="xl:col-span-1 space-y-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5">
+                    <h2 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-blue-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        Global Setup
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 focus-within:border-blue-500/50 transition-colors">
+                            <label class="text-[10px] uppercase font-bold text-slate-600 mb-1 block">EDO Steps</label>
+                            <input type="text" id="input-edo" value="24" class="w-full bg-transparent text-xl font-mono text-blue-400 outline-none" placeholder="24">
                         </div>
-                        <div>
-                            <label>Vertical Gap</label>
-                            <input type="number" id="vGap" value="5">
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <label class="text-[10px] uppercase font-bold text-slate-600 mb-1 block">Strings</label>
+                                <input type="text" id="input-numStrings" value="6" class="w-full bg-transparent font-mono outline-none">
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <label class="text-[10px] uppercase font-bold text-slate-600 mb-1 block">Base Hz</label>
+                                <input type="text" id="input-baseFreq" value="440" class="w-full bg-transparent font-mono outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <label class="text-[10px] uppercase font-bold text-slate-600 mb-1 block">Fret Qty</label>
+                                <input type="text" id="input-numFrets" value="12" class="w-full bg-transparent font-mono outline-none">
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <label class="text-[10px] uppercase font-bold text-slate-600 mb-1 block">Stp/Fret</label>
+                                <input type="text" id="input-stepsPerFret" value="1" class="w-full bg-transparent font-mono outline-none">
+                            </div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4 mt-4">
-                        <div><label>Grid Rows</label><input type="number" id="gridRows" value="12"></div>
-                        <div><label>Grid Cols</label><input type="number" id="gridCols" value="12"></div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                    <button id="sustain-toggle" class="w-full flex items-center justify-between p-4 rounded-xl border transition-all bg-slate-950 border-slate-800 text-slate-600">
+                        <span class="text-xs font-black uppercase tracking-tight">Sustain / Toggle</span>
+                        <svg class="icon-inf" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z"></path></svg>
+                    </button>
+
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <div class="flex justify-between mb-2">
+                            <span class="text-[10px] uppercase font-bold text-slate-600">Release Decay</span>
+                            <span id="release-val" class="text-[10px] font-mono text-emerald-500">0.4s</span>
+                        </div>
+                        <input type="range" id="release-range" min="0.05" max="3" step="0.05" value="0.4" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Fretboard -->
+            <main class="xl:col-span-3 space-y-4">
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl overflow-hidden">
+                    <div class="overflow-x-auto custom-scrollbar pb-6">
+                        <div id="fretboard-container" class="min-w-[1000px]">
+                            <!-- Content generated by JS -->
+                        </div>
                     </div>
                 </div>
 
-                <div>
-                    <label>Cell Size (px)</label>
-                    <input type="number" id="cellSize" value="100">
+                <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 text-[10px] font-mono text-slate-600 space-y-2">
+                    <p class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        Hold to play. Lift to release.
+                    </p>
+                    <p class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        In Sustain Mode: Click once to lock/unlock a note.
+                    </p>
                 </div>
-
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <label>Partials (Harmonics)</label>
-                        <button id="addPartial" class="text-[10px] bg-zinc-700 px-2 py-1 rounded">+ Add</button>
-                    </div>
-                    <div id="partialsList" class="max-h-48 overflow-y-auto pr-2"></div>
-                </div>
-
-                <div>
-                    <label>Envelope (ADSR)</label>
-                    <div class="grid grid-cols-4 gap-2">
-                        <div><label class="text-[9px]">A</label><input type="number" id="envA" value="0.05" step="0.01"></div>
-                        <div><label class="text-[9px]">D</label><input type="number" id="envD" value="0.2" step="0.01"></div>
-                        <div><label class="text-[9px]">S</label><input type="number" id="envS" value="0.7" step="0.1"></div>
-                        <div><label class="text-[9px]">R</label><input type="number" id="envR" value="0.6" step="0.1"></div>
-                    </div>
-                </div>
-            </div>
-            <button onclick="saveAndApply()" class="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-zinc-200 uppercase text-sm">Save & Update Grid</button>
+            </main>
         </div>
     </div>
 
     <script>
-        const FIFTHS_NAMES = ["Fbb","Cbb","Gbb","Dbb","Abb","Ebb","Bbb","Fb","Cb","Gb","Db","Ab","Eb","Bb","F","C","G","D","A","E","B","F#","C#","G#","D#","A#","E#","B#","Fx","Cx","Gx","Dx","Ax","Ex","Bx"];
-        const C_FIFTH_INDEX = 15;
-        let currentScaleMapping = null;
-        let scaleMode = 'generator';
-        let manualSteps = new Set([0]);
-
-        function getNoteName(totalSteps, edo) {
-            const targetFifthCents = 701.955;
-            const fifthSteps = Math.round((targetFifthCents / 1200) * edo);
-            let step = Number(((BigInt(totalSteps) % BigInt(edo)) + BigInt(edo)) % BigInt(edo));
-            let octave = 4 + Math.floor(totalSteps / edo);
-            let best = { name: "", dist: Infinity, accs: Infinity, rawName: "" };
-            for (let i = 0; i < FIFTHS_NAMES.length; i++) {
-                const fOffset = i - C_FIFTH_INDEX;
-                const stepPos = (((fOffset * fifthSteps) % edo) + edo) % edo;
-                let diff = step - stepPos;
-                if (diff > edo / 2) diff -= edo;
-                if (diff < -edo / 2) diff += edo;
-                const accCount = Math.abs(diff);
-                if (accCount < best.accs || (accCount === best.accs && Math.abs(fOffset) < best.dist)) {
-                    let prefix = (diff > 0) ? "^".repeat(diff) : (diff < 0 ? "v".repeat(Math.abs(diff)) : "");
-                    best = { name: prefix + FIFTHS_NAMES[i], dist: Math.abs(fOffset), accs: accCount, rawName: FIFTHS_NAMES[i] };
-                }
-            }
-            return `${best.name}${octave}`;
-        }
-
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const masterGain = audioCtx.createGain();
-        masterGain.connect(audioCtx.destination);
-        
-        // Recording Setup
-        const recordingDest = audioCtx.createMediaStreamDestination();
-        masterGain.connect(recordingDest);
-        let mediaRecorder;
-        let recordedChunks = [];
-        let isRecording = false;
-        let lastBlobUrl = null;
-
-        function initRecorder() {
-            mediaRecorder = new MediaRecorder(recordingDest.stream);
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) recordedChunks.push(e.data);
-            };
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(recordedChunks, { type: 'audio/wav' });
-                // Note: Standard MediaRecorder produces specific formats (usually webm/ogg).
-                // To force a 64-bit WAV file as requested, we process the raw buffer data manually.
-                exportWAV64(recordedChunks);
-                recordedChunks = [];
-            };
-        }
-
-        // 64-bit Floating Point WAV Exporter
-        async function exportWAV64(chunks) {
-            const blob = new Blob(chunks);
-            const arrayBuffer = await blob.arrayBuffer();
-            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-            
-            const numChannels = audioBuffer.numberOfChannels;
-            const sampleRate = audioBuffer.sampleRate;
-            const length = audioBuffer.length;
-            const bytesPerSample = 8; // 64-bit float
-            const buffer = new ArrayBuffer(44 + length * numChannels * bytesPerSample);
-            const view = new DataView(buffer);
-
-            const writeString = (offset, string) => {
-                for (let i = 0; i < string.length; i++) {
-                    view.setUint8(offset + i, string.charCodeAt(i));
-                }
-            };
-
-            writeString(0, 'RIFF');
-            view.setUint32(4, 36 + length * numChannels * bytesPerSample, true);
-            writeString(8, 'WAVE');
-            writeString(12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 3, true); // IEEE Float
-            view.setUint16(22, numChannels, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
-            view.setUint16(32, numChannels * bytesPerSample, true);
-            view.setUint16(34, bytesPerSample * 8, true);
-            writeString(36, 'data');
-            view.setUint32(40, length * numChannels * bytesPerSample, true);
-
-            let offset = 44;
-            for (let i = 0; i < length; i++) {
-                for (let channel = 0; channel < numChannels; channel++) {
-                    const sample = audioBuffer.getChannelData(channel)[i];
-                    view.setFloat64(offset, sample, true);
-                    offset += 8;
-                }
-            }
-
-            const wavBlob = new Blob([buffer], { type: 'audio/wav' });
-            if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
-            lastBlobUrl = URL.createObjectURL(wavBlob);
-            
-            const dlBtn = document.getElementById('downloadBtn');
-            dlBtn.classList.remove('hidden');
-            dlBtn.onclick = () => {
-                const link = document.createElement('a');
-                link.href = lastBlobUrl;
-                link.download = `elul-nigun-session-${Date.now()}.wav`;
-                link.click();
-            };
-        }
-
-        let activeVoices = new Map();
+        // State
+        let edo = "24";
+        let numStrings = "6";
+        let baseFreq = "440";
+        let numFrets = "12";
+        let stepsPerFret = "1";
         let sustain = false;
-
-        function playNote(totalSteps, edo, freqBase) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const freq = freqBase * Math.pow(2, totalSteps / edo);
-            const now = audioCtx.currentTime;
-            const partials = Array.from(document.querySelectorAll('.partial-row')).map(row => {
-                let rStr = row.querySelector('.p-ratio').value;
-                let r = rStr.includes('/') ? rStr.split('/').map(Number).reduce((a,b)=>a/b) : parseFloat(rStr);
-                return { ratio: r || 1, vol: (parseFloat(row.querySelector('.p-vol').value) || 0) / 100 };
-            });
-            const A = Math.max(0.001, parseFloat(document.getElementById('envA').value));
-            const D = Math.max(0.001, parseFloat(document.getElementById('envD').value));
-            const S = parseFloat(document.getElementById('envS').value);
-            const masterVol = parseFloat(document.getElementById('masterVol').value);
-
-            const voiceGain = audioCtx.createGain();
-            voiceGain.gain.setValueAtTime(0, now);
-            voiceGain.gain.linearRampToValueAtTime(masterVol, now + A);
-            voiceGain.gain.linearRampToValueAtTime(masterVol * S, now + A + D);
-            voiceGain.connect(masterGain);
-
-            const oscillators = partials.map(p => {
-                const osc = audioCtx.createOscillator();
-                const g = audioCtx.createGain();
-                osc.frequency.setValueAtTime(freq * p.ratio, now);
-                g.gain.value = p.vol;
-                osc.connect(g);
-                g.connect(voiceGain);
-                osc.start();
-                return osc;
-            });
-            return { oscillators, gainNode: voiceGain, release: parseFloat(document.getElementById('envR').value) };
-        }
-
-        function stopNote(voice) {
-            if (!voice) return;
-            const now = audioCtx.currentTime;
-            voice.gainNode.gain.cancelScheduledValues(now);
-            voice.gainNode.gain.setValueAtTime(voice.gainNode.gain.value, now);
-            voice.gainNode.gain.setTargetAtTime(0, now, voice.release / 4);
-            setTimeout(() => {
-                voice.oscillators.forEach(o => { try { o.stop(); } catch(e){} });
-                voice.gainNode.disconnect();
-            }, voice.release * 1000 + 100);
-        }
-
-        const gridWrapper = document.getElementById('gridWrapper');
-
-        function renderGrid() {
-            const rows = parseInt(document.getElementById('gridRows').value) || 12;
-            const cols = parseInt(document.getElementById('gridCols').value) || 12;
-            const hGap = parseInt(document.getElementById('hGap').value);
-            const vGap = parseInt(document.getElementById('vGap').value);
-            const cellSize = parseInt(document.getElementById('cellSize').value) || 100;
-            const edo = parseInt(document.getElementById('edoInput').value) || 12;
-            const baseFreq = parseFloat(document.getElementById('baseFreq').value) || 261.63;
-
-            gridWrapper.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
-            gridWrapper.innerHTML = '';
-            
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'grid-cell';
-                    cell.style.width = cellSize + 'px';
-                    cell.style.height = cellSize + 'px';
-                    const keyId = `r${r}c${c}`;
-                    cell.dataset.key = keyId;
-                    
-                    const relR = ((rows-1) - r);
-                    const linearIdx = (relR * vGap) + (c * hGap);
-
-                    let steps;
-                    if (currentScaleMapping) {
-                        const sz = currentScaleMapping.length;
-                        const oct = Math.floor(linearIdx / sz);
-                        const sStep = ((linearIdx % sz) + sz) % sz;
-                        steps = (oct * edo) + currentScaleMapping[sStep];
-                    } else {
-                        steps = linearIdx;
-                    }
-
-                    cell.innerHTML = `
-                        <span class="font-bold pointer-events-none">${getNoteName(steps, edo)}</span>
-                        <span class="text-[8px] opacity-30 mt-1 pointer-events-none">${(baseFreq * Math.pow(2, steps/edo)).toFixed(1)}Hz</span>
-                    `;
-                    cell.dataset.steps = steps;
-                    gridWrapper.appendChild(cell);
-                }
-            }
-        }
-
-        gridWrapper.addEventListener('pointerdown', (e) => {
-            const target = e.target.closest('.grid-cell');
-            if (!target) return;
-            const key = target.dataset.key;
-            if (activeVoices.has(key)) {
-                stopNote(activeVoices.get(key));
-                activeVoices.delete(key);
-                target.classList.remove('active');
-            } else {
-                target.classList.add('active');
-                activeVoices.set(key, playNote(parseInt(target.dataset.steps), parseInt(document.getElementById('edoInput').value), parseFloat(document.getElementById('baseFreq').value)));
-            }
-        });
-
-        window.addEventListener('pointerup', () => {
-            if (!sustain) {
-                activeVoices.forEach((v, k) => {
-                    stopNote(v);
-                    const cell = document.querySelector(`[data-key="${k}"]`);
-                    if (cell) cell.classList.remove('active');
-                });
-                activeVoices.clear();
-            }
-        });
-
-        // Controls
-        document.getElementById('recordBtn').onclick = (e) => {
-            if (!isRecording) {
-                if (!mediaRecorder) initRecorder();
-                recordedChunks = [];
-                mediaRecorder.start();
-                isRecording = true;
-                e.target.innerText = "STOP";
-                e.target.classList.add('active');
-                document.getElementById('downloadBtn').classList.add('hidden');
-            } else {
-                mediaRecorder.stop();
-                isRecording = false;
-                e.target.innerText = "REC";
-                e.target.classList.remove('active');
-            }
-        };
-
-        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
-        function saveAndApply() { closeModals(); renderGrid(); }
-
-        document.getElementById('openTuning').onclick = () => document.getElementById('tuningModal').style.display = 'flex';
-        document.getElementById('openScale').onclick = () => { refreshManualStepPicker(); document.getElementById('scaleModal').style.display = 'flex'; };
-        document.getElementById('openTimbre').onclick = () => document.getElementById('timbreModal').style.display = 'flex';
-
-        document.getElementById('tabGenerator').onclick = () => setScaleMode('generator');
-        document.getElementById('tabManual').onclick = () => setScaleMode('manual');
-
-        function setScaleMode(mode) {
-            scaleMode = mode;
-            const isGen = mode === 'generator';
-            document.getElementById('modeGenerator').classList.toggle('hidden', !isGen);
-            document.getElementById('modeManual').classList.toggle('hidden', isGen);
-            document.getElementById('tabGenerator').classList.toggle('bg-zinc-800', isGen);
-            document.getElementById('tabManual').classList.toggle('bg-zinc-800', !isGen);
-        }
-
-        function refreshManualStepPicker() {
-            const edo = parseInt(document.getElementById('edoInput').value);
-            const container = document.getElementById('stepPicker');
-            container.innerHTML = '';
-            for (let i = 0; i < edo; i++) {
-                const pill = document.createElement('div');
-                pill.className = `step-pill ${manualSteps.has(i) ? 'selected' : ''}`;
-                pill.innerText = i;
-                pill.onclick = () => {
-                    if (manualSteps.has(i)) manualSteps.delete(i); else manualSteps.add(i);
-                    pill.classList.toggle('selected');
-                    updateScaleCountDisplay();
-                };
-                container.appendChild(pill);
-            }
-            updateScaleCountDisplay();
-        }
-
-        function updateScaleCountDisplay() {
-            if (scaleMode === 'manual') document.getElementById('scaleTotalSize').innerText = manualSteps.size;
-            else document.getElementById('scaleTotalSize').innerText = currentScaleMapping ? currentScaleMapping.length : 0;
-        }
-
-        document.getElementById('applyScaleBtn').onclick = () => {
-            if (scaleMode === 'generator') {
-                const edo = parseInt(document.getElementById('edoInput').value);
-                const gen = parseInt(document.getElementById('scaleGenerator').value);
-                const up = parseInt(document.getElementById('scaleGensUp').value);
-                const down = parseInt(document.getElementById('scaleGensDown').value);
-                let s = new Set(); s.add(0);
-                for (let i = 1; i <= up; i++) s.add(((i * gen) % edo + edo) % edo);
-                for (let i = 1; i <= down; i++) s.add(((-i * gen) % edo + edo) % edo);
-                currentScaleMapping = Array.from(s).sort((a,b)=>a-b);
-            } else {
-                currentScaleMapping = Array.from(manualSteps).sort((a,b)=>a-b);
-                if (currentScaleMapping.length === 0) currentScaleMapping = null;
-            }
-            saveAndApply();
-        };
-
-        function clearScale() { currentScaleMapping = null; manualSteps = new Set([0]); saveAndApply(); }
-
-        document.getElementById('sustainBtn').onclick = (e) => {
-            sustain = !sustain;
-            e.target.innerText = `Sus: ${sustain ? 'ON' : 'OFF'}`;
-            e.target.classList.toggle('bg-zinc-700', sustain);
-            if (!sustain) {
-                activeVoices.forEach((v, k) => { stopNote(v); const c = document.querySelector(`[data-key="${k}"]`); if (c) c.classList.remove('active'); });
-                activeVoices.clear();
-            }
-        };
-
-        function createPartialRow(ratio = "1", vol = "100") {
-            const d = document.createElement('div'); d.className = 'partial-row';
-            d.innerHTML = `<div><label>Ratio</label><input type="text" class="p-ratio" value="${ratio}"></div>
-                           <div><label>Vol (%)</label><input type="number" class="p-vol" min="0" max="100" value="${vol}"></div>
-                           <button class="remove-p text-red-500 mb-2">×</button>`;
-            d.querySelector('.remove-p').onclick = () => d.remove();
-            return d;
-        }
-
-        document.getElementById('addPartial').onclick = () => document.getElementById('partialsList').appendChild(createPartialRow("1", "50"));
+        let releaseTime = 0.4;
         
-        // Initial setup
-        document.getElementById('partialsList').appendChild(createPartialRow("1", "100"));
-        document.getElementById('partialsList').appendChild(createPartialRow("2", "40"));
-        document.getElementById('partialsList').appendChild(createPartialRow("3", "20"));
-        window.onload = renderGrid;
+        let stringConfigs = [
+            { steps: "0", octaves: "0" },
+            { steps: "5", octaves: "0" },
+            { steps: "10", octaves: "0" },
+            { steps: "15", octaves: "0" },
+            { steps: "19", octaves: "0" },
+            { steps: "24", octaves: "0" }
+        ];
+
+        // Audio Engine
+        let audioCtx = null;
+        let masterGain = null;
+        let activeVoices = {}; // stringIndex -> { osc, gain, fretIndex }
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = audioCtx.createGain();
+                masterGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                masterGain.connect(audioCtx.destination);
+                document.getElementById('init-audio-btn').innerText = 'Engine Active';
+                document.getElementById('init-audio-btn').className = 'px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+            }
+        }
+
+        function getFreq(sIdx, fIdx) {
+            const curEdo = parseFloat(edo) || 1;
+            const curBase = parseFloat(baseFreq) || 440;
+            const config = stringConfigs[sIdx];
+            if (!config) return curBase;
+            const sSteps = parseFloat(config.steps) || 0;
+            const sOcts = parseFloat(config.octaves) || 0;
+            const fSteps = parseFloat(stepsPerFret) || 1;
+            const totalSteps = (sOcts * curEdo) + sSteps + (fIdx * fSteps);
+            return curBase * Math.pow(2, totalSteps / curEdo);
+        }
+
+        function stopVoice(stringIndex) {
+            const voice = activeVoices[stringIndex];
+            if (voice) {
+                const now = audioCtx.currentTime;
+                voice.gain.gain.cancelScheduledValues(now);
+                voice.gain.gain.exponentialRampToValueAtTime(0.0001, now + releaseTime);
+                voice.osc.stop(now + releaseTime + 0.1);
+                delete activeVoices[stringIndex];
+            }
+        }
+
+        function handleNoteDown(sIdx, fIdx) {
+            initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const existingVoice = activeVoices[sIdx];
+
+            if (sustain && existingVoice && existingVoice.fretIndex === fIdx) {
+                stopVoice(sIdx);
+                return;
+            }
+
+            if (existingVoice) stopVoice(sIdx);
+
+            const freq = getFreq(sIdx, fIdx);
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now);
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.4, now + 0.02);
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start();
+
+            activeVoices[sIdx] = { osc, gain, fretIndex: fIdx };
+        }
+
+        function handleNoteUp(sIdx) {
+            if (!sustain) stopVoice(sIdx);
+        }
+
+        // UI Generator
+        function renderFretboard() {
+            const container = document.getElementById('fretboard-container');
+            container.innerHTML = '';
+
+            const nFrets = parseInt(numFrets) || 0;
+            const nStrings = parseInt(numStrings) || 0;
+
+            // Fret Markers
+            const header = document.createElement('div');
+            header.className = 'flex mb-4 ml-28';
+            for (let i = 0; i <= nFrets; i++) {
+                const marker = document.createElement('div');
+                marker.className = 'flex-1 text-center';
+                marker.innerHTML = `<span class="text-[9px] font-black text-slate-800 uppercase tracking-tighter">${i === 0 ? 'Nut' : i}</span>`;
+                header.appendChild(marker);
+            }
+            container.appendChild(header);
+
+            // Strings
+            const stringsWrapper = document.createElement('div');
+            stringsWrapper.className = 'space-y-3';
+            
+            for (let sIdx = 0; sIdx < nStrings; sIdx++) {
+                const config = stringConfigs[sIdx] || { steps: "0", octaves: "0" };
+                const row = document.createElement('div');
+                row.className = 'flex items-center';
+
+                // Tuning UI
+                const tuning = document.createElement('div');
+                tuning.className = 'w-28 flex gap-2 pr-4 border-r border-slate-800';
+                tuning.innerHTML = `
+                    <div class="flex flex-col flex-1">
+                        <label class="text-[8px] font-bold text-slate-700 uppercase">Step</label>
+                        <input type="text" value="${config.steps}" data-sid="${sIdx}" data-field="steps"
+                            class="tuning-input w-full bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-[10px] font-mono text-blue-400 outline-none focus:border-blue-500/50">
+                    </div>
+                    <div class="flex flex-col flex-1">
+                        <label class="text-[8px] font-bold text-slate-700 uppercase">Oct</label>
+                        <input type="text" value="${config.octaves}" data-sid="${sIdx}" data-field="octaves"
+                            class="tuning-input w-full bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-[10px] font-mono text-purple-400 outline-none focus:border-purple-500/50">
+                    </div>
+                `;
+                row.appendChild(tuning);
+
+                // Frets
+                const frets = document.createElement('div');
+                frets.className = 'flex flex-1';
+                
+                for (let fIdx = 0; fIdx <= nFrets; fIdx++) {
+                    const curEdoNum = parseFloat(edo) || 1;
+                    const sSteps = parseFloat(config.steps) || 0;
+                    const sOcts = parseFloat(config.octaves) || 0;
+                    const fSteps = parseFloat(stepsPerFret) || 1;
+                    const totalSteps = (sOcts * curEdoNum) + sSteps + (fIdx * fSteps);
+                    const stepInOctave = ((totalSteps % curEdoNum) + curEdoNum) % curEdoNum;
+
+                    const fret = document.createElement('div');
+                    fret.className = `flex-1 h-14 relative border-r border-slate-800/40 cursor-pointer transition-all active:scale-95 group fret-btn ${fIdx === 0 ? 'bg-slate-950 border-l-2 border-l-slate-700' : 'bg-slate-900/50'}`;
+                    
+                    const stringWireHeight = 1 + (nStrings - sIdx) * 0.4;
+                    fret.innerHTML = `
+                        <div class="absolute w-full z-0 top-1/2 left-0 pointer-events-none opacity-40 group-hover:opacity-100 transition-opacity" style="height: ${stringWireHeight}px; background-color: #334155"></div>
+                        <div class="z-10 absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span class="text-[10px] font-mono font-bold text-slate-500 group-hover:text-blue-400 transition-colors">${stepInOctave.toFixed(0)}</span>
+                            <span class="text-[7px] font-black text-slate-800 group-hover:text-slate-600 transition-colors">${Math.floor(totalSteps / curEdoNum)}VA</span>
+                        </div>
+                    `;
+
+                    // Event Listeners
+                    fret.onmousedown = () => handleNoteDown(sIdx, fIdx);
+                    fret.onmouseup = () => handleNoteUp(sIdx);
+                    fret.onmouseleave = () => handleNoteUp(sIdx);
+                    fret.ontouchstart = (e) => { e.preventDefault(); handleNoteDown(sIdx, fIdx); };
+                    fret.ontouchend = (e) => { e.preventDefault(); handleNoteUp(sIdx); };
+
+                    frets.appendChild(fret);
+                }
+                row.appendChild(frets);
+                stringsWrapper.appendChild(row);
+            }
+            container.appendChild(stringsWrapper);
+
+            // Re-bind tuning input listeners
+            document.querySelectorAll('.tuning-input').forEach(input => {
+                input.oninput = (e) => {
+                    const sIdx = e.target.getAttribute('data-sid');
+                    const field = e.target.getAttribute('data-field');
+                    stringConfigs[sIdx][field] = e.target.value;
+                    renderFretboard();
+                };
+            });
+        }
+
+        // Global Event Listeners
+        document.getElementById('input-edo').oninput = (e) => { edo = e.target.value; renderFretboard(); };
+        document.getElementById('input-numStrings').oninput = (e) => { 
+            numStrings = e.target.value; 
+            const count = parseInt(numStrings) || 0;
+            while(stringConfigs.length < count) stringConfigs.push({steps: "0", octaves: "0"});
+            if(stringConfigs.length > count) stringConfigs = stringConfigs.slice(0, count);
+            renderFretboard(); 
+        };
+        document.getElementById('input-baseFreq').oninput = (e) => { baseFreq = e.target.value; renderFretboard(); };
+        document.getElementById('input-numFrets').oninput = (e) => { numFrets = e.target.value; renderFretboard(); };
+        document.getElementById('input-stepsPerFret').oninput = (e) => { stepsPerFret = e.target.value; renderFretboard(); };
+
+        document.getElementById('sustain-toggle').onclick = () => {
+            sustain = !sustain;
+            document.getElementById('sustain-toggle').classList.toggle('sustain-active', sustain);
+        };
+
+        document.getElementById('release-range').oninput = (e) => {
+            releaseTime = parseFloat(e.target.value);
+            document.getElementById('release-val').innerText = releaseTime + 's';
+        };
+
+        document.getElementById('stop-all-btn').onclick = () => {
+            Object.keys(activeVoices).forEach(id => stopVoice(id));
+        };
+
+        document.getElementById('init-audio-btn').onclick = initAudio;
+
+        // Init
+        renderFretboard();
     </script>
 </body>
 </html>
