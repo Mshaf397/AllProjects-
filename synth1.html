@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>EDO Lab: Microtonal Guitar Explorer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -14,6 +14,7 @@
             color: #f1f5f9;
             user-select: none;
             -webkit-user-select: none;
+            overflow-x: hidden;
         }
 
         .font-mono { font-family: 'JetBrains Mono', monospace; }
@@ -23,13 +24,14 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
 
-        input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
+        input {
+            user-select: text !important;
+            -webkit-user-select: text !important;
         }
 
         .fret-btn {
             touch-action: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .sustain-active {
@@ -38,48 +40,47 @@
             color: #10b981;
         }
 
-        .sustain-active .icon-inf {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: .5; }
         }
+        .animate-pulse-soft {
+            animation: pulse 2s infinite;
+        }
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <div class="max-w-7xl mx-auto space-y-6">
+<body class="p-2 md:p-8">
+    <div class="max-w-7xl mx-auto space-y-4 md:space-y-6">
         
         <!-- Header -->
-        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 p-6 rounded-3xl border border-slate-800 shadow-2xl">
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 p-4 md:p-6 rounded-3xl border border-slate-800 shadow-2xl">
             <div class="flex items-center gap-4">
-                <div class="p-3 bg-blue-500/20 rounded-2xl text-blue-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                <div class="p-2 md:p-3 bg-blue-500/20 rounded-2xl text-blue-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-black tracking-tighter text-white uppercase italic">EDO Lab</h1>
-                    <p class="text-slate-500 text-[10px] font-mono uppercase tracking-[0.3em]">Microtonal Explorer</p>
+                    <h1 class="text-xl md:text-2xl font-black tracking-tighter text-white uppercase italic">EDO Lab</h1>
+                    <p class="text-slate-500 text-[9px] font-mono uppercase tracking-[0.3em]">Tablet Optimized</p>
                 </div>
             </div>
             
-            <div class="flex items-center gap-3">
-                <button id="stop-all-btn" class="p-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all border border-red-500/20">
+            <div class="flex items-center gap-2 md:gap-3">
+                <button id="stop-all-btn" class="p-3 rounded-xl bg-red-500/10 text-red-500 active:bg-red-500/30 border border-red-500/20">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
                 </button>
-                <button id="init-audio-btn" class="px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20">
+                <button id="init-audio-btn" class="flex-1 md:flex-none px-6 py-3 rounded-xl text-xs font-bold uppercase transition-all bg-blue-600 active:bg-blue-400 text-white shadow-lg shadow-blue-600/20">
                     Start Engine
                 </button>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-4 md:gap-6">
             
             <!-- Sidebar -->
-            <aside class="xl:col-span-1 space-y-6">
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5">
+            <aside class="xl:col-span-1 space-y-4 md:space-y-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-5 space-y-5">
                     <h2 class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-blue-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                         Global Setup
                     </h2>
                     
@@ -91,7 +92,7 @@
 
                         <div class="grid grid-cols-2 gap-3">
                             <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <label class="text-[10px] uppercase font-bold text-slate-600 mb-1 block">Strings</label>
+                                <label class="text-[10px] uppercase font-bold text-slate-600 mb-1 block">Strings (4-12)</label>
                                 <input type="text" id="input-numStrings" value="6" class="w-full bg-transparent font-mono outline-none">
                             </div>
                             <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
@@ -113,10 +114,10 @@
                     </div>
                 </div>
 
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-5 space-y-4">
                     <button id="sustain-toggle" class="w-full flex items-center justify-between p-4 rounded-xl border transition-all bg-slate-950 border-slate-800 text-slate-600">
-                        <span class="text-xs font-black uppercase tracking-tight">Sustain / Toggle</span>
-                        <svg class="icon-inf" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z"></path></svg>
+                        <span class="text-xs font-black uppercase tracking-tight">Sustain Mode</span>
+                        <svg id="sustain-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z"></path></svg>
                     </button>
 
                     <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
@@ -131,7 +132,7 @@
 
             <!-- Fretboard -->
             <main class="xl:col-span-3 space-y-4">
-                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl overflow-hidden">
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 md:p-6 shadow-2xl overflow-hidden">
                     <div class="overflow-x-auto custom-scrollbar pb-6">
                         <div id="fretboard-container" class="min-w-[1000px]">
                             <!-- Content generated by JS -->
@@ -142,11 +143,11 @@
                 <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 text-[10px] font-mono text-slate-600 space-y-2">
                     <p class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                        Hold to play. Lift to release.
+                        Hold fret to play. Lift to release.
                     </p>
                     <p class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        In Sustain Mode: Click once to lock/unlock a note.
+                        Sustain: Click once to drone. Click same fret to stop.
                     </p>
                 </div>
             </main>
@@ -183,8 +184,9 @@
                 masterGain = audioCtx.createGain();
                 masterGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
                 masterGain.connect(audioCtx.destination);
-                document.getElementById('init-audio-btn').innerText = 'Engine Active';
-                document.getElementById('init-audio-btn').className = 'px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+                const btn = document.getElementById('init-audio-btn');
+                btn.innerText = 'Engine Active';
+                btn.className = 'px-6 py-3 rounded-xl text-xs font-bold uppercase transition-all bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
             }
         }
 
@@ -245,15 +247,44 @@
             if (!sustain) stopVoice(sIdx);
         }
 
-        // UI Generator
-        function renderFretboard() {
+        // Logic to update fret labels without clearing the whole DOM
+        function updateAllFretLabels() {
+            const nStrings = parseInt(numStrings) || 0;
+            const nFrets = parseInt(numFrets) || 0;
+            const curEdoNum = parseFloat(edo) || 1;
+            const fSteps = parseFloat(stepsPerFret) || 1;
+
+            for (let sIdx = 0; sIdx < nStrings; sIdx++) {
+                const config = stringConfigs[sIdx];
+                if (!config) continue;
+                const sSteps = parseFloat(config.steps) || 0;
+                const sOcts = parseFloat(config.octaves) || 0;
+
+                for (let fIdx = 0; fIdx <= nFrets; fIdx++) {
+                    const el = document.getElementById(`fret-label-${sIdx}-${fIdx}`);
+                    if (!el) continue;
+
+                    const totalSteps = (sOcts * curEdoNum) + sSteps + (fIdx * fSteps);
+                    const stepInOctave = ((totalSteps % curEdoNum) + curEdoNum) % curEdoNum;
+                    const octaveNum = Math.floor(totalSteps / curEdoNum);
+
+                    el.innerHTML = `
+                        <span class="text-[10px] font-mono font-bold text-slate-500 group-hover:text-blue-400 transition-colors">${stepInOctave.toFixed(0)}</span>
+                        <span class="text-[7px] font-black text-slate-800 group-hover:text-slate-600 transition-colors">${octaveNum}VA</span>
+                    `;
+                }
+            }
+        }
+
+        // Full render (only called when structural parameters like string/fret count change)
+        function renderFretboardStructure() {
             const container = document.getElementById('fretboard-container');
             container.innerHTML = '';
 
             const nFrets = parseInt(numFrets) || 0;
             const nStrings = parseInt(numStrings) || 0;
 
-            // Fret Markers
+            // Fret Numbers
             const header = document.createElement('div');
             header.className = 'flex mb-4 ml-28';
             for (let i = 0; i <= nFrets; i++) {
@@ -264,7 +295,6 @@
             }
             container.appendChild(header);
 
-            // Strings
             const stringsWrapper = document.createElement('div');
             stringsWrapper.className = 'space-y-3';
             
@@ -273,49 +303,36 @@
                 const row = document.createElement('div');
                 row.className = 'flex items-center';
 
-                // Tuning UI
                 const tuning = document.createElement('div');
                 tuning.className = 'w-28 flex gap-2 pr-4 border-r border-slate-800';
                 tuning.innerHTML = `
                     <div class="flex flex-col flex-1">
                         <label class="text-[8px] font-bold text-slate-700 uppercase">Step</label>
                         <input type="text" value="${config.steps}" data-sid="${sIdx}" data-field="steps"
-                            class="tuning-input w-full bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-[10px] font-mono text-blue-400 outline-none focus:border-blue-500/50">
+                            class="tuning-input w-full bg-slate-950 border border-slate-800 rounded px-1 py-1 text-[10px] font-mono text-blue-400 outline-none focus:border-blue-500/50">
                     </div>
                     <div class="flex flex-col flex-1">
                         <label class="text-[8px] font-bold text-slate-700 uppercase">Oct</label>
                         <input type="text" value="${config.octaves}" data-sid="${sIdx}" data-field="octaves"
-                            class="tuning-input w-full bg-slate-950 border border-slate-800 rounded px-1 py-0.5 text-[10px] font-mono text-purple-400 outline-none focus:border-purple-500/50">
+                            class="tuning-input w-full bg-slate-950 border border-slate-800 rounded px-1 py-1 text-[10px] font-mono text-purple-400 outline-none focus:border-purple-500/50">
                     </div>
                 `;
                 row.appendChild(tuning);
 
-                // Frets
                 const frets = document.createElement('div');
                 frets.className = 'flex flex-1';
                 
                 for (let fIdx = 0; fIdx <= nFrets; fIdx++) {
-                    const curEdoNum = parseFloat(edo) || 1;
-                    const sSteps = parseFloat(config.steps) || 0;
-                    const sOcts = parseFloat(config.octaves) || 0;
-                    const fSteps = parseFloat(stepsPerFret) || 1;
-                    const totalSteps = (sOcts * curEdoNum) + sSteps + (fIdx * fSteps);
-                    const stepInOctave = ((totalSteps % curEdoNum) + curEdoNum) % curEdoNum;
-
                     const fret = document.createElement('div');
                     fret.className = `flex-1 h-14 relative border-r border-slate-800/40 cursor-pointer transition-all active:scale-95 group fret-btn ${fIdx === 0 ? 'bg-slate-950 border-l-2 border-l-slate-700' : 'bg-slate-900/50'}`;
                     
-                    const stringWireHeight = 1 + (nStrings - sIdx) * 0.4;
+                    const wireH = 1 + (nStrings - sIdx) * 0.4;
                     fret.innerHTML = `
-                        <div class="absolute w-full z-0 top-1/2 left-0 pointer-events-none opacity-40 group-hover:opacity-100 transition-opacity" style="height: ${stringWireHeight}px; background-color: #334155"></div>
-                        <div class="z-10 absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span class="text-[10px] font-mono font-bold text-slate-500 group-hover:text-blue-400 transition-colors">${stepInOctave.toFixed(0)}</span>
-                            <span class="text-[7px] font-black text-slate-800 group-hover:text-slate-600 transition-colors">${Math.floor(totalSteps / curEdoNum)}VA</span>
-                        </div>
+                        <div class="absolute w-full z-0 top-1/2 left-0 pointer-events-none opacity-40 group-hover:opacity-100 transition-opacity" style="height: ${wireH}px; background-color: #334155"></div>
+                        <div id="fret-label-${sIdx}-${fIdx}" class="z-10 absolute inset-0 flex flex-col items-center justify-center pointer-events-none"></div>
                     `;
 
-                    // Event Listeners
-                    fret.onmousedown = () => handleNoteDown(sIdx, fIdx);
+                    fret.onmousedown = (e) => { e.preventDefault(); handleNoteDown(sIdx, fIdx); };
                     fret.onmouseup = () => handleNoteUp(sIdx);
                     fret.onmouseleave = () => handleNoteUp(sIdx);
                     fret.ontouchstart = (e) => { e.preventDefault(); handleNoteDown(sIdx, fIdx); };
@@ -331,30 +348,41 @@
             // Re-bind tuning input listeners
             document.querySelectorAll('.tuning-input').forEach(input => {
                 input.oninput = (e) => {
-                    const sIdx = e.target.getAttribute('data-sid');
+                    const sid = e.target.getAttribute('data-sid');
                     const field = e.target.getAttribute('data-field');
-                    stringConfigs[sIdx][field] = e.target.value;
-                    renderFretboard();
+                    stringConfigs[sid][field] = e.target.value;
+                    updateAllFretLabels();
                 };
             });
+            updateAllFretLabels();
         }
 
         // Global Event Listeners
-        document.getElementById('input-edo').oninput = (e) => { edo = e.target.value; renderFretboard(); };
+        document.getElementById('input-edo').oninput = (e) => { edo = e.target.value; updateAllFretLabels(); };
+        document.getElementById('input-baseFreq').oninput = (e) => { baseFreq = e.target.value; updateAllFretLabels(); };
+        document.getElementById('input-stepsPerFret').oninput = (e) => { stepsPerFret = e.target.value; updateAllFretLabels(); };
+
+        // Structural changes require re-rendering the rows/cells
         document.getElementById('input-numStrings').oninput = (e) => { 
             numStrings = e.target.value; 
-            const count = parseInt(numStrings) || 0;
-            while(stringConfigs.length < count) stringConfigs.push({steps: "0", octaves: "0"});
-            if(stringConfigs.length > count) stringConfigs = stringConfigs.slice(0, count);
-            renderFretboard(); 
+            const count = Math.min(12, Math.max(1, parseInt(numStrings) || 0));
+            if (count > 0 && count !== stringConfigs.length) {
+                while(stringConfigs.length < count) stringConfigs.push({steps: "0", octaves: "0"});
+                if(stringConfigs.length > count) stringConfigs = stringConfigs.slice(0, count);
+                renderFretboardStructure();
+            }
         };
-        document.getElementById('input-baseFreq').oninput = (e) => { baseFreq = e.target.value; renderFretboard(); };
-        document.getElementById('input-numFrets').oninput = (e) => { numFrets = e.target.value; renderFretboard(); };
-        document.getElementById('input-stepsPerFret').oninput = (e) => { stepsPerFret = e.target.value; renderFretboard(); };
+        
+        document.getElementById('input-numFrets').oninput = (e) => { 
+            numFrets = e.target.value; 
+            renderFretboardStructure(); 
+        };
 
         document.getElementById('sustain-toggle').onclick = () => {
             sustain = !sustain;
-            document.getElementById('sustain-toggle').classList.toggle('sustain-active', sustain);
+            const btn = document.getElementById('sustain-toggle');
+            btn.classList.toggle('sustain-active', sustain);
+            document.getElementById('sustain-icon').classList.toggle('animate-pulse-soft', sustain);
         };
 
         document.getElementById('release-range').oninput = (e) => {
@@ -368,8 +396,8 @@
 
         document.getElementById('init-audio-btn').onclick = initAudio;
 
-        // Init
-        renderFretboard();
+        // Start
+        renderFretboardStructure();
     </script>
 </body>
 </html>
