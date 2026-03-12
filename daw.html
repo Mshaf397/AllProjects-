@@ -370,14 +370,14 @@
 
             // Base notes and their index in the circle of fifths (C=0). Covers Fbb (-15) to Bx (+19).
             const fifthsIndex = {
-                'Fbbbb': -29, 'Cbbbb': -28, 'Gbbbb': -27, 'Dbbbb': -26, 'Abbbb': -25, 'Ebbbb': -24, 'Bbbbb': -23,
-                'Fbbb': -22, 'Cbbb': -21, 'Gbbb': -20, 'Dbbb': -19, 'Abbb': -18, 'Ebbb': -17, 'Bbbb': -16,
-                'Fbb': -15, 'Cbb': -14, 'Gbb': -13, 'Dbb': -12, 'Abb': -11, 'Ebb': -10, 'Bbb': -9, 'Fb': -8,
-                'Cb': -7, 'Gb': -6, 'Db': -5, 'Ab': -4, 'Eb': -3, 'Bb': -2, 'F': -1, 'C': 0, 'G': 1, 
-                'D': 2, 'A': 3, 'E': 4, 'B': 5, 'F#': 6, 'C#': 7, 'G#': 8, 'D#': 9, 'A#': 10, 
-                'E#': 11, 'B#': 12, 'Fx': 13, 'Cx': 14, 'Gx': 15, 'Dx': 16, 'Ax': 17, 'Ex': 18, 'Bx': 19,
-                'Fx#': 20, 'Cx#': 21, 'Gx#': 22, 'Dx#': 23, 'Ax#': 24, 'Ex#': 25, 'Bx#': 26,
-                'Fxx': 27, 'Cxx': 28, 'Gxx': 29, 'Dxx': 30, 'Axx': 31, 'Exx': 32, 'Bxx': 33
+                'Fbbbb': -31, 'Cbbbb': -30, 'Gbbbb': -29, 'Dbbbb': -28, 'Abbbb': -27, 'Ebbbb': -26, 'Bbbbb': -25,
+                'Fbbb': -24, 'Cbbb': -23, 'Gbbb': -22, 'Dbbb': -21, 'Abbb': -20, 'Ebbb': -19, 'Bbbb': -18,
+                'Fbb': -17, 'Cbb': -16, 'Gbb': -15, 'Dbb': -14, 'Abb': -13, 'Ebb': -12, 'Bbb': -11, 'Fb': -10,
+                'Cb': -9, 'Gb': -8, 'Db': -7, 'Ab': -6, 'Eb': -5, 'Bb': -4, 'F': -3, 'C': -2, 'G': -1, 
+                'D': 0, 'A': 1, 'E': 2, 'B': 3, 'F#': 4, 'C#': 5, 'G#': 6, 'D#': 7, 'A#': 8, 
+                'E#': 9, 'B#': 10, 'Fx': 11, 'Cx': 12, 'Gx': 13, 'Dx': 14, 'Ax': 15, 'Ex': 16, 'Bx': 17,
+                'Fx#': 18, 'Cx#': 19, 'Gx#': 20, 'Dx#': 21, 'Ax#': 22, 'Ex#': 23, 'Bx#': 24,
+                'Fxx': 25, 'Cxx': 26, 'Gxx': 27, 'Dxx': 28, 'Axx': 29, 'Exx': 30, 'Bxx': 31
             };
             
             // 2. Map all note names to EDO steps relative to C-natural (0 to EDO-1)
@@ -407,67 +407,67 @@
          * relative to the instrument's root note (part.rootNoteName at part.rootOctave).
          */
         function parseNoteName(noteString, part) {
-            const map = part.noteMap;
-            if (!map || part.isScaleMode) return null;
+    const map = part.noteMap;
+    if (!map) return null;
 
-            // UPDATED REGEX: Matches multiple ^ or v (zero or more)
-            // Regex: [micro accidental]* [NoteName] [Octave]
-            const noteRegex = /^([v\^]*)([A-G][b#x]*)([+-]?\d+)$/i;
-            const match = noteString.match(noteRegex);
+    const noteRegex = /^([v\^]*)([A-G])([b#x]*)([+-]?\d+)$/i;
+    const match = noteString.match(noteRegex);
+    if (!match) return null;
+    
+    const microAccidentals = match[1] || '';
+    const letter = match[2].toUpperCase();
+    const accidentals = match[3] || '';
+    const octave = parseInt(match[4], 10);
 
-            if (!match) {
-                if (!isNaN(parseFloat(noteString))) return null;
-                throw new Error(`Invalid note format: "${noteString}". Use format [^|v]NoteNameOctave (e.g., C4, ^^D#5).`);
-            }
-            
-            const microAccidentals = match[1] || ''; // e.g., '^^v'
-            const rawNoteName = match[2];           // e.g., 'C#', 'Db'
-            const targetOctave = parseInt(match[3], 10);
-            
-            // 1. Calculate micro tonal shift
-            let microShift = 0;
-            for (const char of microAccidentals) {
-                if (char === '^') microShift++;
-                if (char === 'v') microShift--;
-            }
-            
-            // 2. Get the EDO step of the BASE note (no micro-accidentals) relative to C-natural (0 to EDO-1)
-            let baseStepFromC = map.noteToStep[rawNoteName];
+    // 1. Determine the Chromatic Semitone (Distance from C to C#)
+    // We use the map to find the difference, regardless of D-relative indexing
+    const cStep = map.noteToStep['C'];
+    const cSharpStep = map.noteToStep['C#'];
+    const chromaticSemitone = cSharpStep - cStep;
 
-            if (baseStepFromC === undefined) {
-                 throw new Error(`Base note name "${rawNoteName}" is not mapped for ${part.edo}EDO. Check spelling or adjust EDO.`);
-            }
+    // 2. Map Natural Notes relative to C = 0
+    const naturalMap = {};
+    ['C','D','E','F','G','A','B'].forEach(l => {
+        let step = map.noteToStep[l] - cStep;
+        // Ensure steps are wrapped within one octave relative to C
+        while (step < 0) step += part.edo;
+        naturalMap[l] = step % part.edo;
+    });
 
-            // --- Octave Boundary Correction Logic (standard for enharmonics) ---
-            let correctedOctave = targetOctave;
-            const noteLetter = rawNoteName.charAt(0).toUpperCase();
-            
-            // If the note name is Cb or Cbb, the effective pitch is an octave lower than the designated C octave.
-            if (noteLetter === 'C' && rawNoteName.includes('b')) {
-                 correctedOctave -= 1;
-            }
+    // 3. Calculate Accidental Shift
+    let accidentalShift = 0;
+    for (let char of accidentals) {
+        if (char === '#') accidentalShift += chromaticSemitone;
+        if (char === 'b') accidentalShift -= chromaticSemitone;
+        if (char === 'x') accidentalShift += (2 * chromaticSemitone);
+    }
 
-            // 3. Calculate the absolute EDO step from C0 *including* the octave and micro shift.
-            // Absolute Step from C0 = (Base EDO Step relative to C) + (Effective Octave * EDO) + (Micro Shift)
-            const absoluteEdoStepFromC0 = baseStepFromC + (correctedOctave * part.edo) + microShift;
-            
-            // 4. Determine the EDO step of the instrument's Root Note (e.g., C4) relative to C0.
-            const rootRawNoteName = part.rootNoteName; 
-            const rootOctave = part.rootOctave;       
-            
-            let rootStepFromC = map.noteToStep[rootRawNoteName];
-            if (rootStepFromC === undefined) { 
-                rootStepFromC = 0; 
-            }
-            
-            const absoluteRootStepFromC0 = rootStepFromC + (rootOctave * part.edo);
-            
-            // 5. Calculate the Final Absolute EDO Step for the synthesizer 
-            //    (offset from the instrument's root frequency)
-            const finalEdoStep = absoluteEdoStepFromC0 - absoluteRootStepFromC0;
+    // 4. Calculate Micro-tonal Shifts (^/v)
+    let microShift = 0;
+    for (let char of microAccidentals) {
+        if (char === '^') microShift++;
+        if (char === 'v') microShift--;
+    }
 
-            return finalEdoStep;
-        }
+    // 5. Absolute Step relative to C0
+    // (octave * EDO) anchors us to the C-boundary. 
+    // naturalMap[letter] handles the gap from C to the base note (D, E, etc.)
+    // accidentalShift handles the sharp/flat displacement.
+    const absoluteStep = (octave * part.edo) + naturalMap[letter] + accidentalShift + microShift;
+
+    // 6. Calculate Root Absolute Step (Root is also anchored to C0 for consistency)
+    const rootLetter = part.rootNoteName.charAt(0).toUpperCase();
+    const rootNaturalPos = naturalMap[rootLetter] || 0;
+    
+    // Note: If your root freq input is for a specific note (like A440), 
+    // this math ensures the relative interval is correct.
+    const absoluteRootStep = (part.rootOctave * part.edo) + rootNaturalPos;
+
+    return absoluteStep - absoluteRootStep;
+}
+
+
+
 
         // --- 5. Part State Management ---
 
