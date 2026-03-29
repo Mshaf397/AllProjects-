@@ -357,11 +357,9 @@
       <option>triangle</option>
       <option>sawtooth</option>
       <option>square</option>
-      <option>piano</option>
-      <option>guitar</option>
-      <option>violin</option>
+      <option>bell</option>
       <option>organ</option>
-      <option>electric_guitar</option>
+      <option>piano</option>
     </select>
   </label>
 
@@ -449,104 +447,89 @@ const stopRecordBtn = document.getElementById('stopRecordBtn');
 const recordingStatus = document.getElementById('recordingStatus');
 
 
+// --- TIMBRE DEFINITIONS ---
+const timbres = {
+  "bell": [
+    { mult: 1, gain: 0.5, a: 0.01, d: 2, s: 0.1, r: 2 },
+    { mult: 2.76, gain: 0.3, a: 0.01, d: 1.5, s: 0.05, r: 1.5 },
+    { mult: 5.4, gain: 0.2, a: 0.01, d: 1, s: 0.02, r: 1 }
+  ],
+  "organ": [
+    { mult: 1, gain: 0.4, a: 0.1, d: 0.1, s: 0.8, r: 0.2 },
+    { mult: 2, gain: 0.3, a: 0.1, d: 0.1, s: 0.7, r: 0.2 },
+    { mult: 3, gain: 0.2, a: 0.1, d: 0.1, s: 0.6, r: 0.2 },
+    { mult: 4, gain: 0.1, a: 0.1, d: 0.1, s: 0.5, r: 0.2 }
+  ],
+  "piano": [
+    {mult: 1, gain: 0.5, a: 0.005, d: 0.4, s: 0.9, r: 0.2},
+    {mult: 1.98, gain: 0.4, a: 0.005, d: 0.4, s: 0.9, r: 0.2}
+  ]
+};
+
+
 // Synth Class for Audio Generation (same as before)
 class Synth {
     constructor(ctx, gainNode, waveType, releaseTime) {
         this.ctx = ctx;
         this.masterGain = gainNode;
-        this.releaseTime = releaseTime / 1000;
-        this.gain = ctx.createGain();
-        this.gain.gain.setValueAtTime(0, ctx.currentTime);
-        this.gain.connect(this.masterGain);
-
-        this.oscillators = [];
+        this.harmonics = [];
         this.waveType = waveType;
-        
-        this.initOscillators();
-    }
-    
-    initOscillators() {
-        // Defines the harmonic structure for custom waveforms
-        const getPeriodicWave = (type) => {
-            const maxHarmonics = 16;
-            const real = new Array(maxHarmonics + 1).fill(0);
-            
-            // Set fundamental (1st harmonic)
-            real[1] = 1.0; 
-            
-            if (type === 'piano') {
-                // Quick decay, complex lower harmonics for percussive sound
-                real[2] = 0.5; real[3] = 0.4; real[4] = 0.3; real[5] = 0.2; real[6] = 0.1;
-                real[7] = 0.05; real[8] = 0.02; real[9] = 0.01; real[10] = 0.005; real[11] = 0.002;
-                real[12] = 0.001; real[13] = 0.0005; real[14] = 0.0002; real[15] = 0.0001; real[16] = 0.00005;
-            } else if (type === 'guitar') {
-                // Strong odd harmonics for twang, quick high-end drop
-                real[2] = 0.1; real[3] = 0.7; real[4] = 0.0; real[5] = 0.4; real[6] = 0.0;
-                real[7] = 0.2; real[8] = 0.0; real[9] = 0.1; real[10] = 0.0; real[11] = 0.05;
-                real[12] = 0.0; real[13] = 0.0; real[14] = 0.0; real[15] = 0.03; real[16] = 0.0;
-            } else if (type === 'violin') {
-                // Rich high-frequency content for bright, sustained, bowed sound
-                real[2] = 0.8; real[3] = 0.6; real[4] = 0.5; real[5] = 0.4; real[6] = 0.3;
-                real[7] = 0.25; real[8] = 0.2; real[9] = 0.15; real[10] = 0.1; real[11] = 0.08;
-                real[12] = 0.05; real[13] = 0.04; real[14] = 0.03; real[15] = 0.02; real[16] = 0.01;
-            } else if (type === 'organ') {
-                // Drawbar approximation: 8', 4', 2 2/3' (1st, 2nd, 3rd harmonics)
-                real[2] = 0.6; real[3] = 0.4; real[4] = 0.2; real[5] = 0.1;
-            } else if (type === 'electric_guitar') {
-                // Heavy odd harmonics for distortion/compression effect
-                real[2] = 0.1; real[3] = 0.8; real[4] = 0.1; real[5] = 0.6; real[7] = 0.4; real[9] = 0.2;
-            }
-            
-            // Imaginary parts typically kept at zero for symmetric waveforms
-            const imag = new Array(maxHarmonics + 1).fill(0);
-            return this.ctx.createPeriodicWave(real, imag, { disableNormalization: false });
-        };
-        
-        // Use a single oscillator for custom waveforms
-        if (this.waveType === 'piano' || this.waveType === 'guitar' || this.waveType === 'violin' || this.waveType === 'organ' || this.waveType === 'electric_guitar') {
-            const osc = this.ctx.createOscillator();
-            osc.setPeriodicWave(getPeriodicWave(this.waveType));
-            osc.connect(this.gain);
-            this.oscillators.push({ osc, multiplier: 1 });
-        } else {
-            // Standard wave forms
-            const osc = this.ctx.createOscillator();
-            osc.type = this.waveType;
-            osc.connect(this.gain);
-            this.oscillators.push({ osc, multiplier: 1 });
-        }
 
-        this.oscillators.forEach(item => {
-            item.osc.start();
-        });
+        // Check if the selected wave matches a custom timbre
+        const definition = timbres[this.waveType];
+
+        if (definition) {
+            // Build multiple oscillators based on the timbre object
+            definition.forEach(h => {
+                const osc = this.ctx.createOscillator();
+                const g = this.ctx.createGain();
+                g.gain.setValueAtTime(0, this.ctx.currentTime);
+                osc.connect(g);
+                g.connect(this.masterGain);
+                this.harmonics.push({ osc, g, config: h });
+            });
+        } else {
+            // Fallback for standard waveforms (sine, square, etc.)
+            const osc = this.ctx.createOscillator();
+            const g = this.ctx.createGain();
+            osc.type = this.waveType;
+            g.gain.setValueAtTime(0, this.ctx.currentTime);
+            osc.connect(g);
+            g.connect(this.masterGain);
+            this.harmonics.push({ 
+                osc, 
+                g, 
+                config: { mult: 1, gain: 1, a: 0.005, d: 0.1, s: 0.8, r: releaseTime/1000 } 
+            });
+        }
     }
 
     start(frequency) {
         const now = this.ctx.currentTime;
-        
-        this.oscillators.forEach(item => {
-            const freq = frequency * (item.multiplier || 1);
-            item.osc.frequency.setValueAtTime(freq, now);
+        this.harmonics.forEach(h => {
+            h.osc.frequency.setValueAtTime(frequency * h.config.mult, now);
+            
+            // Envelope: Attack -> Decay -> Sustain
+            h.g.gain.cancelScheduledValues(now);
+            h.g.gain.linearRampToValueAtTime(h.config.gain, now + h.config.a);
+            h.g.gain.exponentialRampToValueAtTime(h.config.gain * h.config.s + 0.001, now + h.config.a + h.config.d);
+            
+            h.osc.start();
         });
-
-        this.gain.gain.cancelScheduledValues(now);
-        this.gain.gain.setValueAtTime(0, now);
-        this.gain.gain.linearRampToValueAtTime(1 * this.masterGain.gain.value, now + 0.005); 
     }
 
     release() {
         const now = this.ctx.currentTime;
-        this.gain.gain.cancelScheduledValues(now);
-        this.gain.gain.setValueAtTime(this.gain.gain.value, now);
-        this.gain.gain.linearRampToValueAtTime(0, now + this.releaseTime);
-        
-        this.oscillators.forEach(item => {
-            try {
-                item.osc.stop(now + this.releaseTime + 0.05); 
-            } catch (e) {}
+        this.harmonics.forEach(h => {
+            h.g.gain.cancelScheduledValues(now);
+            h.g.gain.setValueAtTime(h.g.gain.value, now);
+            // Envelope: Release
+            h.g.gain.exponentialRampToValueAtTime(0.001, now + h.config.r);
+            h.osc.stop(now + h.config.r + 0.1);
         });
     }
 }
+
 
 
 // --- UI ELEMENTS ---
