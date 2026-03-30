@@ -386,11 +386,8 @@
       <option>random21</option>
       <option>random22</option>
       <option>random23</option>
+      <option>random24</option>
     </select>
-  </label>
-
-  <label>Release (ms)
-    <input id="release" type="number" min="5" max="10000" value="120" />
   </label>
   
   <!-- AUDIO RECORDING CONTROLS -->
@@ -675,6 +672,13 @@ const timbres = {
     { mult: 5, gain: 0.2, a: 0.0005, d: 2.5, s: 1, r: 0.025},
     { mult: 9.375, gain: 0.87, a: 0.0087, d: 0.87, s: 1, r: 0.0435},
     { mult: 10, gain: 0.1, a: 0.01, d: 0.1, s: 1, r: 0.04}
+  ],
+  "random24": [
+    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
+    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
+    { mult: 3.74, gain: 1.4, a: 0.0014, d: 1.4, s: 1, r: 0.042},
+    { mult: 5, gain: 0.2, a: 0.0005, d: 2.5, s: 1, r: 0.025},
+    { mult: 9.5, gain: 0.9, a: 0.009, d: 0.9, s: 1, r: 0.045}
   ]
 };
 
