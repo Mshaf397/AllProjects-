@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOS Scale Finder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        .input-field {
+            border: 1px solid #cbd5e1;
+            padding: 8px;
+            border-radius: 6px;
+            width: 100%;
+        }
+        .pattern-text {
+            font-family: 'ui-monospace', monospace;
+            word-break: break-all;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-3xl mx-auto">
+        <header class="mb-8 flex justify-between items-end">
+            <div>
+                <h1 class="text-3xl font-bold">MOS Scale Finder</h1>
+                <p class="text-slate-500">Chroma-reduction algorithm (Corrected Rules)</p>
+            </div>
+        </header>
+
+        <div class="card p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-slate-600">Period (Steps \ EDO)</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="pSteps" value="12" class="input-field">
+                        <span class="self-center font-bold text-slate-400">\</span>
+                        <input type="number" id="pEdo" value="12" class="input-field">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-slate-600">Generator (Steps \ EDO)</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="gSteps" value="7" class="input-field">
+                        <span class="self-center font-bold text-slate-400">\</span>
+                        <input type="number" id="gEdo" value="12" class="input-field">
+                    </div>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium mb-1 text-slate-600">Max Hardness (Ratio L:s)</label>
+                    <input type="number" id="maxH" value="10" step="0.1" class="input-field">
+                </div>
+            </div>
+            <button onclick="calculate()" class="w-full mt-6 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
+                Calculate MOS Scales
+            </button>
+        </div>
+
+        <div id="results" class="space-y-4"></div>
+    </div>
+
+    <script>
+        function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+
+        function getPattern(L_count, s_count, gen, period) {
+            const totalNotes = L_count + s_count;
+            let points = [];
+            for (let i = 0; i < totalNotes; i++) {
+                points.push((i * gen) % period);
+            }
+            points.sort((a, b) => a - b);
+            points.push(period);
+
+            let diffs = [];
+            for (let i = 0; i < totalNotes; i++) {
+                diffs.push(points[i+1] - points[i]);
+            }
+
+            const unique = [...new Set(diffs)].sort((a, b) => b - a);
+            if (unique.length > 2) return "Non-MOS";
+            if (unique.length === 1) return Array(totalNotes).fill('u').join('');
+            
+            const L_val = unique[0];
+            return diffs.map(d => d === L_val ? 'L' : 's').join('');
+        }
+
+        function calculate() {
+            const ps = parseInt(document.getElementById('pSteps').value);
+            const pe = parseInt(document.getElementById('pEdo').value);
+            const gs = parseInt(document.getElementById('gSteps').value);
+            const ge = parseInt(document.getElementById('gEdo').value);
+            const maxH = parseFloat(document.getElementById('maxH').value);
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            const common = (pe * ge) / gcd(pe, ge);
+            const P = ps * (common / pe);
+            const G = gs * (common / ge);
+
+            const nP = gcd(P, G);
+            const p = P / nP;
+            const g = G / nP;
+
+            // Initial scale state
+            let curS = g % p;
+            let curL = p - curS;
+            if (curS > curL) [curL, curS] = [curS, curL];
+
+            // x = count of L per period, y = count of s per period
+            let x = 1;
+            let y = 1;
+
+            const results = [];
+            let iterations = 0;
+
+            while (curS > 0 && iterations < 40) {
+                const hardness = curL / curS;
+                
+                if (hardness <= maxH) {
+                    const totalL = x * nP;
+                    const totalS = y * nP;
+                    results.push({
+                        label: `${totalL}L ${totalS}s`,
+                        count: totalL + totalS,
+                        hardness: hardness.toFixed(3),
+                        L_size: curL / (common/pe),
+                        s_size: curS / (common/pe),
+                        pattern: getPattern(totalL, totalS, G, P)
+                    });
+                }
+
+                const chroma = Math.abs(curL - curS);
+                if (chroma === 0) break;
+
+                const oldX = x;
+                const oldY = y;
+
+                if (chroma > curS) {
+                    // Chroma becomes new L, s stays the same
+                    // Rule: xL (x+y)s
+                    curL = chroma;
+                    x = oldX;
+                    y = oldX + oldY;
+                } else {
+                    // Chroma becomes new s, old s becomes new L
+                    // Rule: number of L = total notes in old (x+y)
+                    // Rule: number of s = old number of L (x)
+                    const oldS = curS;
+                    curL = oldS;
+                    curS = chroma;
+                    x = oldX + oldY;
+                    y = oldX;
+                }
+                iterations++;
+            }
+
+            render(results);
+        }
+
+        function render(data) {
+            const container = document.getElementById('results');
+            if (data.length === 0) {
+                container.innerHTML = '<div class="card p-8 text-center text-slate-400">No MOS scales found for these parameters.</div>';
+                return;
+            }
+
+            data.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'card p-5 border-l-4 border-blue-500 hover:border-blue-700 transition-colors';
+                div.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="text-xs font-bold text-blue-500 uppercase tracking-widest">MOS Pattern</span>
+                            <h2 class="text-2xl font-black text-slate-800">${item.label}</h2>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Hardness</span>
+                            <p class="text-xl font-mono font-bold text-slate-700">${item.hardness}</p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-md mb-3">
+                        <p class="pattern-text text-slate-600 font-bold">${item.pattern}</p>
+                    </div>
+                    <div class="flex justify-between text-xs font-mono text-slate-500">
+                        <span>L: ${item.L_size.toFixed(2)} | s: ${item.s_size.toFixed(2)}</span>
+                        <span>Total Notes: ${item.count}</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
