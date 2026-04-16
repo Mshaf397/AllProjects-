@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>High-Contrast Distance Calculator</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --border-color: #000000;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #map {
+            flex-grow: 1;
+            width: 100%;
+            background: #fff;
+            /* High contrast grayscale for E-Ink */
+            filter: grayscale(100%) contrast(1.5) brightness(1.1);
+        }
+
+        #ui-panel {
+            padding: 12px;
+            border-top: 4px solid var(--border-color);
+            height: 45%;
+            overflow-y: auto;
+            background: white;
+            z-index: 1000;
+            box-sizing: border-box;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 4px;
+        }
+
+        .title-group h1 {
+            font-size: 1.1rem;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .total-display {
+            text-align: right;
+        }
+
+        .total-km {
+            font-size: 1.3rem;
+            font-weight: 900;
+            display: block;
+        }
+
+        .total-mi {
+            font-size: 0.9rem;
+            font-weight: normal;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin: 8px 0;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px;
+            border: 3px solid #000;
+            background: #fff;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        button:active {
+            background: #000;
+            color: #fff;
+        }
+
+        /* List Styling */
+        #location-list {
+            margin-top: 10px;
+            padding: 0;
+            list-style: none;
+        }
+
+        .list-item {
+            border-bottom: 1px solid #000;
+            padding: 8px 0;
+        }
+
+        .point-label {
+            font-weight: bold;
+            font-size: 1rem;
+            display: block;
+        }
+
+        .segment-info {
+            display: flex;
+            justify-content: space-between;
+            background: #eee;
+            padding: 4px 8px;
+            margin-top: 4px;
+            font-size: 0.9rem;
+            border-left: 4px solid #000;
+        }
+
+        .coords {
+            font-size: 0.75rem;
+            color: #444;
+        }
+
+        /* Leaflet UI Overrides */
+        .leaflet-bar {
+            border: 2px solid black !important;
+        }
+        .leaflet-bar a {
+            background-color: #fff !important;
+            color: #000 !important;
+            font-weight: bold !important;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="map"></div>
+    
+    <div id="ui-panel">
+        <div class="header">
+            <div class="title-group">
+                <h1>Path Distance</h1>
+                <div id="time-display" style="font-size: 0.8rem; font-weight: bold;"></div>
+            </div>
+            <div class="total-display">
+                <span id="total-km" class="total-km">0.00 km</span>
+                <span id="total-mi" class="total-mi">0.00 miles</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="undoLast()">Undo</button>
+            <button onclick="resetMap()">Clear All</button>
+        </div>
+
+        <ul id="location-list">
+            <!-- Dynamic Content -->
+        </ul>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    let map;
+    let points = [];
+    let markers = [];
+    let polyline;
+
+    // Update 24-hour clock for the Kindle header
+    function updateClock() {
+        const now = new Date();
+        const timeStr = now.getHours().toString().padStart(2, '0') + ":" + 
+                        now.getMinutes().toString().padStart(2, '0');
+        document.getElementById('time-display').innerText = timeStr;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function initMap() {
+        // Center on Mohegan Lake, NY area
+        map = L.map('map', {
+            zoomControl: true,
+            tap: true
+        }).setView([41.3200, -73.8500], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OSM',
+            maxZoom: 19
+        }).addTo(map);
+
+        polyline = L.polyline([], {
+            color: '#000000',
+            weight: 6,
+            opacity: 1.0
+        }).addTo(map);
+
+        map.on('click', function(e) {
+            addPoint(e.latlng);
+        });
+    }
+
+    function addPoint(latlng) {
+        points.push(latlng);
+
+        const marker = L.circleMarker(latlng, {
+            radius: 7,
+            fillColor: "#000",
+            color: "#fff",
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 1
+        }).addTo(map);
+        
+        markers.push(marker);
+        updateUI();
+    }
+
+    function undoLast() {
+        if (points.length === 0) return;
+        points.pop();
+        const marker = markers.pop();
+        if (marker) map.removeLayer(marker);
+        updateUI();
+    }
+
+    function resetMap() {
+        points = [];
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+        updateUI();
+    }
+
+    function updateUI() {
+        polyline.setLatLngs(points);
+        renderList();
+        calculateTotals();
+    }
+
+    function calculateTotals() {
+        let totalMeters = 0;
+        for (let i = 0; i < points.length - 1; i++) {
+            totalMeters += points[i].distanceTo(points[i + 1]);
+        }
+        
+        const km = totalMeters / 1000;
+        const mi = km * 0.621371;
+        
+        document.getElementById('total-km').innerText = km.toFixed(2) + " km";
+        document.getElementById('total-mi').innerText = mi.toFixed(2) + " miles";
+    }
+
+    function renderList() {
+        const list = document.getElementById('location-list');
+        list.innerHTML = '';
+        
+        if (points.length === 0) {
+            list.innerHTML = '<li style="text-align:center; padding:20px; font-style:italic;">Tap map to start</li>';
+            return;
+        }
+
+        points.forEach((pt, idx) => {
+            const li = document.createElement('li');
+            li.className = 'list-item';
+            
+            let html = `<span class="point-label">Point ${idx + 1}</span>`;
+            html += `<span class="coords">${pt.lat.toFixed(5)}, ${pt.lng.toFixed(5)}</span>`;
+            
+            // Add segment distance if not the first point
+            if (idx > 0) {
+                const distMeters = points[idx-1].distanceTo(pt);
+                const distKm = distMeters / 1000;
+                const distMi = distKm * 0.621371;
+                
+                // Add segment display at the TOP of the current point to show distance FROM previous
+                const segmentDiv = document.createElement('div');
+                segmentDiv.className = 'segment-info';
+                segmentDiv.innerHTML = `<span>Leg ${idx}:</span> <strong>${distKm.toFixed(2)} km / ${distMi.toFixed(2)} mi</strong>`;
+                li.prepend(segmentDiv);
+            }
+
+            li.innerHTML += html;
+            list.appendChild(li);
+        });
+
+        // Auto-scroll to bottom of list to show newest point
+        const panel = document.getElementById('ui-panel');
+        panel.scrollTop = panel.scrollHeight;
+    }
+
+    window.onload = initMap;
+</script>
+
+</body>
+</html>
