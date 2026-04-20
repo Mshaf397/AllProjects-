@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JI to ET Chord Mapper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        input:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: 1px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-slate-800">JI to ET Chord Mapper</h1>
+            <p class="text-slate-600 mt-2">Find the best step approximations for JI ratios in any equal temperament.</p>
+        </header>
+
+        <div class="card p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Equal Temperament (xedY)</label>
+                    <input type="text" id="etInput" placeholder="e.g., 12ed2 or 31ed3" class="w-full p-3 border border-slate-300 rounded-lg" value="12ed2">
+                    <p class="text-xs text-slate-500 mt-1">Format: [steps]ed[equave ratio]</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">JI Chord (a:b:c...)</label>
+                    <input type="text" id="chordInput" placeholder="e.g., 4:5:6:7" class="w-full p-3 border border-slate-300 rounded-lg" value="4:5:6:7">
+                    <p class="text-xs text-slate-500 mt-1">Integers sorted ascending.</p>
+                </div>
+            </div>
+            <button id="calcBtn" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors">
+                Calculate Mapping
+            </button>
+        </div>
+
+        <div id="resultArea" class="hidden">
+            <div class="card overflow-hidden">
+                <div class="bg-slate-800 text-white p-4">
+                    <h2 class="text-lg font-semibold" id="resultTitle">Results</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-bottom border-slate-200">
+                                <th class="p-4 font-semibold text-slate-700">Ratio</th>
+                                <th class="p-4 font-semibold text-slate-700">JI Cents</th>
+                                <th class="p-4 font-semibold text-slate-700">Steps</th>
+                                <th class="p-4 font-semibold text-slate-700">ET Cents</th>
+                                <th class="p-4 font-semibold text-slate-700">Abs. Error (¢)</th>
+                                <th class="p-4 font-semibold text-slate-700">Rel. Error (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultBody" class="divide-y divide-slate-100">
+                            <!-- Rows inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="errorBox" class="hidden mt-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+                <!-- Errors displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const etInput = document.getElementById('etInput');
+        const chordInput = document.getElementById('chordInput');
+        const calcBtn = document.getElementById('calcBtn');
+        const resultArea = document.getElementById('resultArea');
+        const resultBody = document.getElementById('resultBody');
+        const resultTitle = document.getElementById('resultTitle');
+        const errorBox = document.getElementById('errorBox');
+
+        function parseFraction(str) {
+            if (str.includes('/')) {
+                const parts = str.split('/');
+                return parseFloat(parts[0]) / parseFloat(parts[1]);
+            }
+            return parseFloat(str);
+        }
+
+        function calculate() {
+            errorBox.classList.add('hidden');
+            resultBody.innerHTML = '';
+            
+            // Parse ET
+            const etMatch = etInput.value.toLowerCase().match(/^(\d+)ed(.+)$/);
+            if (!etMatch) {
+                showError("Invalid ET format. Use 'xedY' (e.g., 12ed2).");
+                return;
+            }
+            
+            const stepsPerEquave = parseInt(etMatch[1]);
+            const equaveRatio = parseFraction(etMatch[2]);
+            
+            if (isNaN(stepsPerEquave) || isNaN(equaveRatio) || equaveRatio <= 1) {
+                showError("Please ensure steps are positive and the equave ratio is greater than 1.");
+                return;
+            }
+
+            // Parse Chord
+            const chordParts = chordInput.value.split(':').map(s => parseInt(s.trim()));
+            if (chordParts.some(isNaN) || chordParts.length === 0) {
+                showError("Invalid chord format. Use integers separated by colons (e.g., 4:5:6).");
+                return;
+            }
+
+            const root = chordParts[0];
+            const equaveCents = 1200 * Math.log2(equaveRatio);
+            const stepSizeCents = equaveCents / stepsPerEquave;
+
+            resultTitle.innerText = `${stepsPerEquave}ed${equaveRatio} Mapping for ${chordInput.value}`;
+            resultArea.classList.remove('hidden');
+
+            chordParts.forEach(val => {
+                const ratio = val / root;
+                const jiCents = 1200 * Math.log2(ratio);
+                
+                // Calculate mapping: find nearest step count
+                const exactStepCount = jiCents / stepSizeCents;
+                const roundedStepCount = Math.round(exactStepCount);
+                
+                const etCents = roundedStepCount * stepSizeCents;
+                const absError = etCents - jiCents;
+                const relError = (absError / stepSizeCents) * 100;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="p-4 font-medium text-slate-900">${val}:${root} (${ratio.toFixed(4)})</td>
+                    <td class="p-4 text-slate-600">${jiCents.toFixed(2)}¢</td>
+                    <td class="p-4 font-bold text-blue-700">${roundedStepCount}</td>
+                    <td class="p-4 text-slate-600">${etCents.toFixed(2)}¢</td>
+                    <td class="p-4 ${Math.abs(absError) > 15 ? 'text-orange-600' : 'text-green-600'}">
+                        ${absError > 0 ? '+' : ''}${absError.toFixed(2)}¢
+                    </td>
+                    <td class="p-4 text-slate-500">${relError > 0 ? '+' : ''}${relError.toFixed(1)}%</td>
+                `;
+                resultBody.appendChild(row);
+            });
+        }
+
+        function showError(msg) {
+            errorBox.innerText = msg;
+            errorBox.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+        }
+
+        calcBtn.addEventListener('click', calculate);
+
+        // Allow 'Enter' key to trigger calculation
+        [etInput, chordInput].forEach(el => {
+            el.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') calculate();
+            });
+        });
+    </script>
+</body>
+</html>
