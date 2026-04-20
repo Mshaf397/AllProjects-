@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDY Val Finder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .card {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        input {
+            background-color: #334155;
+            border: 1px solid #475569;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            width: 100%;
+        }
+        input:focus {
+            outline: 2px solid #38bdf8;
+            border-color: transparent;
+        }
+        .result-box {
+            background-color: #0f172a;
+            border-left: 4px solid #38bdf8;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-2xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-sky-400 mb-2">EDY Val Finder</h1>
+            <p class="text-slate-400">Determine and adjust vals to temper out specific commas.</p>
+        </header>
+
+        <div class="card space-y-6">
+            <!-- EDY Input -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Equal-Step Tuning (e.g., 12ed2, 17ed3, 31ed3/2)</label>
+                <input type="text" id="edyInput" placeholder="12ed2" value="12ed2">
+            </div>
+
+            <!-- Subgroup Input -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Subgroup (e.g., 5, 11, 2.3.5, 2.3.11/5)</label>
+                <input type="text" id="subgroupInput" placeholder="5" value="5">
+                <p class="text-xs text-slate-500 mt-1">Enter a prime for a limit, or generators separated by dots.</p>
+            </div>
+
+            <!-- Comma Input -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Comma to Vanish (e.g., -4 4 -1)</label>
+                <input type="text" id="commaInput" placeholder="-4 4 -1" value="-4 4 -1">
+                <p class="text-xs text-slate-500 mt-1">Integers representing generator exponents in the subgroup.</p>
+            </div>
+
+            <button onclick="calculateVal()" class="w-full bg-sky-600 hover:bg-sky-500 transition-colors py-3 rounded-lg font-semibold">
+                Calculate & Check Val
+            </button>
+
+            <div id="errorBox" class="hidden p-3 bg-red-900/50 border border-red-500 text-red-200 rounded text-sm"></div>
+
+            <div id="results" class="hidden space-y-4">
+                <div class="result-box">
+                    <h3 class="text-sky-400 font-bold uppercase text-xs tracking-wider mb-2">Tuning Info</h3>
+                    <div id="tuningInfo" class="text-sm"></div>
+                </div>
+
+                <div class="result-box">
+                    <h3 class="text-sky-400 font-bold uppercase text-xs tracking-wider mb-2">Subgroup Generators</h3>
+                    <div id="generatorInfo" class="text-sm"></div>
+                </div>
+
+                <div class="result-box border-l-purple-500">
+                    <h3 class="text-purple-400 font-bold uppercase text-xs tracking-wider mb-2">Patent Val Analysis</h3>
+                    <div id="patentInfo" class="text-sm"></div>
+                </div>
+
+                <div id="adjustmentContainer" class="result-box border-l-emerald-500 hidden">
+                    <h3 class="text-emerald-400 font-bold uppercase text-xs tracking-wider mb-2">Adjustment Required</h3>
+                    <div id="adjustmentInfo" class="text-sm"></div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="mt-8 text-center text-slate-500 text-xs">
+            Current Time: <span id="clock"></span>
+        </footer>
+    </div>
+
+    <script>
+        // Update clock in 24h format
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('en-GB', { hour12: false });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function parseRatio(str) {
+            if (str.includes('/')) {
+                const parts = str.split('/');
+                return parseFloat(parts[0]) / parseFloat(parts[1]);
+            }
+            return parseFloat(str);
+        }
+
+        function getPrimes(limit) {
+            const primes = [];
+            for (let i = 2; i <= limit; i++) {
+                let isPrime = true;
+                for (let j = 2; j <= Math.sqrt(i); j++) {
+                    if (i % j === 0) { isPrime = false; break; }
+                }
+                if (isPrime) primes.push(i);
+            }
+            return primes;
+        }
+
+        function ratioToCents(r) {
+            return 1200 * Math.log2(r);
+        }
+
+        function calculateVal() {
+            const errorBox = document.getElementById('errorBox');
+            const results = document.getElementById('results');
+            const adjustmentContainer = document.getElementById('adjustmentContainer');
+            
+            errorBox.classList.add('hidden');
+            results.classList.add('hidden');
+            adjustmentContainer.classList.add('hidden');
+
+            try {
+                // 1. Parse EDY
+                const edyRaw = document.getElementById('edyInput').value.trim().toLowerCase();
+                const edyMatch = edyRaw.match(/^(\d+)ed([\d.\/]+)$/);
+                if (!edyMatch) throw new Error("Invalid EDY format. Use e.g. 12ed2");
+                
+                const stepsCount = parseInt(edyMatch[1]);
+                const equaveRatio = parseRatio(edyMatch[2]);
+                const equaveCents = ratioToCents(equaveRatio);
+                const stepSize = equaveCents / stepsCount;
+
+                // 2. Parse Subgroup
+                const subInput = document.getElementById('subgroupInput').value.trim();
+                let generators = [];
+                if (!subInput.includes('.') && !isNaN(subInput)) {
+                    generators = getPrimes(parseInt(subInput));
+                } else {
+                    generators = subInput.split('.').map(s => parseRatio(s.trim()));
+                }
+
+                // 3. Parse Comma
+                const commaInput = document.getElementById('commaInput').value.trim();
+                const commaParts = commaInput.split(/\s+/).map(Number);
+                if (commaParts.length > generators.length) {
+                    throw new Error(`Too many values in comma (${commaParts.length}) for subgroup size (${generators.length})`);
+                }
+                // Pad with zeros
+                const fullComma = generators.map((_, i) => commaParts[i] || 0);
+
+                // 4. Calculations
+                const genCents = generators.map(ratioToCents);
+                const patentVal = genCents.map(c => Math.round(c / stepSize));
+
+                // Dot product
+                let dotProduct = 0;
+                fullComma.forEach((exp, i) => {
+                    dotProduct += exp * patentVal[i];
+                });
+
+                // Display Info
+                document.getElementById('tuningInfo').innerHTML = `
+                    Step size: <b>${stepSize.toFixed(4)} cents</b><br>
+                    Equave: ${equaveRatio} (${equaveCents.toFixed(2)} cents)
+                `;
+
+                document.getElementById('generatorInfo').innerHTML = generators.map((g, i) => 
+                    `Gen ${i+1} (${g}): ${genCents[i].toFixed(4)} cents`
+                ).join('<br>');
+
+                const patentValStr = `⟨${patentVal.join(' ')}]`;
+                document.getElementById('patentInfo').innerHTML = `
+                    Patent Val: <b class="text-white">${patentValStr}</b><br>
+                    Dot Product with comma: <span class="${dotProduct === 0 ? 'text-emerald-400' : 'text-orange-400'}">${dotProduct}</span>
+                `;
+
+                // 5. Adjustment logic
+                if (dotProduct !== 0) {
+                    adjustmentContainer.classList.remove('hidden');
+                    
+                    // We need to find an adjustment such that:
+                    // sum( (patentVal[i] + adj[i]) * comma[i] ) = 0
+                    // simplified: dotProduct + sum(adj[i] * comma[i]) = 0
+                    // We look for the simplest adjustment (smallest integer change)
+                    // Usually we change the mapping of one generator where the comma has a non-zero exponent.
+                    
+                    let adjustmentFound = false;
+                    let solutionHTML = "";
+
+                    // Try adjusting single generators first
+                    for (let i = 0; i < generators.length; i++) {
+                        if (fullComma[i] !== 0) {
+                            // If we adjust mapping i by 'k', we change dot product by k * comma[i]
+                            // We need k * comma[i] = -dotProduct
+                            if ((-dotProduct) % fullComma[i] === 0) {
+                                const k = (-dotProduct) / fullComma[i];
+                                const adjustedVal = [...patentVal];
+                                adjustedVal[i] += k;
+                                
+                                solutionHTML += `
+                                    <div class="mb-2">
+                                        To vanish the comma, adjust generator <b>${generators[i]}</b> by <b>${k > 0 ? '+' : ''}${k}</b> steps.<br>
+                                        Adjusted Val: <b class="text-white font-mono text-lg">⟨${adjustedVal.join(' ')}]</b><br>
+                                        <span class="text-slate-400 text-xs">Mapped cents: ${(adjustedVal[i] * stepSize).toFixed(2)} vs JI ${genCents[i].toFixed(2)}</span>
+                                    </div>
+                                `;
+                                adjustmentFound = true;
+                            }
+                        }
+                    }
+
+                    if (!adjustmentFound) {
+                        solutionHTML = "No simple single-generator adjustment found. Multiple generators must be adjusted simultaneously to satisfy the vanishing condition.";
+                    }
+                    document.getElementById('adjustmentInfo').innerHTML = solutionHTML;
+                } else {
+                    document.getElementById('patentInfo').innerHTML += `<br><span class="text-emerald-400 text-xs font-bold">✓ This interval is already tempered out!</span>`;
+                }
+
+                results.classList.remove('hidden');
+
+            } catch (err) {
+                errorBox.innerText = err.message;
+                errorBox.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
