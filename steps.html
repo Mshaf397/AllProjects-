@@ -13,6 +13,7 @@
         .progress-container { height: 40px; border: 3px solid #000; background: #fff; }
         .progress-bar { height: 100%; background-color: #000; width: 0%; transition: width 0.3s; }
         input { border: 2px solid #000 !important; border-radius: 0 !important; min-height: 48px; padding: 8px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body class="p-4 max-w-md mx-auto">
@@ -22,9 +23,20 @@
             <div id="clock" class="text-xl font-mono">00:00</div>
         </header>
 
-        <div id="status-msg" class="text-center py-10 text-xl italic">Initializing...</div>
+        <!-- Auth Screen -->
+        <div id="auth-screen" class="py-20 text-center space-y-6">
+            <p class="text-xl">Sign in to track your steps across devices.</p>
+            <button id="login-btn" class="kindle-btn px-8 py-4 text-xl w-full">SIGN IN WITH GOOGLE</button>
+            <p id="auth-status" class="text-sm italic"></p>
+        </div>
 
+        <!-- Main Content -->
         <div id="main-content" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <span id="user-display" class="font-bold text-sm uppercase"></span>
+                <button id="logout-btn" class="text-xs underline">Sign Out</button>
+            </div>
+
             <section class="text-center space-y-2">
                 <div class="text-5xl font-black" id="current-steps">0</div>
                 <div class="text-xl uppercase font-bold">of <span id="target-display">4000</span> steps</div>
@@ -64,10 +76,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // PASTE YOUR FIREBASE CONFIG HERE
         const myConfig = {
             apiKey: "AIzaSyC-UIB5l1bo_apccqskT6LAHvliQoc-U-s",
             authDomain: "all-my-projects-3cf20.firebaseapp.com",
@@ -77,82 +88,105 @@
             appId: "1:245058314875:web:1b9fead1655343416838de"
         };
 
-        const statusMsg = document.getElementById('status-msg');
+        const app = initializeApp(myConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
 
-        if (myConfig.apiKey === "YOUR_API_KEY") {
-            statusMsg.innerHTML = "Configuration Required.<br><small>Please edit the file and add your Firebase keys.</small>";
-        } else {
-            const app = initializeApp(myConfig);
-            const auth = getAuth(app);
-            const db = getFirestore(app);
+        const authScreen = document.getElementById('auth-screen');
+        const mainContent = document.getElementById('main-content');
+        const authStatus = document.getElementById('auth-status');
+        
+        let dailyData = { target: 4000, total: 0, logs: [] };
+        let userUid = null;
+        let unsubscribe = null;
 
-            let dailyData = { target: 4000, total: 0, logs: [] };
-            let userUid = null;
+        // AUTH LOGIC
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userUid = user.uid;
+                document.getElementById('user-display').textContent = user.displayName || user.email;
+                authScreen.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+                startDataSync();
+            } else {
+                userUid = null;
+                authScreen.classList.remove('hidden');
+                mainContent.classList.add('hidden');
+                if (unsubscribe) unsubscribe();
+            }
+        });
 
-            signInAnonymously(auth).then(cred => {
-                userUid = cred.user.uid;
-                const today = new Date().toISOString().split('T')[0];
-                const docRef = doc(db, 'steps', userUid, 'days', today);
+        document.getElementById('login-btn').onclick = () => {
+            authStatus.textContent = "Redirecting to Google...";
+            signInWithRedirect(auth, provider);
+        };
 
-                onSnapshot(docRef, (snap) => {
-                    statusMsg.classList.add('hidden');
-                    document.getElementById('main-content').classList.remove('hidden');
-                    if (snap.exists()) {
-                        dailyData = snap.data();
-                    } else {
-                        dailyData = { target: 4000, total: 0, logs: [] };
-                        setDoc(docRef, dailyData);
-                    }
-                    render();
-                }, (err) => {
-                    statusMsg.textContent = "Database Error. Check Firestore Rules.";
-                });
-            }).catch(() => {
-                statusMsg.textContent = "Connection failed. Is the Kindle online?";
-            });
+        document.getElementById('logout-btn').onclick = () => {
+            if (confirm("Sign out?")) signOut(auth);
+        };
 
-            const render = () => {
-                document.getElementById('current-steps').textContent = dailyData.total.toLocaleString();
-                document.getElementById('target-display').textContent = dailyData.target.toLocaleString();
-                document.getElementById('target-input').value = dailyData.target;
-                const progress = Math.min((dailyData.total / dailyData.target) * 100, 100);
-                document.getElementById('progress-bar').style.width = `${progress}%`;
-                document.getElementById('percent-display').textContent = `${Math.round((dailyData.total / dailyData.target) * 100)}%`;
+        // Check for redirect result on load
+        getRedirectResult(auth).catch(err => {
+            authStatus.textContent = "Error: " + err.message;
+        });
 
-                const history = document.getElementById('log-history');
-                history.innerHTML = '';
-                [...dailyData.logs].reverse().forEach(log => {
-                    const div = document.createElement('div');
-                    div.className = 'flex justify-between border-b border-black py-1';
-                    div.innerHTML = `<span>${log.time}</span> <span class="font-bold">+${log.amount}</span>`;
-                    history.appendChild(div);
-                });
-            };
+        function startDataSync() {
+            const today = new Date().toISOString().split('T')[0];
+            const docRef = doc(db, 'steps', userUid, 'days', today);
 
-            window.quickAdd = async (val) => {
-                if (!userUid) return;
-                const today = new Date().toISOString().split('T')[0];
-                const docRef = doc(db, 'steps', userUid, 'days', today);
-                const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-                await updateDoc(docRef, {
-                    total: dailyData.total + val,
-                    logs: arrayUnion({ amount: val, time: time })
-                });
-            };
-
-            document.getElementById('add-btn').onclick = () => {
-                const val = parseInt(document.getElementById('step-input').value);
-                if (val > 0) { window.quickAdd(val); document.getElementById('step-input').value = ''; }
-            };
-
-            document.getElementById('set-target-btn').onclick = async () => {
-                const val = parseInt(document.getElementById('target-input').value);
-                if (val >= 4000 && userUid) {
-                    const today = new Date().toISOString().split('T')[0];
-                    await updateDoc(doc(db, 'steps', userUid, 'days', today), { target: val });
+            unsubscribe = onSnapshot(docRef, (snap) => {
+                if (snap.exists()) {
+                    dailyData = snap.data();
+                } else {
+                    dailyData = { target: 4000, total: 0, logs: [] };
+                    setDoc(docRef, dailyData);
                 }
-            };
+                render();
+            });
         }
+
+        const render = () => {
+            document.getElementById('current-steps').textContent = dailyData.total.toLocaleString();
+            document.getElementById('target-display').textContent = dailyData.target.toLocaleString();
+            document.getElementById('target-input').value = dailyData.target;
+            const progress = Math.min((dailyData.total / dailyData.target) * 100, 100);
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('percent-display').textContent = `${Math.round((dailyData.total / dailyData.target) * 100)}%`;
+
+            const history = document.getElementById('log-history');
+            history.innerHTML = '';
+            [...dailyData.logs].reverse().forEach(log => {
+                const div = document.createElement('div');
+                div.className = 'flex justify-between border-b border-black py-1';
+                div.innerHTML = `<span>${log.time}</span> <span class="font-bold">+${log.amount}</span>`;
+                history.appendChild(div);
+            });
+        };
+
+        window.quickAdd = async (val) => {
+            if (!userUid) return;
+            const today = new Date().toISOString().split('T')[0];
+            const docRef = doc(db, 'steps', userUid, 'days', today);
+            const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+            await updateDoc(docRef, {
+                total: dailyData.total + val,
+                logs: arrayUnion({ amount: val, time: time })
+            });
+        };
+
+        document.getElementById('add-btn').onclick = () => {
+            const val = parseInt(document.getElementById('step-input').value);
+            if (val > 0) { window.quickAdd(val); document.getElementById('step-input').value = ''; }
+        };
+
+        document.getElementById('set-target-btn').onclick = async () => {
+            const val = parseInt(document.getElementById('target-input').value);
+            if (val >= 4000 && userUid) {
+                const today = new Date().toISOString().split('T')[0];
+                await updateDoc(doc(db, 'steps', userUid, 'days', today), { target: val });
+            }
+        };
 
         setInterval(() => {
             document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB', { 
