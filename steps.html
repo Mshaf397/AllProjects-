@@ -9,38 +9,51 @@
     <style>
         body { background-color: #fff; color: #000; font-family: ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: none; }
         .kindle-border { border: 2px solid #000; }
-        .kindle-btn { background-color: #fff; border: 3px solid #000; color: #000; touch-action: manipulation; font-weight: bold; }
+        .kindle-btn { background-color: #fff; border: 3px solid #000; color: #000; touch-action: manipulation; font-weight: bold; min-height: 50px; }
         .kindle-btn:active { background-color: #000; color: #fff; }
         .progress-container { height: 40px; border: 3px solid #000; background: #fff; }
-        .progress-bar { height: 100%; background-color: #000; width: 0%; transition: width 0.3s; }
-        input { border: 2px solid #000 !important; border-radius: 0 !important; min-height: 48px; padding: 8px; }
+        .progress-bar { height: 100%; background-color: #000; width: 0%; }
+        input { border: 2px solid #000 !important; border-radius: 0 !important; min-height: 50px; padding: 8px; font-size: 18px; }
         .hidden { display: none; }
+        .mono { font-family: monospace; }
     </style>
 </head>
 <body class="p-4 max-w-md mx-auto">
     <div id="app" class="space-y-6">
         <header class="border-b-4 border-black pb-2 flex justify-between items-end">
-            <h1 class="text-3xl font-bold">Steps</h1>
+            <h1 class="text-3xl font-bold uppercase">Steps</h1>
             <div id="clock" class="text-xl font-mono">00:00</div>
         </header>
 
-        <!-- Loading/Status -->
-        <div id="status-area" class="py-10 text-center space-y-4">
-            <p id="status-text" class="text-xl italic">Initializing...</p>
-            <div id="auth-actions" class="hidden">
-                 <button id="login-btn" class="kindle-btn px-8 py-4 text-xl w-full">SIGN IN WITH GOOGLE</button>
+        <!-- Login Screen (Kindle Optimized) -->
+        <div id="auth-screen" class="py-10 space-y-8">
+            <div class="text-center space-y-4">
+                <p class="text-lg font-bold">DEVICE SYNC</p>
+                <p class="text-sm italic">Enter your ID from your iPad to sync, or sign in below.</p>
             </div>
+            
+            <div class="space-y-2">
+                <input type="text" id="manual-uid" placeholder="Paste Device ID here" class="w-full">
+                <button id="sync-btn" class="kindle-btn w-full">LINK DEVICE</button>
+            </div>
+
+            <div class="border-t-2 border-black pt-8">
+                <button id="login-btn" class="kindle-btn w-full">GOOGLE SIGN IN (iPad/PC Only)</button>
+            </div>
+            <p id="status-text" class="text-center text-sm italic"></p>
         </div>
 
-        <!-- Main Content -->
+        <!-- Main Tracker UI -->
         <div id="main-content" class="hidden space-y-6">
-            <div class="flex justify-between items-center">
-                <span id="user-display" class="font-bold text-sm uppercase"></span>
-                <button id="logout-btn" class="text-xs underline">Sign Out</button>
+            <div class="flex justify-between items-start bg-gray-100 p-2 kindle-border">
+                <div class="text-[10px] mono break-all pr-4">
+                    ID: <span id="id-display"></span>
+                </div>
+                <button id="logout-btn" class="text-xs underline font-bold">EXIT</button>
             </div>
 
             <section class="text-center space-y-2">
-                <div class="text-5xl font-black" id="current-steps">0</div>
+                <div class="text-6xl font-black" id="current-steps">0</div>
                 <div class="text-xl uppercase font-bold">of <span id="target-display">4000</span> steps</div>
                 <div class="progress-container mt-4">
                     <div id="progress-bar" class="progress-bar"></div>
@@ -51,26 +64,26 @@
             <section class="kindle-border p-4 space-y-4">
                 <h2 class="text-xl font-bold uppercase border-b-2 border-black inline-block">Add Steps</h2>
                 <div class="flex gap-2">
-                    <input type="number" id="step-input" placeholder="e.g. 112" class="flex-1 text-xl" inputmode="numeric">
+                    <input type="number" id="step-input" placeholder="Amount" class="flex-1" inputmode="numeric">
                     <button id="add-btn" class="kindle-btn px-6 text-lg">ADD</button>
                 </div>
                 <div class="grid grid-cols-3 gap-2">
-                    <button onclick="window.quickAdd(250)" class="kindle-btn py-2">+250</button>
-                    <button onclick="window.quickAdd(500)" class="kindle-btn py-2">+500</button>
-                    <button onclick="window.quickAdd(1000)" class="kindle-btn py-2">+1000</button>
+                    <button onclick="window.quickAdd(250)" class="kindle-btn">+250</button>
+                    <button onclick="window.quickAdd(500)" class="kindle-btn">+500</button>
+                    <button onclick="window.quickAdd(1000)" class="kindle-btn">+1000</button>
                 </div>
             </section>
 
             <section class="kindle-border p-4 space-y-4">
-                <h2 class="text-xl font-bold uppercase border-b-2 border-black inline-block">Daily Target</h2>
+                <h2 class="text-xl font-bold uppercase border-b-2 border-black inline-block">Goal</h2>
                 <div class="flex gap-2">
-                    <input type="number" id="target-input" min="4000" placeholder="4000" class="flex-1 text-xl" inputmode="numeric">
-                    <button id="set-target-btn" class="kindle-btn px-6">SET</button>
+                    <input type="number" id="target-input" min="4000" class="flex-1" inputmode="numeric">
+                    <button id="set-target-btn" class="kindle-btn px-6 text-sm">SET</button>
                 </div>
             </section>
 
             <section class="space-y-2 pb-10">
-                <h2 class="text-xl font-bold uppercase">Today's Log</h2>
+                <h2 class="text-xl font-bold uppercase">Today (24H)</h2>
                 <div id="log-history" class="space-y-1 text-lg"></div>
             </section>
         </div>
@@ -78,7 +91,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut, getRedirectResult, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const myConfig = {
@@ -96,59 +109,66 @@
         const provider = new GoogleAuthProvider();
 
         const statusText = document.getElementById('status-text');
-        const authActions = document.getElementById('auth-actions');
+        const authScreen = document.getElementById('auth-screen');
         const mainContent = document.getElementById('main-content');
         
         let dailyData = { target: 4000, total: 0, logs: [] };
-        let userUid = null;
+        let activeUid = localStorage.getItem('kindle_step_uid');
         let unsubscribe = null;
 
-        // Force browser to save session (important for Kindle)
-        setPersistence(auth, browserLocalPersistence)
-            .then(() => {
-                // Check if we just returned from a login redirect
-                return getRedirectResult(auth);
-            })
-            .then((result) => {
-                if (result?.user) {
-                    statusText.textContent = "Welcome back!";
-                }
-            })
-            .catch((err) => {
-                console.error(err);
-                statusText.textContent = "Auth Error: " + err.message;
-            });
-
+        // AUTH STATE
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                userUid = user.uid;
-                document.getElementById('user-display').textContent = user.displayName || user.email;
-                document.getElementById('status-area').classList.add('hidden');
-                mainContent.classList.remove('hidden');
-                startDataSync();
+                // If signed in with Google, this is the master device
+                activeUid = user.uid;
+                localStorage.setItem('kindle_step_uid', user.uid);
+                showApp();
+            } else if (activeUid) {
+                // If we have a stored ID (even without Google login), show app
+                showApp();
             } else {
-                userUid = null;
-                document.getElementById('status-area').classList.remove('hidden');
-                statusText.textContent = "Sign in Required";
-                authActions.classList.remove('hidden');
-                mainContent.classList.add('hidden');
-                if (unsubscribe) unsubscribe();
+                showLogin();
             }
         });
 
+        function showLogin() {
+            authScreen.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+            statusText.textContent = "";
+        }
+
+        function showApp() {
+            authScreen.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+            document.getElementById('id-display').textContent = activeUid;
+            startDataSync();
+        }
+
         document.getElementById('login-btn').onclick = () => {
-            statusText.textContent = "Redirecting...";
             signInWithRedirect(auth, provider);
         };
 
+        document.getElementById('sync-btn').onclick = () => {
+            const val = document.getElementById('manual-uid').value.trim();
+            if (val.length > 5) {
+                activeUid = val;
+                localStorage.setItem('kindle_step_uid', val);
+                showApp();
+            }
+        };
+
         document.getElementById('logout-btn').onclick = () => {
-            if (confirm("Sign out?")) signOut(auth);
+            if (confirm("Reset device?")) {
+                localStorage.removeItem('kindle_step_uid');
+                signOut(auth).then(() => location.reload());
+            }
         };
 
         function startDataSync() {
             const today = new Date().toISOString().split('T')[0];
-            const docRef = doc(db, 'steps', userUid, 'days', today);
+            const docRef = doc(db, 'steps', activeUid, 'days', today);
 
+            if (unsubscribe) unsubscribe();
             unsubscribe = onSnapshot(docRef, (snap) => {
                 if (snap.exists()) {
                     dailyData = snap.data();
@@ -157,9 +177,6 @@
                     setDoc(docRef, dailyData);
                 }
                 render();
-            }, (err) => {
-                statusText.classList.remove('hidden');
-                statusText.textContent = "Firestore Error: " + err.message;
             });
         }
 
@@ -182,9 +199,9 @@
         };
 
         window.quickAdd = async (val) => {
-            if (!userUid) return;
+            if (!activeUid) return;
             const today = new Date().toISOString().split('T')[0];
-            const docRef = doc(db, 'steps', userUid, 'days', today);
+            const docRef = doc(db, 'steps', activeUid, 'days', today);
             const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
             await updateDoc(docRef, {
                 total: (dailyData.total || 0) + val,
@@ -199,9 +216,9 @@
 
         document.getElementById('set-target-btn').onclick = async () => {
             const val = parseInt(document.getElementById('target-input').value);
-            if (val >= 4000 && userUid) {
+            if (val >= 4000) {
                 const today = new Date().toISOString().split('T')[0];
-                await updateDoc(doc(db, 'steps', userUid, 'days', today), { target: val });
+                await updateDoc(doc(db, 'steps', activeUid, 'days', today), { target: val });
             }
         };
 
