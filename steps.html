@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,11 +24,12 @@
             <div id="clock" class="text-xl font-mono">00:00</div>
         </header>
 
-        <!-- Auth Screen -->
-        <div id="auth-screen" class="py-20 text-center space-y-6">
-            <p class="text-xl">Sign in to track your steps across devices.</p>
-            <button id="login-btn" class="kindle-btn px-8 py-4 text-xl w-full">SIGN IN WITH GOOGLE</button>
-            <p id="auth-status" class="text-sm italic"></p>
+        <!-- Loading/Status -->
+        <div id="status-area" class="py-10 text-center space-y-4">
+            <p id="status-text" class="text-xl italic">Initializing...</p>
+            <div id="auth-actions" class="hidden">
+                 <button id="login-btn" class="kindle-btn px-8 py-4 text-xl w-full">SIGN IN WITH GOOGLE</button>
+            </div>
         </div>
 
         <!-- Main Content -->
@@ -76,7 +78,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut, getRedirectResult } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut, getRedirectResult, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const myConfig = {
@@ -93,43 +95,55 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        const authScreen = document.getElementById('auth-screen');
+        const statusText = document.getElementById('status-text');
+        const authActions = document.getElementById('auth-actions');
         const mainContent = document.getElementById('main-content');
-        const authStatus = document.getElementById('auth-status');
         
         let dailyData = { target: 4000, total: 0, logs: [] };
         let userUid = null;
         let unsubscribe = null;
 
-        // AUTH LOGIC
+        // Force browser to save session (important for Kindle)
+        setPersistence(auth, browserLocalPersistence)
+            .then(() => {
+                // Check if we just returned from a login redirect
+                return getRedirectResult(auth);
+            })
+            .then((result) => {
+                if (result?.user) {
+                    statusText.textContent = "Welcome back!";
+                }
+            })
+            .catch((err) => {
+                console.error(err);
+                statusText.textContent = "Auth Error: " + err.message;
+            });
+
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 userUid = user.uid;
                 document.getElementById('user-display').textContent = user.displayName || user.email;
-                authScreen.classList.add('hidden');
+                document.getElementById('status-area').classList.add('hidden');
                 mainContent.classList.remove('hidden');
                 startDataSync();
             } else {
                 userUid = null;
-                authScreen.classList.remove('hidden');
+                document.getElementById('status-area').classList.remove('hidden');
+                statusText.textContent = "Sign in Required";
+                authActions.classList.remove('hidden');
                 mainContent.classList.add('hidden');
                 if (unsubscribe) unsubscribe();
             }
         });
 
         document.getElementById('login-btn').onclick = () => {
-            authStatus.textContent = "Redirecting to Google...";
+            statusText.textContent = "Redirecting...";
             signInWithRedirect(auth, provider);
         };
 
         document.getElementById('logout-btn').onclick = () => {
             if (confirm("Sign out?")) signOut(auth);
         };
-
-        // Check for redirect result on load
-        getRedirectResult(auth).catch(err => {
-            authStatus.textContent = "Error: " + err.message;
-        });
 
         function startDataSync() {
             const today = new Date().toISOString().split('T')[0];
@@ -143,6 +157,9 @@
                     setDoc(docRef, dailyData);
                 }
                 render();
+            }, (err) => {
+                statusText.classList.remove('hidden');
+                statusText.textContent = "Firestore Error: " + err.message;
             });
         }
 
@@ -170,7 +187,7 @@
             const docRef = doc(db, 'steps', userUid, 'days', today);
             const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
             await updateDoc(docRef, {
-                total: dailyData.total + val,
+                total: (dailyData.total || 0) + val,
                 logs: arrayUnion({ amount: val, time: time })
             });
         };
@@ -196,3 +213,5 @@
     </script>
 </body>
 </html>
+
+```
