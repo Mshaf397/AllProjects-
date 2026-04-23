@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #fff; color: #000; font-family: ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: none; }
+        .kindle-border { border: 2px solid #000; }
+        .kindle-btn { background-color: #fff; border: 3px solid #000; color: #000; touch-action: manipulation; font-weight: bold; }
+        .kindle-btn:active { background-color: #000; color: #fff; }
+        .progress-container { height: 40px; border: 3px solid #000; background: #fff; }
+        .progress-bar { height: 100%; background-color: #000; width: 0%; transition: width 0.3s; }
+        input { border: 2px solid #000 !important; border-radius: 0 !important; min-height: 48px; padding: 8px; }
+    </style>
+</head>
+<body class="p-4 max-w-md mx-auto">
+    <div id="app" class="space-y-6">
+        <header class="border-b-4 border-black pb-2 flex justify-between items-end">
+            <h1 class="text-3xl font-bold">Steps</h1>
+            <div id="clock" class="text-xl font-mono">00:00</div>
+        </header>
+
+        <div id="status-msg" class="text-center py-10 text-xl italic">Initializing...</div>
+
+        <div id="main-content" class="hidden space-y-6">
+            <section class="text-center space-y-2">
+                <div class="text-5xl font-black" id="current-steps">0</div>
+                <div class="text-xl uppercase font-bold">of <span id="target-display">4000</span> steps</div>
+                <div class="progress-container mt-4">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <div id="percent-display" class="text-lg font-bold">0%</div>
+            </section>
+
+            <section class="kindle-border p-4 space-y-4">
+                <h2 class="text-xl font-bold uppercase border-b-2 border-black inline-block">Add Steps</h2>
+                <div class="flex gap-2">
+                    <input type="number" id="step-input" placeholder="e.g. 112" class="flex-1 text-xl" inputmode="numeric">
+                    <button id="add-btn" class="kindle-btn px-6 text-lg">ADD</button>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="window.quickAdd(250)" class="kindle-btn py-2">+250</button>
+                    <button onclick="window.quickAdd(500)" class="kindle-btn py-2">+500</button>
+                    <button onclick="window.quickAdd(1000)" class="kindle-btn py-2">+1000</button>
+                </div>
+            </section>
+
+            <section class="kindle-border p-4 space-y-4">
+                <h2 class="text-xl font-bold uppercase border-b-2 border-black inline-block">Daily Target</h2>
+                <div class="flex gap-2">
+                    <input type="number" id="target-input" min="4000" placeholder="4000" class="flex-1 text-xl" inputmode="numeric">
+                    <button id="set-target-btn" class="kindle-btn px-6">SET</button>
+                </div>
+            </section>
+
+            <section class="space-y-2 pb-10">
+                <h2 class="text-xl font-bold uppercase">Today's Log</h2>
+                <div id="log-history" class="space-y-1 text-lg"></div>
+            </section>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // PASTE YOUR FIREBASE CONFIG HERE
+        const myConfig = {
+            apiKey: "AIzaSyC-UIB5l1bo_apccqskT6LAHvliQoc-U-s",
+            authDomain: "all-my-projects-3cf20.firebaseapp.com",
+            projectId: "all-my-projects-3cf20",
+            storageBucket: "all-my-projects-3cf20.firebasestorage.app",
+            messagingSenderId: "245058314875",
+            appId: "1:245058314875:web:1b9fead1655343416838de"
+        };
+
+        const statusMsg = document.getElementById('status-msg');
+
+        if (myConfig.apiKey === "YOUR_API_KEY") {
+            statusMsg.innerHTML = "Configuration Required.<br><small>Please edit the file and add your Firebase keys.</small>";
+        } else {
+            const app = initializeApp(myConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            let dailyData = { target: 4000, total: 0, logs: [] };
+            let userUid = null;
+
+            signInAnonymously(auth).then(cred => {
+                userUid = cred.user.uid;
+                const today = new Date().toISOString().split('T')[0];
+                const docRef = doc(db, 'steps', userUid, 'days', today);
+
+                onSnapshot(docRef, (snap) => {
+                    statusMsg.classList.add('hidden');
+                    document.getElementById('main-content').classList.remove('hidden');
+                    if (snap.exists()) {
+                        dailyData = snap.data();
+                    } else {
+                        dailyData = { target: 4000, total: 0, logs: [] };
+                        setDoc(docRef, dailyData);
+                    }
+                    render();
+                }, (err) => {
+                    statusMsg.textContent = "Database Error. Check Firestore Rules.";
+                });
+            }).catch(() => {
+                statusMsg.textContent = "Connection failed. Is the Kindle online?";
+            });
+
+            const render = () => {
+                document.getElementById('current-steps').textContent = dailyData.total.toLocaleString();
+                document.getElementById('target-display').textContent = dailyData.target.toLocaleString();
+                document.getElementById('target-input').value = dailyData.target;
+                const progress = Math.min((dailyData.total / dailyData.target) * 100, 100);
+                document.getElementById('progress-bar').style.width = `${progress}%`;
+                document.getElementById('percent-display').textContent = `${Math.round((dailyData.total / dailyData.target) * 100)}%`;
+
+                const history = document.getElementById('log-history');
+                history.innerHTML = '';
+                [...dailyData.logs].reverse().forEach(log => {
+                    const div = document.createElement('div');
+                    div.className = 'flex justify-between border-b border-black py-1';
+                    div.innerHTML = `<span>${log.time}</span> <span class="font-bold">+${log.amount}</span>`;
+                    history.appendChild(div);
+                });
+            };
+
+            window.quickAdd = async (val) => {
+                if (!userUid) return;
+                const today = new Date().toISOString().split('T')[0];
+                const docRef = doc(db, 'steps', userUid, 'days', today);
+                const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+                await updateDoc(docRef, {
+                    total: dailyData.total + val,
+                    logs: arrayUnion({ amount: val, time: time })
+                });
+            };
+
+            document.getElementById('add-btn').onclick = () => {
+                const val = parseInt(document.getElementById('step-input').value);
+                if (val > 0) { window.quickAdd(val); document.getElementById('step-input').value = ''; }
+            };
+
+            document.getElementById('set-target-btn').onclick = async () => {
+                const val = parseInt(document.getElementById('target-input').value);
+                if (val >= 4000 && userUid) {
+                    const today = new Date().toISOString().split('T')[0];
+                    await updateDoc(doc(db, 'steps', userUid, 'days', today), { target: val });
+                }
+            };
+        }
+
+        setInterval(() => {
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB', { 
+                hour: '2-digit', minute: '2-digit', hour12: false 
+            });
+        }, 1000);
+    </script>
+</body>
+</html>
