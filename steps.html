@@ -158,7 +158,6 @@
             document.getElementById('target-input').value = dailyData.target || 4000;
             const progress = Math.min(((dailyData.total || 0) / (dailyData.target || 4000)) * 100, 100);
             document.getElementById('progress-bar').style.width = `${progress}%`;
-            document.getElementById('percent-display').textContent = `${Math.round(progress)}%`;
 
             const history = document.getElementById('log-history');
             history.innerHTML = '';
