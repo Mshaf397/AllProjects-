@@ -52,7 +52,7 @@
                 <div class="progress-container mt-4">
                     <div id="progress-bar" class="progress-bar"></div>
                 </div>
-                <div id="percent-display" class="text-lg font-bold">0%</div>
+                <div id="percent-display" class="text-lg font-bold">0.000%</div>
             </section>
 
             <section class="kindle-border p-4 space-y-4">
@@ -153,11 +153,20 @@
         }
 
         const render = () => {
-            document.getElementById('current-steps').textContent = (dailyData.total || 0).toLocaleString();
-            document.getElementById('target-display').textContent = (dailyData.target || 4000).toLocaleString();
-            document.getElementById('target-input').value = dailyData.target || 4000;
-            const progress = Math.min(((dailyData.total || 0) / (dailyData.target || 4000)) * 100, 100);
-            document.getElementById('progress-bar').style.width = `${progress}%`;
+            const total = dailyData.total || 0;
+            const target = dailyData.target || 4000;
+
+            document.getElementById('current-steps').textContent = total.toLocaleString();
+            document.getElementById('target-display').textContent = target.toLocaleString();
+            document.getElementById('target-input').value = target;
+            
+            // Calculate percentage with high precision
+            const progressRatio = (total / target);
+            const progressPercent = Math.min(progressRatio * 100, 100);
+            
+            document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+            // Fixed to 3 decimal places
+            document.getElementById('percent-display').textContent = `${(progressRatio * 100).toFixed(3)}%`;
 
             const history = document.getElementById('log-history');
             history.innerHTML = '';
@@ -181,7 +190,6 @@
                     logs: arrayUnion({ amount: val, time: time })
                 });
             } catch (e) {
-                // If update fails, try setting the document (in case it was deleted)
                 setDoc(docRef, {
                     total: (dailyData.total || 0) + val,
                     target: dailyData.target || 4000,
