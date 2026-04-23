@@ -13,9 +13,8 @@
         .kindle-btn:active { background-color: #000; color: #fff; }
         .progress-container { height: 40px; border: 3px solid #000; background: #fff; }
         .progress-bar { height: 100%; background-color: #000; width: 0%; }
-        input { border: 2px solid #000 !important; border-radius: 0 !important; min-height: 50px; padding: 8px; font-size: 18px; }
+        input { border: 2px solid #000 !important; border-radius: 0 !important; min-height: 50px; padding: 8px; font-size: 18px; text-transform: lowercase; }
         .hidden { display: none; }
-        .mono { font-family: monospace; }
     </style>
 </head>
 <body class="p-4 max-w-md mx-auto">
@@ -25,31 +24,31 @@
             <div id="clock" class="text-xl font-mono">00:00</div>
         </header>
 
-        <!-- Login Screen (Kindle Optimized) -->
+        <!-- Login Screen (No Google Required) -->
         <div id="auth-screen" class="py-10 space-y-8">
-            <div class="text-center space-y-4">
-                <p class="text-lg font-bold">DEVICE SYNC</p>
-                <p class="text-sm italic">Enter your ID from your iPad to sync, or sign in below.</p>
+            <div class="text-center space-y-2">
+                <p class="text-xl font-bold">WELCOME</p>
+                <p class="text-sm">Enter a unique Passkey to sync your devices.</p>
             </div>
             
-            <div class="space-y-2">
-                <input type="text" id="manual-uid" placeholder="Paste Device ID here" class="w-full">
-                <button id="sync-btn" class="kindle-btn w-full">LINK DEVICE</button>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold uppercase">Your Secret Passkey</label>
+                    <input type="text" id="passkey-input" placeholder="e.g. shrub-oak-2024" class="w-full mt-1">
+                </div>
+                <button id="enter-btn" class="kindle-btn w-full">ENTER TRACKER</button>
             </div>
 
-            <div class="border-t-2 border-black pt-8">
-                <button id="login-btn" class="kindle-btn w-full">GOOGLE SIGN IN (iPad/PC Only)</button>
+            <div class="p-4 bg-gray-100 text-xs italic kindle-border">
+                Tip: Use the same passkey on your iPad and Kindle to see the same data.
             </div>
-            <p id="status-text" class="text-center text-sm italic"></p>
         </div>
 
         <!-- Main Tracker UI -->
         <div id="main-content" class="hidden space-y-6">
-            <div class="flex justify-between items-start bg-gray-100 p-2 kindle-border">
-                <div class="text-[10px] mono break-all pr-4">
-                    ID: <span id="id-display"></span>
-                </div>
-                <button id="logout-btn" class="text-xs underline font-bold">EXIT</button>
+            <div class="flex justify-between items-center">
+                <span id="passkey-display" class="font-bold text-sm uppercase bg-black text-white px-2"></span>
+                <button id="logout-btn" class="text-xs underline font-bold">LOGOUT</button>
             </div>
 
             <section class="text-center space-y-2">
@@ -83,7 +82,7 @@
             </section>
 
             <section class="space-y-2 pb-10">
-                <h2 class="text-xl font-bold uppercase">Today (24H)</h2>
+                <h2 class="text-xl font-bold uppercase">Log (24H)</h2>
                 <div id="log-history" class="space-y-1 text-lg"></div>
             </section>
         </div>
@@ -91,9 +90,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // We use a "public" config style for this since you're using simple keys
         const myConfig = {
             apiKey: "AIzaSyC-UIB5l1bo_apccqskT6LAHvliQoc-U-s",
             authDomain: "all-my-projects-3cf20.firebaseapp.com",
@@ -104,71 +103,49 @@
         };
 
         const app = initializeApp(myConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
-        const provider = new GoogleAuthProvider();
 
-        const statusText = document.getElementById('status-text');
         const authScreen = document.getElementById('auth-screen');
         const mainContent = document.getElementById('main-content');
         
         let dailyData = { target: 4000, total: 0, logs: [] };
-        let activeUid = localStorage.getItem('kindle_step_uid');
+        let currentPasskey = localStorage.getItem('kindle_step_passkey');
         let unsubscribe = null;
 
-        // AUTH STATE
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // If signed in with Google, this is the master device
-                activeUid = user.uid;
-                localStorage.setItem('kindle_step_uid', user.uid);
-                showApp();
-            } else if (activeUid) {
-                // If we have a stored ID (even without Google login), show app
-                showApp();
+        // INITIAL LOAD
+        if (currentPasskey) {
+            startApp(currentPasskey);
+        }
+
+        document.getElementById('enter-btn').onclick = () => {
+            const key = document.getElementById('passkey-input').value.trim().toLowerCase();
+            if (key.length >= 4) {
+                localStorage.setItem('kindle_step_passkey', key);
+                startApp(key);
             } else {
-                showLogin();
-            }
-        });
-
-        function showLogin() {
-            authScreen.classList.remove('hidden');
-            mainContent.classList.add('hidden');
-            statusText.textContent = "";
-        }
-
-        function showApp() {
-            authScreen.classList.add('hidden');
-            mainContent.classList.remove('hidden');
-            document.getElementById('id-display').textContent = activeUid;
-            startDataSync();
-        }
-
-        document.getElementById('login-btn').onclick = () => {
-            signInWithRedirect(auth, provider);
-        };
-
-        document.getElementById('sync-btn').onclick = () => {
-            const val = document.getElementById('manual-uid').value.trim();
-            if (val.length > 5) {
-                activeUid = val;
-                localStorage.setItem('kindle_step_uid', val);
-                showApp();
+                alert("Please enter at least 4 characters.");
             }
         };
 
         document.getElementById('logout-btn').onclick = () => {
-            if (confirm("Reset device?")) {
-                localStorage.removeItem('kindle_step_uid');
-                signOut(auth).then(() => location.reload());
+            if (confirm("Log out? (Data stays on cloud)")) {
+                localStorage.removeItem('kindle_step_passkey');
+                location.reload();
             }
         };
 
-        function startDataSync() {
+        async function startApp(key) {
+            currentPasskey = key;
+            document.getElementById('passkey-display').textContent = key;
+            authScreen.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+            
             const today = new Date().toISOString().split('T')[0];
-            const docRef = doc(db, 'steps', activeUid, 'days', today);
+            // We store under a "shared" collection since we aren't using Firebase Auth anymore
+            const docRef = doc(db, 'public_steps', key, 'days', today);
 
             if (unsubscribe) unsubscribe();
+            
             unsubscribe = onSnapshot(docRef, (snap) => {
                 if (snap.exists()) {
                     dailyData = snap.data();
@@ -181,16 +158,18 @@
         }
 
         const render = () => {
-            document.getElementById('current-steps').textContent = dailyData.total.toLocaleString();
-            document.getElementById('target-display').textContent = dailyData.target.toLocaleString();
-            document.getElementById('target-input').value = dailyData.target;
-            const progress = Math.min((dailyData.total / dailyData.target) * 100, 100);
+            document.getElementById('current-steps').textContent = (dailyData.total || 0).toLocaleString();
+            document.getElementById('target-display').textContent = (dailyData.target || 4000).toLocaleString();
+            document.getElementById('target-input').value = dailyData.target || 4000;
+            
+            const progress = Math.min(((dailyData.total || 0) / (dailyData.target || 4000)) * 100, 100);
             document.getElementById('progress-bar').style.width = `${progress}%`;
-            document.getElementById('percent-display').textContent = `${Math.round((dailyData.total / dailyData.target) * 100)}%`;
+            document.getElementById('percent-display').textContent = `${Math.round(progress)}%`;
 
             const history = document.getElementById('log-history');
             history.innerHTML = '';
-            [...dailyData.logs].reverse().forEach(log => {
+            const logs = dailyData.logs || [];
+            [...logs].reverse().forEach(log => {
                 const div = document.createElement('div');
                 div.className = 'flex justify-between border-b border-black py-1';
                 div.innerHTML = `<span>${log.time}</span> <span class="font-bold">+${log.amount}</span>`;
@@ -199,10 +178,11 @@
         };
 
         window.quickAdd = async (val) => {
-            if (!activeUid) return;
+            if (!currentPasskey) return;
             const today = new Date().toISOString().split('T')[0];
-            const docRef = doc(db, 'steps', activeUid, 'days', today);
+            const docRef = doc(db, 'public_steps', currentPasskey, 'days', today);
             const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+            
             await updateDoc(docRef, {
                 total: (dailyData.total || 0) + val,
                 logs: arrayUnion({ amount: val, time: time })
@@ -216,9 +196,9 @@
 
         document.getElementById('set-target-btn').onclick = async () => {
             const val = parseInt(document.getElementById('target-input').value);
-            if (val >= 4000) {
+            if (val >= 1000) {
                 const today = new Date().toISOString().split('T')[0];
-                await updateDoc(doc(db, 'steps', activeUid, 'days', today), { target: val });
+                await updateDoc(doc(db, 'public_steps', currentPasskey, 'days', today), { target: val });
             }
         };
 
