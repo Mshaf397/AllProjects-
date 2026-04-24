@@ -12,9 +12,11 @@
         .kindle-btn:active { background-color: #000; color: #fff; }
         .progress-container { height: 40px; border: 3px solid #000; background: #fff; }
         .progress-bar { height: 100%; background-color: #000; width: 0%; transition: width 0.3s; }
-        input { border: 2px solid #000 !important; border-radius: 0 !important; min-height: 50px; padding: 8px; font-size: 18px; text-transform: lowercase; }
+        input { border: 2px solid #000 !important; border-radius: 0 !important; min-height: 50px; padding: 8px; font-size: 18px; }
         .hidden { display: none; }
         #error-popup { position: fixed; bottom: 20px; left: 20px; right: 20px; background: black; color: white; padding: 15px; border: 2px solid white; z-index: 100; display: none; }
+        .tab-btn { border-bottom: 4px solid transparent; padding: 10px; font-weight: bold; text-transform: uppercase; }
+        .tab-btn.active { border-bottom: 4px solid black; }
     </style>
 </head>
 <body class="p-4 max-w-md mx-auto">
@@ -32,60 +34,90 @@
                 <p class="text-xl font-bold">WELCOME</p>
                 <p class="text-sm">Enter your secret Passkey to start.</p>
             </div>
-            
             <div class="space-y-4">
-                <input type="text" id="passkey-input" placeholder="e.g. shabbos-walk" class="w-full">
+                <input type="text" id="passkey-input" placeholder="e.g. shabbos-walk" class="w-full text-lowercase">
                 <button id="enter-btn" class="kindle-btn w-full uppercase">Enter Tracker</button>
             </div>
         </div>
 
         <!-- Main Tracker UI -->
-        <div id="main-content" class="hidden space-y-6">
-            <div class="flex justify-between items-center">
+        <div id="main-content" class="hidden space-y-4">
+            <div class="flex justify-between items-center mb-2">
                 <span id="passkey-display" class="font-bold text-sm uppercase bg-black text-white px-2"></span>
                 <button id="logout-btn" class="text-xs underline font-bold uppercase">Logout</button>
             </div>
 
-            <section class="text-center space-y-2">
-                <div class="text-6xl font-black" id="current-steps">0</div>
-                <div class="text-xl uppercase font-bold">of <span id="target-display">4000</span> steps</div>
-                <div class="progress-container mt-4">
-                    <div id="progress-bar" class="progress-bar"></div>
-                </div>
-                <div id="percent-display" class="text-lg font-bold">0.000%</div>
-            </section>
+            <!-- Tabs -->
+            <div class="flex border-b-2 border-black">
+                <button id="tab-today" class="tab-btn active flex-1">Today</button>
+                <button id="tab-history" class="tab-btn flex-1">History</button>
+            </div>
 
-            <section class="kindle-border p-4 space-y-4">
-                <h2 class="text-xl font-bold uppercase border-b-2 border-black inline-block">Add Steps</h2>
-                <div class="flex gap-2">
-                    <input type="number" id="step-input" placeholder="Amount" class="flex-1" inputmode="numeric">
-                    <button id="add-btn" class="kindle-btn px-6 text-lg">ADD</button>
-                </div>
-                <div class="grid grid-cols-3 gap-2">
-                    <button onclick="window.quickAdd(250)" class="kindle-btn">+250</button>
-                    <button onclick="window.quickAdd(500)" class="kindle-btn">+500</button>
-                    <button onclick="window.quickAdd(1000)" class="kindle-btn">+1000</button>
-                </div>
-            </section>
+            <!-- Today View -->
+            <div id="view-today" class="space-y-6">
+                <section class="text-center space-y-2">
+                    <div class="text-6xl font-black" id="current-steps">0</div>
+                    <div class="text-xl uppercase font-bold">of <span id="target-display">4000</span> steps</div>
+                    <div class="progress-container mt-4">
+                        <div id="progress-bar" class="progress-bar"></div>
+                    </div>
+                    <div id="percent-display" class="text-lg font-bold">0.000%</div>
+                </section>
 
-            <section class="kindle-border p-4 space-y-4">
-                <h2 class="text-xl font-bold uppercase border-b-2 border-black inline-block">Goal</h2>
-                <div class="flex gap-2">
-                    <input type="number" id="target-input" min="1000" class="flex-1" inputmode="numeric">
-                    <button id="set-target-btn" class="kindle-btn px-6 text-sm">SET</button>
-                </div>
-            </section>
+                <section class="kindle-border p-4 space-y-4">
+                    <h2 class="text-xl font-bold uppercase border-b-2 border-black inline-block">Add Steps</h2>
+                    <div class="flex gap-2">
+                        <input type="number" id="step-input" placeholder="Amount" class="flex-1" inputmode="numeric">
+                        <button id="add-btn" class="kindle-btn px-6 text-lg">ADD</button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="window.quickAdd(250)" class="kindle-btn">+250</button>
+                        <button onclick="window.quickAdd(500)" class="kindle-btn">+500</button>
+                        <button onclick="window.quickAdd(1000)" class="kindle-btn">+1000</button>
+                    </div>
+                </section>
 
-            <section class="space-y-2 pb-10">
-                <h2 class="text-xl font-bold uppercase">Log (24H)</h2>
-                <div id="log-history" class="space-y-1 text-lg"></div>
-            </section>
+                <section class="kindle-border p-4 space-y-2">
+                    <h2 class="text-sm font-bold uppercase opacity-60">Daily Goal</h2>
+                    <div class="flex gap-2">
+                        <input type="number" id="target-input" min="1000" class="flex-1 h-10 min-h-0" inputmode="numeric">
+                        <button id="set-target-btn" class="kindle-btn px-4 h-10 min-h-0 text-xs">SET</button>
+                    </div>
+                </section>
+
+                <section class="space-y-2 pb-10">
+                    <h2 class="text-xl font-bold uppercase">Log (24H)</h2>
+                    <div id="log-history" class="space-y-1 text-lg"></div>
+                </section>
+            </div>
+
+            <!-- History View -->
+            <div id="view-history" class="hidden space-y-6">
+                <section class="kindle-border p-4 space-y-3">
+                    <h2 class="text-sm font-bold uppercase">Search Date</h2>
+                    <div class="flex gap-2">
+                        <input type="text" id="search-input" placeholder="YYYY-MM-DD" class="flex-1" inputmode="numeric">
+                        <button id="search-btn" class="kindle-btn px-4 text-xs">SEARCH</button>
+                    </div>
+                    <div id="search-result" class="hidden p-2 bg-gray-100 kindle-border text-center">
+                        <p id="search-date-text" class="font-bold"></p>
+                        <p id="search-steps-text" class="text-2xl font-black"></p>
+                    </div>
+                </section>
+
+                <section class="space-y-2">
+                    <h2 class="text-xl font-bold uppercase">Last 7 Days</h2>
+                    <div id="weekly-list" class="space-y-2">
+                        <!-- Items injected here -->
+                    </div>
+                </section>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, arrayUnion, getDoc, collection, query, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const myConfig = {
             apiKey: "AIzaSyC-UIB5l1bo_apccqskT6LAHvliQoc-U-s",
@@ -111,6 +143,25 @@
             errorPopup.textContent = msg;
             errorPopup.style.display = 'block';
             setTimeout(() => { errorPopup.style.display = 'none'; }, 5000);
+        }
+
+        // Navigation
+        document.getElementById('tab-today').onclick = () => switchTab('today');
+        document.getElementById('tab-history').onclick = () => switchTab('history');
+
+        function switchTab(view) {
+            if (view === 'today') {
+                document.getElementById('view-today').classList.remove('hidden');
+                document.getElementById('view-history').classList.add('hidden');
+                document.getElementById('tab-today').classList.add('active');
+                document.getElementById('tab-history').classList.remove('active');
+            } else {
+                document.getElementById('view-today').classList.add('hidden');
+                document.getElementById('view-history').classList.remove('hidden');
+                document.getElementById('tab-today').classList.remove('active');
+                document.getElementById('tab-history').classList.add('active');
+                loadWeeklyHistory();
+            }
         }
 
         if (currentPasskey) { startApp(currentPasskey); }
@@ -144,28 +195,85 @@
                     dailyData = snap.data();
                 } else {
                     dailyData = { target: 4000, total: 0, logs: [] };
-                    setDoc(docRef, dailyData).catch(e => showError("Startup Error: Check Rules"));
+                    setDoc(docRef, dailyData).catch(e => showError("Startup Error"));
                 }
                 render();
-            }, (err) => {
-                showError("Sync Error: " + err.message);
+            }, (err) => showError("Sync Error"));
+        }
+
+        async function loadWeeklyHistory() {
+            const container = document.getElementById('weekly-list');
+            container.innerHTML = '<p class="text-sm italic">Loading history...</p>';
+            
+            const historyData = [];
+            for (let i = 1; i <= 7; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                const docRef = doc(db, 'public_steps', currentPasskey, 'days', dateStr);
+                const snap = await getDoc(docRef);
+                if (snap.exists()) {
+                    historyData.push({ date: dateStr, ...snap.data() });
+                }
+            }
+
+            if (historyData.length === 0) {
+                container.innerHTML = '<p class="text-sm italic">No data found for the last 7 days.</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            historyData.forEach(day => {
+                const perc = ((day.total / day.target) * 100).toFixed(1);
+                const div = document.createElement('div');
+                div.className = 'kindle-border p-2 flex justify-between items-center';
+                div.innerHTML = `
+                    <div>
+                        <div class="text-xs font-bold">${day.date}</div>
+                        <div class="text-lg font-black">${day.total.toLocaleString()} steps</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs uppercase">Goal: ${day.target}</div>
+                        <div class="font-bold">${perc}%</div>
+                    </div>
+                `;
+                container.appendChild(div);
             });
         }
+
+        document.getElementById('search-btn').onclick = async () => {
+            const dateStr = document.getElementById('search-input').value.trim();
+            const resultBox = document.getElementById('search-result');
+            
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                showError("Use YYYY-MM-DD format");
+                return;
+            }
+
+            const docRef = doc(db, 'public_steps', currentPasskey, 'days', dateStr);
+            const snap = await getDoc(docRef);
+            
+            resultBox.classList.remove('hidden');
+            if (snap.exists()) {
+                const data = snap.data();
+                document.getElementById('search-date-text').textContent = dateStr;
+                document.getElementById('search-steps-text').textContent = `${data.total.toLocaleString()} Steps`;
+            } else {
+                document.getElementById('search-date-text').textContent = dateStr;
+                document.getElementById('search-steps-text').textContent = "No data found";
+            }
+        };
 
         const render = () => {
             const total = dailyData.total || 0;
             const target = dailyData.target || 4000;
-
             document.getElementById('current-steps').textContent = total.toLocaleString();
             document.getElementById('target-display').textContent = target.toLocaleString();
             document.getElementById('target-input').value = target;
             
-            // Calculate percentage with high precision
             const progressRatio = (total / target);
             const progressPercent = Math.min(progressRatio * 100, 100);
-            
             document.getElementById('progress-bar').style.width = `${progressPercent}%`;
-            // Fixed to 3 decimal places
             document.getElementById('percent-display').textContent = `${(progressRatio * 100).toFixed(3)}%`;
 
             const history = document.getElementById('log-history');
@@ -179,7 +287,6 @@
         };
 
         window.quickAdd = async (val) => {
-            if (!currentPasskey) return;
             const today = new Date().toISOString().split('T')[0];
             const docRef = doc(db, 'public_steps', currentPasskey, 'days', today);
             const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -194,7 +301,7 @@
                     total: (dailyData.total || 0) + val,
                     target: dailyData.target || 4000,
                     logs: [{ amount: val, time: time }]
-                }).catch(err => showError("Save Error: " + err.message));
+                });
             }
         };
 
@@ -208,7 +315,7 @@
             if (val >= 1000) {
                 const today = new Date().toISOString().split('T')[0];
                 const docRef = doc(db, 'public_steps', currentPasskey, 'days', today);
-                updateDoc(docRef, { target: val }).catch(e => showError("Goal Error: " + e.message));
+                updateDoc(docRef, { target: val });
             }
         };
 
