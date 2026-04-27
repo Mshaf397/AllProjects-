@@ -3,121 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Step Tracker</title>
+    <title>Health Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #fff; color: #000; font-family: ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: none; }
         .kindle-border { border: 2px solid #000; }
-        .kindle-btn { background-color: #fff; border: 3px solid #000; color: #000; touch-action: manipulation; font-weight: bold; min-height: 50px; }
+        .kindle-btn { background-color: #fff; border: 3px solid #000; color: #000; touch-action: manipulation; font-weight: bold; min-height: 44px; }
         .kindle-btn:active { background-color: #000; color: #fff; }
-        .progress-container { height: 40px; border: 3px solid #000; background: #fff; }
+        .progress-container { height: 35px; border: 3px solid #000; background: #fff; position: relative; overflow: hidden; }
         .progress-bar { height: 100%; background-color: #000; width: 0%; transition: width 0.3s; }
-        input { border: 2px solid #000 !important; border-radius: 0 !important; min-height: 50px; padding: 8px; font-size: 18px; }
+        input { border: 2px solid #000 !important; border-radius: 0 !important; min-height: 44px; padding: 8px; font-size: 16px; }
         .hidden { display: none; }
-        #error-popup { position: fixed; bottom: 20px; left: 20px; right: 20px; background: black; color: white; padding: 15px; border: 2px solid white; z-index: 100; display: none; }
-        .tab-btn { border-bottom: 4px solid transparent; padding: 10px; font-weight: bold; text-transform: uppercase; }
-        .tab-btn.active { border-bottom: 4px solid black; }
+        #error-popup { position: fixed; bottom: 10px; left: 10px; right: 10px; background: black; color: white; padding: 10px; border: 2px solid white; z-index: 100; display: none; font-size: 12px; }
+        
+        /* Navigation Styles */
+        .nav-bar { display: flex; border-bottom: 4px solid black; background: white; position: sticky; top: 0; z-index: 50; }
+        .nav-item { flex: 1; text-align: center; padding: 12px 5px; font-weight: 800; text-transform: uppercase; font-size: 12px; border-right: 1px solid #ddd; }
+        .nav-item.active { background: black; color: white; }
+        
+        .sub-nav { display: flex; gap: 10px; margin-bottom: 15px; }
+        .sub-nav-item { flex: 1; text-align: center; padding: 8px; border: 2px solid black; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        .sub-nav-item.active { background: black; color: white; }
     </style>
 </head>
-<body class="p-4 max-w-md mx-auto">
+<body class="max-w-md mx-auto bg-white min-h-screen">
     <div id="error-popup"></div>
 
-    <div id="app" class="space-y-6">
-        <header class="border-b-4 border-black pb-2 flex justify-between items-end">
-            <h1 class="text-3xl font-bold uppercase">Steps</h1>
-            <div id="clock" class="text-xl font-mono">00:00</div>
-        </header>
-
-        <!-- Login Screen -->
-        <div id="auth-screen" class="py-10 space-y-8">
+    <div id="app" class="">
+        <!-- Auth Screen -->
+        <div id="auth-screen" class="p-4 py-10 space-y-8">
+            <header class="border-b-4 border-black pb-2 text-center">
+                <h1 class="text-3xl font-black uppercase">Health Tracker</h1>
+            </header>
             <div class="text-center space-y-2">
                 <p class="text-xl font-bold">WELCOME</p>
-                <p class="text-sm">Enter your secret Passkey to start.</p>
+                <p class="text-sm">Enter your Passkey to sync your health data.</p>
             </div>
             <div class="space-y-4">
-                <input type="text" id="passkey-input" placeholder="e.g. shabbos-walk" class="w-full text-lowercase">
-                <button id="enter-btn" class="kindle-btn w-full uppercase">Enter Tracker</button>
+                <input type="text" id="passkey-input" placeholder="Passkey" class="w-full text-lowercase">
+                <button id="enter-btn" class="kindle-btn w-full uppercase text-xl">Enter</button>
             </div>
         </div>
 
-        <!-- Main Tracker UI -->
-        <div id="main-content" class="hidden space-y-4">
-            <div class="flex justify-between items-center mb-2">
-                <span id="passkey-display" class="font-bold text-sm uppercase bg-black text-white px-2"></span>
-                <button id="logout-btn" class="text-xs underline font-bold uppercase">Logout</button>
-            </div>
+        <!-- Main Content -->
+        <div id="main-content" class="hidden">
+            <!-- Global Nav -->
+            <nav class="nav-bar">
+                <div class="nav-item active" onclick="switchModule('steps')">Steps</div>
+                <div class="nav-item" onclick="switchModule('water')">Water</div>
+                <div class="nav-item" onclick="switchModule('gym')">Exercise</div>
+                <div class="nav-item" onclick="logout()" style="border-right:none; background:#eee; color:black;">X</div>
+            </nav>
 
-            <!-- Tabs -->
-            <div class="flex border-b-2 border-black">
-                <button id="tab-today" class="tab-btn active flex-1">Today</button>
-                <button id="tab-history" class="tab-btn flex-1">History</button>
-            </div>
+            <div class="p-4 space-y-6">
+                <!-- Header Stats -->
+                <div class="flex justify-between items-end border-b-2 border-black pb-1">
+                    <span id="passkey-display" class="font-black text-xs uppercase bg-black text-white px-2"></span>
+                    <div id="clock" class="text-lg font-mono font-bold">00:00</div>
+                </div>
 
-            <!-- Today View -->
-            <div id="view-today" class="space-y-6">
-                <section class="text-center space-y-2">
-                    <div class="text-6xl font-black" id="current-steps">0</div>
-                    <div class="text-xl uppercase font-bold">of <span id="target-display">4000</span> steps</div>
-                    <div class="progress-container mt-4">
-                        <div id="progress-bar" class="progress-bar"></div>
-                    </div>
-                    <div id="percent-display" class="text-lg font-bold">0.000%</div>
-                </section>
+                <!-- Sub Navigation (Today vs History) -->
+                <div class="sub-nav">
+                    <div id="sub-nav-today" class="sub-nav-item active" onclick="switchView('today')">Today</div>
+                    <div id="sub-nav-history" class="sub-nav-item" onclick="switchView('history')">History</div>
+                </div>
 
-                <section class="kindle-border p-4 space-y-4">
-                    <h2 class="text-xl font-bold uppercase border-b-2 border-black inline-block">Add Steps</h2>
-                    <div class="flex gap-2">
-                        <input type="number" id="step-input" placeholder="Amount" class="flex-1" inputmode="numeric">
-                        <button id="add-btn" class="kindle-btn px-6 text-lg">ADD</button>
+                <!-- MODULE: STEPS -->
+                <div id="module-steps" class="module-view space-y-6">
+                    <div id="steps-today" class="view-pane space-y-6">
+                        <section class="text-center space-y-2">
+                            <div class="text-6xl font-black" id="step-count">0</div>
+                            <div class="text-lg uppercase font-bold">of <span id="step-target">4000</span> steps</div>
+                            <div class="progress-container"><div id="step-progress" class="progress-bar"></div></div>
+                            <div id="step-percent" class="text-lg font-bold">0.000%</div>
+                        </section>
+                        <section class="kindle-border p-3 space-y-3">
+                            <h2 class="font-bold uppercase border-b-2 border-black inline-block">Add Steps</h2>
+                            <div class="flex gap-2">
+                                <input type="number" id="step-input" placeholder="Amount" class="flex-1" inputmode="numeric">
+                                <button onclick="handleAdd('steps')" class="kindle-btn px-4">ADD</button>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button onclick="quickAdd('steps', 250)" class="kindle-btn">+250</button>
+                                <button onclick="quickAdd('steps', 500)" class="kindle-btn">+500</button>
+                                <button onclick="quickAdd('steps', 1000)" class="kindle-btn">+1000</button>
+                            </div>
+                        </section>
+                        <section class="kindle-border p-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold uppercase">Daily Goal:</span>
+                                <input type="number" id="step-target-input" class="w-24 h-8 min-h-0 text-sm" inputmode="numeric">
+                                <button onclick="handleSetTarget('steps')" class="kindle-btn px-3 h-8 min-h-0 text-xs">SET</button>
+                            </div>
+                        </section>
+                        <section class="space-y-1"><h2 class="font-bold uppercase text-sm">Today's Log</h2><div id="step-logs" class="text-sm space-y-1"></div></section>
                     </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button onclick="window.quickAdd(250)" class="kindle-btn">+250</button>
-                        <button onclick="window.quickAdd(500)" class="kindle-btn">+500</button>
-                        <button onclick="window.quickAdd(1000)" class="kindle-btn">+1000</button>
-                    </div>
-                </section>
+                </div>
 
-                <section class="kindle-border p-4 space-y-2">
-                    <h2 class="text-sm font-bold uppercase opacity-60">Daily Goal</h2>
-                    <div class="flex gap-2">
-                        <input type="number" id="target-input" min="1000" class="flex-1 h-10 min-h-0" inputmode="numeric">
-                        <button id="set-target-btn" class="kindle-btn px-4 h-10 min-h-0 text-xs">SET</button>
+                <!-- MODULE: WATER -->
+                <div id="module-water" class="module-view hidden space-y-6">
+                    <div id="water-today" class="view-pane space-y-6">
+                        <section class="text-center space-y-2">
+                            <div class="text-6xl font-black" id="water-count">0</div>
+                            <div class="text-lg uppercase font-bold">of <span id="water-target">2000</span> mL</div>
+                            <div class="progress-container"><div id="water-progress" class="progress-bar"></div></div>
+                            <div id="water-percent" class="text-lg font-bold">0.000%</div>
+                        </section>
+                        <section class="kindle-border p-3 space-y-3">
+                            <h2 class="font-bold uppercase border-b-2 border-black inline-block">Add Water (mL)</h2>
+                            <div class="flex gap-2">
+                                <input type="number" id="water-input" placeholder="Amount" class="flex-1" inputmode="numeric">
+                                <button onclick="handleAdd('water')" class="kindle-btn px-4">ADD</button>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button onclick="quickAdd('water', 250)" class="kindle-btn">250ml</button>
+                                <button onclick="quickAdd('water', 500)" class="kindle-btn">500ml</button>
+                                <button onclick="quickAdd('water', 750)" class="kindle-btn">750ml</button>
+                            </div>
+                        </section>
+                        <section class="kindle-border p-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold uppercase">Goal (mL):</span>
+                                <input type="number" id="water-target-input" class="w-24 h-8 min-h-0 text-sm" inputmode="numeric">
+                                <button onclick="handleSetTarget('water')" class="kindle-btn px-3 h-8 min-h-0 text-xs">SET</button>
+                            </div>
+                        </section>
+                        <section class="space-y-1"><h2 class="font-bold uppercase text-sm">Hydration Log</h2><div id="water-logs" class="text-sm space-y-1"></div></section>
                     </div>
-                </section>
+                </div>
 
-                <section class="space-y-2 pb-10">
-                    <h2 class="text-xl font-bold uppercase">Log (24H)</h2>
-                    <div id="log-history" class="space-y-1 text-lg"></div>
-                </section>
-            </div>
+                <!-- MODULE: EXERCISE -->
+                <div id="module-gym" class="module-view hidden space-y-6">
+                    <div id="gym-today" class="view-pane space-y-6">
+                        <section class="text-center space-y-2">
+                            <div class="text-6xl font-black" id="gym-count">0</div>
+                            <div class="text-lg uppercase font-bold">of <span id="gym-target">60</span> Minutes</div>
+                            <div class="progress-container"><div id="gym-progress" class="progress-bar"></div></div>
+                            <div id="gym-percent" class="text-lg font-bold">0.000%</div>
+                        </section>
+                        <section class="kindle-border p-3 space-y-3">
+                            <h2 class="font-bold uppercase border-b-2 border-black inline-block">Log Activity</h2>
+                            <div class="space-y-2">
+                                <input type="text" id="gym-name" placeholder="Exercise Name (e.g. Pushups)" class="w-full">
+                                <div class="flex gap-2">
+                                    <input type="number" id="gym-duration" placeholder="Mins" class="w-1/2" inputmode="numeric">
+                                    <input type="number" id="gym-reps" placeholder="Reps (Optional)" class="w-1/2" inputmode="numeric">
+                                </div>
+                                <button onclick="handleAddExercise()" class="kindle-btn w-full">LOG EXERCISE</button>
+                            </div>
+                        </section>
+                        <section class="kindle-border p-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold uppercase">Goal (Mins):</span>
+                                <input type="number" id="gym-target-input" class="w-24 h-8 min-h-0 text-sm" inputmode="numeric">
+                                <button onclick="handleSetTarget('gym')" class="kindle-btn px-3 h-8 min-h-0 text-xs">SET</button>
+                            </div>
+                        </section>
+                        <section class="space-y-1"><h2 class="font-bold uppercase text-sm">Exercise Log</h2><div id="gym-logs" class="text-sm space-y-1"></div></section>
+                    </div>
+                </div>
 
-            <!-- History View -->
-            <div id="view-history" class="hidden space-y-6">
-                <section class="kindle-border p-4 space-y-3">
-                    <h2 class="text-sm font-bold uppercase">Search Date</h2>
-                    <div class="flex gap-2">
-                        <input type="text" id="search-input" placeholder="YYYY-MM-DD" class="flex-1" inputmode="numeric">
-                        <button id="search-btn" class="kindle-btn px-4 text-xs">SEARCH</button>
-                    </div>
-                    <div id="search-result" class="hidden p-2 bg-gray-100 kindle-border text-center">
-                        <p id="search-date-text" class="font-bold"></p>
-                        <p id="search-steps-text" class="text-2xl font-black"></p>
-                    </div>
-                </section>
-
-                <section class="space-y-2">
-                    <h2 class="text-xl font-bold uppercase">Last 7 Days</h2>
-                    <div id="weekly-list" class="space-y-2">
-                        <!-- Items injected here -->
-                    </div>
-                </section>
+                <!-- SHARED HISTORY VIEW -->
+                <div id="view-history" class="hidden space-y-6">
+                    <section class="kindle-border p-3 space-y-2">
+                        <h2 class="text-xs font-bold uppercase">Find Date</h2>
+                        <div class="flex gap-2">
+                            <input type="text" id="search-input" placeholder="YYYY-MM-DD" class="flex-1 h-10 min-h-0" inputmode="numeric">
+                            <button onclick="searchDate()" class="kindle-btn px-4 h-10 min-h-0 text-xs">FIND</button>
+                        </div>
+                        <div id="search-result" class="hidden p-2 bg-gray-100 text-sm italic"></div>
+                    </section>
+                    <section class="space-y-3">
+                        <h2 class="text-xl font-bold uppercase border-b-2 border-black">Past 7 Days</h2>
+                        <div id="history-list" class="space-y-2"></div>
+                    </section>
+                </div>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, arrayUnion, getDoc, collection, query, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const myConfig = {
             apiKey: "AIzaSyC-UIB5l1bo_apccqskT6LAHvliQoc-U-s",
@@ -131,193 +198,215 @@
         const app = initializeApp(myConfig);
         const db = getFirestore(app);
 
-        const authScreen = document.getElementById('auth-screen');
-        const mainContent = document.getElementById('main-content');
-        const errorPopup = document.getElementById('error-popup');
-        
-        let dailyData = { target: 4000, total: 0, logs: [] };
         let currentPasskey = localStorage.getItem('kindle_step_passkey');
+        let dailyData = null;
+        let activeModule = 'steps';
+        let activeView = 'today';
         let unsubscribe = null;
 
-        function showError(msg) {
-            errorPopup.textContent = msg;
-            errorPopup.style.display = 'block';
-            setTimeout(() => { errorPopup.style.display = 'none'; }, 5000);
-        }
-
-        // Navigation
-        document.getElementById('tab-today').onclick = () => switchTab('today');
-        document.getElementById('tab-history').onclick = () => switchTab('history');
-
-        function switchTab(view) {
-            if (view === 'today') {
-                document.getElementById('view-today').classList.remove('hidden');
-                document.getElementById('view-history').classList.add('hidden');
-                document.getElementById('tab-today').classList.add('active');
-                document.getElementById('tab-history').classList.remove('active');
-            } else {
-                document.getElementById('view-today').classList.add('hidden');
-                document.getElementById('view-history').classList.remove('hidden');
-                document.getElementById('tab-today').classList.remove('active');
-                document.getElementById('tab-history').classList.add('active');
-                loadWeeklyHistory();
-            }
-        }
-
-        if (currentPasskey) { startApp(currentPasskey); }
-
-        document.getElementById('enter-btn').onclick = () => {
-            const key = document.getElementById('passkey-input').value.trim().toLowerCase();
-            if (key.length >= 4) {
-                localStorage.setItem('kindle_step_passkey', key);
-                startApp(key);
-            }
+        // UI Handlers
+        window.switchModule = (m) => {
+            activeModule = m;
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            const targetNav = m === 'steps' ? 0 : m === 'water' ? 1 : 2;
+            document.querySelectorAll('.nav-item')[targetNav].classList.add('active');
+            
+            document.querySelectorAll('.module-view').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`module-${m}`).classList.remove('hidden');
+            switchView('today'); // Default to today when switching modules
+            render();
         };
 
-        document.getElementById('logout-btn').onclick = () => {
-            localStorage.removeItem('kindle_step_passkey');
-            location.reload();
+        window.switchView = (v) => {
+            activeView = v;
+            document.getElementById('sub-nav-today').classList.toggle('active', v === 'today');
+            document.getElementById('sub-nav-history').classList.toggle('active', v === 'history');
+            
+            // Hide/Show today panes within the active module or the global history
+            document.querySelectorAll('.view-pane').forEach(el => el.classList.toggle('hidden', v !== 'today'));
+            document.getElementById('view-history').classList.toggle('hidden', v !== 'history');
+            
+            if(v === 'history') loadHistory();
         };
 
+        window.logout = () => { if(confirm("Logout?")) { localStorage.removeItem('kindle_step_passkey'); location.reload(); } };
+
+        // Firebase Core Logic
         async function startApp(key) {
             currentPasskey = key;
+            localStorage.setItem('kindle_step_passkey', key);
             document.getElementById('passkey-display').textContent = key;
-            authScreen.classList.add('hidden');
-            mainContent.classList.remove('hidden');
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
             
             const today = new Date().toISOString().split('T')[0];
             const docRef = doc(db, 'public_steps', key, 'days', today);
 
             if (unsubscribe) unsubscribe();
-            
             unsubscribe = onSnapshot(docRef, (snap) => {
                 if (snap.exists()) {
                     dailyData = snap.data();
                 } else {
-                    dailyData = { target: 4000, total: 0, logs: [] };
-                    setDoc(docRef, dailyData).catch(e => showError("Startup Error"));
+                    dailyData = { 
+                        total: 0, target: 4000, logs: [], 
+                        water_total: 0, water_target: 2000, water_logs: [],
+                        gym_total: 0, gym_target: 60, gym_logs: []
+                    };
+                    setDoc(docRef, dailyData);
                 }
                 render();
-            }, (err) => showError("Sync Error"));
-        }
-
-        async function loadWeeklyHistory() {
-            const container = document.getElementById('weekly-list');
-            container.innerHTML = '<p class="text-sm italic">Loading history...</p>';
-            
-            const historyData = [];
-            for (let i = 1; i <= 7; i++) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                const dateStr = date.toISOString().split('T')[0];
-                const docRef = doc(db, 'public_steps', currentPasskey, 'days', dateStr);
-                const snap = await getDoc(docRef);
-                if (snap.exists()) {
-                    historyData.push({ date: dateStr, ...snap.data() });
-                }
-            }
-
-            if (historyData.length === 0) {
-                container.innerHTML = '<p class="text-sm italic">No data found for the last 7 days.</p>';
-                return;
-            }
-
-            container.innerHTML = '';
-            historyData.forEach(day => {
-                const perc = ((day.total / day.target) * 100).toFixed(1);
-                const div = document.createElement('div');
-                div.className = 'kindle-border p-2 flex justify-between items-center';
-                div.innerHTML = `
-                    <div>
-                        <div class="text-xs font-bold">${day.date}</div>
-                        <div class="text-lg font-black">${day.total.toLocaleString()} steps</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-xs uppercase">Goal: ${day.target}</div>
-                        <div class="font-bold">${perc}%</div>
-                    </div>
-                `;
-                container.appendChild(div);
             });
         }
 
-        document.getElementById('search-btn').onclick = async () => {
-            const dateStr = document.getElementById('search-input').value.trim();
-            const resultBox = document.getElementById('search-result');
-            
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-                showError("Use YYYY-MM-DD format");
-                return;
-            }
+        function render() {
+            if (!dailyData) return;
 
-            const docRef = doc(db, 'public_steps', currentPasskey, 'days', dateStr);
-            const snap = await getDoc(docRef);
-            
-            resultBox.classList.remove('hidden');
-            if (snap.exists()) {
-                const data = snap.data();
-                document.getElementById('search-date-text').textContent = dateStr;
-                document.getElementById('search-steps-text').textContent = `${data.total.toLocaleString()} Steps`;
-            } else {
-                document.getElementById('search-date-text').textContent = dateStr;
-                document.getElementById('search-steps-text').textContent = "No data found";
-            }
-        };
+            // Render Steps
+            updateProgress('step', dailyData.total || 0, dailyData.target || 4000, dailyData.logs || []);
+            // Render Water
+            updateProgress('water', dailyData.water_total || 0, dailyData.water_target || 2000, dailyData.water_logs || []);
+            // Render Gym
+            updateProgress('gym', dailyData.gym_total || 0, dailyData.gym_target || 60, dailyData.gym_logs || []);
+        }
 
-        const render = () => {
-            const total = dailyData.total || 0;
-            const target = dailyData.target || 4000;
-            document.getElementById('current-steps').textContent = total.toLocaleString();
-            document.getElementById('target-display').textContent = target.toLocaleString();
-            document.getElementById('target-input').value = target;
-            
-            const progressRatio = (total / target);
-            const progressPercent = Math.min(progressRatio * 100, 100);
-            document.getElementById('progress-bar').style.width = `${progressPercent}%`;
-            document.getElementById('percent-display').textContent = `${(progressRatio * 100).toFixed(3)}%`;
+        function updateProgress(prefix, current, target, logs) {
+            document.getElementById(`${prefix}-count`).textContent = current.toLocaleString();
+            document.getElementById(`${prefix}-target`).textContent = target.toLocaleString();
+            const inputEl = document.getElementById(`${prefix}-target-input`);
+            if (inputEl) inputEl.value = target;
 
-            const history = document.getElementById('log-history');
-            history.innerHTML = '';
-            (dailyData.logs || []).slice().reverse().forEach(log => {
+            const ratio = (current / target);
+            const perc = (ratio * 100).toFixed(3);
+            document.getElementById(`${prefix}-progress`).style.width = `${Math.min(ratio * 100, 100)}%`;
+            document.getElementById(`${prefix}-percent`).textContent = `${perc}%`;
+
+            const logContainer = document.getElementById(`${prefix}-logs`);
+            logContainer.innerHTML = '';
+            [...logs].reverse().forEach(log => {
                 const div = document.createElement('div');
                 div.className = 'flex justify-between border-b border-black py-1';
-                div.innerHTML = `<span>${log.time}</span> <span class="font-bold">+${log.amount}</span>`;
-                history.appendChild(div);
+                const detail = prefix === 'gym' ? ` (${log.name}${log.reps ? ' · ' + log.reps + 'r' : ''})` : '';
+                div.innerHTML = `<span>${log.time}${detail}</span> <span class="font-bold">+${log.amount}${prefix === 'water' ? 'ml' : prefix === 'gym' ? 'm' : ''}</span>`;
+                logContainer.appendChild(div);
             });
-        };
+        }
 
-        window.quickAdd = async (val) => {
+        // Generic Add Handler
+        window.quickAdd = (type, val) => {
             const today = new Date().toISOString().split('T')[0];
             const docRef = doc(db, 'public_steps', currentPasskey, 'days', today);
             const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
             
-            try {
-                await updateDoc(docRef, {
-                    total: (dailyData.total || 0) + val,
-                    logs: arrayUnion({ amount: val, time: time })
-                });
-            } catch (e) {
-                setDoc(docRef, {
-                    total: (dailyData.total || 0) + val,
-                    target: dailyData.target || 4000,
-                    logs: [{ amount: val, time: time }]
-                });
-            }
+            const fieldMap = {
+                'steps': { total: 'total', log: 'logs' },
+                'water': { total: 'water_total', log: 'water_logs' },
+                'gym': { total: 'gym_total', log: 'gym_logs' }
+            };
+
+            const fields = fieldMap[type];
+            updateDoc(docRef, {
+                [fields.total]: (dailyData[fields.total] || 0) + val,
+                [fields.log]: arrayUnion({ amount: val, time: time, name: 'Quick' })
+            });
         };
 
-        document.getElementById('add-btn').onclick = () => {
-            const val = parseInt(document.getElementById('step-input').value);
-            if (val > 0) { window.quickAdd(val); document.getElementById('step-input').value = ''; }
+        window.handleAdd = (type) => {
+            const el = document.getElementById(`${type}-input`);
+            const val = parseInt(el.value);
+            if (val > 0) { quickAdd(type, val); el.value = ''; }
         };
 
-        document.getElementById('set-target-btn').onclick = async () => {
-            const val = parseInt(document.getElementById('target-input').value);
-            if (val >= 1000) {
+        window.handleAddExercise = () => {
+            const name = document.getElementById('gym-name').value || 'Exercise';
+            const dur = parseInt(document.getElementById('gym-duration').value);
+            const reps = document.getElementById('gym-reps').value;
+            
+            if (dur > 0) {
                 const today = new Date().toISOString().split('T')[0];
                 const docRef = doc(db, 'public_steps', currentPasskey, 'days', today);
-                updateDoc(docRef, { target: val });
+                const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+                
+                updateDoc(docRef, {
+                    gym_total: (dailyData.gym_total || 0) + dur,
+                    gym_logs: arrayUnion({ amount: dur, name: name, reps: reps, time: time })
+                });
+                
+                document.getElementById('gym-name').value = '';
+                document.getElementById('gym-duration').value = '';
+                document.getElementById('gym-reps').value = '';
             }
         };
+
+        window.handleSetTarget = (type) => {
+            const el = document.getElementById(`${type}-target-input`);
+            const val = parseInt(el.value);
+            if (val > 0) {
+                const today = new Date().toISOString().split('T')[0];
+                const docRef = doc(db, 'public_steps', currentPasskey, 'days', today);
+                const field = type === 'steps' ? 'target' : type === 'water' ? 'water_target' : 'gym_target';
+                updateDoc(docRef, { [field]: val });
+            }
+        };
+
+        // History Logic
+        async function loadHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '<div class="text-center italic py-4">Scanning cloud...</div>';
+            
+            const items = [];
+            for (let i = 1; i <= 7; i++) {
+                const d = new Date(); d.setDate(d.getDate() - i);
+                const ds = d.toISOString().split('T')[0];
+                const snap = await getDoc(doc(db, 'public_steps', currentPasskey, 'days', ds));
+                if (snap.exists()) items.push({ date: ds, data: snap.data() });
+            }
+
+            list.innerHTML = items.length ? '' : '<div class="text-center italic py-4">No recent history found.</div>';
+            items.forEach(item => {
+                const d = item.data;
+                const div = document.createElement('div');
+                div.className = 'kindle-border p-2 space-y-1';
+                
+                // Show data for currently active module in history
+                let stats = "";
+                if (activeModule === 'steps') {
+                    stats = `<b>${(d.total || 0).toLocaleString()}</b> / ${d.target || 4000} steps`;
+                } else if (activeModule === 'water') {
+                    stats = `<b>${(d.water_total || 0).toLocaleString()}</b> / ${d.water_target || 2000} mL`;
+                } else {
+                    stats = `<b>${(d.gym_total || 0).toLocaleString()}</b> / ${d.gym_target || 60} mins`;
+                }
+
+                div.innerHTML = `
+                    <div class="flex justify-between text-xs"><span>${item.date}</span> <span class="uppercase">${activeModule}</span></div>
+                    <div class="text-lg">${stats}</div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        window.searchDate = async () => {
+            const ds = document.getElementById('search-input').value.trim();
+            const res = document.getElementById('search-result');
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(ds)) return alert("Use YYYY-MM-DD");
+            
+            const snap = await getDoc(doc(db, 'public_steps', currentPasskey, 'days', ds));
+            res.classList.remove('hidden');
+            if (snap.exists()) {
+                const d = snap.data();
+                res.innerHTML = `<b>${ds}</b><br>Steps: ${d.total || 0}<br>Water: ${d.water_total || 0}ml<br>Gym: ${d.gym_total || 0}m`;
+            } else {
+                res.textContent = "No data for this date.";
+            }
+        };
+
+        // Init
+        document.getElementById('enter-btn').onclick = () => {
+            const val = document.getElementById('passkey-input').value.trim().toLowerCase();
+            if (val.length >= 4) startApp(val);
+        };
+
+        if (currentPasskey) startApp(currentPasskey);
 
         setInterval(() => {
             document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB', { 
