@@ -16,29 +16,24 @@
         .hidden { display: none; }
         #error-popup { position: fixed; bottom: 10px; left: 10px; right: 10px; background: black; color: white; padding: 10px; border: 2px solid white; z-index: 100; display: none; font-size: 12px; }
         
-        /* Navigation Styles */
         .nav-bar { display: flex; border-bottom: 4px solid black; background: white; position: sticky; top: 0; z-index: 50; }
-        .nav-item { flex: 1; text-align: center; padding: 12px 5px; font-weight: 800; text-transform: uppercase; font-size: 12px; border-right: 1px solid #ddd; }
+        .nav-item { flex: 1; text-align: center; padding: 12px 5px; font-weight: 800; text-transform: uppercase; font-size: 12px; border-right: 1px solid #ddd; cursor: pointer; }
         .nav-item.active { background: black; color: white; }
         
         .sub-nav { display: flex; gap: 10px; margin-bottom: 15px; }
-        .sub-nav-item { flex: 1; text-align: center; padding: 8px; border: 2px solid black; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        .sub-nav-item { flex: 1; text-align: center; padding: 8px; border: 2px solid black; font-size: 12px; font-weight: bold; text-transform: uppercase; cursor: pointer; }
         .sub-nav-item.active { background: black; color: white; }
     </style>
 </head>
 <body class="max-w-md mx-auto bg-white min-h-screen">
     <div id="error-popup"></div>
 
-    <div id="app" class="">
+    <div id="app">
         <!-- Auth Screen -->
         <div id="auth-screen" class="p-4 py-10 space-y-8">
             <header class="border-b-4 border-black pb-2 text-center">
                 <h1 class="text-3xl font-black uppercase">Health Tracker</h1>
             </header>
-            <div class="text-center space-y-2">
-                <p class="text-xl font-bold">WELCOME</p>
-                <p class="text-sm">Enter your Passkey to sync your health data.</p>
-            </div>
             <div class="space-y-4">
                 <input type="text" id="passkey-input" placeholder="Passkey" class="w-full text-lowercase">
                 <button id="enter-btn" class="kindle-btn w-full uppercase text-xl">Enter</button>
@@ -47,136 +42,110 @@
 
         <!-- Main Content -->
         <div id="main-content" class="hidden">
-            <!-- Global Nav -->
             <nav class="nav-bar">
-                <div class="nav-item active" onclick="switchModule('steps')">Steps</div>
-                <div class="nav-item" onclick="switchModule('water')">Water</div>
-                <div class="nav-item" onclick="switchModule('gym')">Exercise</div>
+                <div id="nav-steps" class="nav-item active" onclick="switchModule('steps')">Steps</div>
+                <div id="nav-water" class="nav-item" onclick="switchModule('water')">Water</div>
+                <div id="nav-gym" class="nav-item" onclick="switchModule('gym')">Exercise</div>
                 <div class="nav-item" onclick="logout()" style="border-right:none; background:#eee; color:black;">X</div>
             </nav>
 
             <div class="p-4 space-y-6">
-                <!-- Header Stats -->
                 <div class="flex justify-between items-end border-b-2 border-black pb-1">
                     <span id="passkey-display" class="font-black text-xs uppercase bg-black text-white px-2"></span>
                     <div id="clock" class="text-lg font-mono font-bold">00:00</div>
                 </div>
 
-                <!-- Sub Navigation (Today vs History) -->
                 <div class="sub-nav">
                     <div id="sub-nav-today" class="sub-nav-item active" onclick="switchView('today')">Today</div>
                     <div id="sub-nav-history" class="sub-nav-item" onclick="switchView('history')">History</div>
                 </div>
 
-                <!-- MODULE: STEPS -->
+                <!-- STEPS -->
                 <div id="module-steps" class="module-view space-y-6">
-                    <div id="steps-today" class="view-pane space-y-6">
-                        <section class="text-center space-y-2">
-                            <div class="text-6xl font-black" id="step-count">0</div>
-                            <div class="text-lg uppercase font-bold">of <span id="step-target">4000</span> steps</div>
-                            <div class="progress-container"><div id="step-progress" class="progress-bar"></div></div>
-                            <div id="step-percent" class="text-lg font-bold">0.000%</div>
-                        </section>
-                        <section class="kindle-border p-3 space-y-3">
-                            <h2 class="font-bold uppercase border-b-2 border-black inline-block">Add Steps</h2>
-                            <div class="flex gap-2">
-                                <input type="number" id="step-input" placeholder="Amount" class="flex-1" inputmode="numeric">
-                                <button onclick="handleAdd('steps')" class="kindle-btn px-4">ADD</button>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2">
-                                <button onclick="quickAdd('steps', 250)" class="kindle-btn">+250</button>
-                                <button onclick="quickAdd('steps', 500)" class="kindle-btn">+500</button>
-                                <button onclick="quickAdd('steps', 1000)" class="kindle-btn">+1000</button>
-                            </div>
-                        </section>
-                        <section class="kindle-border p-3">
-                            <div class="flex justify-between items-center">
-                                <span class="text-xs font-bold uppercase">Daily Goal:</span>
-                                <input type="number" id="step-target-input" class="w-24 h-8 min-h-0 text-sm" inputmode="numeric">
-                                <button onclick="handleSetTarget('steps')" class="kindle-btn px-3 h-8 min-h-0 text-xs">SET</button>
-                            </div>
-                        </section>
-                        <section class="space-y-1"><h2 class="font-bold uppercase text-sm">Today's Log</h2><div id="step-logs" class="text-sm space-y-1"></div></section>
-                    </div>
+                    <section class="text-center space-y-2">
+                        <div class="text-6xl font-black" id="steps-count">0</div>
+                        <div class="text-lg uppercase font-bold">of <span id="steps-target">4000</span> steps</div>
+                        <div class="progress-container"><div id="steps-progress" class="progress-bar"></div></div>
+                        <div id="steps-percent" class="text-lg font-bold">0.000%</div>
+                    </section>
+                    <section class="kindle-border p-3 space-y-3">
+                        <div class="flex gap-2">
+                            <input type="number" id="steps-input" placeholder="Amount" class="flex-1" inputmode="numeric">
+                            <button onclick="handleAdd('steps')" class="kindle-btn px-4">ADD</button>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="quickAdd('steps', 250)" class="kindle-btn">+250</button>
+                            <button onclick="quickAdd('steps', 500)" class="kindle-btn">+500</button>
+                            <button onclick="quickAdd('steps', 1000)" class="kindle-btn">+1000</button>
+                        </div>
+                    </section>
                 </div>
 
-                <!-- MODULE: WATER -->
+                <!-- WATER -->
                 <div id="module-water" class="module-view hidden space-y-6">
-                    <div id="water-today" class="view-pane space-y-6">
-                        <section class="text-center space-y-2">
-                            <div class="text-6xl font-black" id="water-count">0</div>
-                            <div class="text-lg uppercase font-bold">of <span id="water-target">2000</span> mL</div>
-                            <div class="progress-container"><div id="water-progress" class="progress-bar"></div></div>
-                            <div id="water-percent" class="text-lg font-bold">0.000%</div>
-                        </section>
-                        <section class="kindle-border p-3 space-y-3">
-                            <h2 class="font-bold uppercase border-b-2 border-black inline-block">Add Water (mL)</h2>
-                            <div class="flex gap-2">
-                                <input type="number" id="water-input" placeholder="Amount" class="flex-1" inputmode="numeric">
-                                <button onclick="handleAdd('water')" class="kindle-btn px-4">ADD</button>
-                            </div>
-                            <div class="grid grid-cols-3 gap-2">
-                                <button onclick="quickAdd('water', 250)" class="kindle-btn">250ml</button>
-                                <button onclick="quickAdd('water', 500)" class="kindle-btn">500ml</button>
-                                <button onclick="quickAdd('water', 750)" class="kindle-btn">750ml</button>
-                            </div>
-                        </section>
-                        <section class="kindle-border p-3">
-                            <div class="flex justify-between items-center">
-                                <span class="text-xs font-bold uppercase">Goal (mL):</span>
-                                <input type="number" id="water-target-input" class="w-24 h-8 min-h-0 text-sm" inputmode="numeric">
-                                <button onclick="handleSetTarget('water')" class="kindle-btn px-3 h-8 min-h-0 text-xs">SET</button>
-                            </div>
-                        </section>
-                        <section class="space-y-1"><h2 class="font-bold uppercase text-sm">Hydration Log</h2><div id="water-logs" class="text-sm space-y-1"></div></section>
-                    </div>
+                    <section class="text-center space-y-2">
+                        <div class="text-6xl font-black" id="water-count">0</div>
+                        <div class="text-lg uppercase font-bold">of <span id="water-target">2000</span> mL</div>
+                        <div class="progress-container"><div id="water-progress" class="progress-bar"></div></div>
+                        <div id="water-percent" class="text-lg font-bold">0.000%</div>
+                    </section>
+                    <section class="kindle-border p-3 space-y-3">
+                        <div class="flex gap-2">
+                            <input type="number" id="water-input" placeholder="mL Amount" class="flex-1" inputmode="numeric">
+                            <button onclick="handleAdd('water')" class="kindle-btn px-4">ADD</button>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="quickAdd('water', 250)" class="kindle-btn">250ml</button>
+                            <button onclick="quickAdd('water', 500)" class="kindle-btn">500ml</button>
+                            <button onclick="quickAdd('water', 750)" class="kindle-btn">750ml</button>
+                        </div>
+                    </section>
                 </div>
 
-                <!-- MODULE: EXERCISE -->
+                <!-- EXERCISE -->
                 <div id="module-gym" class="module-view hidden space-y-6">
-                    <div id="gym-today" class="view-pane space-y-6">
-                        <section class="text-center space-y-2">
-                            <div class="text-6xl font-black" id="gym-count">0</div>
-                            <div class="text-lg uppercase font-bold">of <span id="gym-target">60</span> Minutes</div>
-                            <div class="progress-container"><div id="gym-progress" class="progress-bar"></div></div>
-                            <div id="gym-percent" class="text-lg font-bold">0.000%</div>
-                        </section>
-                        <section class="kindle-border p-3 space-y-3">
-                            <h2 class="font-bold uppercase border-b-2 border-black inline-block">Log Activity</h2>
-                            <div class="space-y-2">
-                                <input type="text" id="gym-name" placeholder="Exercise Name (e.g. Pushups)" class="w-full">
-                                <div class="flex gap-2">
-                                    <input type="number" id="gym-duration" placeholder="Mins" class="w-1/2" inputmode="numeric">
-                                    <input type="number" id="gym-reps" placeholder="Reps (Optional)" class="w-1/2" inputmode="numeric">
-                                </div>
-                                <button onclick="handleAddExercise()" class="kindle-btn w-full">LOG EXERCISE</button>
-                            </div>
-                        </section>
-                        <section class="kindle-border p-3">
-                            <div class="flex justify-between items-center">
-                                <span class="text-xs font-bold uppercase">Goal (Mins):</span>
-                                <input type="number" id="gym-target-input" class="w-24 h-8 min-h-0 text-sm" inputmode="numeric">
-                                <button onclick="handleSetTarget('gym')" class="kindle-btn px-3 h-8 min-h-0 text-xs">SET</button>
-                            </div>
-                        </section>
-                        <section class="space-y-1"><h2 class="font-bold uppercase text-sm">Exercise Log</h2><div id="gym-logs" class="text-sm space-y-1"></div></section>
-                    </div>
+                    <section class="text-center space-y-2">
+                        <div class="text-6xl font-black" id="gym-count">0</div>
+                        <div class="text-lg uppercase font-bold">of <span id="gym-target">60</span> Mins</div>
+                        <div class="progress-container"><div id="gym-progress" class="progress-bar"></div></div>
+                        <div id="gym-percent" class="text-lg font-bold">0.000%</div>
+                    </section>
+                    <section class="kindle-border p-3 space-y-2">
+                        <input type="text" id="gym-name" placeholder="Exercise Name" class="w-full h-10 min-h-0">
+                        <div class="flex gap-2">
+                            <input type="number" id="gym-input" placeholder="Mins" class="w-1/2" inputmode="numeric">
+                            <input type="number" id="gym-reps" placeholder="Reps" class="w-1/2" inputmode="numeric">
+                        </div>
+                        <button onclick="handleAdd('gym')" class="kindle-btn w-full">LOG EXERCISE</button>
+                    </section>
                 </div>
 
-                <!-- SHARED HISTORY VIEW -->
+                <!-- COMMON GOAL & LOGS -->
+                <div id="common-footer" class="space-y-6">
+                    <section class="kindle-border p-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold uppercase">Daily Goal:</span>
+                            <input type="number" id="target-setter-input" class="w-24 h-8 min-h-0 text-sm" inputmode="numeric">
+                            <button onclick="handleSetTarget()" class="kindle-btn px-3 h-8 min-h-0 text-xs">SET</button>
+                        </div>
+                    </section>
+                    <section class="space-y-1">
+                        <h2 class="font-bold uppercase text-sm">Today's <span id="log-type-label">Steps</span> Log</h2>
+                        <div id="log-container" class="text-sm space-y-1"></div>
+                    </section>
+                </div>
+
+                <!-- HISTORY VIEW -->
                 <div id="view-history" class="hidden space-y-6">
                     <section class="kindle-border p-3 space-y-2">
-                        <h2 class="text-xs font-bold uppercase">Find Date</h2>
+                        <h2 class="text-xs font-bold uppercase">Find Date (YYYY-MM-DD)</h2>
                         <div class="flex gap-2">
-                            <input type="text" id="search-input" placeholder="YYYY-MM-DD" class="flex-1 h-10 min-h-0" inputmode="numeric">
+                            <input type="text" id="search-input" placeholder="2024-05-20" class="flex-1 h-10 min-h-0" inputmode="numeric">
                             <button onclick="searchDate()" class="kindle-btn px-4 h-10 min-h-0 text-xs">FIND</button>
                         </div>
                         <div id="search-result" class="hidden p-2 bg-gray-100 text-sm italic"></div>
                     </section>
-                    <section class="space-y-3">
-                        <h2 class="text-xl font-bold uppercase border-b-2 border-black">Past 7 Days</h2>
-                        <div id="history-list" class="space-y-2"></div>
-                    </section>
+                    <div id="history-list" class="space-y-2"></div>
                 </div>
             </div>
         </div>
@@ -204,16 +173,20 @@
         let activeView = 'today';
         let unsubscribe = null;
 
-        // UI Handlers
+        const showError = (m) => {
+            const p = document.getElementById('error-popup');
+            p.textContent = m; p.style.display = 'block';
+            setTimeout(() => p.style.display = 'none', 5000);
+        };
+
         window.switchModule = (m) => {
             activeModule = m;
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            const targetNav = m === 'steps' ? 0 : m === 'water' ? 1 : 2;
-            document.querySelectorAll('.nav-item')[targetNav].classList.add('active');
-            
+            document.getElementById(`nav-${m}`).classList.add('active');
             document.querySelectorAll('.module-view').forEach(el => el.classList.add('hidden'));
             document.getElementById(`module-${m}`).classList.remove('hidden');
-            switchView('today'); // Default to today when switching modules
+            document.getElementById('log-type-label').textContent = m.charAt(0).toUpperCase() + m.slice(1);
+            switchView('today');
             render();
         };
 
@@ -221,31 +194,30 @@
             activeView = v;
             document.getElementById('sub-nav-today').classList.toggle('active', v === 'today');
             document.getElementById('sub-nav-history').classList.toggle('active', v === 'history');
-            
-            // Hide/Show today panes within the active module or the global history
-            document.querySelectorAll('.view-pane').forEach(el => el.classList.toggle('hidden', v !== 'today'));
+            document.querySelectorAll('.module-view').forEach(el => {
+                if(activeModule === el.id.split('-')[1]) el.classList.toggle('hidden', v !== 'today');
+            });
+            document.getElementById('common-footer').classList.toggle('hidden', v !== 'today');
             document.getElementById('view-history').classList.toggle('hidden', v !== 'history');
-            
             if(v === 'history') loadHistory();
         };
 
-        window.logout = () => { if(confirm("Logout?")) { localStorage.removeItem('kindle_step_passkey'); location.reload(); } };
-
-        // Firebase Core Logic
         async function startApp(key) {
-            currentPasskey = key;
-            localStorage.setItem('kindle_step_passkey', key);
-            document.getElementById('passkey-display').textContent = key;
+            currentPasskey = key.toLowerCase().trim();
+            localStorage.setItem('kindle_step_passkey', currentPasskey);
+            document.getElementById('passkey-display').textContent = currentPasskey;
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-content').classList.remove('hidden');
             
             const today = new Date().toISOString().split('T')[0];
-            const docRef = doc(db, 'public_steps', key, 'days', today);
+            const docRef = doc(db, 'public_steps', currentPasskey, 'days', today);
 
             if (unsubscribe) unsubscribe();
             unsubscribe = onSnapshot(docRef, (snap) => {
                 if (snap.exists()) {
                     dailyData = snap.data();
+                    // Fix for old records missing new fields
+                    if (dailyData.water_total === undefined) initializeNewFields(docRef);
                 } else {
                     dailyData = { 
                         total: 0, target: 4000, logs: [], 
@@ -255,132 +227,125 @@
                     setDoc(docRef, dailyData);
                 }
                 render();
-            });
+            }, (err) => showError("Firestore Error: " + err.message));
+        }
+
+        async function initializeNewFields(docRef) {
+            await updateDoc(docRef, {
+                water_total: 0, water_target: 2000, water_logs: [],
+                gym_total: 0, gym_target: 60, gym_logs: []
+            }).catch(() => {});
         }
 
         function render() {
             if (!dailyData) return;
+            const config = {
+                steps: { cur: dailyData.total || 0, tar: dailyData.target || 4000, log: dailyData.logs || [] },
+                water: { cur: dailyData.water_total || 0, tar: dailyData.water_target || 2000, log: dailyData.water_logs || [] },
+                gym: { cur: dailyData.gym_total || 0, tar: dailyData.gym_target || 60, log: dailyData.gym_logs || [] }
+            };
 
-            // Render Steps
-            updateProgress('step', dailyData.total || 0, dailyData.target || 4000, dailyData.logs || []);
-            // Render Water
-            updateProgress('water', dailyData.water_total || 0, dailyData.water_target || 2000, dailyData.water_logs || []);
-            // Render Gym
-            updateProgress('gym', dailyData.gym_total || 0, dailyData.gym_target || 60, dailyData.gym_logs || []);
-        }
+            // Update UI for all modules in background
+            ['steps', 'water', 'gym'].forEach(m => {
+                const c = config[m];
+                const countEl = document.getElementById(`${m}-count`);
+                const targetEl = document.getElementById(`${m}-target`);
+                if (countEl) countEl.textContent = c.cur.toLocaleString();
+                if (targetEl) targetEl.textContent = c.tar.toLocaleString();
+                
+                const ratio = c.cur / c.tar;
+                const progressEl = document.getElementById(`${m}-progress`);
+                const percentEl = document.getElementById(`${m}-percent`);
+                if (progressEl) progressEl.style.width = `${Math.min(ratio * 100, 100)}%`;
+                if (percentEl) percentEl.textContent = `${(ratio * 100).toFixed(3)}%`;
+            });
 
-        function updateProgress(prefix, current, target, logs) {
-            document.getElementById(`${prefix}-count`).textContent = current.toLocaleString();
-            document.getElementById(`${prefix}-target`).textContent = target.toLocaleString();
-            const inputEl = document.getElementById(`${prefix}-target-input`);
-            if (inputEl) inputEl.value = target;
-
-            const ratio = (current / target);
-            const perc = (ratio * 100).toFixed(3);
-            document.getElementById(`${prefix}-progress`).style.width = `${Math.min(ratio * 100, 100)}%`;
-            document.getElementById(`${prefix}-percent`).textContent = `${perc}%`;
-
-            const logContainer = document.getElementById(`${prefix}-logs`);
-            logContainer.innerHTML = '';
-            [...logs].reverse().forEach(log => {
+            // Update Target Input & Logs for Active Module
+            document.getElementById('target-setter-input').value = config[activeModule].tar;
+            const container = document.getElementById('log-container');
+            container.innerHTML = '';
+            [...config[activeModule].log].reverse().forEach(l => {
                 const div = document.createElement('div');
                 div.className = 'flex justify-between border-b border-black py-1';
-                const detail = prefix === 'gym' ? ` (${log.name}${log.reps ? ' · ' + log.reps + 'r' : ''})` : '';
-                div.innerHTML = `<span>${log.time}${detail}</span> <span class="font-bold">+${log.amount}${prefix === 'water' ? 'ml' : prefix === 'gym' ? 'm' : ''}</span>`;
-                logContainer.appendChild(div);
+                const detail = activeModule === 'gym' ? ` (${l.name || 'Ex'}${l.reps ? ' · '+l.reps+'r' : ''})` : '';
+                const unit = activeModule === 'water' ? 'ml' : activeModule === 'gym' ? 'm' : '';
+                div.innerHTML = `<span>${l.time}${detail}</span> <span class="font-bold">+${l.amount}${unit}</span>`;
+                container.appendChild(div);
             });
         }
 
-        // Generic Add Handler
-        window.quickAdd = (type, val) => {
+        window.quickAdd = async (type, val, gymName = 'Quick', gymReps = '') => {
+            if (!dailyData) return;
             const today = new Date().toISOString().split('T')[0];
             const docRef = doc(db, 'public_steps', currentPasskey, 'days', today);
             const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
             
-            const fieldMap = {
-                'steps': { total: 'total', log: 'logs' },
-                'water': { total: 'water_total', log: 'water_logs' },
-                'gym': { total: 'gym_total', log: 'gym_logs' }
-            };
+            const updates = {};
+            if (type === 'steps') {
+                updates.total = (dailyData.total || 0) + val;
+                updates.logs = arrayUnion({ amount: val, time });
+            } else if (type === 'water') {
+                updates.water_total = (dailyData.water_total || 0) + val;
+                updates.water_logs = arrayUnion({ amount: val, time });
+            } else if (type === 'gym') {
+                updates.gym_total = (dailyData.gym_total || 0) + val;
+                updates.gym_logs = arrayUnion({ amount: val, time, name: gymName, reps: gymReps });
+            }
 
-            const fields = fieldMap[type];
-            updateDoc(docRef, {
-                [fields.total]: (dailyData[fields.total] || 0) + val,
-                [fields.log]: arrayUnion({ amount: val, time: time, name: 'Quick' })
-            });
-        };
-
-        window.handleAdd = (type) => {
-            const el = document.getElementById(`${type}-input`);
-            const val = parseInt(el.value);
-            if (val > 0) { quickAdd(type, val); el.value = ''; }
-        };
-
-        window.handleAddExercise = () => {
-            const name = document.getElementById('gym-name').value || 'Exercise';
-            const dur = parseInt(document.getElementById('gym-duration').value);
-            const reps = document.getElementById('gym-reps').value;
-            
-            if (dur > 0) {
-                const today = new Date().toISOString().split('T')[0];
-                const docRef = doc(db, 'public_steps', currentPasskey, 'days', today);
-                const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-                
-                updateDoc(docRef, {
-                    gym_total: (dailyData.gym_total || 0) + dur,
-                    gym_logs: arrayUnion({ amount: dur, name: name, reps: reps, time: time })
-                });
-                
-                document.getElementById('gym-name').value = '';
-                document.getElementById('gym-duration').value = '';
-                document.getElementById('gym-reps').value = '';
+            try {
+                await updateDoc(docRef, updates);
+            } catch (e) {
+                // Fallback for document creation
+                setDoc(docRef, {...dailyData, ...updates}, {merge: true});
             }
         };
 
-        window.handleSetTarget = (type) => {
-            const el = document.getElementById(`${type}-target-input`);
-            const val = parseInt(el.value);
+        window.handleAdd = () => {
+            const input = document.getElementById(`${activeModule}-input`);
+            const val = parseInt(input.value);
+            if (val > 0) {
+                if (activeModule === 'gym') {
+                    const name = document.getElementById('gym-name').value || 'Exercise';
+                    const reps = document.getElementById('gym-reps').value || '';
+                    quickAdd('gym', val, name, reps);
+                    document.getElementById('gym-name').value = '';
+                    document.getElementById('gym-reps').value = '';
+                } else {
+                    quickAdd(activeModule, val);
+                }
+                input.value = '';
+            }
+        };
+
+        window.handleSetTarget = async () => {
+            const val = parseInt(document.getElementById('target-setter-input').value);
             if (val > 0) {
                 const today = new Date().toISOString().split('T')[0];
                 const docRef = doc(db, 'public_steps', currentPasskey, 'days', today);
-                const field = type === 'steps' ? 'target' : type === 'water' ? 'water_target' : 'gym_target';
-                updateDoc(docRef, { [field]: val });
+                const field = activeModule === 'steps' ? 'target' : activeModule === 'water' ? 'water_target' : 'gym_target';
+                await updateDoc(docRef, { [field]: val }).catch(() => {});
             }
         };
 
-        // History Logic
         async function loadHistory() {
             const list = document.getElementById('history-list');
-            list.innerHTML = '<div class="text-center italic py-4">Scanning cloud...</div>';
-            
+            list.innerHTML = '<div class="text-center italic py-4">Syncing past 7 days...</div>';
             const items = [];
             for (let i = 1; i <= 7; i++) {
                 const d = new Date(); d.setDate(d.getDate() - i);
                 const ds = d.toISOString().split('T')[0];
                 const snap = await getDoc(doc(db, 'public_steps', currentPasskey, 'days', ds));
-                if (snap.exists()) items.push({ date: ds, data: snap.data() });
+                if (snap.exists()) items.push({ date: ds, d: snap.data() });
             }
-
-            list.innerHTML = items.length ? '' : '<div class="text-center italic py-4">No recent history found.</div>';
+            list.innerHTML = items.length ? '' : '<div class="text-center italic py-4">No history.</div>';
             items.forEach(item => {
-                const d = item.data;
                 const div = document.createElement('div');
-                div.className = 'kindle-border p-2 space-y-1';
-                
-                // Show data for currently active module in history
-                let stats = "";
-                if (activeModule === 'steps') {
-                    stats = `<b>${(d.total || 0).toLocaleString()}</b> / ${d.target || 4000} steps`;
-                } else if (activeModule === 'water') {
-                    stats = `<b>${(d.water_total || 0).toLocaleString()}</b> / ${d.water_target || 2000} mL`;
-                } else {
-                    stats = `<b>${(d.gym_total || 0).toLocaleString()}</b> / ${d.gym_target || 60} mins`;
-                }
-
-                div.innerHTML = `
-                    <div class="flex justify-between text-xs"><span>${item.date}</span> <span class="uppercase">${activeModule}</span></div>
-                    <div class="text-lg">${stats}</div>
-                `;
+                div.className = 'kindle-border p-2';
+                let stat = "";
+                if(activeModule === 'steps') stat = `${(item.d.total||0).toLocaleString()} / ${item.d.target||4000} steps`;
+                if(activeModule === 'water') stat = `${(item.d.water_total||0).toLocaleString()} / ${item.d.water_target||2000} mL`;
+                if(activeModule === 'gym') stat = `${(item.d.gym_total||0).toLocaleString()} / ${item.d.gym_target||60} mins`;
+                div.innerHTML = `<div class="text-xs font-bold">${item.date}</div><div class="text-lg font-black uppercase">${stat}</div>`;
                 list.appendChild(div);
             });
         }
@@ -388,30 +353,23 @@
         window.searchDate = async () => {
             const ds = document.getElementById('search-input').value.trim();
             const res = document.getElementById('search-result');
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(ds)) return alert("Use YYYY-MM-DD");
-            
+            if(!/^\d{4}-\d{2}-\d{2}$/.test(ds)) return showError("Format: YYYY-MM-DD");
             const snap = await getDoc(doc(db, 'public_steps', currentPasskey, 'days', ds));
             res.classList.remove('hidden');
-            if (snap.exists()) {
+            if(snap.exists()){
                 const d = snap.data();
-                res.innerHTML = `<b>${ds}</b><br>Steps: ${d.total || 0}<br>Water: ${d.water_total || 0}ml<br>Gym: ${d.gym_total || 0}m`;
-            } else {
-                res.textContent = "No data for this date.";
-            }
+                res.innerHTML = `Steps: ${d.total||0}<br>Water: ${d.water_total||0}ml<br>Gym: ${d.gym_total||0}m`;
+            } else res.textContent = "No data.";
         };
 
-        // Init
+        window.logout = () => { if(confirm("Logout?")) { localStorage.removeItem('kindle_step_passkey'); location.reload(); } };
         document.getElementById('enter-btn').onclick = () => {
-            const val = document.getElementById('passkey-input').value.trim().toLowerCase();
-            if (val.length >= 4) startApp(val);
+            const v = document.getElementById('passkey-input').value;
+            if(v.length >= 4) startApp(v);
         };
-
         if (currentPasskey) startApp(currentPasskey);
-
         setInterval(() => {
-            document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB', { 
-                hour: '2-digit', minute: '2-digit', hour12: false 
-            });
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', hour12:false });
         }, 1000);
     </script>
 </body>
