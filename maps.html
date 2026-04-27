@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kindle Map Viewer</title>
-    <!-- Load Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -38,28 +37,50 @@
             top: 10px;
             left: 10px;
             z-index: 1001;
-            width: calc(100% - 120px);
+            width: calc(100% - 130px);
             max-width: 450px;
         }
 
         .search-bar {
             display: flex;
             box-shadow: 4px 4px 0px #000;
+            background: #fff;
+            border: var(--border-width) solid #000;
         }
 
         input[type="text"] {
             flex-grow: 1;
             padding: 15px;
-            border: var(--border-width) solid #000;
+            border: none;
             font-size: 18px;
             outline: none;
-            background: #fff;
+            background: transparent;
+            min-width: 0; /* Prevents flex items from overflowing */
+        }
+
+        /* Clear Button (X) */
+        .clear-btn {
+            background: transparent;
+            border: none;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 0 15px;
+            cursor: pointer;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .clear-btn:active {
+            background: #eee;
         }
 
         .search-btn {
             background: #000;
             color: #fff;
-            border: var(--border-width) solid #000;
+            border: none;
+            border-left: var(--border-width) solid #000;
             padding: 0 20px;
             font-weight: bold;
             font-size: 18px;
@@ -83,10 +104,6 @@
             font-size: 16px;
             cursor: pointer;
             color: #000;
-        }
-
-        .result-item:last-child {
-            border-bottom: none;
         }
 
         .result-item:active {
@@ -152,7 +169,8 @@
 
     <div class="search-container">
         <div class="search-bar">
-            <input type="text" id="locationInput" placeholder="Enter location...">
+            <input type="text" id="locationInput" placeholder="Location...">
+            <button class="clear-btn" onclick="clearSearch()" id="clearBtn">×</button>
             <button class="search-btn" onclick="searchLocation()">Go</button>
         </div>
         <div id="resultsList"></div>
@@ -173,7 +191,7 @@
         let map;
 
         function initMap() {
-            // Center near Mohegan Lake / Shrub Oak
+            // Default center: Mohegan Lake, NY
             map = L.map('map', {
                 zoomControl: false,
                 tap: true,
@@ -193,7 +211,6 @@
             updateTime();
             setInterval(updateTime, 60000);
 
-            // Close results if map is tapped
             map.on('mousedown', () => {
                 document.getElementById('resultsList').style.display = 'none';
             });
@@ -204,6 +221,13 @@
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             document.getElementById('clock').textContent = `${hours}:${minutes}`;
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('locationInput');
+            input.value = '';
+            input.focus();
+            document.getElementById('resultsList').style.display = 'none';
         }
 
         async function searchLocation() {
@@ -227,7 +251,6 @@
                     data.forEach(item => {
                         const div = document.createElement('div');
                         div.className = 'result-item';
-                        // Clean up the name for the Kindle's narrow screen
                         div.textContent = item.display_name.split(',').slice(0, 3).join(',');
                         div.onclick = () => {
                             map.setView([item.lat, item.lon], 15);
