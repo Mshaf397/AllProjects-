@@ -1537,6 +1537,29 @@ function buildStateFromUI(){
   return true;
 }
 
+// Add this inside buildStateFromUI or near your AudioContext initialization
+function startKeepAlive() {
+    if (window.keepAliveStarted) return; // Only do this once
+    
+    const silentOsc = audioCtx.createOscillator();
+    const silentGain = audioCtx.createGain();
+    
+    // 0.0001 is low enough to be inaudible but high enough for the browser to see "activity"
+    silentGain.gain.value = 0.0001; 
+    
+    silentOsc.connect(silentGain);
+    silentGain.connect(audioCtx.destination);
+    
+    silentOsc.start();
+    window.keepAliveStarted = true;
+    
+    // Also tell the browser this is an active media session
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'playing';
+    }
+}
+
+
 /**
  * Calculates the scale step and octave for a given key index based on the 2D grid mapping.
  * @param {number} idx - The 0-based linear index of the key (r * cols + c).
@@ -1946,6 +1969,7 @@ darkModeToggle.addEventListener('click', toggleDarkMode);
 // --- EVENT LISTENERS ---
 applyBtn.addEventListener('click', () => { 
     if (audioCtx.state !== 'running') { audioCtx.resume(); } 
+	 startKeepAlive();
     buildStateFromUI(); 
 });
 generateScaleBtn.addEventListener('click', () => {
@@ -1966,6 +1990,14 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         applyTheme(false); 
     }
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+});
+
     
     // 2. Build initial state and render
     buildStateFromUI();
