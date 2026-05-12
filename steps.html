@@ -28,7 +28,7 @@
 <body class="max-w-md mx-auto bg-white min-h-screen">
     <div id="error-popup"></div>
 
-    <div id="app">
+    <div id="app-container">
         <!-- Auth Screen -->
         <div id="auth-screen" class="p-4 py-10 space-y-8">
             <header class="border-b-4 border-black pb-2 text-center">
@@ -152,11 +152,10 @@
     </div>
 
     <script type="module">
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-const auth = getAuth(app);
-signInAnonymously(auth);
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
         const myConfig = {
             apiKey: "AIzaSyC-UIB5l1bo_apccqskT6LAHvliQoc-U-s",
             authDomain: "all-my-projects-3cf20.firebaseapp.com",
@@ -166,8 +165,16 @@ signInAnonymously(auth);
             appId: "1:245058314875:web:1b9fead1655343416838de"
         };
 
+        // 1. Initialize Firebase
         const app = initializeApp(myConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
+
+        // 2. Perform Auth
+        signInAnonymously(auth).catch(err => {
+            console.error("Auth Error:", err);
+            showError("Authentication failed.");
+        });
 
         let currentPasskey = localStorage.getItem('kindle_step_passkey');
         let dailyData = null;
@@ -218,7 +225,6 @@ signInAnonymously(auth);
             unsubscribe = onSnapshot(docRef, (snap) => {
                 if (snap.exists()) {
                     dailyData = snap.data();
-                    // Fix for old records missing new fields
                     if (dailyData.water_total === undefined) initializeNewFields(docRef);
                 } else {
                     dailyData = { 
@@ -247,7 +253,6 @@ signInAnonymously(auth);
                 gym: { cur: dailyData.gym_total || 0, tar: dailyData.gym_target || 60, log: dailyData.gym_logs || [] }
             };
 
-            // Update UI for all modules in background
             ['steps', 'water', 'gym'].forEach(m => {
                 const c = config[m];
                 const countEl = document.getElementById(`${m}-count`);
@@ -262,7 +267,6 @@ signInAnonymously(auth);
                 if (percentEl) percentEl.textContent = `${(ratio * 100).toFixed(3)}%`;
             });
 
-            // Update Target Input & Logs for Active Module
             document.getElementById('target-setter-input').value = config[activeModule].tar;
             const container = document.getElementById('log-container');
             container.innerHTML = '';
@@ -280,7 +284,7 @@ signInAnonymously(auth);
             if (!dailyData) return;
             const today = new Date().toISOString().split('T')[0];
             const docRef = doc(db, 'public_steps', currentPasskey, 'days', today);
-            const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true });
             
             const updates = {};
             if (type === 'steps') {
@@ -297,7 +301,6 @@ signInAnonymously(auth);
             try {
                 await updateDoc(docRef, updates);
             } catch (e) {
-                // Fallback for document creation
                 setDoc(docRef, {...dailyData, ...updates}, {merge: true});
             }
         };
@@ -365,12 +368,16 @@ signInAnonymously(auth);
         };
 
         window.logout = () => { if(confirm("Logout?")) { localStorage.removeItem('kindle_step_passkey'); location.reload(); } };
+        
         document.getElementById('enter-btn').onclick = () => {
             const v = document.getElementById('passkey-input').value;
             if(v.length >= 4) startApp(v);
         };
+
         if (currentPasskey) startApp(currentPasskey);
+
         setInterval(() => {
+            // Updated to 24-hour time as per preference
             document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', hour12:false });
         }, 1000);
     </script>
