@@ -358,6 +358,7 @@
       <option>sawtooth</option>
       <option>square</option>
       <option>bell</option>
+      <option>dark-bell</option>
       <option>organ</option>
       <option>piano</option>
       <option>random1</option>
@@ -488,7 +489,19 @@ const recordingStatus = document.getElementById('recordingStatus');
 // --- TIMBRE DEFINITIONS ---
 const timbres = {
   "bell": [
+    { mult: 0.5, gain: 0.25, a: 0.01, d: 4, s: 0.3, r: 2.5 },
     { mult: 1, gain: 0.5, a: 0.01, d: 2, s: 0.1, r: 2 },
+    { mult: 1.2, gain: 0.45, a: 0.01, d: 2.5, s: 0.1, r: 2 },
+    { mult: 1.5, gain: 0.35, a: 0.01, d: 3, s: 0.3, r: 1.875 },
+    { mult: 2.76, gain: 0.3, a: 0.01, d: 1.5, s: 0.05, r: 1.5 },
+    { mult: 5.4, gain: 0.2, a: 0.01, d: 1, s: 0.02, r: 1 },
+    { mult: 9, gain: 0.1, a: 0.01005, d: 0.5, s: 0.00015, r: 0.5}
+  ],
+  "dark-bell": [
+    { mult: 0.5, gain: 0.25, a: 0.01, d: 4, s: 0.3, r: 2.5 },
+    { mult: 1, gain: 0.5, a: 0.01, d: 2, s: 0.1, r: 2 },
+    { mult: 1.166667, gain: 0.45, a: 0.01, d: 2.5, s: 0.1, r: 2 },
+    { mult: 1.5, gain: 0.35, a: 0.01, d: 3, s: 0.3, r: 1.875 },
     { mult: 2.76, gain: 0.3, a: 0.01, d: 1.5, s: 0.05, r: 1.5 },
     { mult: 5.4, gain: 0.2, a: 0.01, d: 1, s: 0.02, r: 1 },
     { mult: 9, gain: 0.1, a: 0.01005, d: 0.5, s: 0.00015, r: 0.5}
