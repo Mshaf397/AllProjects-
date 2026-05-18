@@ -296,22 +296,11 @@
   <label>Tuning type
     <select id="tuningType">
       <option value="edo">EDO</option>
-      <!-- Non-octave and JI tunings are currently placeholders -->
-      <option value="nonoctave">Nonoctave (xedY)</option>
-      <option value="ji">Just Intonation (prime limit)</option>
     </select>
   </label>
 
   <label id="edoParams">EDO steps (N)
     <input id="edoSteps" type="number" min="2" max="4294967296" value="12" />
-  </label>
-
-  <label id="nonoParams" style="display:none">Nonoctave (format `xedY`, e.g. `13ed3`)
-    <input id="nonoSpec" type="text" placeholder="13ed3" value="13ed3" />
-  </label>
-
-  <label id="jiParams" style="display:none">Prime limit
-    <input id="jiPrime" type="number" min="2" max="97" value="5" />
   </label>
 
   <label>Root note (name)
