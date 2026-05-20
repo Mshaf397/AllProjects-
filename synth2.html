@@ -342,14 +342,26 @@
 
   <label>Waveform
     <select id="wave">
+      <optgroup label="Standard Waveforms">
       <option>sine</option>
       <option>triangle</option>
       <option>sawtooth</option>
       <option>square</option>
+      </optgroup>
+      <optgroup label="Instruments">
       <option>bell</option>
       <option>dark-bell</option>
       <option>organ</option>
       <option>piano</option>
+      <option>xylophone</option>
+      <option>guitar</option>
+      <option>saxophone</option>
+      <option>vocal-ooh</option>
+      <option>marimba</option>
+      <option>vocal-aah</option>
+      <option>glass-harmonica</option>
+      </optgroup>
+      <optgroup label="Random timbres">
       <option>random1</option>
       <option>random2</option>
       <option>random3</option>
@@ -364,8 +376,6 @@
       <option>random12</option>
       <option>random13</option>
       <option>random14</option>
-      <option>xylophone</option>
-      <option>guitar</option>
       <option>random15</option>
       <option>random16</option>
       <option>random17</option>
@@ -387,13 +397,11 @@
       <option>random33</option>
       <option>random34</option>
       <option>random35</option>
-      <option>saxophone</option>
       <option>random36</option>
       <option>random37</option>
       <option>random38</option>
       <option>random39</option>
       <option>random40</option>
-      <option>vocal-ooh</option>
       <option>random41</option>
       <option>random42</option>
       <option>random43</option>
@@ -408,8 +416,7 @@
       <option>random52</option>
       <option>random53</option>
       <option>random54</option>
-      <option>marimba</option>
-      <option>vocal-aah</option>
+      </optgroup>
     </select>
   </label>
   
@@ -971,6 +978,12 @@ const timbres = {
     { mult: 4, gain: 0.5, a: 0.05, d: 0.3, s: 0.7, r: 0.1 },
     { mult: 7, gain: 0.3, a: 0.06, d: 0.3, s: 0.5, r: 0.1 },
     { mult: 8, gain: 0.2, a: 0.06, d: 0.3, s: 0.4, r: 0.1 }
+  ],
+  "glass-harmonica": [
+    { mult: 1, gain: 1.0, a: 0.18, d: 0.4, s: 0.9, r: 0.3 },
+    { mult: 2, gain: 0.08, a: 0.22, d: 0.15, s: 0, r: 0.1 },
+    { mult: 3, gain: 0.03, a: 0.25, d: 0.10, s: 0, r: 0.1 },
+    { mult: 4, gain: 0.01, a: 0.30, d: 0.08, s: 0, r: 0.05 }
   ]
 };
 
