@@ -58,7 +58,7 @@
                     </div>
                     <div class="space-y-1">
                         <label class="text-xs font-bold text-slate-500 uppercase px-1">Score</label>
-                        <input required id="f-score" type="number" min="0" max="10000000000000000000000000000" placeholder="85" class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                        <input required id="f-score" type="number" min="0" max="100" placeholder="85" class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
                     </div>
                     <button type="submit" id="submit-btn" class="md:col-span-2 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50">
                         Submit Rating
@@ -109,15 +109,25 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, onSnapshot, query, doc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, addDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
-        // --- Config & Init ---
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
+        // --- Firebase Configuration (Matching Health Tracker) ---
+        const myConfig = {
+            apiKey: "AIzaSyC-UIB5l1bo_apccqskT6LAHvliQoc-U-s",
+            authDomain: "all-my-projects-3cf20.firebaseapp.com",
+            projectId: "all-my-projects-3cf20",
+            storageBucket: "all-my-projects-3cf20.firebasestorage.app",
+            messagingSenderId: "245058314875",
+            appId: "1:245058314875:web:1b9fead1655343416838de"
+        };
+
+        const app = initializeApp(myConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'phone-db-html';
+        
+        // Target specific application ID namespace
+        const appId = "phone-db-html";
 
         let currentUser = null;
         let allPhones = [];
@@ -131,16 +141,13 @@
         const phoneForm = document.getElementById('phone-form');
         const userIdDisplay = document.getElementById('user-id-display');
 
-        // --- Auth Workflow (RULE 3) ---
+        // --- Auth Workflow ---
         async function initAuth() {
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                await signInAnonymously(auth);
             } catch (err) {
                 console.error("Auth Failed", err);
+                userIdDisplay.textContent = "Auth Error";
             }
         }
 
@@ -152,18 +159,20 @@
             }
         });
 
-        // --- Data Listener (RULE 1 & 2) ---
+        // --- Data Listener ---
         function setupDataListener() {
             if (!currentUser) return;
             
+            // Re-using the standard path structure for public items
             const phonesCol = collection(db, 'artifacts', appId, 'public', 'data', 'phones');
             
-            // Real-time snapshot (No complex queries - RULE 2)
             onSnapshot(phonesCol, (snapshot) => {
                 allPhones = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderBrands();
                 if (currentBrand) renderBrandDetails(currentBrand);
-            }, (err) => console.error("Firestore Error:", err));
+            }, (err) => {
+                console.error("Firestore Error:", err);
+            });
         }
 
         // --- Rendering Logic ---
@@ -268,4 +277,3 @@
     </script>
 </body>
 </html>
-
