@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atmosphere DB - Weather Telemetry Tracker</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              750: '#1e293b',
+              850: '#0f172a',
+              950: '#020617',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons (using development version or fallback custom SVG icons for speed & robustness) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    /* Custom Scrollbar for premium aesthetics */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #020617;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-teal-500 selection:text-slate-900">
+
+  <!-- HEADER NAVBAR -->
+  <header class="border-b border-slate-850 bg-slate-900/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-gradient-to-tr from-cyan-400 to-teal-500 p-2 rounded-xl text-slate-950 shadow-lg shadow-teal-500/20">
+          <i class="fa-solid fa-cloud-sun text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Atmosphere DB
+          </h1>
+          <p class="text-[10px] text-slate-400 font-medium hidden sm:block uppercase tracking-wider">Meteorological Telemetry & Analytics</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Units Selection -->
+        <div class="bg-slate-800 p-1 rounded-lg flex items-center gap-1 border border-slate-700">
+          <button id="unitCBtn" onclick="setUnit('°C')" class="px-2.5 py-1 text-xs font-semibold rounded-md transition bg-cyan-500 text-slate-950 shadow">
+            °C
+          </button>
+          <button id="unitFBtn" onclick="setUnit('°F')" class="px-2.5 py-1 text-xs font-semibold rounded-md transition text-slate-300 hover:text-white">
+            °F
+          </button>
+        </div>
+
+        <!-- Auth Indicator badge -->
+        <div id="authBadge" class="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 px-3 py-1.5 rounded-full text-xs text-yellow-400">
+          <span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
+          <span id="authText">Connecting...</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- NOTIFICATIONS WRAPPER -->
+  <div id="notificationContainer" class="fixed bottom-6 right-6 z-50 max-w-sm w-full space-y-2 pointer-events-none"></div>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
+    
+    <!-- LEFT COLUMN: LOGGER FORM -->
+    <section class="lg:col-span-7 flex flex-col gap-6">
+      <div class="bg-slate-900 border border-slate-850 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800">
+          <div>
+            <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+              <i class="fa-solid fa-cloud-sun text-cyan-400"></i>
+              Record Climatology Log
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">Submit high-precision statistical atmospheric telemetry entries.</p>
+          </div>
+
+          <button
+            type="button"
+            onclick="openCalcModal()"
+            class="inline-flex items-center gap-2 text-xs font-semibold text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 px-3 py-2 rounded-xl transition"
+          >
+            <i class="fa-solid fa-calculator"></i>
+            Paste Daily Data & Auto-calc
+          </button>
+        </div>
+
+        <form id="weatherForm" onsubmit="handleFormSubmit(event)" class="space-y-6">
+          
+          <!-- SECTION 1: Identification & Period -->
+          <div class="space-y-4">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-map-pin text-[11px]"></i>
+              1. Location & Interval Info
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Location Name *</label>
+                <input
+                  type="text"
+                  id="formLocation"
+                  required
+                  placeholder="e.g. Westchester, NY"
+                  class="w-full bg-slate-950/75 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Start Date *</label>
+                <input
+                  type="date"
+                  id="formStartDate"
+                  required
+                  class="w-full bg-slate-950/75 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">End Date *</label>
+                <input
+                  type="date"
+                  id="formEndDate"
+                  required
+                  class="w-full bg-slate-950/75 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 2: High Temperature Parameters -->
+          <div class="space-y-4 pt-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-arrow-trend-up text-[11px] rotate-45"></i>
+              2. Required Temperature Extremes (Highs)
+            </h3>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Highest High (<span class="unit-label">°C</span>) *</label>
+                <input
+                  type="number"
+                  step="any"
+                  id="formHighestHigh"
+                  required
+                  placeholder="High Max"
+                  class="w-full bg-slate-950/75 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Highest RealFeel High (<span class="unit-label">°C</span>) *</label>
+                <input
+                  type="number"
+                  step="any"
+                  id="formHighestRealFeelHigh"
+                  required
+                  placeholder="RealFeel Max"
+                  class="w-full bg-slate-950/75 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Lowest High (<span class="unit-label">°C</span>) *</label>
+                <input
+                  type="number"
+                  step="any"
+                  id="formLowestHigh"
+                  required
+                  placeholder="High Min"
+                  class="w-full bg-slate-950/75 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Lowest RealFeel High (<span class="unit-label">°C</span>) *</label>
+                <input
+                  type="number"
+                  step="any"
+                  id="formLowestRealFeelHigh"
+                  required
+                  placeholder="RealFeel Min"
+                  class="w-full bg-slate-950/75 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 3: Low Temperature Parameters -->
+          <div class="space-y-4 pt-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-arrow-trend-up text-[11px] -rotate-45"></i>
+              3. Required Temperature Extremes (Lows)
+            </h3>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Highest Low (<span class="unit-label">°C</span>) *</label>
+                <input
+                  type="number"
+                  step="any"
+                  id="formHighestLow"
+                  required
+                  placeholder="Low Max"
+                  class="w-full bg-slate-950/75 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Highest RealFeel Low (<span class="unit-label">°C</span>) *</label>
+                <input
+                  type="number"
+                  step="any"
+                  id="formHighestRealFeelLow"
+                  required
+                  placeholder="RealFeel Max"
+                  class="w-full bg-slate-950/75 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Lowest Low (<span class="unit-label">°C</span>) *</label>
+                <input
+                  type="number"
+                  step="any"
+                  id="formLowestLow"
+                  required
+                  placeholder="Low Min"
+                  class="w-full bg-slate-950/75 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                />
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Lowest RealFeel Low (<span class="unit-label">°C</span>) *</label>
+                <input
+                  type="number"
+                  step="any"
+                  id="formLowestRealFeelLow"
+                  required
+                  placeholder="RealFeel Min"
+                  class="w-full bg-slate-950/75 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 4: Optional Statistical Telemetry -->
+          <div class="space-y-4 pt-4 border-t border-slate-800">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+                4. Optional Statistical Telemetry
+              </h3>
+              <span class="text-[10px] text-slate-500 bg-slate-850 px-2 py-0.5 rounded">Optional Fields</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+              
+              <!-- High Statistics -->
+              <div class="space-y-3 bg-slate-950/40 p-4 rounded-xl border border-slate-800/60">
+                <h4 class="text-[11px] font-bold text-rose-400/90 uppercase tracking-wide">High Temperature Statistics</h4>
+                
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[11px] font-medium text-slate-400 mb-1">Average High (<span class="unit-label">°C</span>)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      id="formAverageHigh"
+                      placeholder="Mean High"
+                      class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-medium text-slate-400 mb-1">MAD of Highs</label>
+                    <input
+                      type="number"
+                      step="any"
+                      id="formMadHigh"
+                      placeholder="Mean Abs Dev"
+                      class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-medium text-slate-400 mb-1">Variance of Highs</label>
+                    <input
+                      type="number"
+                      step="any"
+                      id="formVarianceHigh"
+                      placeholder="High Var"
+                      class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-medium text-slate-400 mb-1">Std Dev of Highs</label>
+                    <input
+                      type="number"
+                      step="any"
+                      id="formStdDevHigh"
+                      placeholder="High &sigma;"
+                      class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 transition"
+                    />
+                  </div>
+                </div>
+                <div class="pt-1">
+                  <label class="block text-[11px] font-medium text-slate-400 mb-1">Avg Departure (Highs from Hist Avg)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    id="formDepartureHigh"
+                    placeholder="e.g. +2.4 or -1.2"
+                    class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 transition"
+                  />
+                </div>
+              </div>
+
+              <!-- Low Statistics -->
+              <div class="space-y-3 bg-slate-950/40 p-4 rounded-xl border border-slate-800/60">
+                <h4 class="text-[11px] font-bold text-indigo-400/90 uppercase tracking-wide">Low Temperature Statistics</h4>
+                
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[11px] font-medium text-slate-400 mb-1">Average Low (<span class="unit-label">°C</span>)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      id="formAverageLow"
+                      placeholder="Mean Low"
+                      class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-medium text-slate-400 mb-1">MAD of Lows</label>
+                    <input
+                      type="number"
+                      step="any"
+                      id="formMadLow"
+                      placeholder="Mean Abs Dev"
+                      class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-medium text-slate-400 mb-1">Variance of Lows</label>
+                    <input
+                      type="number"
+                      step="any"
+                      id="formVarianceLow"
+                      placeholder="Low Var"
+                      class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-medium text-slate-400 mb-1">Std Dev of Lows</label>
+                    <input
+                      type="number"
+                      step="any"
+                      id="formStdDevLow"
+                      placeholder="Low &sigma;"
+                      class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 transition"
+                    />
+                  </div>
+                </div>
+                <div class="pt-1">
+                  <label class="block text-[11px] font-medium text-slate-400 mb-1">Avg Departure (Lows from Hist Avg)</label>
+                  <input
+                    type="number"
+                    step="any"
+                    id="formDepartureLow"
+                    placeholder="e.g. +0.5 or -3.1"
+                    class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 transition"
+                  />
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SAVE DATA ACTION BUTTON -->
+          <div class="pt-4">
+            <button
+              type="submit"
+              class="w-full bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-semibold py-3 px-4 rounded-xl shadow-lg shadow-teal-500/20 active:scale-[0.99] transition duration-150 flex items-center justify-center gap-2 text-sm"
+            >
+              <i class="fa-solid fa-plus font-bold"></i>
+              Commit & Save Weather Log Record
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: DATABASE LOG VIEWER -->
+    <section class="lg:col-span-5 flex flex-col gap-6">
+      <div class="bg-slate-900 border border-slate-850 rounded-2xl p-6 shadow-xl flex flex-col min-h-[500px]">
+        
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+          <div>
+            <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+              <i class="fa-solid fa-database text-teal-400"></i>
+              Your Weather Database
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">Real-time synchronized history of all entries.</p>
+          </div>
+          <span id="logCountBadge" class="text-xs font-semibold bg-slate-850 text-slate-300 px-2.5 py-1 rounded-full border border-slate-700">
+            0 Entries
+          </span>
+        </div>
+
+        <!-- LOGS CONTROLLER GRID -->
+        <div id="logsList" class="space-y-6 overflow-y-auto max-h-[75vh] pr-2 custom-scrollbar flex-1">
+          <!-- EMPTY LOGS STATE DEFAULT -->
+          <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-center p-6 bg-slate-950/45 rounded-xl border border-dashed border-slate-800">
+            <i class="fa-solid fa-cloud-sun text-4xl text-slate-700 mb-4 animate-pulse"></i>
+            <h3 class="text-sm font-semibold text-slate-300">No logs found</h3>
+            <p class="text-xs text-slate-500 mt-1.5 max-w-xs leading-relaxed">
+              Authenticate and input meteorological criteria on the left to initialize database telemetry streams.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-850 bg-slate-950 py-6 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+      <p>© 2026 Atmosphere DB. Under anonymous session telemetry.</p>
+      <div class="flex gap-4">
+        <span class="hover:text-slate-300 cursor-pointer">Security Protocol</span>
+        <span class="hover:text-slate-300 cursor-pointer">Calculus Explanatory</span>
+        <span class="hover:text-slate-300 cursor-pointer">Ideal Range Check</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL: DELETE CONFIRMATION -->
+  <div id="deleteModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl transition duration-150">
+      <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+        <i class="fa-solid fa-trash-can text-rose-500"></i>
+        Confirm Deletion
+      </h3>
+      <p class="text-xs text-slate-400 mt-2.5 leading-relaxed">
+        Are you sure you want to delete this weather record permanently? This action cannot be reversed.
+      </p>
+      <div class="mt-5 flex gap-3 justify-end">
+        <button
+          type="button"
+          onclick="closeDeleteModal()"
+          class="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg text-xs font-semibold transition"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="confirmDeleteBtn"
+          class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold transition"
+        >
+          Delete Record
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: QUICK STATISTICAL CALCULATOR -->
+  <div id="calcModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+        <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-calculator text-cyan-400"></i>
+          Paste Daily Temperature Points
+        </h3>
+        <button 
+          onclick="closeCalcModal()"
+          class="p-1 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <p class="text-xs text-slate-400 leading-relaxed mb-4">
+        Enter all your temperature points for this date range (separated by commas, spaces, or lines). 
+        The application will automatically calculate the minimum, maximum, mean, MAD, variance, and standard deviation.
+      </p>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">Apply Calculation To:</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              id="calcTypeHighBtn"
+              onclick="setCalcType('highs')"
+              class="py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-rose-500/20 text-rose-300 border border-rose-500/40"
+            >
+              <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+              High Temperature List
+            </button>
+            <button
+              type="button"
+              id="calcTypeLowBtn"
+              onclick="setCalcType('lows')"
+              class="py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-slate-950 border border-slate-800 text-slate-400 hover:text-white"
+            >
+              <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+              Low Temperature List
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1.5">Your Dataset (Numbers Only)</label>
+          <textarea
+            id="calcInputText"
+            rows="4"
+            placeholder="e.g. 28.5, 30.1, 31.0, 32.2, 33.4, 32.0, 31.5"
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition font-mono"
+          ></textarea>
+        </div>
+
+        <div class="flex gap-3 justify-end pt-2">
+          <button
+            type="button"
+            onclick="closeCalcModal()"
+            class="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg text-xs font-semibold transition"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onclick="runQuickStatistics()"
+            class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 hover:from-cyan-400 hover:to-teal-400 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+          >
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            Compute & Auto-fill
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Modular Scripts using ES modules imports -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { 
+      getAuth, 
+      signInWithCustomToken, 
+      signInAnonymously, 
+      onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      addDoc, 
+      deleteDoc, 
+      onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Global App Configuration
+    window.currentUnit = '°C';
+    window.currentCalcType = 'highs';
+    let currentUser = null;
+    let logToDeleteId = null;
+
+    // Retrieve global configurations injected by environment
+    const firebaseConfig = {
+					apiKey: "AIzaSyC-UIB5l1bo_apccqskT6LAHvliQoc-U-s",
+            authDomain: "all-my-projects-3cf20.firebaseapp.com",
+            projectId: "all-my-projects-3cf20",
+            storageBucket: "all-my-projects-3cf20.firebasestorage.app",
+            messagingSenderId: "245058314875",
+            appId: "1:245058314875:web:1b9fead1655343416838de"};
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Initial Authentication Routine (Follows Rule 3)
+    async function initAuth() {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        console.error("Authentication setup failed: ", error);
+        showNotification('Failed to authenticate anonymously with Firebase.', 'error');
+      }
+    }
+
+    // Monitor Auth State
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      const authBadge = document.getElementById('authBadge');
+      const authText = document.getElementById('authText');
+
+      if (user) {
+        authBadge.className = "flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-full text-xs text-emerald-400";
+        authText.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-1 inline-block"></span>Connected <span class="font-mono text-[9px] text-slate-500">(${user.uid.slice(0, 6)}...)</span>`;
+        
+        // Start listing entries
+        subscribeToWeatherLogs(user.uid);
+      } else {
+        authBadge.className = "flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 px-3 py-1.5 rounded-full text-xs text-yellow-400";
+        authText.innerText = "Connecting...";
+      }
+    });
+
+    // Run Auth Initializer
+    initAuth();
+
+    // Notification builder
+    window.showNotification = function(message, type = 'success') {
+      const container = document.getElementById('notificationContainer');
+      const notification = document.createElement('div');
+      notification.className = `p-4 rounded-xl shadow-2xl flex items-start gap-3 border transition duration-300 ease-in-out transform translate-y-2 max-w-sm w-full pointer-events-auto ${
+        type === 'success' 
+          ? 'bg-emerald-950/95 text-emerald-300 border-emerald-500/40' 
+          : 'bg-rose-950/95 text-rose-300 border-rose-500/40'
+      }`;
+      
+      const icon = type === 'success' 
+        ? '<i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i>' 
+        : '<i class="fa-solid fa-triangle-exclamation text-rose-400 mt-0.5"></i>';
+
+      notification.innerHTML = `
+        ${icon}
+        <div class="flex-1 text-xs font-semibold">${message}</div>
+      `;
+
+      container.appendChild(notification);
+      setTimeout(() => {
+        notification.classList.add('opacity-0', 'translate-y-0');
+        setTimeout(() => notification.remove(), 300);
+      }, 4000);
+    };
+
+    // Form Submission Handling
+    window.handleFormSubmit = async function(event) {
+      event.preventDefault();
+      if (!currentUser) {
+        showNotification('You are currently disconnected from Firebase.', 'error');
+        return;
+      }
+
+      const locationVal = document.getElementById('formLocation').value;
+      const startDateVal = document.getElementById('formStartDate').value;
+      const endDateVal = document.getElementById('formEndDate').value;
+
+      // Numeric Values
+      const highestHigh = Number(document.getElementById('formHighestHigh').value);
+      const highestRealFeelHigh = Number(document.getElementById('formHighestRealFeelHigh').value);
+      const lowestHigh = Number(document.getElementById('formLowestHigh').value);
+      const lowestRealFeelHigh = Number(document.getElementById('formLowestRealFeelHigh').value);
+      const highestLow = Number(document.getElementById('formHighestLow').value);
+      const highestRealFeelLow = Number(document.getElementById('formHighestRealFeelLow').value);
+      const lowestLow = Number(document.getElementById('formLowestLow').value);
+      const lowestRealFeelLow = Number(document.getElementById('formLowestRealFeelLow').value);
+
+      // Optional Numeric fields helper
+      const getOptionalVal = (id) => {
+        const val = document.getElementById(id).value;
+        return val === '' ? null : Number(val);
+      };
+
+      try {
+        const payload = {
+          location: locationVal,
+          dateRange: `${startDateVal} to ${endDateVal}`,
+          startDate: startDateVal,
+          endDate: endDateVal,
+          highestHigh,
+          highestRealFeelHigh,
+          lowestHigh,
+          lowestRealFeelHigh,
+          highestLow,
+          highestRealFeelLow,
+          lowestLow,
+          lowestRealFeelLow,
+          averageHigh: getOptionalVal('formAverageHigh'),
+          averageLow: getOptionalVal('formAverageLow'),
+          madHigh: getOptionalVal('formMadHigh'),
+          madLow: getOptionalVal('formMadLow'),
+          varianceHigh: getOptionalVal('formVarianceHigh'),
+          varianceLow: getOptionalVal('formVarianceLow'),
+          stdDevHigh: getOptionalVal('formStdDevHigh'),
+          stdDevLow: getOptionalVal('formStdDevLow'),
+          departureHigh: getOptionalVal('formDepartureHigh'),
+          departureLow: getOptionalVal('formDepartureLow'),
+          unit: window.currentUnit,
+          createdAt: new Date().toISOString()
+        };
+
+        const logsColRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'weatherLogs');
+        await addDoc(logsColRef, payload);
+
+        showNotification('Weather record successfully saved to database!');
+        
+        // Clear all fields except location to expedite rapid sequential logging
+        const preserveLocation = locationVal;
+        document.getElementById('weatherForm').reset();
+        document.getElementById('formLocation').value = preserveLocation;
+        updateUnitLabels();
+
+      } catch (error) {
+        console.error("Error saving document: ", error);
+        showNotification('Cloud saving failed. Please check internet telemetry.', 'error');
+      }
+    };
+
+    // Subscriptions to Weather Logs
+    function subscribeToWeatherLogs(userId) {
+      const logsColRef = collection(db, 'artifacts', appId, 'users', userId, 'weatherLogs');
+      
+      onSnapshot(logsColRef, (snapshot) => {
+        const rawLogs = [];
+        snapshot.forEach((doc) => {
+          rawLogs.push({ id: doc.id, ...doc.data() });
+        });
+
+        // In-memory sorting (Rule 2: No compound queries)
+        rawLogs.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        renderLogs(rawLogs);
+      }, (error) => {
+        console.error("Firestore listening error: ", error);
+        showNotification('Database live update connection failed.', 'error');
+      });
+    }
+
+    // Render Function
+    function renderLogs(logs) {
+      const logsList = document.getElementById('logsList');
+      const badge = document.getElementById('logCountBadge');
+      badge.innerText = `${logs.length} ${logs.length === 1 ? 'Entry' : 'Entries'}`;
+
+      if (logs.length === 0) {
+        logsList.innerHTML = `
+          <div id="emptyState" class="flex flex-col items-center justify-center text-center p-6 bg-slate-950/45 rounded-xl border border-dashed border-slate-800">
+            <i class="fa-solid fa-cloud-sun text-4xl text-slate-700 mb-4 animate-pulse"></i>
+            <h3 class="text-sm font-semibold text-slate-300">No logs found</h3>
+            <p class="text-xs text-slate-500 mt-1.5 max-w-xs leading-relaxed">
+              Authenticate and input meteorological criteria on the left to initialize database telemetry streams.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      let htmlContent = '';
+      logs.forEach(log => {
+        // Highlighting logic around 32°C (89.6°F) - ideal user temperature
+        const isIdealTemp = 
+          (log.unit === '°C' && Math.abs(log.highestHigh - 32) <= 3) ||
+          (log.unit === '°F' && Math.abs(log.highestHigh - 89.6) <= 5.4);
+
+        const hasOptional = 
+          log.averageHigh !== null || log.averageLow !== null ||
+          log.madHigh !== null || log.madLow !== null ||
+          log.varianceHigh !== null || log.varianceLow !== null ||
+          log.stdDevHigh !== null || log.stdDevLow !== null ||
+          log.departureHigh !== null || log.departureLow !== null;
+
+        htmlContent += `
+          <div class="relative bg-slate-950/80 rounded-xl p-4 border transition duration-200 ${
+            isIdealTemp 
+              ? 'border-teal-500/50 shadow-[0_0_15px_rgba(20,184,166,0.1)]' 
+              : 'border-slate-800 hover:border-slate-750'
+          }">
+            
+            ${isIdealTemp ? `
+              <div class="absolute -top-2.5 right-12 bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-full shadow flex items-center gap-1">
+                <i class="fa-solid fa-wand-magic-sparkles text-[8px]"></i> Ideal Temp (32°C Target)
+              </div>
+            ` : ''}
+
+            <!-- Header block containing Location and Date range on top -->
+            <div class="flex items-start justify-between gap-4 mb-3">
+              <div>
+                <h4 class="text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                  ${escapeHtml(log.location)}
+                </h4>
+                <span class="text-[11px] text-slate-400 inline-flex items-center gap-1 mt-0.5 font-medium">
+                  <i class="fa-regular fa-calendar text-[10px]"></i>
+                  ${escapeHtml(log.dateRange)}
+                </span>
+              </div>
+              <button
+                onclick="triggerDelete('${log.id}')"
+                class="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition"
+                title="Delete Entry"
+              >
+                <i class="fa-solid fa-trash-can text-xs"></i>
+              </button>
+            </div>
+
+            <!-- First Table: High Temperatures Extremes -->
+            <div class="mb-3">
+              <div class="text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-1">
+                High Temperatures
+              </div>
+              <table class="w-full text-[11px] border border-slate-800 rounded-md overflow-hidden">
+                <tbody>
+                  <tr class="border-b border-slate-800/60 bg-slate-900/30">
+                    <td class="p-1.5 border-r border-slate-800 text-slate-400 w-1/2">
+                      <span class="block text-[9px] text-slate-500 font-medium">Highest High</span>
+                      <span class="font-semibold text-slate-200">${log.highestHigh}${log.unit || '°C'}</span>
+                    </td>
+                    <td class="p-1.5 text-slate-400 w-1/2">
+                      <span class="block text-[9px] text-slate-500 font-medium">Highest RealFeel High</span>
+                      <span class="font-semibold text-slate-200">${log.highestRealFeelHigh}${log.unit || '°C'}</span>
+                    </td>
+                  </tr>
+                  <tr class="bg-slate-900/10">
+                    <td class="p-1.5 border-r border-slate-800 text-slate-400">
+                      <span class="block text-[9px] text-slate-500 font-medium">Lowest High</span>
+                      <span class="font-semibold text-slate-200">${log.lowestHigh}${log.unit || '°C'}</span>
+                    </td>
+                    <td class="p-1.5 text-slate-400">
+                      <span class="block text-[9px] text-slate-500 font-medium">Lowest RealFeel High</span>
+                      <span class="font-semibold text-slate-200">${log.lowestRealFeelHigh}${log.unit || '°C'}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Second Table: Low Temperatures Extremes -->
+            <div class="mb-3">
+              <div class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">
+                Low Temperatures
+              </div>
+              <table class="w-full text-[11px] border border-slate-800 rounded-md overflow-hidden">
+                <tbody>
+                  <tr class="border-b border-slate-800/60 bg-slate-900/30">
+                    <td class="p-1.5 border-r border-slate-800 text-slate-400 w-1/2">
+                      <span class="block text-[9px] text-slate-500 font-medium">Highest Low</span>
+                      <span class="font-semibold text-slate-200">${log.highestLow}${log.unit || '°C'}</span>
+                    </td>
+                    <td class="p-1.5 text-slate-400 w-1/2">
+                      <span class="block text-[9px] text-slate-500 font-medium">Highest RealFeel Low</span>
+                      <span class="font-semibold text-slate-200">${log.highestRealFeelLow}${log.unit || '°C'}</span>
+                    </td>
+                  </tr>
+                  <tr class="bg-slate-900/10">
+                    <td class="p-1.5 border-r border-slate-800 text-slate-400">
+                      <span class="block text-[9px] text-slate-500 font-medium">Lowest Low</span>
+                      <span class="font-semibold text-slate-200">${log.lowestLow}${log.unit || '°C'}</span>
+                    </td>
+                    <td class="p-1.5 text-slate-400">
+                      <span class="block text-[9px] text-slate-500 font-medium">Lowest RealFeel Low</span>
+                      <span class="font-semibold text-slate-200">${log.lowestRealFeelLow}${log.unit || '°C'}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Third Table: Optional Analytical Statistics -->
+            ${hasOptional ? `
+              <div>
+                <div class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-1">
+                  Statistical Analysis & Departures
+                </div>
+                <table class="w-full text-[11px] border border-slate-800 rounded-md overflow-hidden table-fixed">
+                  <tbody>
+                    <tr class="border-b border-slate-800/60 bg-slate-900/20">
+                      <td class="p-1.5 border-r border-slate-800 text-slate-400">
+                        <span class="block text-[9px] text-slate-500 font-medium">Average High</span>
+                        <span class="font-semibold text-emerald-300">
+                          ${log.averageHigh !== null ? `${log.averageHigh}${log.unit || '°C'}` : 'N/A'}
+                        </span>
+                      </td>
+                      <td class="p-1.5 text-slate-400">
+                        <span class="block text-[9px] text-slate-500 font-medium">Average Low</span>
+                        <span class="font-semibold text-emerald-300">
+                          ${log.averageLow !== null ? `${log.averageLow}${log.unit || '°C'}` : 'N/A'}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr class="border-b border-slate-800/60 bg-slate-900/10">
+                      <td class="p-1.5 border-r border-slate-800 text-slate-400">
+                        <span class="block text-[9px] text-slate-500 font-medium">MAD of Highs</span>
+                        <span class="font-semibold text-emerald-300">
+                          ${log.madHigh !== null ? log.madHigh : 'N/A'}
+                        </span>
+                      </td>
+                      <td class="p-1.5 text-slate-400">
+                        <span class="block text-[9px] text-slate-500 font-medium">MAD of Lows</span>
+                        <span class="font-semibold text-emerald-300">
+                          ${log.madLow !== null ? log.madLow : 'N/A'}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr class="border-b border-slate-800/60 bg-slate-900/20">
+                      <td class="p-1.5 border-r border-slate-800 text-slate-400">
+                        <span class="block text-[9px] text-slate-500 font-medium">Variance of Highs</span>
+                        <span class="font-semibold text-emerald-300">
+                          ${log.varianceHigh !== null ? log.varianceHigh : 'N/A'}
+                        </span>
+                      </td>
+                      <td class="p-1.5 text-slate-400">
+                        <span class="block text-[9px] text-slate-500 font-medium">Variance of Lows</span>
+                        <span class="font-semibold text-emerald-300">
+                          ${log.varianceLow !== null ? log.varianceLow : 'N/A'}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr class="border-b border-slate-800/60 bg-slate-900/10">
+                      <td class="p-1.5 border-r border-slate-800 text-slate-400">
+                        <span class="block text-[9px] text-slate-500 font-medium">Std Dev of Highs</span>
+                        <span class="font-semibold text-emerald-300">
+                          ${log.stdDevHigh !== null ? log.stdDevHigh : 'N/A'}
+                        </span>
+                      </td>
+                      <td class="p-1.5 text-slate-400">
+                        <span class="block text-[9px] text-slate-500 font-medium">Std Dev of Lows</span>
+                        <span class="font-semibold text-emerald-300">
+                          ${log.stdDevLow !== null ? log.stdDevLow : 'N/A'}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr class="bg-slate-900/20">
+                      <td class="p-1.5 border-r border-slate-800 text-slate-400">
+                        <span class="block text-[9px] text-slate-500 font-medium">Avg Departure Highs</span>
+                        <span class="font-semibold ${log.departureHigh > 0 ? 'text-amber-400' : log.departureHigh < 0 ? 'text-cyan-400' : 'text-slate-300'}">
+                          ${log.departureHigh !== null ? (log.departureHigh > 0 ? `+${log.departureHigh}` : log.departureHigh) : 'N/A'}
+                        </span>
+                      </td>
+                      <td class="p-1.5 text-slate-400">
+                        <span class="block text-[9px] text-slate-500 font-medium">Avg Departure Lows</span>
+                        <span class="font-semibold ${log.departureLow > 0 ? 'text-amber-400' : log.departureLow < 0 ? 'text-cyan-400' : 'text-slate-300'}">
+                          ${log.departureLow !== null ? (log.departureLow > 0 ? `+${log.departureLow}` : log.departureLow) : 'N/A'}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+      logsList.innerHTML = htmlContent;
+    }
+
+    // Trigger Delete
+    window.triggerDelete = function(id) {
+      logToDeleteId = id;
+      const modal = document.getElementById('deleteModal');
+      modal.classList.remove('hidden');
+    };
+
+    window.closeDeleteModal = function() {
+      const modal = document.getElementById('deleteModal');
+      modal.classList.add('hidden');
+      logToDeleteId = null;
+    };
+
+    // Actual Delete Trigger Action
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+      if (!currentUser || !logToDeleteId) return;
+      try {
+        const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'weatherLogs', logToDeleteId);
+        await deleteDoc(docRef);
+        showNotification('Weather log deleted successfully.');
+        closeDeleteModal();
+      } catch (error) {
+        console.error("Error deleting entry: ", error);
+        showNotification('Database deletion request aborted.', 'error');
+      }
+    });
+
+    // Helper: Escaping HTML values
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return '';
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+  </script>
+
+  <!-- Global Interaction Logic -->
+  <script>
+    // Temperature Unit toggle switch
+    function setUnit(u) {
+      window.currentUnit = u;
+      const cBtn = document.getElementById('unitCBtn');
+      const fBtn = document.getElementById('unitFBtn');
+
+      if (u === '°C') {
+        cBtn.className = "px-2.5 py-1 text-xs font-semibold rounded-md transition bg-cyan-500 text-slate-950 shadow";
+        fBtn.className = "px-2.5 py-1 text-xs font-semibold rounded-md transition text-slate-300 hover:text-white";
+      } else {
+        fBtn.className = "px-2.5 py-1 text-xs font-semibold rounded-md transition bg-cyan-500 text-slate-950 shadow";
+        cBtn.className = "px-2.5 py-1 text-xs font-semibold rounded-md transition text-slate-300 hover:text-white";
+      }
+      updateUnitLabels();
+    }
+
+    function updateUnitLabels() {
+      const labels = document.querySelectorAll('.unit-label');
+      labels.forEach(lbl => {
+        lbl.innerText = window.currentUnit;
+      });
+    }
+
+    // Statistics Calculator Logic
+    function openCalcModal() {
+      document.getElementById('calcModal').classList.remove('hidden');
+    }
+
+    function closeCalcModal() {
+      document.getElementById('calcModal').classList.add('hidden');
+      document.getElementById('calcInputText').value = '';
+    }
+
+    function setCalcType(type) {
+      window.currentCalcType = type;
+      const highBtn = document.getElementById('calcTypeHighBtn');
+      const lowBtn = document.getElementById('calcTypeLowBtn');
+
+      if (type === 'highs') {
+        highBtn.className = "py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-rose-500/20 text-rose-300 border border-rose-500/40";
+        lowBtn.className = "py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-slate-950 border border-slate-800 text-slate-400 hover:text-white";
+      } else {
+        lowBtn.className = "py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/40";
+        highBtn.className = "py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-slate-950 border border-slate-800 text-slate-400 hover:text-white";
+      }
+    }
+
+    // Calculations engine
+    function runQuickStatistics() {
+      const rawText = document.getElementById('calcInputText').value;
+      const numbers = rawText
+        .replace(/[^0-9.-]+/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .map(Number)
+        .filter(n => !isNaN(n));
+
+      if (numbers.length === 0) {
+        showNotification('Please enter a valid list of daily values!', 'error');
+        return;
+      }
+
+      const n = numbers.length;
+      const sum = numbers.reduce((a, b) => a + b, 0);
+      const mean = sum / n;
+
+      // Min & Max
+      const sorted = [...numbers].sort((a, b) => a - b);
+      const min = sorted[0];
+      const max = sorted[n - 1];
+
+      // MAD
+      const mad = numbers.reduce((acc, curr) => acc + Math.abs(curr - mean), 0) / n;
+
+      // Variance
+      const variance = numbers.reduce((acc, curr) => acc + Math.pow(curr - mean, 2), 0) / n;
+
+      // Standard deviation
+      const stdDev = Math.sqrt(variance);
+
+      if (window.currentCalcType === 'highs') {
+        document.getElementById('formHighestHigh').value = max;
+        document.getElementById('formLowestHigh').value = min;
+        document.getElementById('formAverageHigh').value = mean.toFixed(2);
+        document.getElementById('formMadHigh').value = mad.toFixed(2);
+        document.getElementById('formVarianceHigh').value = variance.toFixed(2);
+        document.getElementById('formStdDevHigh').value = stdDev.toFixed(2);
+      } else {
+        document.getElementById('formHighestLow').value = max;
+        document.getElementById('formLowestLow').value = min;
+        document.getElementById('formAverageLow').value = mean.toFixed(2);
+        document.getElementById('formMadLow').value = mad.toFixed(2);
+        document.getElementById('formVarianceLow').value = variance.toFixed(2);
+        document.getElementById('formStdDevLow').value = stdDev.toFixed(2);
+      }
+
+      closeCalcModal();
+      showNotification(`Successfully auto-calculated stats using ${n} entries for ${window.currentCalcType === 'highs' ? 'Highs' : 'Lows'}.`);
+    }
+  </script>
+</body>
+</html>
