@@ -1,0 +1,2197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xenharmonic Wiki & Scale Playroom</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Firebase Compat CDN Libraries (Allows running over file:// protocol without ES Module CORS issues) -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+  <style>
+    /* Custom scrollbar and minor cleanups for a premium dark mode layout */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #020617;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+
+    /* Visual Editor Styling Rules to Match Wikipedia's clean flow */
+    .visual-editor-content:focus {
+      outline: none;
+    }
+    .visual-editor-content h1 {
+      font-size: 1.875rem; /* text-3xl */
+      font-weight: 800;
+      color: #f1f5f9;
+      margin-top: 1.5rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 0.5rem;
+    }
+    .visual-editor-content h2 {
+      font-size: 1.5rem; /* text-2xl */
+      font-weight: 700;
+      color: #a78bfa; /* text-violet-400 */
+      margin-top: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .visual-editor-content h3 {
+      font-size: 1.25rem; /* text-xl */
+      font-weight: 600;
+      color: #2dd4bf; /* text-teal-400 */
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .visual-editor-content p {
+      margin-bottom: 1rem;
+      line-height: 1.625;
+      color: #cbd5e1;
+    }
+    .visual-editor-content ul {
+      list-style-type: disc;
+      margin-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .visual-editor-content li {
+      margin-bottom: 0.25rem;
+    }
+    
+    /* Formula chip styling inside the editor */
+    .math-chip-inline {
+      background-color: #1e293b;
+      color: #2dd4bf;
+      font-family: monospace;
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      border: 1px solid #475569;
+      font-weight: bold;
+      display: inline-block;
+      user-select: all;
+    }
+    .math-chip-block {
+      background-color: #020617;
+      color: #ddd6fe;
+      font-family: monospace;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      border-left: 4px solid #8b5cf6;
+      text-align: center;
+      margin: 1rem 0;
+      display: block;
+      user-select: all;
+    }
+
+    /* Wikilink style in the visual editor and rendered articles */
+    .editor-wikilink, .rendered-wikilink {
+      color: #38bdf8;
+      text-decoration: underline;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .rendered-wikilink:hover {
+      color: #7dd3fc;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-violet-500 selection:text-white">
+
+  <!-- TOP NAVBAR -->
+  <header class="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between shadow-lg">
+    <div class="flex items-center space-x-3 cursor-pointer" id="logo-container">
+      <div class="bg-gradient-to-tr from-violet-600 to-indigo-600 p-2 rounded-lg text-white shadow-inner flex items-center justify-center">
+        <i data-lucide="layers" class="animate-pulse w-6 h-6"></i>
+      </div>
+      <div>
+        <span class="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-indigo-300 to-teal-300">
+          Xenharmonic Wiki
+        </span>
+        <span class="ml-2 text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-slate-400 rounded border border-slate-700">
+          Firebase HTML5 Ed.
+        </span>
+      </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="flex-1 max-w-md mx-6 min-w-[200px] relative">
+      <i data-lucide="search" class="absolute left-3 top-2.5 text-slate-500 w-4 h-4"></i>
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Search articles or tuning math..."
+        class="w-full bg-slate-950 border border-slate-800 focus:border-violet-500 text-slate-100 pl-10 pr-4 py-1.5 rounded-lg text-sm transition-all focus:outline-none focus:ring-1 focus:ring-violet-500"
+      />
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex items-center space-x-3 mt-2 sm:mt-0">
+      <button 
+        id="btn-playroom-toggle"
+        class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all shadow bg-slate-800 hover:bg-slate-700 text-teal-300"
+      >
+        <i data-lucide="music" class="w-4 h-4"></i>
+        <span>Scale Playroom</span>
+      </button>
+
+      <button 
+        id="btn-create-article"
+        class="flex items-center space-x-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition-all shadow hover:shadow-violet-500/25"
+      >
+        <i data-lucide="plus" class="w-4 h-4"></i>
+        <span>Create Article</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- FIREBASE ERROR DIAGNOSTIC OVERLAY -->
+  <div id="diagnostic-panel" class="hidden bg-amber-500/10 border-b border-amber-500/25 p-4 text-sm text-slate-200">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-start justify-between gap-4">
+      <div class="space-y-1">
+        <div class="flex items-center space-x-2 font-bold text-amber-400">
+          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+          <span>Firebase Connection Refused</span>
+        </div>
+        <p class="text-xs text-slate-300">
+          Error Message: <code id="diagnostic-error-msg" class="bg-slate-950 px-2 py-1 rounded text-red-400 font-mono">None</code>
+        </p>
+      </div>
+      <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs max-w-xl space-y-1.5">
+        <span class="font-bold text-slate-300 block">How to Resolve This:</span>
+        <ol class="list-decimal pl-4 space-y-1 text-slate-400">
+          <li>Open your <a href="https://console.firebase.google.com/" target="_blank" class="text-teal-400 underline font-semibold">Firebase Console</a>.</li>
+          <li>Go to <strong>Authentication</strong> &rarr; <strong>Sign-in method</strong> &rarr; enable <strong>Anonymous</strong>.</li>
+          <li>Go to <strong>Firestore Database</strong> &rarr; verify rules allow authenticated/anonymous read & write.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <div class="flex-1 flex flex-col lg:flex-row max-w-7xl w-full mx-auto p-4 gap-6">
+    
+    <!-- LEFT SIDEBAR -->
+    <aside class="w-full lg:w-64 flex flex-col gap-4 shrink-0">
+      
+      <!-- Firestore Live Connection status -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center justify-between text-xs">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="database" class="w-4 h-4 text-amber-400" id="db-status-icon"></i>
+          <span class="font-mono text-slate-400">Database Status</span>
+        </div>
+        <span id="db-status-badge" class="px-2 py-0.5 font-bold rounded-full text-[10px] bg-amber-500/10 text-amber-400">
+          CONNECTING...
+        </span>
+      </div>
+
+      <!-- Article Index list -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col shadow">
+        <div class="p-3 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <i data-lucide="book-open" class="text-violet-400 w-4 h-4"></i>
+            Articles Index
+          </span>
+          <span id="articles-count" class="text-xs font-mono bg-slate-900 text-slate-400 px-1.5 py-0.5 rounded">0</span>
+        </div>
+        <div id="articles-list" class="p-2 max-h-[250px] lg:max-h-[350px] overflow-y-auto space-y-1">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Quick Scale Presets -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col shadow">
+        <div class="p-3 bg-slate-800 border-b border-slate-700">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <i data-lucide="volume-2" class="text-teal-400 w-4 h-4"></i>
+            Quick Scale Presets
+          </span>
+        </div>
+        <div id="presets-list" class="p-2 space-y-1">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Recent Changes List (Strict 24h formatting) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col shadow gap-2">
+        <div class="flex items-center space-x-1.5 border-b border-slate-800 pb-2">
+          <i data-lucide="clock" class="text-indigo-400 w-4 h-4"></i>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Recent Changes (24h)</span>
+        </div>
+        <div id="changes-log-list" class="space-y-2 text-xs max-h-[160px] overflow-y-auto">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- CENTER PRIMARY PANEL -->
+    <main class="flex-1 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl flex flex-col overflow-hidden min-w-0">
+      
+      <!-- Custom Notification box -->
+      <div id="notification-box" class="hidden flex items-center justify-between p-3 border-b text-sm transition-all">
+        <div class="flex items-center space-x-2">
+          <i id="notification-icon" class="w-5 h-5"></i>
+          <span id="notification-text"></span>
+        </div>
+        <button id="btn-close-notification" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- WIKI PAGE VIEW PANEL -->
+      <div id="view-wiki-page" class="p-6 md:p-8 flex-1 flex flex-col justify-between overflow-y-auto">
+        <div>
+          <!-- Article Metadata & Action Panel -->
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-6 border-b border-slate-800 pb-4">
+            <div>
+              <span id="wiki-category-badge" class="px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider bg-violet-600/10 text-violet-400 rounded-full border border-violet-500/20 mb-2 inline-block">
+                Tuning Category
+              </span>
+              <h1 id="wiki-title" class="text-4xl font-extrabold text-slate-100 tracking-tight">
+                Tuning Wiki Article Title
+              </h1>
+            </div>
+
+            <button
+              id="btn-edit-current"
+              class="flex items-center space-x-1.5 px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg border border-slate-700 text-sm font-semibold transition-all"
+            >
+              <i data-lucide="edit-3" class="text-violet-400 w-4 h-4"></i>
+              <span>Edit Article</span>
+            </button>
+          </div>
+
+          <!-- Split layout for wiki content & Wikipedia-style math infobox -->
+          <div class="flex flex-col lg:flex-row gap-6 items-start">
+            <!-- Dynamic Markdown Render Content Area -->
+            <div id="wiki-rendered-content" class="flex-1 prose prose-invert max-w-none text-slate-300 space-y-4">
+              <!-- Rendered content with math and links will go here -->
+            </div>
+
+            <!-- Mathematical Sidebar Infobox container -->
+            <div id="wiki-infobox-container" class="w-full lg:w-72 shrink-0 hidden">
+              <!-- Dynamically populated from JS mathematical engine -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer timestamps in strict 24-hour pattern -->
+        <div class="mt-12 pt-4 border-t border-slate-800 flex flex-wrap justify-between items-center text-xs text-slate-500 font-mono">
+          <span id="wiki-timestamp">Last edit: YYYY-MM-DD HH:mm:ss</span>
+          <span id="wiki-editor">Editor ID: Guest</span>
+        </div>
+      </div>
+
+      <!-- EDIT/CREATE ARTICLE PANEL WITH WIKIPEDIA VISUAL EDITOR -->
+      <div id="view-edit-page" class="hidden p-6 md:p-8 flex-1 flex flex-col justify-between gap-6 overflow-y-auto relative">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <span class="font-bold text-lg text-violet-300 flex items-center gap-1.5">
+              <i data-lucide="edit-3" class="w-5 h-5"></i>
+              <span id="edit-header-text">Create/Edit Wiki Article</span>
+            </span>
+            <button
+              type="button"
+              id="btn-cancel-edit"
+              class="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"
+            >
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Article Title</label>
+              <input
+                type="text"
+                id="edit-title-input"
+                placeholder="e.g., 31-EDO Tuning, Neutral Third, Just Intonation 7-limit"
+                class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-500 transition-all text-slate-100 font-medium"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Category</label>
+              <input
+                type="text"
+                id="edit-category-input"
+                placeholder="e.g., Tuning Systems, Scales, Acoustic Math"
+                class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-500 transition-all text-slate-100 font-medium"
+              />
+            </div>
+          </div>
+
+          <!-- WIKIPEDIA VISUAL EDITOR CONTAINER -->
+          <div class="relative">
+            <div class="flex justify-between items-center mb-2">
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Article Workspace <span class="text-teal-400 text-[10px] font-normal lowercase">(Type <code class="bg-slate-800 text-teal-300 px-1 py-0.5 rounded">[[</code> for articles, <code class="bg-slate-800 text-teal-300 px-1 py-0.5 rounded">{{</code> for templates)</span>
+              </label>
+              <!-- Editor Toggle: Visual vs Source -->
+              <div class="bg-slate-950 border border-slate-800 p-1 rounded-lg flex space-x-1 text-xs">
+                <button type="button" id="btn-edit-mode-visual" class="px-3 py-1 rounded font-semibold bg-violet-600 text-white transition-all shadow flex items-center space-x-1">
+                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  <span>Visual Editor</span>
+                </button>
+                <button type="button" id="btn-edit-mode-source" class="px-3 py-1 rounded font-semibold text-slate-400 hover:text-white transition-all flex items-center space-x-1">
+                  <i data-lucide="code" class="w-3.5 h-3.5"></i>
+                  <span>Source (Markdown)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Visual WYSIWYG Editor wrapper -->
+            <div id="visual-editor-container" class="border border-slate-800 rounded-xl bg-slate-950 overflow-hidden relative">
+              <!-- Visual Styling Toolbar (Wikipedia style) -->
+              <div class="bg-slate-900 border-b border-slate-800 p-2 flex flex-wrap gap-2 items-center justify-between text-xs select-none">
+                <div class="flex flex-wrap gap-1.5 items-center">
+                  <!-- Headings Selector -->
+                  <select id="editor-heading-select" class="bg-slate-950 border border-slate-800 rounded px-2 py-1 focus:outline-none text-slate-300 font-semibold cursor-pointer">
+                    <option value="p">Paragraph text</option>
+                    <option value="h1">Heading 1</option>
+                    <option value="h2">Heading 2</option>
+                    <option value="h3">Heading 3</option>
+                  </select>
+
+                  <div class="w-px h-5 bg-slate-800 mx-1"></div>
+
+                  <!-- Text Styles -->
+                  <button type="button" id="btn-editor-bold" title="Bold" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white font-bold text-sm w-8 h-8 flex items-center justify-center border border-transparent hover:border-slate-700">B</button>
+                  <button type="button" id="btn-editor-italic" title="Italic" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white italic text-sm w-8 h-8 flex items-center justify-center border border-transparent hover:border-slate-700">I</button>
+
+                  <div class="w-px h-5 bg-slate-800 mx-1"></div>
+
+                  <!-- Lists -->
+                  <button type="button" id="btn-editor-list" title="Bullet List" class="p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white w-8 h-8 flex items-center justify-center border border-transparent hover:border-slate-700">
+                    <i data-lucide="list" class="w-4 h-4"></i>
+                  </button>
+
+                  <div class="w-px h-5 bg-slate-800 mx-1"></div>
+
+                  <!-- Math Equation Insertion Tools -->
+                  <button type="button" id="btn-editor-insert-math" title="Insert Math Equation" class="px-2 py-1 bg-violet-600/20 hover:bg-violet-600 border border-violet-500/30 text-violet-300 hover:text-white font-bold rounded flex items-center space-x-1.5 h-8">
+                    <span>Σ</span>
+                    <span class="font-sans text-[11px] font-semibold">Formula</span>
+                  </button>
+
+                  <!-- Direct shortcut insert buttons -->
+                  <button type="button" id="btn-editor-shortcut-link" title="Insert Link" class="px-2 py-1 bg-sky-600/20 hover:bg-sky-600 border border-sky-500/30 text-sky-300 hover:text-white font-bold rounded flex items-center space-x-1.5 h-8">
+                    <i data-lucide="link" class="w-3.5 h-3.5"></i>
+                    <span class="font-sans text-[11px] font-semibold">[[ Link</span>
+                  </button>
+
+                  <button type="button" id="btn-editor-shortcut-template" title="Insert Template" class="px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-300 hover:text-white font-bold rounded flex items-center space-x-1.5 h-8">
+                    <i data-lucide="box" class="w-3.5 h-3.5"></i>
+                    <span class="font-sans text-[11px] font-semibold">{{ Template</span>
+                  </button>
+                </div>
+
+                <div class="text-[10px] text-slate-500 font-mono hidden sm:block pr-2">
+                  Wikipedia Rich-Text Workspace
+                </div>
+              </div>
+
+              <!-- Interactive WYSIWYG Content Editable Area -->
+              <div id="visual-editor-editable" contenteditable="true" class="visual-editor-content p-4 min-h-[350px] max-h-[500px] overflow-y-auto text-slate-300 relative">
+                <!-- Dynamically populated visual elements -->
+              </div>
+            </div>
+
+            <!-- Native Source Editor wrapper (Hidden by default, used for quick editing/fallback) -->
+            <div id="source-editor-container" class="hidden">
+              <textarea
+                id="edit-content-input"
+                rows="15"
+                placeholder="Write article using Markdown..."
+                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 font-mono text-sm focus:outline-none focus:border-violet-500 transition-all text-slate-100 resize-y min-h-[350px]"
+              ></textarea>
+            </div>
+
+            <!-- FLOATING WIKIPEDIA SMART AUTOCOMPLETE POPUP (Triggers on [[ or {{) -->
+            <div id="editor-floating-popup" class="hidden absolute z-50 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-64 overflow-hidden max-h-60 flex flex-col">
+              <div class="p-2 bg-slate-950 border-b border-slate-800 text-[10px] font-bold text-slate-400 tracking-wider uppercase flex items-center justify-between" id="popup-title-bar">
+                <span id="popup-header-title">Autocomplete Menu</span>
+                <span class="text-slate-600 font-mono select-none text-[9px]">ESC to Close</span>
+              </div>
+              <div class="p-1.5 bg-slate-950 border-b border-slate-800">
+                <input type="text" id="popup-filter-input" placeholder="Type to filter..." class="w-full bg-slate-900 border border-slate-800 text-xs px-2 py-1 rounded text-slate-200 focus:outline-none focus:border-violet-500 font-sans" />
+              </div>
+              <div id="popup-items-list" class="overflow-y-auto divide-y divide-slate-800/50 flex-1">
+                <!-- Dynamically populated suggestions -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="flex justify-end items-center gap-3 border-t border-slate-800 pt-4 font-semibold">
+          <button
+            type="button"
+            id="btn-cancel-edit-footer"
+            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-sm transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            id="btn-save-article"
+            class="flex items-center space-x-1.5 px-5 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-lg text-sm transition-all shadow hover:shadow-violet-500/20"
+          >
+            <i data-lucide="save" class="w-4 h-4"></i>
+            <span>Save Article</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SCALE PLAYROOM VIEW PANEL (WITHOUT DEPRECATED KEYBOARD) -->
+      <div id="view-playroom" class="hidden p-6 md:p-8 flex-1 flex flex-col justify-between overflow-y-auto">
+        <div class="space-y-6">
+          
+          <!-- Visual Synth Header -->
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+            <div>
+              <h1 class="text-3xl font-extrabold text-teal-400 flex items-center gap-2">
+                <i data-lucide="music" class="text-teal-400 w-8 h-8"></i>
+                Interactive Scale Playroom
+              </h1>
+              <p class="text-xs text-slate-400 mt-1">
+                Configure custom microtonal intervals (e.g., ratios like <code class="text-slate-200 font-mono">5/4</code> or cents like <code class="text-slate-200 font-mono">386c</code>) and preview them directly inside the theoretical table.
+              </p>
+            </div>
+
+            <!-- Synth Waveforms selector -->
+            <div class="bg-slate-950 border border-slate-800 p-1 rounded-lg flex space-x-1 text-xs" id="waveform-selectors">
+              <button data-wave="sine" class="px-3 py-1 rounded capitalize font-semibold text-slate-400 hover:text-white transition-all">sine</button>
+              <button data-wave="triangle" class="px-3 py-1 rounded capitalize font-semibold bg-teal-500 text-slate-950 shadow transition-all">triangle</button>
+              <button data-wave="sawtooth" class="px-3 py-1 rounded capitalize font-semibold text-slate-400 hover:text-white transition-all">sawtooth</button>
+              <button data-wave="square" class="px-3 py-1 rounded capitalize font-semibold text-slate-400 hover:text-white transition-all">square</button>
+            </div>
+          </div>
+
+          <!-- Formula Config inputs -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Base Frequency (Hz)</label>
+              <input
+                type="number"
+                id="synth-base-hz"
+                value="440"
+                class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 font-mono focus:outline-none focus:border-teal-500 text-slate-100"
+              />
+            </div>
+            <div class="lg:col-span-2">
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Scale Intervals (Comma separated)</label>
+              <input
+                type="text"
+                id="synth-intervals"
+                value="1/1, 16/15, 9/8, 6/5, 5/4, 4/3, 45/32, 3/2, 8/5, 5/3, 9/5, 15/8, 2/1"
+                class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 font-mono focus:outline-none focus:border-teal-500 text-slate-100"
+              />
+            </div>
+          </div>
+
+          <!-- Tuning Comparison & Interactive Pitch Trigger Area -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 mt-6">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <i data-lucide="info" class="text-indigo-400 w-4 h-4"></i>
+              Scale Table & Interactive Synth Trigger
+            </h3>
+            <p class="text-xs text-slate-500 mb-4 font-sans">
+              Click the <strong class="text-slate-300">Play/Stop</strong> button on any row below to hear and analyze its exact microtonal frequency dynamically calculated by the Web Audio API.
+            </p>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs text-slate-400 border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-800 font-mono">
+                    <th class="py-2 pr-3">Action</th>
+                    <th class="py-2 px-3">Step</th>
+                    <th class="py-2 px-3">Input</th>
+                    <th class="py-2 px-3">Multiplier</th>
+                    <th class="py-2 px-3">Log Cents</th>
+                    <th class="py-2 px-3">Calculated Pitch</th>
+                    <th class="py-2 pl-3">Nearest 12-EDO</th>
+                    <th class="py-2 pl-3">Deviation from 12-EDO</th>
+                  </tr>
+                </thead>
+                <tbody id="analysis-table-body" class="divide-y divide-slate-900 font-mono">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="mt-8 border-t border-slate-800 pt-4 flex justify-between items-center text-xs text-slate-500 font-sans">
+          <span>Created dynamically via Web Audio API oscillators</span>
+          <span>Aligned to standard 24-hour parameters</span>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Formula Insertion Modal Component -->
+  <div id="editor-math-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-base text-teal-400 flex items-center gap-2">
+          <span>Σ</span>
+          <span>Insert Mathematical Formula</span>
+        </h3>
+        <button type="button" id="btn-close-math-modal" class="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Equation Value (LaTeX Compatible)</label>
+        <input type="text" id="modal-math-input" placeholder="e.g. 3:2, 5/4, c = 1200 \cdot \log_2(r)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:border-teal-500 text-slate-100" />
+      </div>
+      <div class="grid grid-cols-2 gap-3 font-sans">
+        <label class="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-lg border border-slate-800 cursor-pointer hover:bg-slate-900">
+          <input type="radio" name="math-style" value="inline" checked class="text-violet-600 focus:ring-0" />
+          <div class="text-xs">
+            <span class="font-bold block text-slate-200">Inline Formula</span>
+            <span class="text-[10px] text-slate-500">Placed inside paragraph ($1.5$)</span>
+          </div>
+        </label>
+        <label class="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-lg border border-slate-800 cursor-pointer hover:bg-slate-900">
+          <input type="radio" name="math-style" value="block" class="text-violet-600 focus:ring-0" />
+          <div class="text-xs">
+            <span class="font-bold block text-slate-200">Block Formula</span>
+            <span class="text-[10px] text-slate-500">Standalone centered row ($$formula$$)</span>
+          </div>
+        </label>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-800 pt-4 text-xs font-semibold font-sans">
+        <button type="button" id="btn-cancel-math-modal" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all">Cancel</button>
+        <button type="button" id="btn-insert-math-modal" class="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-950 rounded-lg transition-all">Insert Formula</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-900 border-t border-slate-800 text-center py-4 text-xs text-slate-500 mt-auto font-sans">
+    <p>© 2026 Xenharmonic Wiki. All revisions and database updates are logged using 24-hour standard indexing.</p>
+  </footer>
+
+  <!-- Firebase Initialization Block with Native JS & Real-Time Diagnostics -->
+  <script>
+    // ==========================================
+    // LUA SCRIBUNTO TUNING MATHEMATICAL ENGINE
+    // ==========================================
+    const PRIMES = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+
+    function mathRound(value, decimals = 6) {
+      const factor = Math.pow(10, decimals);
+      return Math.round(value * factor) / factor;
+    }
+
+    function isPrime(n) {
+      if (n < 2) return false;
+      for (let i = 2; i <= Math.sqrt(n); i++) {
+        if (n % i === 0) return false;
+      }
+      return true;
+    }
+
+    function getPrimeFactorization(n) {
+      if (n <= 1) return n.toString();
+      let temp = n;
+      const factors = [];
+      for (let d = 2; d <= temp; d++) {
+        let count = 0;
+        while (temp % d === 0) {
+          count++;
+          temp /= d;
+        }
+        if (count > 0) {
+          factors.push(count === 1 ? `${d}` : `${d}^${count}`);
+        }
+      }
+      return factors.join(" × ");
+    }
+
+    function getDivisorsCount(n) {
+      let count = 0;
+      for (let i = 1; i <= n; i++) {
+        if (n % i === 0) count++;
+      }
+      return count;
+    }
+
+    // Helper to evaluate Tenney height for Tenney norm complexity metrics
+    function getTenneyNorm(num, den) {
+      return Math.log2(num * den);
+    }
+
+    // Helper to evaluate Weil height
+    function getWeilNorm(num, den) {
+      return Math.log2(Math.max(num, den));
+    }
+
+    // Wilson height (Sum of prime factors with repetition)
+    function getWilsonHeight(n) {
+      if (n <= 1) return 0;
+      let temp = n;
+      let sum = 0;
+      for (let d = 2; d <= temp; d++) {
+        while (temp % d === 0) {
+          sum += d;
+          temp /= d;
+        }
+      }
+      return sum;
+    }
+
+    function isHighlyComposite(n) {
+      if (n <= 1) return false;
+      const currentDivisors = getDivisorsCount(n);
+      for (let i = 1; i < n; i++) {
+        if (getDivisorsCount(i) >= currentDivisors) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function parseTuning(tuningStr) {
+      const clean = tuningStr.trim().toLowerCase().replace(/\s+/g, "");
+      const match = clean.match(/^(\d+)(edo|edt|edfs|ed)?/);
+      if (!match) return null;
+
+      const size = parseInt(match[1], 10);
+      const type = match[2] || "edo";
+      
+      let equave = 2; 
+      let suffix = "EDO";
+      
+      if (type === "edt") {
+        equave = 3; 
+        suffix = "EDT";
+      } else if (type === "edfs") {
+        equave = 1.5; 
+        suffix = "EDFS";
+      }
+
+      return { size, equave, suffix, label: `${size}-${suffix}` };
+    }
+
+    function getCents(intervalRatio) {
+      return 1200 * Math.log2(intervalRatio);
+    }
+
+    function getStepSizeCents(et) {
+      return (1200 * Math.log2(et.equave)) / et.size;
+    }
+
+    function approximateInterval(et, intervalRatio, direction = 0) {
+      const stepsFloat = (Math.log2(intervalRatio) / Math.log2(et.equave)) * et.size;
+      if (direction === -1) return Math.floor(stepsFloat); 
+      if (direction === 1) return Math.ceil(stepsFloat);   
+      return Math.round(stepsFloat);                       
+    }
+
+    function getConsistencyLimit(et) {
+      const stepSize = getStepSizeCents(et);
+      let maxLimit = 2; 
+
+      for (let i = 0; i < PRIMES.length; i++) {
+        const prime = PRIMES[i];
+        if (prime === et.equave) continue; 
+        
+        const primeCents = getCents(prime / 1);
+        const mappedSteps = approximateInterval(et, prime / 1, 0);
+        const mappedCents = mappedSteps * stepSize;
+        const error = Math.abs(mappedCents - primeCents);
+
+        if (error > stepSize / 4) {
+          break;
+        }
+        maxLimit = prime;
+      }
+      return maxLimit;
+    }
+
+    function calculateETInfobox(tuningName) {
+      const et = parseTuning(tuningName);
+      if (!et || et.size === 0) return null;
+
+      const stepSize = getStepSizeCents(et);
+      const info = {
+        tuning: et.label,
+        size: et.size,
+        equave: et.equave,
+        stepSize: mathRound(stepSize, 6),
+        primeFactorization: getPrimeFactorization(et.size),
+        isPrime: isPrime(et.size),
+        isHighlyComposite: isHighlyComposite(et.size),
+        consistencyLimit: getConsistencyLimit(et)
+      };
+
+      if (et.equave === 2) {
+        const octave = et.size;
+        const twelfth = approximateInterval(et, 3);
+        const fifth = approximateInterval(et, 1.5);
+        const fifthError = (fifth * stepSize) - getCents(1.5);
+        const isDualFifth = Math.abs(fifthError) > stepSize / 3;
+
+        const A1 = -11 * octave + 7 * twelfth;
+        const m2 = 8 * octave - 5 * twelfth;
+
+        info.fifthSteps = fifth;
+        info.fifthCents = mathRound(fifth * stepSize, 4);
+        info.semitones = `${A1} : ${m2}`;
+        info.semitonesCents = `${mathRound(A1 * stepSize, 4)}¢ : ${mathRound(m2 * stepSize, 4)}¢`;
+        info.isDualFifth = isDualFifth;
+
+        if (isDualFifth) {
+          info.dualSharpFifth = approximateInterval(et, 1.5, 1);
+          info.dualSharpFifthCents = mathRound(info.dualSharpFifth * stepSize, 4);
+          info.dualFlatFifth = approximateInterval(et, 1.5, -1);
+          info.dualFlatFifthCents = mathRound(info.dualFlatFifth * stepSize, 4);
+        }
+      } else {
+        info.approxOctave = approximateInterval(et, 2);
+        info.approxOctaveCents = mathRound(info.approxOctave * stepSize, 4);
+        if (et.approxTwelfth) {
+          info.approxTwelfth = approximateInterval(et, 3);
+          info.approxTwelfthCents = mathRound(info.approxTwelfth * stepSize, 4);
+        }
+      }
+
+      return info;
+    }
+
+    // --- Helper function to parse ratios or cents expressions ---
+    function parseIntervalToCents(str) {
+      const clean = str.trim().toLowerCase();
+      if (clean.endsWith('c')) {
+        return parseFloat(clean.slice(0, -1)) || 0;
+      }
+      if (clean.includes('/')) {
+        const parts = clean.split('/');
+        const num = parseFloat(parts[0]);
+        const den = parseFloat(parts[1]);
+        if (num && den) return 1200 * Math.log2(num / den);
+      }
+      if (clean.includes(':')) {
+        const parts = clean.split(':');
+        const num = parseFloat(parts[0]);
+        const den = parseFloat(parts[1]);
+        if (num && den) return 1200 * Math.log2(num / den);
+      }
+      const val = parseFloat(clean);
+      if (isNaN(val)) return 0;
+      if (val > 0 && val <= 10) {
+        return 1200 * Math.log2(val);
+      }
+      return val;
+    }
+
+    // --- Ported Wikipedia/Lua Dynamic Infobox Module ---
+    function renderLuaIntervalInfobox(args) {
+      const value_provided = (s) => typeof s === "string" && s.length > 0;
+      
+      const ratioStr = args["Ratio"] || "";
+      let rational = false;
+      let cents = 0;
+      let num = 1;
+      let den = 1;
+      let categoryString = "";
+      const infoboxData = [];
+
+      if (value_provided(ratioStr)) {
+        let cleanRatio = ratioStr.replace(/\s+/g, "");
+        let divider = "/";
+        if (cleanRatio.includes(":")) divider = ":";
+        
+        if (cleanRatio.includes(divider)) {
+          const parts = cleanRatio.split(divider);
+          num = parseInt(parts[0], 10);
+          den = parseInt(parts[1], 10);
+          if (num && den) {
+            rational = true;
+            cents = 1200 * Math.log2(num / den);
+            
+            let maxPrime = 2;
+            let tempNum = num * den;
+            for (let p of PRIMES) {
+              while (tempNum % p === 0) {
+                maxPrime = p;
+                tempNum /= p;
+              }
+            }
+            categoryString += `[[Category:Rational intervals]] [[Category:${maxPrime}-limit intervals]]`;
+          }
+        }
+      } else if (value_provided(args["Cents"])) {
+        cents = parseFloat(args["Cents"]) || 0;
+        categoryString += `[[Category:Irrational intervals]]`;
+      }
+
+      // Build parameters list
+      if (value_provided(ratioStr)) {
+        infoboxData.push(["Ratio", ratioStr]);
+      }
+      infoboxData.push(["Size in cents", `${mathRound(cents, 4)}¢`]);
+
+      if (rational) {
+        infoboxData.push(["Tenney Norm", `${mathRound(getTenneyNorm(num, den), 4)}`]);
+        infoboxData.push(["Weil Norm", `${mathRound(getWeilNorm(num, den), 4)}`]);
+        infoboxData.push(["Wilson Height", `${getWilsonHeight(num * den)}`]);
+      }
+
+      if (value_provided(args["Name"])) {
+        let displayName = args["Name"];
+        if (displayName.includes(",")) {
+          displayName = displayName.replace(/,\s*/g, ",<br>");
+        }
+        infoboxData.push(["Name(s)", displayName]);
+      }
+      
+      if (value_provided(args["Color name"])) {
+        infoboxData.push(["Color name", args["Color name"]]);
+      }
+
+      let htmlOutput = `
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3 font-sans text-xs shadow-xl">
+          <div class="border-b border-slate-800 pb-2 text-center">
+            <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">Interval Properties</span>
+            <h4 class="text-xs font-bold text-teal-400 mt-0.5">${args["Name"] || "Custom Interval"}</h4>
+          </div>
+          <table class="w-full text-left">
+            <tbody>
+      `;
+
+      infoboxData.forEach(([label, value]) => {
+        htmlOutput += `
+          <tr class="border-b border-slate-900">
+            <td class="py-1.5 font-semibold text-slate-400 pr-2">${label}</td>
+            <td class="py-1.5 text-slate-200 font-mono">${value}</td>
+          </tr>
+        `;
+      });
+
+      htmlOutput += `
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      return { html: htmlOutput, categories: categoryString };
+    }
+
+    // Helper to parse key-value pairs from MediaWiki template syntax
+    function parseTemplateParams(paramStr) {
+      const params = {};
+      const pairs = paramStr.split("|");
+      pairs.forEach(pair => {
+        const index = pair.indexOf("=");
+        if (index !== -1) {
+          const key = pair.substring(0, index).trim();
+          const value = pair.substring(index + 1).trim();
+          params[key] = value;
+        }
+      });
+      return params;
+    }
+
+    // --- Template Presets for insertion via Wikipedia {{ shortcut ---
+    const TEMPLATES = [
+      {
+        name: "Interval Infobox",
+        description: "Interactive MediaWiki Wikipedia-style Interval properties card template.",
+        markup: `{{Interval Infobox | Ratio = 5/4 | Name = Pure Major Third | Color name = Blue }}`
+      },
+      {
+        name: "EDO Summary Table",
+        description: "Standard EDO definition table stub.",
+        markup: `## EDO Overview Table\n\n| Attribute | Value |\n|---|---|\n| System Class | Equal Octave Temperament |\n| Equave Ratio | $2:1$ (Octave) |\n| Step Cents size | $1200 / n$ cents |\n| Primary limit consistency | patent consistency |`
+      },
+      {
+        name: "Just Intonation Chord Lattice",
+        description: "5-Limit rational triadic system properties.",
+        markup: `### 5-Limit Lattice Properties\n\n* **Major triad:** $4:5:6$ ratio structure\n* **Minor triad:** $10:12:15$ ratio structure\n* **Harmonic ratio expansion:** $1/1$, $5/4$, $3/2$ representing perfect consonances.`
+      }
+    ];
+
+    // --- Hardcoded Seed Content for Instant Visual Fidelity ---
+    const SEED_ARTICLES = {
+      "main-page": {
+        id: "main-page",
+        title: "Main Page",
+        category: "Introduction",
+        content: `# Welcome to the Xenharmonic Wiki (Firebase Edition)!
+
+Xenharmonic music is music that uses tuning systems other than standard 12-Tone Equal Temperament (12-EDO/12-TET). The term was coined by theorist Ivor Darreg from the Greek words *xenia* (hospitable) and *xenos* (foreign), indicating a hospitality to strange and unfamiliar tunings.
+
+Explore alternative tunings like [[just-intonation|Just Intonation]] or check out equal octave systems like [[19-edo|19-EDO]].
+
+## Explore Alternative Tunings
+
+Here on the wiki, you can read about, edit, and interactively listen to different tuning scales:
+
+* **Equal Divisions of the Octave (EDO):** Dividing the octave into equal logarithmic intervals (like 15-EDO, [[19-edo|19-EDO]], 31-EDO).
+* **Just Intonation (JI):** Tuning systems based on pure, rational integer ratios ($3:2$, $5:4$, $7:4$) that produce perfect consonances.
+* **Non-Octave Scales:** Scales like the Bohlen-Pierce scale that divide a tritave ($3:1$) rather than a standard octave.
+
+Use the sidebar navigation to read articles, or jump into the **Interactive Scale Playroom** to write your own scale, calculate its cents values, and play it directly through your speakers!`,
+        updatedBy: "System",
+        updatedAt: "2026-06-08 12:00:00"
+      },
+      "just-intonation": {
+        id: "just-intonation",
+        title: "Just Intonation",
+        category: "Tuning Systems",
+        content: `# Just Intonation
+
+{{Interval Infobox | Ratio = 3/2 | Name = Perfect Fifth | Color name = Blue }}
+
+**Just Intonation (JI)** is any system of tuning in which all the intervals can be represented by ratios of whole numbers (integers), such as $3:2$, $5:4$, or $9:8$.
+
+## The Mathematics of Consonance
+
+When two pitches are played with integer frequency ratios, their harmonic overtones align perfectly. This prevents the "beating" or acoustic interference characteristic of tempered tunings.
+
+The logarithmic size of an interval in cents ($c$) with a rational frequency ratio ($f_2 / f_1 = r$) is calculated using:
+
+$$c = 1200 \\cdot \\log_2(r)$$
+
+### Common Just Intervals
+* **Unison:** $1:1$ (0 cents)
+* **Major Third (5-limit):** $5:4$ (~386.31 cents)
+* **Perfect Fifth:** $3:2$ (~701.96 cents)
+* **Harmonic Seventh:** $7:4$ (~968.83 cents)
+* **Octave:** $2:1$ (1200 cents)
+
+Just Intonation sounds wonderfully clean, but modulating to different keys requires shifting the entire scale pitch, leading to the creation of adaptive keyboard systems or dynamic retuning engines.`,
+        updatedBy: "System",
+        updatedAt: "2026-06-08 12:15:00"
+      },
+      "19-edo": {
+        id: "19-edo",
+        title: "19-EDO",
+        category: "Equal Temperament",
+        content: `# 19-Equal Division of the Octave (19-EDO)
+
+**19-EDO** divides the octave ($2:1$) into 19 equal parts. Each step of 19-EDO is precisely:
+
+$$1200 / 19 \\approx 63.16 \\text{ cents}$$
+
+## Musical Characteristics
+
+19-EDO is a highly consonant alternative tuning. It is particularly known for having:
+* A remarkably pure **Minor Third** (approx. 315.8 cents, very close to $6:5$ at 315.6 cents).
+* A highly resonant **Major Third** (approx. 378.9 cents, which is a bit flat compared to $5:4$ at 386.3 cents but arguably more consonant than 12-EDO's sharp 400-cent third).
+* A slightly flat perfect fifth (694.7 cents), which behaves similarly to historical Meantone temperaments.
+
+Because 19-EDO maps very easily to standard diatonic music notation, you can represent it with sharps and flats where $C\\#$ and $Db$ are distinct notes! This makes 19-EDO one of the most popular starting points for microtonal exploration.`,
+        updatedBy: "System",
+        updatedAt: "2026-06-08 12:20:00"
+      }
+    };
+
+    const SCALE_PRESETS = [
+      {
+        name: "12-EDO (Standard Western)",
+        baseHz: 440,
+        intervals: "1/1, 100c, 200c, 300c, 400c, 500c, 600c, 700c, 800c, 900c, 1000c, 1100c, 2/1",
+        description: "Standard twelve-tone equal temperament division."
+      },
+      {
+        name: "5-Limit Just Intonation",
+        baseHz: 440,
+        intervals: "1/1, 16/15, 9/8, 6/5, 5/4, 4/3, 45/32, 3/2, 8/5, 5/3, 9/5, 15/8, 2/1",
+        description: "Tuned completely to pure prime 3 and 5 whole-number integer ratios."
+      },
+      {
+        name: "19-EDO (Equal)",
+        baseHz: 440,
+        intervals: "0c, 63.16c, 126.32c, 189.47c, 252.63c, 315.79c, 378.95c, 442.11c, 505.26c, 568.42c, 631.58c, 694.74c, 757.89c, 821.05c, 884.21c, 947.37c, 1010.53c, 1073.68c, 1136.84c, 1200c",
+        description: "A popular equal division featuring highly consonant minor thirds."
+      },
+      {
+        name: "Bohlen-Pierce Scale (BP-13)",
+        baseHz: 220,
+        intervals: "1/1, 146.3c, 292.6c, 438.9c, 585.3c, 731.6c, 877.9c, 1024.2c, 1170.5c, 1316.8c, 1463.1c, 1609.4c, 1755.8c, 3/1",
+        description: "Divides the tritave (3:1) into 13 equal parts."
+      }
+    ];
+
+    // --- State Variables ---
+    let dbConnected = false;
+    let currentUser = null;
+    let articles = { ...SEED_ARTICLES };
+    let changesLog = [];
+    let selectedArticleId = "main-page";
+    let activeWaveform = "triangle";
+    let synthBaseHz = 440;
+    let synthIntervalsStr = SCALE_PRESETS[1].intervals;
+    let selectedPresetIdx = 1;
+
+    // Audio State Context & Oscillators list
+    let audioCtx = null;
+    const activeOscillators = {};
+
+    // --- DOM Elements ---
+    const dbStatusIcon = document.getElementById("db-status-icon");
+    const dbStatusBadge = document.getElementById("db-status-badge");
+    const articlesCount = document.getElementById("articles-count");
+    const articlesList = document.getElementById("articles-list");
+    const presetsList = document.getElementById("presets-list");
+    const changesLogList = document.getElementById("changes-log-list");
+    const searchInput = document.getElementById("search-input");
+    const logoContainer = document.getElementById("logo-container");
+
+    // Views
+    const viewWikiPage = document.getElementById("view-wiki-page");
+    const viewEditPage = document.getElementById("view-edit-page");
+    const viewPlayroom = document.getElementById("view-playroom");
+
+    // Navigation Buttons
+    const btnPlayroomToggle = document.getElementById("btn-playroom-toggle");
+    const btnCreateArticle = document.getElementById("btn-create-article");
+
+    // Article Show details
+    const wikiCategoryBadge = document.getElementById("wiki-category-badge");
+    const wikiTitle = document.getElementById("wiki-title");
+    const wikiRenderedContent = document.getElementById("wiki-rendered-content");
+    const wikiTimestamp = document.getElementById("wiki-timestamp");
+    const wikiEditor = document.getElementById("wiki-editor");
+    const btnEditCurrent = document.getElementById("btn-edit-current");
+    const wikiInfoboxContainer = document.getElementById("wiki-infobox-container");
+
+    // Article Editing form fields
+    const editHeaderValue = document.getElementById("edit-header-text");
+    const editTitleInput = document.getElementById("edit-title-input");
+    const editCategoryInput = document.getElementById("edit-category-input");
+    const editContentInput = document.getElementById("edit-content-input"); // Source Mode textarea
+    const btnCancelEdit = document.getElementById("btn-cancel-edit");
+    const btnCancelEditFooter = document.getElementById("btn-cancel-edit-footer");
+    const btnSaveArticle = document.getElementById("btn-save-article");
+
+    // Wikipedia Style Visual Editor elements
+    const btnEditModeVisual = document.getElementById("btn-edit-mode-visual");
+    const btnEditModeSource = document.getElementById("btn-edit-mode-source");
+    const visualEditorContainer = document.getElementById("visual-editor-container");
+    const sourceEditorContainer = document.getElementById("source-editor-container");
+    const visualEditorEditable = document.getElementById("visual-editor-editable");
+
+    // Visual Editor Toolbar Buttons
+    const editorHeadingSelect = document.getElementById("editor-heading-select");
+    const btnEditorBold = document.getElementById("btn-editor-bold");
+    const btnEditorItalic = document.getElementById("btn-editor-italic");
+    const btnEditorList = document.getElementById("btn-editor-list");
+    const btnEditorInsertMath = document.getElementById("btn-editor-insert-math");
+    const btnEditorShortcutLink = document.getElementById("btn-editor-shortcut-link");
+    const btnEditorShortcutTemplate = document.getElementById("btn-editor-shortcut-template");
+
+    // Smart Autocomplete Floating Popup
+    const editorFloatingPopup = document.getElementById("editor-floating-popup");
+    const popupHeaderTitle = document.getElementById("popup-header-title");
+    const popupFilterInput = document.getElementById("popup-filter-input");
+    const popupItemsList = document.getElementById("popup-items-list");
+    let currentPopupType = null; // 'link' or 'template'
+    let currentTriggerRange = null; // Tracks cursor range where trigger symbol started
+
+    // Math Modal
+    const editorMathModal = document.getElementById("editor-math-modal");
+    const modalMathInput = document.getElementById("modal-math-input");
+    const btnCloseMathModal = document.getElementById("btn-close-math-modal");
+    const btnCancelMathModal = document.getElementById("btn-cancel-math-modal");
+    const btnInsertMathModal = document.getElementById("btn-insert-math-modal");
+
+    // Synth elements
+    const synthBaseHzInput = document.getElementById("synth-base-hz");
+    const synthIntervalsInput = document.getElementById("synth-intervals");
+    const analysisTableBody = document.getElementById("analysis-table-body");
+    const waveformSelectors = document.getElementById("waveform-selectors");
+
+    // Notification box
+    const notificationBox = document.getElementById("notification-box");
+    const notificationIcon = document.getElementById("notification-icon");
+    const notificationText = document.getElementById("notification-text");
+    const btnCloseNotification = document.getElementById("btn-close-notification");
+
+    // Diagnostic Panel
+    const diagnosticPanel = document.getElementById("diagnostic-panel");
+    const diagnosticErrorMsg = document.getElementById("diagnostic-error-msg");
+
+    // Current Edit Reference ID
+    let currentEditId = "";
+    let isSourceModeActive = false; // Tracks editor mode state
+
+    // --- 24-Hour Time Format Utility ---
+    const format24hDate = (date) => {
+      const pad = (n) => n.toString().padStart(2, '0');
+      const y = date.getFullYear();
+      const m = pad(date.getMonth() + 1);
+      const d = pad(date.getDate());
+      const hh = pad(date.getHours());
+      const mm = pad(date.getMinutes());
+      const ss = pad(date.getSeconds());
+      return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+    };
+
+    // --- View Router ---
+    const switchView = (viewName) => {
+      // Clean up outstanding oscillators
+      Object.keys(activeOscillators).forEach(idx => {
+        try { toggleSynthPitch(0, idx); } catch(e) {}
+      });
+
+      viewWikiPage.classList.add("hidden");
+      viewEditPage.classList.add("hidden");
+      viewPlayroom.classList.add("hidden");
+
+      if (viewName === "wiki-page") {
+        viewWikiPage.classList.remove("hidden");
+      } else if (viewName === "edit-page") {
+        viewEditPage.classList.remove("hidden");
+      } else if (viewName === "playroom") {
+        viewPlayroom.classList.remove("hidden");
+        renderPlayroomKeyboard();
+      }
+    };
+
+    // --- Firebase Hook & Init (COMPAT MODE) ---
+    let db;
+    let auth;
+    let appId = "xenharmonic-wiki-firebase";
+
+    const initFirebase = () => {
+      try {
+        const globalAppId = typeof __app_id !== 'undefined' ? __app_id : null;
+        if (globalAppId) appId = globalAppId;
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyC-UIB5l1bo_apccqskT6LAHvliQoc-U-s",
+          authDomain: "all-my-projects-3cf20.firebaseapp.com",
+          projectId: "all-my-projects-3cf20",
+          storageBucket: "all-my-projects-3cf20.firebasestorage.app",
+          messagingSenderId: "245058314875",
+          appId: "1:245058314875:web:1b9fead1655343416838de"
+        };
+
+        // Initialize Firebase Compat
+        firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+        db = firebase.firestore();
+
+        // Rule 3: Auth Before Queries
+        auth.signInAnonymously()
+          .then((userCredential) => {
+            currentUser = userCredential.user;
+            dbConnected = true;
+            updateDbStatus(true);
+            diagnosticPanel.classList.add("hidden");
+
+            // Set up Real-time Wiki Articles Synchronizer
+            const articlesCol = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('articles');
+            articlesCol.onSnapshot((snapshot) => {
+              const loadedArticles = {};
+              snapshot.forEach((docSnap) => {
+                loadedArticles[docSnap.id] = { id: docSnap.id, ...docSnap.data() };
+              });
+
+              if (Object.keys(loadedArticles).length > 0) {
+                articles = loadedArticles;
+                renderArticlesSidebar();
+                showArticle(selectedArticleId);
+              } else {
+                // Prepopulate database with seeds if empty
+                Object.entries(SEED_ARTICLES).forEach(([key, sa]) => {
+                  articlesCol.doc(key).set(sa);
+                });
+              }
+            }, (error) => {
+              console.error("Firestore articles error: ", error);
+              triggerDiagnostic(error);
+            });
+
+            // Set up Real-time Revision Logs Synchronizer
+            const changesCol = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('changes');
+            changesCol.onSnapshot((snapshot) => {
+              const logs = [];
+              snapshot.forEach((docSnap) => {
+                logs.push({ id: docSnap.id, ...docSnap.data() });
+              });
+              // Sort in JS Memory to avoid compound index requirements
+              logs.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+              changesLog = logs.slice(0, 10);
+              renderChangesLog();
+            }, (error) => {
+              console.error("Firestore changes log error: ", error);
+              triggerDiagnostic(error);
+            });
+
+          })
+          .catch((authError) => {
+            console.error("Anonymous authentication failed:", authError);
+            triggerDiagnostic(authError);
+            setupOfflineSimulatedMode();
+          });
+
+      } catch (err) {
+        console.error("Firebase startup error:", err);
+        triggerDiagnostic(err);
+        setupOfflineSimulatedMode();
+      }
+    };
+
+    const triggerDiagnostic = (error) => {
+      diagnosticErrorMsg.innerText = error.message || error;
+      diagnosticPanel.classList.remove("hidden");
+      dbStatusIcon.className = "w-4 h-4 text-red-500";
+      dbStatusBadge.textContent = "CONN REJECTED";
+      dbStatusBadge.className = "px-2 py-0.5 font-bold rounded-full text-[10px] bg-red-500/10 text-red-500";
+      lucide.createIcons();
+    };
+
+    const setupOfflineSimulatedMode = () => {
+      dbConnected = false;
+      updateDbStatus(false);
+      renderArticlesSidebar();
+      renderChangesLog();
+      showArticle(selectedArticleId);
+    };
+
+    const updateDbStatus = (connected) => {
+      if (connected) {
+        dbStatusIcon.className = "w-4 h-4 text-emerald-400";
+        dbStatusBadge.textContent = "LIVE FIRESTORE";
+        dbStatusBadge.className = "px-2 py-0.5 font-bold rounded-full text-[10px] bg-emerald-500/10 text-emerald-400";
+      } else {
+        dbStatusIcon.className = "w-4 h-4 text-amber-400";
+        dbStatusBadge.textContent = "SIMULATION MODE";
+        dbStatusBadge.className = "px-2 py-0.5 font-bold rounded-full text-[10px] bg-amber-500/10 text-amber-400";
+      }
+      lucide.createIcons();
+    };
+
+    // --- Message Notifications ---
+    const notify = (msg, type = "success") => {
+      notificationText.innerText = msg;
+      notificationBox.classList.remove("hidden");
+      if (type === "error") {
+        notificationBox.className = "flex items-center justify-between p-3 border-b text-sm transition-all bg-red-500/10 text-red-300 border-red-500/30";
+        notificationIcon.className = "w-5 h-5 text-red-400";
+        notificationIcon.setAttribute("data-lucide", "alert-triangle");
+      } else {
+        notificationBox.className = "flex items-center justify-between p-3 border-b text-sm transition-all bg-emerald-500/10 text-emerald-300 border-emerald-500/30";
+        notificationIcon.className = "w-5 h-5 text-emerald-400";
+        notificationIcon.setAttribute("data-lucide", "check-circle");
+      }
+      lucide.createIcons();
+      setTimeout(() => {
+        notificationBox.classList.add("hidden");
+      }, 5000);
+    };
+
+    // --- Markdown Parsing Logic (with inline LaTeX markup) ---
+    const parseMathAndText = (text) => {
+      let formatted = text;
+      
+      // Parse block math
+      formatted = formatted.replace(/\$\$(.*?)\$\$/g, (match, code) => {
+        return `<div class="my-4 p-4 bg-slate-950 rounded-lg text-center overflow-x-auto border-l-4 border-violet-500 font-mono text-xs text-violet-200">${code}</div>`;
+      });
+
+      // Parse inline math
+      formatted = formatted.replace(/\$(.*?)\$/g, (match, code) => {
+        return `<code class="px-1.5 py-0.5 mx-0.5 bg-slate-850 rounded font-mono text-xs text-teal-300 border border-slate-800 font-bold">${code}</code>`;
+      });
+
+      // Parse Wikilinks: [[target-id|Label Text]] or [[target-id]]
+      formatted = formatted.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (match, targetId, label) => {
+        const displayLabel = label || targetId;
+        return `<span class="rendered-wikilink text-sky-400 hover:underline font-bold cursor-pointer" data-wiki-id="${targetId.trim()}">${displayLabel.trim()}</span>`;
+      });
+
+      return formatted;
+    };
+
+    const renderMarkdownToHTML = (md) => {
+      if (!md) return `<p class="italic text-slate-500 font-sans">Empty Page.</p>`;
+      
+      let cleanMd = md;
+      let infoboxHtml = "";
+
+      // 1. Detect and parse {{Interval Infobox ...}} templates
+      const templateRegex = /\{\{Interval\s+Infobox\s*\|([^}]+)\}\}/gi;
+      let match;
+      while ((match = templateRegex.exec(cleanMd)) !== null) {
+        const params = parseTemplateParams(match[1]);
+        const rendered = renderLuaIntervalInfobox(params);
+        infoboxHtml += rendered.html;
+      }
+      // Remove infobox template definitions from main page body rendering stream
+      cleanMd = cleanMd.replace(templateRegex, "");
+
+      // 2. Render normal Markdown elements
+      const lines = cleanMd.split('\n');
+      let html = '';
+      
+      lines.forEach((line) => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('# ')) {
+          html += `<h1 class="text-3xl font-extrabold text-slate-100 mt-6 mb-4 border-b border-slate-800 pb-2">${parseMathAndText(trimmed.substring(2))}</h1>`;
+        } else if (trimmed.startsWith('## ')) {
+          html += `<h2 class="text-2xl font-bold text-violet-400 mt-5 mb-3">${parseMathAndText(trimmed.substring(3))}</h2>`;
+        } else if (trimmed.startsWith('### ')) {
+          html += `<h3 class="text-xl font-semibold text-teal-400 mt-4 mb-2">${parseMathAndText(trimmed.substring(4))}</h3>`;
+        } else if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+          html += `<li class="ml-6 list-disc text-slate-300 mb-1 leading-relaxed">${parseMathAndText(trimmed.substring(2))}</li>`;
+        } else if (trimmed === '') {
+          // Empty space separator
+        } else {
+          html += `<p class="text-slate-300 mb-4 leading-relaxed">${parseMathAndText(trimmed)}</p>`;
+        }
+      });
+
+      // Save custom template infoboxes globally to let wiki router pull it
+      window.parsedInfoboxHtml = infoboxHtml;
+
+      return html;
+    };
+
+    // --- Display Single Article Page ---
+    const showArticle = (articleId) => {
+      const art = articles[articleId];
+      if (!art) {
+        if (articleId !== "main-page" && articles["main-page"]) {
+          showArticle("main-page");
+        }
+        return;
+      }
+
+      selectedArticleId = articleId;
+      wikiCategoryBadge.textContent = art.category || "General";
+      wikiTitle.textContent = art.title;
+      
+      // First, render content which parses embedded templates as a side effect
+      window.parsedInfoboxHtml = "";
+      wikiRenderedContent.innerHTML = renderMarkdownToHTML(art.content);
+      
+      wikiTimestamp.textContent = `Last edit: ${art.updatedAt || 'N/A'}`;
+      wikiEditor.textContent = `Editor ID: ${art.updatedBy || 'System'}`;
+
+      // Update sidebar list items active status
+      Array.from(articlesList.children).forEach(child => {
+        const cid = child.getAttribute("data-id");
+        if (cid === articleId) {
+          child.className = "w-full text-left p-2 rounded-lg text-xs font-semibold bg-violet-600/20 text-violet-300 border border-violet-500/20 flex items-center justify-between transition-all";
+        } else {
+          child.className = "w-full text-left p-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent flex items-center justify-between transition-all";
+        }
+      });
+
+      // Update Wikipedia Infobox (Use parsed interval infobox template if found, otherwise fall back to normal EDO infobox)
+      if (window.parsedInfoboxHtml) {
+        wikiInfoboxContainer.innerHTML = window.parsedInfoboxHtml;
+        wikiInfoboxContainer.className = "w-full lg:w-72 shrink-0 bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-lg p-4 space-y-4 text-xs font-sans";
+        wikiInfoboxContainer.classList.remove("hidden");
+      } else {
+        renderWikipediaInfobox(art.title);
+      }
+      switchView("wiki-page");
+    };
+
+    // --- Sidebar Articles List Renderer ---
+    const renderArticlesSidebar = () => {
+      const filter = searchInput.value.trim().toLowerCase();
+      articlesList.innerHTML = "";
+
+      const keys = Object.keys(articles);
+      let count = 0;
+
+      keys.forEach(key => {
+        const art = articles[key];
+        if (filter && !art.title.toLowerCase().includes(filter) && !art.content.toLowerCase().includes(filter)) {
+          return;
+        }
+        count++;
+
+        const btn = document.createElement("button");
+        btn.setAttribute("data-id", key);
+        if (key === selectedArticleId) {
+          btn.className = "w-full text-left p-2 rounded-lg text-xs font-semibold bg-violet-600/20 text-violet-300 border border-violet-500/20 flex items-center justify-between transition-all";
+        } else {
+          btn.className = "w-full text-left p-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent flex items-center justify-between transition-all";
+        }
+
+        btn.innerHTML = `
+          <span class="truncate pr-1">${art.title}</span>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5 opacity-50 shrink-0"></i>
+        `;
+
+        btn.onclick = () => showArticle(key);
+        articlesList.appendChild(btn);
+      });
+
+      articlesCount.innerText = count;
+      lucide.createIcons();
+    };
+
+    // --- Preset Renderers ---
+    const renderPresets = () => {
+      presetsList.innerHTML = "";
+      SCALE_PRESETS.forEach((preset, index) => {
+        const btn = document.createElement("button");
+        btn.className = "w-full text-left p-2 rounded-lg text-xs hover:bg-slate-800 transition-all flex flex-col gap-0.5 border border-transparent hover:border-slate-800";
+        btn.innerHTML = `
+          <span class="font-semibold text-teal-400">${preset.name}</span>
+          <span class="text-[10px] text-slate-500 truncate max-w-[210px]">${preset.description}</span>
+        `;
+        btn.onclick = () => {
+          synthBaseHzInput.value = preset.baseHz;
+          synthIntervalsInput.value = preset.intervals;
+          selectedPresetIdx = index;
+          switchView("playroom");
+        };
+        presetsList.appendChild(btn);
+      });
+    };
+
+    // --- Recent Changes Renderer ---
+    const renderChangesLog = () => {
+      changesLogList.innerHTML = "";
+      if (changesLog.length === 0) {
+        changesLogList.innerHTML = `<p class="italic text-slate-600 text-[10px]">No recent revision events</p>`;
+        return;
+      }
+
+      changesLog.forEach(log => {
+        const item = document.createElement("div");
+        item.className = "border-b border-slate-800/40 pb-1.5 last:border-0";
+        item.innerHTML = `
+          <div class="flex items-center justify-between text-[11px] font-semibold text-slate-300">
+            <span class="cursor-pointer hover:underline text-violet-300 truncate pr-1" onclick="showArticle('${log.articleId}')">${log.title}</span>
+            <span class="text-[9px] text-slate-500 shrink-0">${log.timestamp.split(' ')[1] || log.timestamp}</span>
+          </div>
+          <div class="text-[9px] text-slate-500 mt-0.5 flex justify-between items-center">
+            <span>Editor: ${log.editor.substring(0, 10)}...</span>
+            <span class="text-[8px] bg-slate-950 px-1 py-0.2 rounded text-slate-400">revised</span>
+          </div>
+        `;
+        changesLogList.appendChild(item);
+      });
+    };
+
+    // ==========================================
+    // WIKIPEDIA WYSIWYG PARSER & SERIALIZER
+    // ==========================================
+
+    // Convert raw Markdown content to structured HTML for editing visually
+    const convertMarkdownToVisualHTML = (md) => {
+      if (!md) return "<p><br></p>";
+      const lines = md.split("\n");
+      let html = "";
+      let inList = false;
+
+      lines.forEach(line => {
+        let clean = line.trim();
+        
+        // Handle list endings
+        if (!clean.startsWith("* ") && !clean.startsWith("- ") && inList) {
+          html += "</ul>";
+          inList = false;
+        }
+
+        if (clean.startsWith("# ")) {
+          html += `<h1>${formatTextToVisual(clean.substring(2))}</h1>`;
+        } else if (clean.startsWith("## ")) {
+          html += `<h2>${formatTextToVisual(clean.substring(3))}</h2>`;
+        } else if (clean.startsWith("### ")) {
+          html += `<h3>${formatTextToVisual(clean.substring(4))}</h3>`;
+        } else if (clean.startsWith("* ") || clean.startsWith("- ")) {
+          if (!inList) {
+            html += "<ul>";
+            inList = true;
+          }
+          html += `<li>${formatTextToVisual(clean.substring(2))}</li>`;
+        } else if (clean === "") {
+          html += "<p><br></p>";
+        } else {
+          html += `<p>${formatTextToVisual(clean)}</p>`;
+        }
+      });
+
+      if (inList) html += "</ul>";
+      return html;
+    };
+
+    // Formats Markdown bold, italic, equations, templates, and internal wikilinks
+    const formatTextToVisual = (text) => {
+      let formatted = text;
+
+      // Escape raw HTML characters safely to prevent structural crashes
+      formatted = formatted
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      // Render templates visually as block chips
+      formatted = formatted.replace(/\{\{Interval\s+Infobox\s*\|([^}]+)\}\}/gi, (match, params) => {
+        return `<span class="math-chip-block border-l-4 border-amber-500 bg-slate-950 p-4 rounded text-xs block my-2" data-template-raw="Interval Infobox|${params}" contenteditable="false">{{Interval Infobox | ${params}}}</span>`;
+      });
+
+      // Render block equations
+      formatted = formatted.replace(/\$\$(.*?)\$\$/g, (match, formula) => {
+        return `<span class="math-chip-block" data-math-block="${formula}" contenteditable="false">$$${formula}$$</span>`;
+      });
+
+      // Render inline equations
+      formatted = formatted.replace(/\$(.*?)\$/g, (match, formula) => {
+        return `<span class="math-chip-inline" data-math-inline="${formula}" contenteditable="false">$ ${formula} $</span>`;
+      });
+
+      // Render internal links: [[just-intonation|Just Intonation]] or [[just-intonation]]
+      formatted = formatted.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (match, targetId, label) => {
+        const displayLabel = label || targetId;
+        return `<span class="editor-wikilink" data-editor-link-target="${targetId.trim()}" contenteditable="false">${displayLabel.trim()}</span>`;
+      });
+
+      // Parse bold (**text**)
+      formatted = formatted.replace(/\*\*([\s\S]*?)\*\*/g, "<strong>$1</strong>");
+
+      // Parse italic (*text*)
+      formatted = formatted.replace(/\*([\s\S]*?)\*/g, "<em>$1</em>");
+
+      return formatted;
+    };
+
+    // Serialize visual editor HTML content back to clean raw Markdown
+    const convertVisualHTMLToMarkdown = (container) => {
+      let markdown = "";
+      const children = Array.from(container.childNodes);
+
+      children.forEach(node => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const txt = node.textContent.trim();
+          if (txt) markdown += txt + "\n\n";
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          const tagName = node.tagName.toUpperCase();
+          const innerMarkup = serializeNodeFormatting(node);
+
+          if (tagName === "H1") {
+            markdown += `# ${innerMarkup}\n\n`;
+          } else if (tagName === "H2") {
+            markdown += `## ${innerMarkup}\n\n`;
+          } else if (tagName === "H3") {
+            markdown += `### ${innerMarkup}\n\n`;
+          } else if (tagName === "P") {
+            if (node.innerHTML.trim() === "<br>" || node.innerHTML.trim() === "") {
+              markdown += "\n";
+            } else {
+              markdown += `${innerMarkup}\n\n`;
+            }
+          } else if (tagName === "UL") {
+            Array.from(node.querySelectorAll("li")).forEach(li => {
+              markdown += `* ${serializeNodeFormatting(li)}\n`;
+            });
+            markdown += "\n";
+          } else if (node.classList.contains("math-chip-block")) {
+            if (node.getAttribute("data-template-raw")) {
+              const rawData = node.getAttribute("data-template-raw").split("|");
+              markdown += `{{${rawData[0]} | ${rawData[1]}}}\n\n`;
+            } else {
+              markdown += `$$\n${node.getAttribute("data-math-block")}\n$$\n\n`;
+            }
+          } else {
+            const fallbackTxt = node.innerText.trim();
+            if (fallbackTxt) markdown += fallbackTxt + "\n\n";
+          }
+        }
+      });
+
+      return markdown.replace(/\n{3,}/g, "\n\n").trim();
+    };
+
+    const serializeNodeFormatting = (element) => {
+      let html = element.innerHTML;
+
+      // Restore Interval Infobox Templates
+      html = html.replace(/<span[^>]*?data-template-raw="Interval Infobox\|([^"]+?)"[^>]*?>[\s\S]*?<\/span>/gi, "{{Interval Infobox | $1}}");
+
+      // Restore Inline Equations
+      html = html.replace(/<span class="math-chip-inline"[^>]*?data-math-inline="([^"]+?)"[^>]*?>[\s\S]*?<\/span>/g, "$$$1$");
+
+      // Restore Block Equations
+      html = html.replace(/<span class="math-chip-block"[^>]*?data-math-block="([^"]+?)"[^>]*?>[\s\S]*?<\/span>/g, "$$$$$1$$$$");
+
+      // Restore Internal Wiki Links
+      html = html.replace(/<span class="editor-wikilink"[^>]*?data-editor-link-target="([^"]+?)"[^>]*?>([\s\S]*?)<\/span>/g, "[[$1|$2]]");
+
+      // Restore bold formats
+      html = html.replace(/<(strong|b)[^>]*?>([\s\S]*?)<\/\1>/gi, "**$2**");
+
+      // Restore italic formats
+      html = html.replace(/<(em|i)[^>]*?>([\s\S]*?)<\/\1>/gi, "*$2*");
+
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = html;
+      return tempDiv.innerText;
+    };
+
+    // ==========================================
+    // SHORTCUT TRIGGERS LOGIC ([[ and {{)
+    // ==========================================
+
+    function getSelectionCoords() {
+      const sel = window.getSelection();
+      if (sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0).cloneRange();
+        range.collapse(true);
+        const dummy = document.createElement("span");
+        range.insertNode(dummy);
+        const rect = dummy.getBoundingClientRect();
+        
+        const parentRect = visualEditorEditable.getBoundingClientRect();
+        const x = rect.left - parentRect.left + visualEditorEditable.scrollLeft;
+        const y = rect.top - parentRect.top + visualEditorEditable.scrollTop + 18; 
+        
+        dummy.parentNode.removeChild(dummy);
+        return { x, y };
+      }
+      return null;
+    }
+
+    visualEditorEditable.addEventListener("keyup", (e) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Escape", "Enter"].includes(e.key)) return;
+
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+
+      const range = selection.getRangeAt(0);
+      const textNode = range.startContainer;
+      
+      if (textNode.nodeType !== Node.TEXT_NODE) return;
+
+      const text = textNode.textContent;
+      const offset = range.startOffset;
+      const trailingText = text.substring(0, offset);
+
+      if (trailingText.endsWith("[[")) {
+        openFloatingPopup("link", range);
+      } else if (trailingText.endsWith("{{")) {
+        openFloatingPopup("template", range);
+      } else {
+        if (currentPopupType && !trailingText.endsWith("[[") && !trailingText.endsWith("{{")) {
+          hideFloatingPopup();
+        }
+      }
+    });
+
+    const openFloatingPopup = (type, selectionRange) => {
+      currentPopupType = type;
+      currentTriggerRange = selectionRange.cloneRange();
+      
+      const coords = getSelectionCoords();
+      if (coords) {
+        editorFloatingPopup.style.left = `${coords.x}px`;
+        editorFloatingPopup.style.top = `${coords.y}px`;
+        editorFloatingPopup.classList.remove("hidden");
+      }
+
+      if (type === "link") {
+        popupHeaderTitle.innerText = "LINK TO EXISTING ARTICLE";
+        popupFilterInput.placeholder = "Search wiki pages...";
+      } else {
+        popupHeaderTitle.innerText = "INSERT XENHARMONIC TEMPLATE";
+        popupFilterInput.placeholder = "Search templates...";
+      }
+
+      popupFilterInput.value = "";
+      renderPopupItems("");
+      popupFilterInput.focus();
+    };
+
+    const hideFloatingPopup = () => {
+      editorFloatingPopup.classList.add("hidden");
+      currentPopupType = null;
+      currentTriggerRange = null;
+    };
+
+    popupFilterInput.addEventListener("input", () => {
+      renderPopupItems(popupFilterInput.value.trim().toLowerCase());
+    });
+
+    popupFilterInput.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        hideFloatingPopup();
+        visualEditorEditable.focus();
+      }
+    });
+
+    const renderPopupItems = (query) => {
+      popupItemsList.innerHTML = "";
+
+      if (currentPopupType === "link") {
+        const filtered = Object.values(articles).filter(art => 
+          art.title.toLowerCase().includes(query)
+        );
+
+        if (filtered.length === 0) {
+          popupItemsList.innerHTML = `<div class="p-3 text-xs text-slate-500 italic text-center font-sans">No articles matched query.</div>`;
+          return;
+        }
+
+        filtered.forEach(art => {
+          const row = document.createElement("button");
+          row.type = "button";
+          row.className = "w-full text-left p-2 hover:bg-slate-800 text-xs text-slate-300 hover:text-white flex items-center justify-between transition-all font-sans";
+          row.innerHTML = `
+            <div class="font-semibold">${art.title}</div>
+            <div class="text-[9px] text-slate-500 font-mono">${art.category || 'Tuning'}</div>
+          `;
+          row.onclick = () => selectAutocompleteItem(art.id, art.title);
+          popupItemsList.appendChild(row);
+        });
+      } else if (currentPopupType === "template") {
+        const filtered = TEMPLATES.filter(t => 
+          t.name.toLowerCase().includes(query) || t.description.toLowerCase().includes(query)
+        );
+
+        if (filtered.length === 0) {
+          popupItemsList.innerHTML = `<div class="p-3 text-xs text-slate-500 italic text-center font-sans">No templates matched query.</div>`;
+          return;
+        }
+
+        filtered.forEach(template => {
+          const row = document.createElement("button");
+          row.type = "button";
+          row.className = "w-full text-left p-2 hover:bg-slate-800 text-xs text-slate-300 hover:text-white flex flex-col gap-0.5 transition-all font-sans";
+          row.innerHTML = `
+            <div class="font-bold text-teal-400">${template.name}</div>
+            <div class="text-[10px] text-slate-500 leading-normal">${template.description}</div>
+          `;
+          row.onclick = () => selectAutocompleteItem(template.markup, template.name, true);
+          popupItemsList.appendChild(row);
+        });
+      }
+    };
+
+    const selectAutocompleteItem = (value, displayLabel, isTemplate = false) => {
+      if (!currentTriggerRange) return;
+
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      
+      const startNode = currentTriggerRange.startContainer;
+      const originalOffset = currentTriggerRange.startOffset;
+      const targetOffset = Math.max(0, originalOffset - 2);
+
+      const replaceRange = document.createRange();
+      replaceRange.setStart(startNode, targetOffset);
+      replaceRange.setEnd(startNode, originalOffset);
+      sel.addRange(replaceRange);
+
+      if (isTemplate) {
+        const htmlStub = convertMarkdownToVisualHTML(value);
+        document.execCommand("insertHTML", false, htmlStub);
+      } else {
+        const wikilinkElement = `<span class="editor-wikilink" data-editor-link-target="${value}" contenteditable="false">${displayLabel}</span>&nbsp;`;
+        document.execCommand("insertHTML", false, wikilinkElement);
+      }
+
+      hideFloatingPopup();
+      visualEditorEditable.focus();
+    };
+
+    btnEditorShortcutLink.addEventListener("click", () => {
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        openFloatingPopup("link", selection.getRangeAt(0));
+      } else {
+        visualEditorEditable.focus();
+        setTimeout(() => {
+          const innerSel = window.getSelection();
+          if (innerSel.rangeCount > 0) openFloatingPopup("link", innerSel.getRangeAt(0));
+        }, 10);
+      }
+    });
+
+    btnEditorShortcutTemplate.addEventListener("click", () => {
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        openFloatingPopup("template", selection.getRangeAt(0));
+      } else {
+        visualEditorEditable.focus();
+        setTimeout(() => {
+          const innerSel = window.getSelection();
+          if (innerSel.rangeCount > 0) openFloatingPopup("template", innerSel.getRangeAt(0));
+        }, 10);
+      }
+    });
+
+    // --- WYSIWYG Editor Mode Toggles ---
+    btnEditModeVisual.addEventListener("click", () => {
+      if (!isSourceModeActive) return;
+      isSourceModeActive = false;
+      
+      // Sync Source -> Visual
+      const md = editContentInput.value;
+      visualEditorEditable.innerHTML = convertMarkdownToVisualHTML(md);
+
+      sourceEditorContainer.classList.add("hidden");
+      visualEditorContainer.classList.remove("hidden");
+
+      btnEditModeVisual.className = "px-3 py-1 rounded font-semibold bg-violet-600 text-white transition-all shadow flex items-center space-x-1";
+      btnEditModeSource.className = "px-3 py-1 rounded font-semibold text-slate-400 hover:text-white transition-all flex items-center space-x-1";
+    });
+
+    btnEditModeSource.addEventListener("click", () => {
+      if (isSourceModeActive) return;
+      isSourceModeActive = true;
+
+      // Sync Visual -> Source
+      const md = convertVisualHTMLToMarkdown(visualEditorEditable);
+      editContentInput.value = md;
+
+      visualEditorContainer.classList.add("hidden");
+      sourceEditorContainer.classList.remove("hidden");
+
+      btnEditModeSource.className = "px-3 py-1 rounded font-semibold bg-violet-600 text-white transition-all shadow flex items-center space-x-1";
+      btnEditModeVisual.className = "px-3 py-1 rounded font-semibold text-slate-400 hover:text-white transition-all flex items-center space-x-1";
+    });
+
+    // --- WYSIWYG Format Commands ---
+    btnEditorBold.addEventListener("click", () => {
+      document.execCommand("bold", false, null);
+      visualEditorEditable.focus();
+    });
+
+    btnEditorItalic.addEventListener("click", () => {
+      document.execCommand("italic", false, null);
+      visualEditorEditable.focus();
+    });
+
+    btnEditorList.addEventListener("click", () => {
+      document.execCommand("insertUnorderedList", false, null);
+      visualEditorEditable.focus();
+    });
+
+    editorHeadingSelect.addEventListener("change", (e) => {
+      const val = e.target.value;
+      if (val === "p") {
+        document.execCommand("formatBlock", false, "p");
+      } else {
+        document.execCommand("formatBlock", false, val);
+      }
+      editorHeadingSelect.value = "p"; // Reset dropdown selection
+      visualEditorEditable.focus();
+    });
+
+    // --- Formula Modal Trigger and Actions ---
+    btnEditorInsertMath.addEventListener("click", () => {
+      modalMathInput.value = "";
+      editorMathModal.classList.remove("hidden");
+    });
+
+    const closeMathModal = () => {
+      editorMathModal.classList.add("hidden");
+    };
+
+    btnCloseMathModal.addEventListener("click", closeMathModal);
+    btnCancelMathModal.addEventListener("click", closeMathModal);
+
+    btnInsertMathModal.addEventListener("click", () => {
+      const formula = modalMathInput.value.trim();
+      if (!formula) {
+        closeMathModal();
+        return;
+      }
+
+      const isBlock = document.querySelector('input[name="math-style"]:checked').value === "block";
+      visualEditorEditable.focus();
+
+      let targetHtml = "";
+      if (isBlock) {
+        targetHtml = `<span class="math-chip-block" data-math-block="${formula}" contenteditable="false">$$${formula}$$</span><p><br></p>`;
+      } else {
+        targetHtml = `<span class="math-chip-inline" data-math-inline="${formula}" contenteditable="false">$ ${formula} $</span>&nbsp;`;
+      }
+
+      document.execCommand("insertHTML", false, targetHtml);
+      closeMathModal();
+    });
+
+    // --- Web Audio Synthesizer playroom logic ---
+    const initAudioContext = () => {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    };
+
+    // Attaching dynamic synth control to window to let row elements call it
+    window.toggleSynthPitch = (freq, index) => {
+      initAudioContext();
+      if (!audioCtx) return;
+
+      const active = activeOscillators[index];
+      const rowPlayBtn = document.getElementById(`play-btn-${index}`);
+
+      if (active) {
+        // Stop current pitch
+        try {
+          active.gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+          active.gainNode.gain.setValueAtTime(active.gainNode.gain.value, audioCtx.currentTime);
+          active.gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+          
+          const targetOsc = active.osc;
+          const targetGain = active.gainNode;
+          setTimeout(() => {
+            try {
+              targetOsc.stop();
+              targetOsc.disconnect();
+              targetGain.disconnect();
+            } catch (e) {}
+          }, 200);
+        } catch (err) {}
+        delete activeOscillators[index];
+        if (rowPlayBtn) {
+          rowPlayBtn.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5 text-teal-400"></i>`;
+          lucide.createIcons();
+        }
+      } else {
+        // Stop any currently playing node first (monophonic behavior is safer in browser)
+        Object.keys(activeOscillators).forEach(idx => {
+          if (idx != index) {
+            try { toggleSynthPitch(0, idx); } catch(e) {}
+          }
+        });
+
+        // Start playing pitch if non-zero frequency was sent
+        if (freq === 0) return;
+
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        osc.type = activeWaveform;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.35, audioCtx.currentTime + 0.04);
+
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.start();
+
+        activeOscillators[index] = { osc, gainNode };
+        if (rowPlayBtn) {
+          rowPlayBtn.innerHTML = `<i data-lucide="square" class="w-3.5 h-3.5 text-red-400"></i>`;
+          lucide.createIcons();
+        }
+      }
+    };
+
+    const renderPlayroomKeyboard = () => {
+      synthBaseHz = parseFloat(synthBaseHzInput.value) || 440;
+      synthIntervalsStr = synthIntervalsInput.value;
+      const items = synthIntervalsStr.split(',').map(s => s.trim()).filter(Boolean);
+
+      analysisTableBody.innerHTML = '';
+
+      items.forEach((item, index) => {
+        const cents = parseIntervalToCents(item);
+        const ratioMultiplier = Math.pow(2, cents / 1200);
+        const freq = synthBaseHz * ratioMultiplier;
+
+        const roundCents = Math.round(cents * 100) / 100;
+        const roundFreq = Math.round(freq * 100) / 100;
+        const roundMult = Math.round(ratioMultiplier * 1000) / 1000;
+
+        const nearest12Step = Math.round(cents / 100);
+        const deviation = Math.round((cents - (nearest12Step * 100)) * 100) / 100;
+        const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        const octaveIndicator = Math.floor(nearest12Step / 12);
+        const standardNote = noteNames[((nearest12Step % 12) + 12) % 12] + (octaveIndicator >= 0 ? ` (+${octaveIndicator}ve)` : ` (${octaveIndicator}ve)`);
+
+        let devHtml = '';
+        if (deviation === 0) {
+          devHtml = `<span class="text-emerald-500 font-sans font-semibold">Perfect alignment</span>`;
+        } else if (deviation > 0) {
+          devHtml = `<span class="text-red-400">+${deviation}¢ (Sharp)</span>`;
+        } else {
+          devHtml = `<span class="text-blue-400">${deviation}¢ (Flat)</span>`;
+        }
+
+        const row = document.createElement("tr");
+        row.className = "hover:bg-slate-900/30";
+        row.innerHTML = `
+          <td class="py-2.5 pr-3 pl-1">
+            <button id="play-btn-${index}" onclick="window.toggleSynthPitch(${freq}, ${index})" class="flex items-center justify-center bg-slate-900 hover:bg-slate-800 border border-slate-800 p-1.5 rounded transition-all">
+              <i data-lucide="play" class="w-3.5 h-3.5 text-teal-400"></i>
+            </button>
+          </td>
+          <td class="py-2.5 px-3 text-slate-500">${index}</td>
+          <td class="py-2.5 px-3 text-slate-200 font-bold">${item}</td>
+          <td class="py-2.5 px-3">${roundMult}</td>
+          <td class="py-2.5 px-3 text-teal-400">${roundCents}¢</td>
+          <td class="py-2.5 px-3 text-violet-300">${roundFreq} Hz</td>
+          <td class="py-2.5 pl-3">${standardNote}</td>
+          <td class="py-2.5 pl-3">${devHtml}</td>
+        `;
+        analysisTableBody.appendChild(row);
+      });
+      lucide.createIcons();
+    };
+
+    // --- Action Listeners ---
+    logoContainer.addEventListener("click", () => {
+      showArticle("main-page");
+    });
+
+    btnPlayroomToggle.addEventListener("click", () => {
+      switchView("playroom");
+    });
+
+    btnCreateArticle.addEventListener("click", () => {
+      currentEditId = "";
+      editHeaderValue.innerText = "Create New Wiki Article";
+      editTitleInput.value = "";
+      editTitleInput.disabled = false;
+      editCategoryInput.value = "General";
+      editContentInput.value = `# New Xenharmonic Article\n\nExplain your microtonal theories or ratio formulas ($3:2$, $5:4$) here.`;
+      
+      visualEditorEditable.innerHTML = convertMarkdownToVisualHTML(editContentInput.value);
+      switchView("edit-page");
+    });
+
+    btnEditCurrent.addEventListener("click", () => {
+      const art = articles[selectedArticleId];
+      if (art) {
+        currentEditId = art.id;
+        editHeaderValue.innerText = `Editing: ${art.title}`;
+        editTitleInput.value = art.title;
+        editTitleInput.disabled = true; 
+        editCategoryInput.value = art.category || "General";
+        editContentInput.value = art.content || "";
+        
+        visualEditorEditable.innerHTML = convertMarkdownToVisualHTML(art.content);
+        switchView("edit-page");
+      }
+    });
+
+    const closeEditingAndShow = () => {
+      if (currentEditId) {
+        showArticle(currentEditId);
+      } else {
+        switchView("wiki-page");
+      }
+    };
+
+    btnCancelEdit.addEventListener("click", closeEditingAndShow);
+    btnCancelEditFooter.addEventListener("click", closeEditingAndShow);
+
+    btnSaveArticle.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const title = editTitleInput.value.trim();
+      const category = editCategoryInput.value.trim() || "General";
+      
+      let content = "";
+      if (isSourceModeActive) {
+        content = editContentInput.value;
+      } else {
+        content = convertVisualHTMLToMarkdown(visualEditorEditable);
+      }
+
+      if (!title) {
+        notify("Article title cannot be blank.", "error");
+        return;
+      }
+
+      const currentTimestamp = format24hDate(new Date());
+      const docId = currentEditId ? currentEditId : title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const editorStr = currentUser ? currentUser.uid : "Anonymous Editor";
+
+      const payload = {
+        title,
+        category,
+        content,
+        updatedAt: currentTimestamp,
+        updatedBy: editorStr
+      };
+
+      try {
+        if (dbConnected) {
+          const docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('articles').doc(docId);
+          await docRef.set(payload, { merge: true });
+
+          const changesCol = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('changes');
+          await changesCol.add({
+            articleId: docId,
+            title,
+            timestamp: currentTimestamp,
+            editor: editorStr
+          });
+
+          notify(`Article "${title}" saved successfully to Firebase!`);
+        } else {
+          articles[docId] = { id: docId, ...payload };
+          changesLog.unshift({
+            id: Math.random().toString(),
+            articleId: docId,
+            title,
+            timestamp: currentTimestamp,
+            editor: "Local Sim"
+          });
+          renderArticlesSidebar();
+          renderChangesLog();
+          notify(`Saved "${title}" locally. (Simulation fallback)`);
+        }
+
+        selectedArticleId = docId;
+        showArticle(docId);
+      } catch (err) {
+        console.error(err);
+        notify("Failed saving to remote Firebase store.", "error");
+      }
+    });
+
+    waveformSelectors.addEventListener("click", (e) => {
+      const tgt = e.target.closest("[data-wave]");
+      if (!tgt) return;
+      activeWaveform = tgt.getAttribute("data-wave");
+      
+      Array.from(waveformSelectors.children).forEach(btn => {
+        btn.className = "px-3 py-1 rounded capitalize font-semibold text-slate-400 hover:text-white transition-all";
+      });
+      tgt.className = "px-3 py-1 rounded capitalize font-semibold bg-teal-500 text-slate-950 shadow transition-all";
+    });
+
+    synthBaseHzInput.addEventListener("input", renderPlayroomKeyboard);
+    synthIntervalsInput.addEventListener("input", renderPlayroomKeyboard);
+
+    searchInput.addEventListener("input", () => {
+      renderArticlesSidebar();
+    });
+
+    btnCloseNotification.addEventListener("click", () => {
+      notificationBox.classList.add("hidden");
+    });
+
+    // --- Onload Initialization ---
+    window.onload = () => {
+      initFirebase();
+      renderPresets();
+      lucide.createIcons();
+    };
+  </script>
+</body>
+</html>
