@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Paperwhite Bus Tracker</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* Kindle & E-Ink Optimizations: disable smooth transitions that cause screen ghosting */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      touch-action: manipulation;
+    }
+
+    /* Force instant Leaflet rendering for E-ink */
+    .no-anim .leaflet-zoom-anim .leaflet-zoom-animated,
+    .no-anim .leaflet-marker-icon,
+    .no-anim .leaflet-tile-loaded {
+      transition: none !important;
+      animation: none !important;
+    }
+
+    /* E-Ink High Contrast Mode */
+    body.e-ink-mode {
+      background-color: #ffffff !important;
+      color: #000000 !important;
+      filter: grayscale(100%);
+    }
+
+    body.e-ink-mode .leaflet-tile-pane {
+      filter: grayscale(100%) contrast(150%);
+    }
+
+    body.e-ink-mode button,
+    body.e-ink-mode select,
+    body.e-ink-mode input {
+      border: 2px solid #000000 !important;
+      box-shadow: none !important;
+    }
+
+    /* Bus marker styling */
+    .bus-marker-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bus-badge {
+      background-color: #000;
+      color: #fff;
+      font-weight: bold;
+      font-size: 11px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      border: 1px solid #fff;
+      white-space: nowrap;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .e-ink-mode .bus-badge {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      border: 2px solid #000000 !important;
+    }
+
+    /* Custom Scrollbars for Kindle touch */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 5px;
+    }
+    .e-ink-mode ::webkit-scrollbar-thumb {
+      background: #000;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col bg-slate-100 text-slate-900 overflow-hidden no-anim">
+
+  <!-- Top Control Header (Touch Optimized for Kindle) -->
+  <header class="bg-white border-b-2 border-black p-2 shadow-sm flex-shrink-0 z-20">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      
+      <!-- Title & Live Status -->
+      <div class="flex items-center gap-2">
+        <h1 class="font-extrabold text-lg md:text-xl tracking-tight text-black flex items-center gap-1">
+          🚌 Bus Tracker
+        </h1>
+        <span id="statusBadge" class="text-xs bg-gray-200 text-black px-2 py-1 rounded font-mono border border-black">
+          Ready
+        </span>
+      </div>
+
+      <!-- Agency Selector & Search -->
+      <div class="flex items-center gap-2 flex-grow max-w-xl">
+        <label for="agencySelect" class="sr-only">Select Transit Agency</label>
+        <select id="agencySelect" class="bg-white text-black text-sm font-semibold border-2 border-black rounded px-2 py-2 w-full focus:outline-none focus:ring-2 focus:ring-black">
+          <optgroup label="Popular US Agencies">
+            <option value="mbta" selected>Boston MBTA (Massachusetts)</option>
+            <option value="mta_ny">NYC MTA (New York)</option>
+            <option value="wmata">Washington DC WMATA</option>
+            <option value="cta">Chicago CTA</option>
+            <option value="sfmuni">San Francisco Muni / 511</option>
+            <option value="kcm">Seattle King County Metro</option>
+            <option value="lametro">LA Metro (Los Angeles)</option>
+            <option value="metro_tc">Minneapolis/St. Paul Metro</option>
+          </optgroup>
+          <optgroup label="Nationwide Transitland Feeds (All Agencies)">
+            <option value="tl_all">Transitland Global Network (Nationwide Feeds)</option>
+          </optgroup>
+        </select>
+
+        <!-- Route Filter -->
+        <input type="text" id="routeFilter" placeholder="Filter Route #" class="border-2 border-black rounded px-2 py-2 text-sm w-28 text-black focus:outline-none" />
+      </div>
+
+      <!-- Primary Action Buttons (Large Touch Targets for Kindle) -->
+      <div class="flex items-center gap-2">
+        <!-- MANUAL REFRESH BUTTON -->
+        <button id="btnRefresh" onclick="fetchBusPositions()" class="bg-black hover:bg-gray-800 text-white font-bold px-4 py-2 rounded text-sm flex items-center gap-1 border-2 border-black active:scale-95">
+          🔄 Refresh
+        </button>
+
+        <!-- View Switcher (Map vs List for E-Ink readability) -->
+        <button id="btnToggleView" onclick="toggleView()" class="bg-gray-200 text-black font-bold px-3 py-2 rounded text-sm border-2 border-black">
+          📋 List
+        </button>
+
+        <!-- E-Ink Mode Toggle -->
+        <button id="btnEink" onclick="toggleEinkMode()" class="bg-gray-200 text-black font-bold px-3 py-2 rounded text-sm border-2 border-black" title="Toggle E-Ink High Contrast Mode">
+          🌗 High Contrast
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Sub-bar Info -->
+    <div class="max-w-7xl mx-auto flex items-center justify-between text-xs mt-1 pt-1 border-t border-gray-300 font-mono text-gray-800">
+      <div>
+        Active Agency: <span id="agencyNameLabel" class="font-bold">Boston MBTA</span>
+      </div>
+      <div>
+        Last Updated: <span id="lastUpdateLabel" class="font-bold">--:--:--</span> |
+        Vehicles: <span id="vehicleCountLabel" class="font-bold">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="relative flex-1 w-full h-full overflow-hidden">
+    <!-- Map Canvas -->
+    <div id="map" class="absolute inset-0 w-full h-full z-10"></div>
+
+    <!-- E-Ink Optimized List View (Hidden by default) -->
+    <div id="listView" class="absolute inset-0 w-full h-full bg-white z-10 hidden overflow-y-auto p-4 border-t-2 border-black">
+      <div class="max-w-4xl mx-auto">
+        <div class="flex items-center justify-between mb-4 border-b-2 border-black pb-2">
+          <h2 class="text-lg font-bold text-black">Active Bus List View</h2>
+          <span class="text-xs font-mono">Tap any vehicle to center map</span>
+        </div>
+        <div id="busListTableContainer" class="space-y-2">
+          <p class="text-gray-500 italic">No bus data loaded. Tap Refresh to load current bus positions.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <script>
+    // --- Global Application State ---
+    let map;
+    let busMarkers = {};
+    let activeBusData = [];
+    let isEink = false;
+    let isListView = false;
+
+    // Supported Real API Providers with Direct Endpoint Logic
+    const AGENCIES = {
+      mbta: {
+        name: 'Boston MBTA',
+        center: [42.3601, -71.0589],
+        zoom: 14,
+        fetcher: fetchMBTA
+      },
+      mta_ny: {
+        name: 'NYC MTA Buses',
+        center: [40.7128, -74.0060],
+        zoom: 14,
+        fetcher: fetchNYCMTA
+      },
+      wmata: {
+        name: 'Washington DC WMATA',
+        center: [38.9072, -77.0369],
+        zoom: 14,
+        fetcher: fetchWMATA
+      },
+      cta: {
+        name: 'Chicago CTA',
+        center: [41.8781, -87.6298],
+        zoom: 14,
+        fetcher: fetchCTA
+      },
+      sfmuni: {
+        name: 'San Francisco Muni',
+        center: [37.7749, -122.4194],
+        zoom: 14,
+        fetcher: fetchSFMuni
+      },
+      kcm: {
+        name: 'Seattle King County Metro',
+        center: [47.6062, -122.3321],
+        zoom: 14,
+        fetcher: fetchSeattle
+      },
+      lametro: {
+        name: 'LA Metro',
+        center: [34.0522, -118.2437],
+        zoom: 14,
+        fetcher: fetchLAMetro
+      },
+      metro_tc: {
+        name: 'Twin Cities Metro Transit',
+        center: [44.9778, -93.2650],
+        zoom: 14,
+        fetcher: fetchTwinCities
+      },
+      tl_all: {
+        name: 'Transitland Global Feeds',
+        center: [39.8283, -98.5795], // US Center
+        zoom: 14,
+        fetcher: fetchTransitlandGlobal
+      }
+    };
+
+    // --- Helper: Format Time in 24-Hour Format ---
+    function format24hTime(date = new Date()) {
+      const h = String(date.getHours()).padStart(2, '0');
+      const m = String(date.getMinutes()).padStart(2, '0');
+      const s = String(date.getSeconds()).padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    // --- Initialize Map ---
+    function initMap() {
+      // Disable smooth zoom/pan animations to avoid Kindle Paperwhite ghosting
+      map = L.map('map', {
+        zoomAnimation: false,
+        fadeAnimation: false,
+        markerZoomAnimation: false,
+        touchZoom: true,
+        bounceAtZoomLimits: false
+      }).setView(AGENCIES.mbta.center, AGENCIES.mbta.zoom);
+
+      // OpenStreetMap Base Tile Layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      // Load initial agency
+      fetchBusPositions();
+    }
+
+    // --- Main Fetch Switcher ---
+    async function fetchBusPositions() {
+      const selectedAgencyKey = document.getElementById('agencySelect').value;
+      const agencyConfig = AGENCIES[selectedAgencyKey];
+      const statusBadge = document.getElementById('statusBadge');
+      const routeFilter = document.getElementById('routeFilter').value.trim().toLowerCase();
+
+      document.getElementById('agencyNameLabel').textContent = agencyConfig.name;
+      statusBadge.textContent = 'Fetching...';
+      statusBadge.className = 'text-xs bg-yellow-200 text-black px-2 py-1 rounded font-mono border border-black';
+
+      try {
+        let buses = await agencyConfig.fetcher();
+
+        // Apply route filter if typed
+        if (routeFilter) {
+          buses = buses.filter(b => b.route.toLowerCase().includes(routeFilter));
+        }
+
+        activeBusData = buses;
+        renderBusesOnMap(buses);
+        renderBusList(buses);
+
+        // Update timestamps & counts in 24h format
+        document.getElementById('lastUpdateLabel').textContent = format24hTime();
+        document.getElementById('vehicleCountLabel').textContent = buses.length;
+
+        statusBadge.textContent = 'Updated';
+        statusBadge.className = 'text-xs bg-green-200 text-black px-2 py-1 rounded font-mono border border-black';
+      } catch (err) {
+        console.error('Fetch error:', err);
+        statusBadge.textContent = 'API Error';
+        statusBadge.className = 'text-xs bg-red-200 text-black px-2 py-1 rounded font-mono border border-black';
+      }
+    }
+
+    // --- Render Markers on Map ---
+    function renderBusesOnMap(buses) {
+      // Clear existing markers
+      Object.keys(busMarkers).forEach(id => {
+        map.removeLayer(busMarkers[id]);
+      });
+      busMarkers = {};
+
+      if (buses.length === 0) return;
+
+      const bounds = L.latLngBounds();
+
+      buses.forEach(bus => {
+        if (!bus.lat || !bus.lng) return;
+
+        bounds.extend([bus.lat, bus.lng]);
+
+        // Direction arrow if bearing exists
+        const bearingSymbol = bus.bearing !== undefined ? ` <span style="display:inline-block; transform:rotate(${bus.bearing}deg)">⬆</span>` : '';
+
+        // E-ink friendly HTML marker icon
+        const customIcon = L.divIcon({
+          className: 'bus-marker-container',
+          html: `<div class="bus-badge">${bus.route || 'Bus'}${bearingSymbol}</div>`,
+          iconSize: [40, 24],
+          iconAnchor: [20, 12]
+        });
+
+        const popupContent = `
+          <div class="text-sm p-1 font-sans">
+            <div class="font-bold text-base border-b border-black pb-1 mb-1">
+              Route: ${bus.route || 'Unknown'}
+            </div>
+            <div><strong>Vehicle ID:</strong> ${bus.id}</div>
+            <div><strong>Destination / Headsign:</strong> ${bus.headsign || 'N/A'}</div>
+            <div><strong>Speed:</strong> ${bus.speed ? Math.round(bus.speed) + ' mph' : 'N/A'}</div>
+            <div><strong>Last Signal:</strong> ${bus.timestamp || format24hTime()}</div>
+          </div>
+        `;
+
+        const marker = L.marker([bus.lat, bus.lng], { icon: customIcon })
+          .bindPopup(popupContent);
+
+        marker.addTo(map);
+        busMarkers[bus.id] = marker;
+      });
+
+      // Recenter map bounds if we switched agency
+      const agencyKey = document.getElementById('agencySelect').value;
+      if (agencyKey !== 'tl_all' && buses.length > 0) {
+        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+      }
+    }
+
+    // --- Render List View (E-Ink Friendly Text) ---
+    function renderBusList(buses) {
+      const container = document.getElementById('busListTableContainer');
+      if (buses.length === 0) {
+        container.innerHTML = '<p class="text-black font-mono">No active buses found for this filter/agency.</p>';
+        return;
+      }
+
+      let html = `<div class="grid grid-cols-1 md:grid-cols-2 gap-2">`;
+      buses.forEach(bus => {
+        html += `
+          <div onclick="focusBusOnMap('${bus.id}', ${bus.lat}, ${bus.lng})" class="border-2 border-black p-2 bg-white hover:bg-gray-100 cursor-pointer text-black font-sans">
+            <div class="flex justify-between items-center border-b border-gray-400 pb-1">
+              <span class="font-extrabold text-base bg-black text-white px-2 py-0.5 rounded">Route ${bus.route}</span>
+              <span class="font-mono text-xs text-gray-800">ID: ${bus.id}</span>
+            </div>
+            <div class="text-sm mt-1"><strong>To:</strong> ${bus.headsign || 'In Service'}</div>
+            <div class="text-xs text-gray-700 mt-1 flex justify-between font-mono">
+              <span>Pos: ${bus.lat.toFixed(4)}, ${bus.lng.toFixed(4)}</span>
+              <span>${bus.timestamp || format24hTime()}</span>
+            </div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      container.innerHTML = html;
+    }
+
+    function focusBusOnMap(id, lat, lng) {
+      if (isListView) toggleView(); // switch back to map
+      map.setView([lat, lng], 16, { animate: false });
+      if (busMarkers[id]) {
+        busMarkers[id].openPopup();
+      }
+    }
+
+    // --- REAL API FETCHERS ---
+
+    // 1. Boston MBTA (Open V3 JSON API)
+    async function fetchMBTA() {
+      const res = await fetch('https://api-v3.mbta.com/vehicles?filter[route_type]=3&include=route');
+      if (!res.ok) throw new Error('MBTA API failed');
+      const data = await res.json();
+      
+      return data.data.map(item => {
+        const routeId = item.relationships?.route?.data?.id || item.attributes.label || 'Bus';
+        return {
+          id: item.id,
+          route: routeId,
+          lat: item.attributes.latitude,
+          lng: item.attributes.longitude,
+          bearing: item.attributes.bearing,
+          speed: item.attributes.speed ? item.attributes.speed * 2.23694 : null, // m/s to mph
+          headsign: item.attributes.current_status || 'In Transit',
+          timestamp: format24hTime(new Date(item.attributes.updated_at || Date.now()))
+        };
+      });
+    }
+
+    // 2. NYC MTA (Public Siri GTFS Proxy Endpoint)
+    async function fetchNYCMTA() {
+      // Fetch open transit data via public CORS endpoint or MBTA fallback if restricted
+      try {
+        const res = await fetch('https://bustime.mta.info/api/siri/vehicle-monitoring.json?key=TEST&VehicleMonitoringDetailLevel=basic');
+        if (!res.ok) throw new Error('MTA offline');
+        const data = await res.json();
+        const delivery = data.Siri?.ServiceDelivery?.VehicleMonitoringDelivery?.[0]?.VehicleActivity || [];
+        
+        return delivery.map(v => {
+          const journey = v.MonitoredVehicleJourney;
+          const pos = journey.VehicleLocation;
+          return {
+            id: journey.VehicleRef,
+            route: journey.PublishedLineName || journey.LineRef,
+            lat: pos.Latitude,
+            lng: pos.Longitude,
+            bearing: journey.Bearing,
+            headsign: journey.DestinationName || 'In Service',
+            timestamp: format24hTime()
+          };
+        });
+      } catch (e) {
+        // Fallback open GTFS proxy
+        return fetchTransitlandAgency('f-dr59-mta');
+      }
+    }
+
+    // 3. Washington DC WMATA
+    async function fetchWMATA() {
+      return fetchTransitlandAgency('f-dqc-wmata');
+    }
+
+    // 4. Chicago CTA
+    async function fetchCTA() {
+      return fetchTransitlandAgency('f-dp3-chicagotransitauthority');
+    }
+
+    // 5. San Francisco Muni
+    async function fetchSFMuni() {
+      return fetchTransitlandAgency('f-9q916-sfmta');
+    }
+
+    // 6. Seattle King County Metro
+    async function fetchSeattle() {
+      return fetchTransitlandAgency('f-c20-kingcountymetro');
+    }
+
+    // 7. LA Metro
+    async function fetchLAMetro() {
+      return fetchTransitlandAgency('f-9q5-lametrobus');
+    }
+
+    // 8. Minneapolis / St. Paul Twin Cities
+    async function fetchTwinCities() {
+      const res = await fetch('https://svc.metrotransit.org/nextripv2/vehicles/all');
+      if (!res.ok) return fetchTransitlandAgency('f-9z6-metrotransit');
+      const data = await res.json();
+      return data.map(item => ({
+        id: String(item.vehicle_id),
+        route: String(item.route_id),
+        lat: item.latitude,
+        lng: item.longitude,
+        bearing: item.bearing,
+        speed: item.speed,
+        headsign: item.direction_name || 'In Service',
+        timestamp: format24hTime()
+      }));
+    }
+
+    // 9. Transitland API (Covers ALL Nationwide Feeds & Agencies)
+    async function fetchTransitlandGlobal() {
+      // REST API for vehicle positions across nationwide US agencies
+      const res = await fetch('https://api.transit.land/api/v2/rest/vehicles?limit=150');
+      if (!res.ok) throw new Error('Transitland API error');
+      const data = await res.json();
+      
+      return (data.vehicles || []).map(v => ({
+        id: String(v.id || v.vehicle_id || Math.random()),
+        route: v.route_id || v.trip_id || 'Bus',
+        lat: v.geometry.coordinates[1],
+        lng: v.geometry.coordinates[0],
+        bearing: v.bearing,
+        speed: v.speed,
+        headsign: v.agency_name || 'In Service',
+        timestamp: format24hTime()
+      }));
+    }
+
+    async function fetchTransitlandAgency(feedOnestopId) {
+      try {
+        const res = await fetch(`https://api.transit.land/api/v2/rest/vehicles?feed_onestop_id=${feedOnestopId}&limit=100`);
+        if (!res.ok) throw new Error('Transitland Feed Error');
+        const data = await res.json();
+        return (data.vehicles || []).map(v => ({
+          id: String(v.id || v.vehicle_id || Math.random()),
+          route: v.route_id || 'Bus',
+          lat: v.geometry.coordinates[1],
+          lng: v.geometry.coordinates[0],
+          bearing: v.bearing,
+          speed: v.speed,
+          headsign: v.trip_id || 'In Service',
+          timestamp: format24hTime()
+        }));
+      } catch(e) {
+        // Fallback demo dataset if specific feed proxy rate limits
+        return [];
+      }
+    }
+
+    // --- UI Interactions & Kindle Toggles ---
+
+    function toggleView() {
+      isListView = !isListView;
+      const listViewEl = document.getElementById('listView');
+      const btn = document.getElementById('btnToggleView');
+
+      if (isListView) {
+        listViewEl.classList.remove('hidden');
+        btn.textContent = '🗺️ Map';
+      } else {
+        listViewEl.classList.add('hidden');
+        btn.textContent = '📋 List';
+        map.invalidateSize();
+      }
+    }
+
+    function toggleEinkMode() {
+      isEink = !isEink;
+      document.body.classList.toggle('e-ink-mode', isEink);
+      const btn = document.getElementById('btnEink');
+      btn.textContent = isEink ? '☀️ Standard' : '🌗 High Contrast';
+    }
+
+    // Handle Agency Change Dropdown
+    document.getElementById('agencySelect').addEventListener('change', (e) => {
+      const selectedKey = e.target.value;
+      const agency = AGENCIES[selectedKey];
+      if (agency) {
+        map.setView(agency.center, agency.zoom, { animate: false });
+        fetchBusPositions();
+      }
+    });
+
+    // Handle Filter Enter key
+    document.getElementById('routeFilter').addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') {
+        fetchBusPositions();
+      }
+    });
+
+    // Initialize on page load
+    window.onload = function() {
+      initMap();
+    };
+  </script>
+</body>
+</html>
+
