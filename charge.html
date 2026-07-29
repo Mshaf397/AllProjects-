@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Battery Drain Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
+    
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -42,10 +47,13 @@
                 </h1>
                 <p class="text-slate-500 dark:text-slate-400 text-sm">Professional hardware testing logs</p>
             </div>
-            <button id="themeToggle" class="p-2 rounded-lg bg-slate-200 dark:bg-slate-800 hover:ring-2 ring-blue-500 transition-all">
-                <span class="dark:hidden">🌙 Dark Mode</span>
-                <span class="hidden dark:inline">☀️ Light Mode</span>
-            </button>
+            <div class="flex items-center gap-3">
+                <div id="user-id-display" class="text-[10px] text-slate-400 font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">Connecting...</div>
+                <button id="themeToggle" class="p-2 rounded-lg bg-slate-200 dark:bg-slate-800 hover:ring-2 ring-blue-500 transition-all text-sm">
+                    <span class="dark:hidden">🌙 Dark Mode</span>
+                    <span class="hidden dark:inline">☀️ Light Mode</span>
+                </button>
+            </div>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -127,7 +135,7 @@
                 <div class="bg-white dark:bg-darkCard rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                     <div class="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                         <h2 class="text-xl font-semibold">Test History</h2>
-                        <span id="recordCount" class="text-xs font-mono bg-blue-100 dark:bg-blue-900/40 text-blue-600 px-2 py-1 rounded">0 Records</span>
+                        <span id="recordCount" class="text-xs font-mono bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 px-2 py-1 rounded">0 Records</span>
                     </div>
                     
                     <div class="overflow-x-auto">
@@ -155,22 +163,30 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
+    <!-- Firebase Script Logic -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
-        // Configuration from environment
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'battery-drain-tracker';
-        
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
+        // --- Firebase Configuration (Matching Second File) ---
+        const myConfig = {
+            apiKey: "AIzaSyC-UIB5l1bo_apccqskT6LAHvliQoc-U-s",
+            authDomain: "all-my-projects-3cf20.firebaseapp.com",
+            projectId: "all-my-projects-3cf20",
+            storageBucket: "all-my-projects-3cf20.firebasestorage.app",
+            messagingSenderId: "245058314875",
+            appId: "1:245058314875:web:1b9fead1655343416838de"
+        };
+
+        const app = initializeApp(myConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        
+        const appId = "battery-drain-tracker";
 
         let currentUser = null;
+        const userIdDisplay = document.getElementById('user-id-display');
 
         // Theme Logic
         const themeToggle = document.getElementById('themeToggle');
@@ -183,30 +199,28 @@
             localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
         });
 
-        // Authentication Logic
-        const initAuth = async () => {
+        // --- Auth Workflow ---
+        async function initAuth() {
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Auth error:", error);
+                await signInAnonymously(auth);
+            } catch (err) {
+                console.error("Auth Failed", err);
+                if (userIdDisplay) userIdDisplay.textContent = "Auth Error";
             }
-        };
+        }
 
         onAuthStateChanged(auth, (user) => {
-            currentUser = user;
             if (user) {
+                currentUser = user;
+                if (userIdDisplay) userIdDisplay.textContent = `UID: ${user.uid.slice(0, 8)}`;
                 setupDataListener();
             }
         });
 
-        initAuth();
-
         // Database Logic
         const setupDataListener = () => {
+            if (!currentUser) return;
+
             const dataPath = collection(db, 'artifacts', appId, 'public', 'data', 'drain_tests');
             
             onSnapshot(dataPath, (snapshot) => {
@@ -218,8 +232,8 @@
                 tableBody.innerHTML = '';
                 countBadge.innerText = `${snapshot.size} Records`;
 
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
+                snapshot.forEach((docItem) => {
+                    const data = docItem.data();
                     const row = document.createElement('tr');
                     row.className = "hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group";
                     
@@ -238,7 +252,7 @@
                             ${parseFloat(data.drainRate).toFixed(6)}
                         </td>
                         <td class="p-4 text-center">
-                            <button onclick="window.deleteRecord('${doc.id}')" class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="window.deleteRecord('${docItem.id}')" class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                                 🗑️
                             </button>
                         </td>
@@ -297,6 +311,9 @@
                 submitBtn.innerText = "Save Record";
             }
         });
+
+        // Start App Auth
+        initAuth();
 
     </script>
 </body>
