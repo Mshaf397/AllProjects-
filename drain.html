@@ -170,12 +170,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
               <label class="block text-xs font-medium text-slate-400 mb-1">Fabrication Node</label>
-              <select id="input-chip-fab" onchange="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-                <option value="3">3 nm (Cutting Edge)</option>
-                <option value="4" selected>4 nm (Modern Flagship)</option>
-                <option value="6">6 nm (Mid-range)</option>
-                <option value="7">7 nm / 8 nm (Older Generation)</option>
-                <option value="12">12 nm + (Legacy Node)</option>
+              <input id="input-chip-fab" type="number" value="5" onchange="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
               </select>
             </div>
             <div>
