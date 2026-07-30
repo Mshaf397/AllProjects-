@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smartphone Battery Drain Estimator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    /* Slider Custom Styling */
+    input[type=range] {
+      accent-color: #3b82f6;
+    }
+  </style>
+</head>
+<body class="h-full font-sans antialiased bg-slate-950 text-slate-100 flex flex-col">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30">
+          <i class="fa-solid fa-battery-bolt text-xl"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight text-white">Mobile Battery Drain Estimator</h1>
+          <p class="text-xs text-slate-400">Parametric Component-Additive Power Model</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="text-xs text-slate-400 hidden sm:inline">Quick Presets:</span>
+        <button onclick="loadPreset('flagship')" class="px-2.5 py-1 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition">Flagship OLED</button>
+        <button onclick="loadPreset('midrange')" class="px-2.5 py-1 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition">Mid-range LCD</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-y-auto">
+
+    <!-- Left Column: Controls (7 cols) -->
+    <div class="lg:col-span-7 space-y-6">
+
+      <!-- Preset Tasks Card -->
+      <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-blue-400"></i> Active Task Scenario
+        </h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <button onclick="selectTask('web')" id="task-btn-web" class="task-btn p-3 rounded-xl border text-left transition flex flex-col justify-between h-20 bg-blue-600/10 border-blue-500/50 text-blue-300">
+            <div class="flex justify-between items-center"><i class="fa-solid fa-globe text-lg"></i><span class="text-[10px] uppercase font-bold opacity-75">Wi-Fi</span></div>
+            <span class="text-xs font-medium">Web Browsing</span>
+          </button>
+          <button onclick="selectTask('youtube')" id="task-btn-youtube" class="task-btn p-3 rounded-xl border border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 transition flex flex-col justify-between h-20">
+            <div class="flex justify-between items-center"><i class="fa-brands fa-youtube text-lg"></i><span class="text-[10px] uppercase font-bold opacity-75">1080p</span></div>
+            <span class="text-xs font-medium">YouTube Video</span>
+          </button>
+          <button onclick="selectTask('gaming')" id="task-btn-gaming" class="task-btn p-3 rounded-xl border border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 transition flex flex-col justify-between h-20">
+            <div class="flex justify-between items-center"><i class="fa-solid fa-gamepad text-lg"></i><span class="text-[10px] uppercase font-bold opacity-75">3D</span></div>
+            <span class="text-xs font-medium">3D Gaming</span>
+          </button>
+          <button onclick="selectTask('camera')" id="task-btn-camera" class="task-btn p-3 rounded-xl border border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 transition flex flex-col justify-between h-20">
+            <div class="flex justify-between items-center"><i class="fa-solid fa-video text-lg"></i><span class="text-[10px] uppercase font-bold opacity-75">4K60</span></div>
+            <span class="text-xs font-medium">Video Recording</span>
+          </button>
+          <button onclick="selectTask('call')" id="task-btn-call" class="task-btn p-3 rounded-xl border border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 transition flex flex-col justify-between h-20">
+            <div class="flex justify-between items-center"><i class="fa-solid fa-phone text-lg"></i><span class="text-[10px] uppercase font-bold opacity-75">Screen Off</span></div>
+            <span class="text-xs font-medium">Cellular Call</span>
+          </button>
+          <button onclick="selectTask('custom')" id="task-btn-custom" class="task-btn p-3 rounded-xl border border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700 transition flex flex-col justify-between h-20">
+            <div class="flex justify-between items-center"><i class="fa-solid fa-sliders text-lg"></i><span class="text-[10px] uppercase font-bold opacity-75">Manual</span></div>
+            <span class="text-xs font-medium">Custom Configuration</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Specifications Accordions / Grouped Cards -->
+      <div class="space-y-4">
+        
+        <!-- Battery & Power Base -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5">
+          <h3 class="text-sm font-semibold text-slate-200 mb-4 flex items-center justify-between">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-car-battery text-emerald-400"></i> Battery & Baseline</span>
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Battery Capacity (mAh)</label>
+              <input type="number" id="input-battery-capacity" value="5000" step="50" min="1000" max="10000" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Nominal Voltage (V)</label>
+              <input type="number" id="input-nominal-voltage" value="3.88" step="0.01" min="3.5" max="4.5" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- Display Configuration -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5">
+          <h3 class="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-mobile-screen-button text-purple-400"></i> Display Subsystem
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- Display Area cm2 (GSMArena Format) -->
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-medium text-slate-400">Display Area (cm²) <span class="text-blue-400 text-[11px] font-normal">(as on GSMArena)</span></label>
+                <span id="val-display-area" class="text-xs font-mono font-bold text-white">110 cm²</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <input type="range" id="input-display-area" min="50" max="200" value="110" step="1" oninput="syncVal('display-area', 'cm²'); calculate();" class="w-full">
+                <input type="number" id="num-display-area" value="110" min="30" max="300" oninput="syncSlider('display-area'); calculate();" class="w-20 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-right font-mono">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Display Tech</label>
+                <select id="input-display-tech" onchange="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                  <option value="oled" selected>OLED / AMOLED (LTPO / Flexible)</option>
+                  <option value="lcd">IPS LCD (Uniform Backlight)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Active Refresh Rate (Hz)</label>
+                <select id="input-refresh-rate" onchange="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                  <option value="1">1 Hz (AOD Static)</option>
+                  <option value="30">30 Hz (Low Power Video)</option>
+                  <option value="60" selected>60 Hz (Standard)</option>
+                  <option value="90">90 Hz (Smooth)</option>
+                  <option value="120">120 Hz (Ultra Smooth)</option>
+                  <option value="144">144 Hz (Gaming)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Brightness & Content AOP -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <label class="text-xs font-medium text-slate-400">Display Brightness</label>
+                  <span id="val-brightness" class="text-xs font-mono font-bold text-white">500 nits</span>
+                </div>
+                <input type="range" id="input-brightness" min="10" max="1800" value="500" step="10" oninput="syncVal('brightness', 'nits'); calculate();" class="w-full">
+              </div>
+              <div id="aop-container">
+                <div class="flex justify-between items-center mb-1">
+                  <label class="text-xs font-medium text-slate-400">OLED Dark/Light Ratio (AOP)</label>
+                  <span id="val-aop" class="text-xs font-mono font-bold text-white">50%</span>
+                </div>
+                <input type="range" id="input-aop" min="5" max="100" value="50" step="5" oninput="syncVal('aop', '%'); calculate();" class="w-full">
+                <p class="text-[10px] text-slate-500 mt-0.5">Dark Mode ~ 20-30%, White Screen = 100%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chipset / Processing -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5">
+          <h3 class="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-microchip text-amber-400"></i> Chipset Architecture & Load
+          </h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Fabrication Node</label>
+              <select id="input-chip-fab" onchange="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <option value="3">3 nm (Cutting Edge)</option>
+                <option value="4" selected>4 nm (Modern Flagship)</option>
+                <option value="6">6 nm (Mid-range)</option>
+                <option value="7">7 nm / 8 nm (Older Generation)</option>
+                <option value="12">12 nm + (Legacy Node)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Peak CPU Clock Speed</label>
+              <select id="input-chip-clock" onchange="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <option value="2.2">2.2 GHz (Efficiency tuned)</option>
+                <option value="2.8">2.8 GHz (Balanced)</option>
+                <option value="3.2" selected>3.2 GHz (High Performance)</option>
+                <option value="3.4">3.4+ GHz (Ultra Performance)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Dynamic CPU/GPU Load -->
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-medium text-slate-400">Active CPU Load</label>
+                <span id="val-cpu-load" class="text-xs font-mono font-bold text-white">15%</span>
+              </div>
+              <input type="range" id="input-cpu-load" min="1" max="100" value="15" step="1" oninput="syncVal('cpu-load', '%'); calculate();" class="w-full">
+            </div>
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-medium text-slate-400">Active GPU Load</label>
+                <span id="val-gpu-load" class="text-xs font-mono font-bold text-white">5%</span>
+              </div>
+              <input type="range" id="input-gpu-load" min="0" max="100" value="5" step="1" oninput="syncVal('gpu-load', '%'); calculate();" class="w-full">
+            </div>
+          </div>
+        </div>
+
+        <!-- Camera & ISP -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5">
+          <h3 class="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-camera text-rose-400"></i> Camera & Media Hardware
+          </h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Camera State</label>
+              <select id="input-camera-state" onchange="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <option value="off" selected>Camera Inactive</option>
+                <option value="viewfinder">Viewfinder Preview Active</option>
+                <option value="rec_1080p_30">Recording: 1080p @ 30 FPS</option>
+                <option value="rec_1080p_60">Recording: 1080p @ 60 FPS</option>
+                <option value="rec_4k_30">Recording: 4K @ 30 FPS</option>
+                <option value="rec_4k_60">Recording: 4K @ 60 FPS</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Active Camera Unit</label>
+              <select id="input-camera-active" onchange="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <option value="main" selected>Main Rear Sensor</option>
+                <option value="selfie">Front Selfie Sensor</option>
+                <option value="dual">Dual Active (Picture-in-Picture)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Network & Connectivity -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5">
+          <h3 class="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-wifi text-cyan-400"></i> Network & Wireless Radios
+          </h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Network Connection Mode</label>
+              <select id="input-network-type" onchange="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <option value="airplane">Airplane Mode (All Radios Off)</option>
+                <option value="wifi" selected>Wi-Fi 6 / 6E / 7 Active</option>
+                <option value="4g">4G LTE Cellular Data</option>
+                <option value="5g_sub6">5G Sub-6 GHz (NSA/SA)</option>
+                <option value="5g_mmwave">5G mmWave High-Band</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Cellular Signal Quality</label>
+              <select id="input-signal-quality" onchange="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <option value="excellent" selected>Strong Signal (-70 dBm)</option>
+                <option value="medium">Medium Signal (-95 dBm)</option>
+                <option value="weak">Weak / Edge Signal (-115 dBm)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sensors & Audio Miscellaneous -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5">
+          <h3 class="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-cube text-indigo-400"></i> Sensors & Peripherals
+          </h3>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <label class="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+              <input type="checkbox" id="check-gps" onchange="calculate()" class="rounded border-slate-700 text-blue-600 focus:ring-0">
+              <span class="text-slate-300">GPS Active</span>
+            </label>
+            <label class="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+              <input type="checkbox" id="check-speaker" onchange="calculate()" checked class="rounded border-slate-700 text-blue-600 focus:ring-0">
+              <span class="text-slate-300">Audio Speaker</span>
+            </label>
+            <label class="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+              <input type="checkbox" id="check-haptics" onchange="calculate()" class="rounded border-slate-700 text-blue-600 focus:ring-0">
+              <span class="text-slate-300">Haptics / Motor</span>
+            </label>
+            <label class="flex items-center space-x-2 bg-slate-950 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+              <input type="checkbox" id="check-sensors" onchange="calculate()" checked class="rounded border-slate-700 text-blue-600 focus:ring-0">
+              <span class="text-slate-300">Sensors Hub</span>
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Right Column: Outputs & Visualizations (5 cols) -->
+    <div class="lg:col-span-5 space-y-6">
+
+      <!-- Main Drain Calculation Summary -->
+      <div class="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-6 shadow-xl sticky top-20">
+        
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">Estimated Consumption</h2>
+
+        <!-- Primary Output Numbers -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="bg-slate-950/80 p-4 rounded-xl border border-blue-500/30">
+            <span class="text-xs font-medium text-slate-400 block mb-1">Drain Rate</span>
+            <div class="text-2xl sm:text-3xl font-extrabold text-blue-400 font-mono tracking-tight" id="out-mah-min">0.00</div>
+            <span class="text-xs font-semibold text-blue-300/80">mAh / min</span>
+          </div>
+
+          <div class="bg-slate-950/80 p-4 rounded-xl border border-emerald-500/30">
+            <span class="text-xs font-medium text-slate-400 block mb-1">Total Battery Life</span>
+            <div class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono tracking-tight" id="out-hours">0h 0m</div>
+            <span class="text-xs font-semibold text-emerald-300/80" id="out-minutes-total">0 minutes total</span>
+          </div>
+        </div>
+
+        <!-- Secondary Diagnostics -->
+        <div class="grid grid-cols-3 gap-2 py-3 border-y border-slate-800 text-center mb-6">
+          <div>
+            <span class="text-[10px] uppercase text-slate-500 font-bold block">Current Draw</span>
+            <span class="text-sm font-bold font-mono text-slate-200" id="out-current-ma">0 mA</span>
+          </div>
+          <div>
+            <span class="text-[10px] uppercase text-slate-500 font-bold block">Power Draw</span>
+            <span class="text-sm font-bold font-mono text-slate-200" id="out-power-mw">0 mW</span>
+          </div>
+          <div>
+            <span class="text-[10px] uppercase text-slate-500 font-bold block">% Loss Rate</span>
+            <span class="text-sm font-bold font-mono text-amber-400" id="out-pct-min">0.00%/min</span>
+          </div>
+        </div>
+
+        <!-- Subsystem Breakdown Chart -->
+        <div>
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Subsystem Power Breakdown</h3>
+          <div class="h-48 relative flex items-center justify-center">
+            <canvas id="powerChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Breakdown Details List -->
+        <div class="mt-4 space-y-2 text-xs">
+          <div class="flex justify-between text-slate-400">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block"></span> Display</span>
+            <span class="font-mono text-slate-200" id="out-sub-display">0 mA</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> Chipset (CPU+GPU)</span>
+            <span class="font-mono text-slate-200" id="out-sub-chipset">0 mA</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block"></span> Network Radios</span>
+            <span class="font-mono text-slate-200" id="out-sub-network">0 mA</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> Camera System</span>
+            <span class="font-mono text-slate-200" id="out-sub-camera">0 mA</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-slate-500 inline-block"></span> Peripherals & Base</span>
+            <span class="font-mono text-slate-200" id="out-sub-base">0 mA</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    let chartInstance = null;
+
+    // Helper functions for sync slider and numeric input
+    function syncVal(id, unit) {
+      const val = document.getElementById(`input-${id}`).value;
+      document.getElementById(`val-${id}`).innerText = `${val} ${unit}`;
+      if(document.getElementById(`num-${id}`)) {
+        document.getElementById(`num-${id}`).value = val;
+      }
+    }
+
+    function syncSlider(id) {
+      const val = document.getElementById(`num-${id}`).value;
+      document.getElementById(`input-${id}`).value = val;
+      const unit = id === 'display-area' ? 'cm²' : '';
+      document.getElementById(`val-${id}`).innerText = `${val} ${unit}`;
+    }
+
+    // Task Selection Preset Applicator
+    function selectTask(taskKey) {
+      // Highlight selected button
+      document.querySelectorAll('.task-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600/10', 'border-blue-500/50', 'text-blue-300');
+        btn.classList.add('border-slate-800', 'bg-slate-950/50', 'text-slate-400');
+      });
+
+      const activeBtn = document.getElementById(`task-btn-${taskKey}`);
+      if(activeBtn) {
+        activeBtn.classList.remove('border-slate-800', 'bg-slate-950/50', 'text-slate-400');
+        activeBtn.classList.add('bg-blue-600/10', 'border-blue-500/50', 'text-blue-300');
+      }
+
+      // Configure input sliders according to task scenario
+      switch(taskKey) {
+        case 'web':
+          document.getElementById('input-refresh-rate').value = "60";
+          document.getElementById('input-brightness').value = "450";
+          document.getElementById('input-cpu-load').value = "15";
+          document.getElementById('input-gpu-load').value = "5";
+          document.getElementById('input-camera-state').value = "off";
+          document.getElementById('input-network-type').value = "wifi";
+          document.getElementById('check-speaker').checked = false;
+          break;
+        case 'youtube':
+          document.getElementById('input-refresh-rate').value = "60";
+          document.getElementById('input-brightness').value = "500";
+          document.getElementById('input-cpu-load').value = "12";
+          document.getElementById('input-gpu-load').value = "8";
+          document.getElementById('input-camera-state').value = "off";
+          document.getElementById('input-network-type').value = "wifi";
+          document.getElementById('check-speaker').checked = true;
+          break;
+        case 'gaming':
+          document.getElementById('input-refresh-rate').value = "120";
+          document.getElementById('input-brightness').value = "600";
+          document.getElementById('input-cpu-load').value = "65";
+          document.getElementById('input-gpu-load').value = "80";
+          document.getElementById('input-camera-state').value = "off";
+          document.getElementById('input-network-type').value = "wifi";
+          document.getElementById('check-speaker').checked = true;
+          break;
+        case 'camera':
+          document.getElementById('input-refresh-rate').value = "60";
+          document.getElementById('input-brightness').value = "750";
+          document.getElementById('input-cpu-load').value = "40";
+          document.getElementById('input-gpu-load').value = "20";
+          document.getElementById('input-camera-state').value = "rec_4k_60";
+          document.getElementById('input-camera-active').value = "main";
+          document.getElementById('input-network-type').value = "wifi";
+          document.getElementById('check-speaker').checked = false;
+          break;
+        case 'call':
+          document.getElementById('input-brightness').value = "10"; // Screen off
+          document.getElementById('input-cpu-load').value = "5";
+          document.getElementById('input-gpu-load').value = "0";
+          document.getElementById('input-camera-state').value = "off";
+          document.getElementById('input-network-type').value = "4g";
+          document.getElementById('check-speaker').checked = true;
+          break;
+      }
+
+      syncVal('brightness', 'nits');
+      syncVal('cpu-load', '%');
+      syncVal('gpu-load', '%');
+      calculate();
+    }
+
+    function loadPreset(preset) {
+      if (preset === 'flagship') {
+        document.getElementById('input-battery-capacity').value = "5000";
+        document.getElementById('input-display-area').value = "113";
+        document.getElementById('num-display-area').value = "113";
+        document.getElementById('input-display-tech').value = "oled";
+        document.getElementById('input-chip-fab').value = "3";
+        document.getElementById('input-chip-clock').value = "3.4";
+      } else if (preset === 'midrange') {
+        document.getElementById('input-battery-capacity').value = "4500";
+        document.getElementById('input-display-area').value = "102";
+        document.getElementById('num-display-area').value = "102";
+        document.getElementById('input-display-tech').value = "lcd";
+        document.getElementById('input-chip-fab').value = "6";
+        document.getElementById('input-chip-clock').value = "2.8";
+      }
+      syncVal('display-area', 'cm²');
+      calculate();
+    }
+
+    // Parametric Calculation Engine
+    function calculate() {
+      // 1. Get Form Inputs
+      const batCap = parseFloat(document.getElementById('input-battery-capacity').value) || 5000;
+      const vNominal = parseFloat(document.getElementById('input-nominal-voltage').value) || 3.88;
+      
+      const areaCm2 = parseFloat(document.getElementById('input-display-area').value) || 110;
+      const displayTech = document.getElementById('input-display-tech').value;
+      const refreshRate = parseFloat(document.getElementById('input-refresh-rate').value);
+      const brightnessNits = parseFloat(document.getElementById('input-brightness').value);
+      const aopPercent = parseFloat(document.getElementById('input-aop').value) / 100;
+
+      const fabNm = parseFloat(document.getElementById('input-chip-fab').value);
+      const clockGhz = parseFloat(document.getElementById('input-chip-clock').value);
+      const cpuLoad = parseFloat(document.getElementById('input-cpu-load').value) / 100;
+      const gpuLoad = parseFloat(document.getElementById('input-gpu-load').value) / 100;
+
+      const cameraState = document.getElementById('input-camera-state').value;
+      const cameraActive = document.getElementById('input-camera-active').value;
+
+      const netType = document.getElementById('input-network-type').value;
+      const sigQuality = document.getElementById('input-signal-quality').value;
+
+      const gpsActive = document.getElementById('check-gps').checked;
+      const speakerActive = document.getElementById('check-speaker').checked;
+      const hapticsActive = document.getElementById('check-haptics').checked;
+      const sensorsActive = document.getElementById('check-sensors').checked;
+
+      // Show/Hide AOP slider based on panel tech
+      const aopContainer = document.getElementById('aop-container');
+      if (displayTech === 'lcd') {
+        aopContainer.classList.add('opacity-40', 'pointer-events-none');
+      } else {
+        aopContainer.classList.remove('opacity-40', 'pointer-events-none');
+      }
+
+      // --- 2. Calculate Subsystem Currents (in mA) ---
+
+      // A. Display Current
+      let iDisplay = 0;
+      // Area relative factor (normalized around 100 cm2)
+      const areaFactor = areaCm2 / 100.0;
+      // Normalized brightness scaling (gamma curve)
+      const brightnessNormalized = Math.pow(brightnessNits / 500.0, 1.6);
+
+      if (displayTech === 'oled') {
+        // OLED draws proportional to active illuminated pixels (AOP)
+        iDisplay = 180 * areaFactor * brightnessNormalized * aopPercent;
+      } else {
+        // LCD backlight draws uniform power regardless of dark pixels
+        iDisplay = 210 * areaFactor * brightnessNormalized;
+      }
+
+      // Refresh rate panel driver overhead
+      const hzMultiplier = 1 + ((refreshRate - 60) * 0.0035);
+      iDisplay = iDisplay * Math.max(0.2, hzMultiplier);
+
+      // B. Chipset (CPU + GPU) Current
+      // Fabrication node efficiency scaling factor
+      const fabFactor = Math.pow(fabNm / 4.0, 0.65);
+      // Clock speed quadratic power scaling approximation
+      const clockFactor = Math.pow(clockGhz / 3.0, 2.1);
+
+      const maxCpumA = 900 * fabFactor * clockFactor;
+      const maxGpuMA = 1100 * fabFactor * clockFactor;
+
+      const iCpu = cpuLoad * maxCpumA;
+      const iGpu = gpuLoad * maxGpuMA;
+      const iChipset = iCpu + iGpu + 25; // includes idle interconnect logic
+
+      // C. Camera Current
+      let iCamera = 0;
+      if (cameraState !== 'off') {
+        let baseCamPower = 150; // Viewfinder base
+        if (cameraState === 'rec_1080p_30') baseCamPower = 300;
+        if (cameraState === 'rec_1080p_60') baseCamPower = 450;
+        if (cameraState === 'rec_4k_30') baseCamPower = 650;
+        if (cameraState === 'rec_4k_60') baseCamPower = 950;
+
+        if (cameraActive === 'selfie') baseCamPower *= 0.8;
+        if (cameraActive === 'dual') baseCamPower *= 1.45;
+
+        iCamera = baseCamPower;
+      }
+
+      // D. Network & Radio Current
+      let iNetwork = 0;
+      let signalMultiplier = 1.0;
+      if (sigQuality === 'medium') signalMultiplier = 1.35;
+      if (sigQuality === 'weak') signalMultiplier = 1.9;
+
+      switch(netType) {
+        case 'airplane': iNetwork = 0; break;
+        case 'wifi': iNetwork = 35; break;
+        case '4g': iNetwork = 120 * signalMultiplier; break;
+        case '5g_sub6': iNetwork = 240 * signalMultiplier; break;
+        case '5g_mmwave': iNetwork = 650 * signalMultiplier; break;
+      }
+
+      // E. Peripherals, Sensors, & Baseline System Idle
+      let iPeripherals = 30; // System baseline idle (RAM, PMIC)
+      if (gpsActive) iPeripherals += 60;
+      if (speakerActive) iPeripherals += 80;
+      if (hapticsActive) iPeripherals += 40;
+      if (sensorsActive) iPeripherals += 15;
+
+      // --- 3. Aggregate Total & Convert to Output Metrics ---
+      const iTotal = iDisplay + iChipset + iCamera + iNetwork + iPeripherals; // Total mA
+      const pTotal = (iTotal * vNominal); // Total mW
+
+      // Battery Drain Rate in mAh/min
+      const mahPerMin = iTotal / 60.0;
+      const pctPerMin = (mahPerMin / batCap) * 100;
+
+      // Total Battery Life in Minutes & Hours
+      const totalMinutes = batCap / mahPerMin;
+      const hours = Math.floor(totalMinutes / 60);
+      const mins = Math.floor(totalMinutes % 60);
+
+      // --- 4. Update UI Outputs ---
+      document.getElementById('out-mah-min').innerText = mahPerMin.toFixed(2);
+      document.getElementById('out-hours').innerText = `${hours}h ${mins}m`;
+      document.getElementById('out-minutes-total').innerText = `${Math.round(totalMinutes)} minutes total runtime`;
+
+      document.getElementById('out-current-ma').innerText = `${Math.round(iTotal)} mA`;
+      document.getElementById('out-power-mw').innerText = `${Math.round(pTotal)} mW`;
+      document.getElementById('out-pct-min').innerText = `${pctPerMin.toFixed(3)}%/min`;
+
+      document.getElementById('out-sub-display').innerText = `${Math.round(iDisplay)} mA`;
+      document.getElementById('out-sub-chipset').innerText = `${Math.round(iChipset)} mA`;
+      document.getElementById('out-sub-network').innerText = `${Math.round(iNetwork)} mA`;
+      document.getElementById('out-sub-camera').innerText = `${Math.round(iCamera)} mA`;
+      document.getElementById('out-sub-base').innerText = `${Math.round(iPeripherals)} mA`;
+
+      // Update Pie Chart Data
+      updateChart([iDisplay, iChipset, iNetwork, iCamera, iPeripherals]);
+    }
+
+    // Chart.js Rendering Logic
+    function updateChart(dataValues) {
+      const ctx = document.getElementById('powerChart').getContext('2d');
+      const labels = ['Display', 'Chipset', 'Network', 'Camera', 'Peripherals'];
+      const colors = ['#a855f7', '#f59e0b', '#06b6d4', '#f43f5e', '#64748b'];
+
+      if (chartInstance) {
+        chartInstance.data.datasets[0].data = dataValues;
+        chartInstance.update();
+      } else {
+        chartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: dataValues,
+              backgroundColor: colors,
+              borderWidth: 0,
+              hoverOffset: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return ` ${context.label}: ${Math.round(context.raw)} mA`;
+                  }
+                }
+              }
+            },
+            cutout: '70%'
+          }
+        });
+      }
+    }
+
+    // Initialize calculation on page load
+    window.onload = function() {
+      calculate();
+    };
+  </script>
+</body>
+</html>
+
