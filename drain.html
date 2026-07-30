@@ -139,7 +139,7 @@
               </div>
               <div>
                 <label class="block text-xs font-medium text-slate-400 mb-1">Active Refresh Rate (Hz)</label>
-                <input id="input-refresh-rate" onchange="calculate()" type="number" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <input id="input-refresh-rate" onchange="calculate()" type="number" value="60" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
                 </select>
               </div>
             </div>
@@ -151,7 +151,7 @@
                   <label class="text-xs font-medium text-slate-400">Display Brightness</label>
                   <span id="val-brightness" class="text-xs font-mono font-bold text-white">500 nits</span>
                 </div>
-                <input type="range" id="input-brightness" min="10" max="1800" value="500" step="10" oninput="syncVal('brightness', 'nits'); calculate();" class="w-full">
+                <input type="number" id="input-brightness" min="1" max="5000" value="500" step="0.1" oninput="syncVal('brightness', 'nits'); calculate();" class="w-full">
               </div>
               <div id="aop-container">
                 <div class="flex justify-between items-center mb-1">
