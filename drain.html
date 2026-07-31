@@ -97,11 +97,11 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-medium text-slate-400 mb-1">Battery Capacity (mAh)</label>
-              <input type="number" id="input-battery-capacity" value="5000" step="50" min="1000" max="10000" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+              <input type="text" id="input-battery-capacity" value="5000" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
             </div>
             <div>
               <label class="block text-xs font-medium text-slate-400 mb-1">Nominal Voltage (V)</label>
-              <input type="number" id="input-nominal-voltage" value="3.88" step="0.01" min="3.5" max="4.5" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+              <input type="text" id="input-nominal-voltage" value="3.88" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
             </div>
           </div>
         </div>
@@ -121,7 +121,7 @@
               </div>
               <div class="flex items-center gap-3">
                 <input type="range" id="input-display-area" min="50" max="200" value="110" step="1" oninput="syncVal('display-area', 'cm²'); calculate();" class="w-full">
-                <input type="number" id="num-display-area" value="110" min="30" max="300" oninput="syncSlider('display-area'); calculate();" class="w-20 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-right font-mono">
+                <input type="text" id="num-display-area" value="110" oninput="syncSlider('display-area'); calculate();" class="w-20 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-right font-mono">
               </div>
             </div>
 
@@ -135,7 +135,7 @@
               </div>
               <div>
                 <label class="block text-xs font-medium text-slate-400 mb-1">Active Refresh Rate (Hz)</label>
-                <input id="input-refresh-rate" onchange="calculate()" type="number" value="60" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <input id="input-refresh-rate" onchange="calculate()" type="text" value="60" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
                 </select>
               </div>
             </div>
@@ -147,7 +147,7 @@
                   <label class="text-xs font-medium text-slate-400">Display Brightness</label>
                   <span id="val-brightness" class="text-xs font-mono font-bold text-white">500 nits</span>
                 </div>
-                <input type="number" id="input-brightness" min="1" max="5000" value="500" step="0.1" oninput="syncVal('brightness', 'nits'); calculate();" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <input type="text" id="input-brightness" value="500" oninput="syncVal('brightness', 'nits'); calculate();" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
               </div>
               <div id="aop-container">
                 <div class="flex justify-between items-center mb-1">
@@ -175,7 +175,7 @@
             </div>
             <div>
               <label class="block text-xs font-medium text-slate-400 mb-1">Peak CPU Clock Speed</label>
-              <input id="input-chip-clock" type="number" value="3" step="0.01" onchange="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+              <input id="input-chip-clock" type="text" value="3" onchange="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
               </select>
             </div>
           </div>
@@ -187,14 +187,14 @@
                 <label class="text-xs font-medium text-slate-400">Active CPU Load</label>
                 <span id="val-cpu-load" class="text-xs font-mono font-bold text-white">15%</span>
               </div>
-              <input type="range" id="input-cpu-load" min="1" max="100" value="15" step="1" oninput="syncVal('cpu-load', '%'); calculate();" class="w-full">
+              <input type="number" id="input-cpu-load" min="1" max="100" value="15" step="1" oninput="syncVal('cpu-load', '%'); calculate();" class="w-full">
             </div>
             <div>
               <div class="flex justify-between items-center mb-1">
                 <label class="text-xs font-medium text-slate-400">Active GPU Load</label>
                 <span id="val-gpu-load" class="text-xs font-mono font-bold text-white">5%</span>
               </div>
-              <input type="range" id="input-gpu-load" min="0" max="100" value="5" step="1" oninput="syncVal('gpu-load', '%'); calculate();" class="w-full">
+              <input type="number" id="input-gpu-load" min="0" max="100" value="5" step="1" oninput="syncVal('gpu-load', '%'); calculate();" class="w-full">
             </div>
           </div>
         </div>
