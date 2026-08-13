@@ -7,273 +7,258 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 :root {
-/* DARK THEME (Default) /
---pad: 10px;
---main-bg: #111827; / Dark Gray /
---control-bg: #1f2937; / Deep Slate/Violet base /
---text-color: #e5e7eb; / Light text /
---button-color: #bb86fc; / Light Purple/Accent /
---key-color: #6200ee; / Base key color /
---key-text-color: #e5e7eb;
---key-active: #ff6e40; / Vibrant Orange for active press */
---key-inactive: #6200de;
---modal-bg: #1f2937;
---modal-text-color: #e5e7eb;
---input-bg: #374151;
-font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  /* DARK THEME (Default) */
+  --pad: 10px;
+  --main-bg: #111827; /* Dark Gray */
+  --control-bg: #1f2937; /* Deep Slate/Violet base */
+  --text-color: #e5e7eb; /* Light text */
+  --button-color: #bb86fc; /* Light Purple/Accent */
+  --key-color: #6200ee; /* Base key color */
+  --key-text-color: #e5e7eb;
+  --key-active: #ff6e40; /* Vibrant Orange for active press */
+  --key-inactive: #1f2937;
+  --modal-bg: #1f2937;
+  --modal-text-color: #e5e7eb;
+  --input-bg: #374151;
+  font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
+
 body {
-margin: 0;
-padding: var(--pad);
-background: var(--main-bg);
-color: var(--text-color);
-transition: background-color 0.3s, color 0.3s;
+  margin: 0;
+  padding: var(--pad);
+  background: var(--main-bg);
+  color: var(--text-color);
+  transition: background-color 0.3s, color 0.3s;
 }
+
 header {
-display: flex;
-gap: 12px;
-align-items: center;
-margin-bottom: 8px;
-justify-content: space-between;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+  justify-content: space-between;
 }
+
 .controls {
-display: flex;
-flex-wrap: wrap;
-gap: 12px;
-align-items: flex-end;
-background: var(--control-bg);
-padding: 12px;
-border-radius: 8px;
-box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-transition: background-color 0.3s;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  background: var(--control-bg);
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  transition: background-color 0.3s;
 }
+
 label {
-font-size: 13px;
-display: flex;
-flex-direction: column;
-min-width: 120px;
-color: var(--text-color);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  color: var(--text-color);
 }
+
 input[type="range"] {
-height: 30px;
-cursor: grab;
+  height: 30px;
+  cursor: grab;
 }
+
 input[type="number"],
 input[type="text"],
 select {
-padding: 6px;
-font-size: 14px;
-border-radius: 4px;
-color: var(--key-text-color);
-background-color: var(--input-bg);
-border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 6px;
+  font-size: 14px;
+  border-radius: 4px;
+  color: var(--key-text-color);
+  background-color: var(--input-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 input[type="checkbox"] {
-width: 20px;
-height: 20px;
-margin-top: 5px;
-background-color: var(--input-bg);
-border: 1px solid rgba(255, 255, 255, 0.3);
+  width: 20px;
+  height: 20px;
+  margin-top: 5px;
+  background-color: var(--input-bg);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
+
 select[multiple] {
-padding: 4px;
-border: 1px solid rgba(255, 255, 255, 0.2);
-background: var(--input-bg);
-min-height: 100px;
-box-sizing: border-box;
-color: var(--key-text-color);
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--input-bg);
+  min-height: 110px;
+  box-sizing: border-box;
+  color: var(--key-text-color);
 }
+
 select[multiple] option {
-background: var(--input-bg);
-color: var(--key-text-color);
+  background: var(--input-bg);
+  color: var(--key-text-color);
+  padding: 2px 4px;
 }
+
 select[multiple] option:checked {
-background: var(--button-color);
-color: #111;
+  background: var(--button-color);
+  color: #111;
 }
+
 button {
-padding: 8px 12px;
-font-size: 14px;
-cursor: pointer;
-border-radius: 4px;
-background: var(--button-color);
-color: #111827;
-border: none;
-font-weight: bold;
-transition: background 0.1s, transform 0.1s, filter 0.1s;
-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 4px;
+  background: var(--button-color);
+  color: #111827;
+  border: none;
+  font-weight: bold;
+  transition: background 0.1s, transform 0.1s, filter 0.1s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
+
 button:hover {
-filter: brightness(1.2);
-transform: translateY(-1px);
+  filter: brightness(1.2);
+  transform: translateY(-1px);
 }
-/* Recording Button Styles /
+
 #recordBtn {
-background: #ff4136; / Red for recording */
-color: white;
+  background: #ff4136;
+  color: white;
 }
+
 #stopRecordBtn {
-background: #ffdc00; /* Yellow for stop */
-color: #111;
+  background: #ffdc00;
+  color: #111;
 }
+
 #gridWrap {
-margin-top: 12px;
-border-radius: 8px;
-overflow: auto;
-background: var(--control-bg);
-padding: 8px;
-max-height: 60vh;
-max-width: 100%;
-transition: background-color 0.3s;
+  margin-top: 12px;
+  border-radius: 8px;
+  overflow: auto;
+  background: var(--control-bg);
+  padding: 8px;
+  max-height: 60vh;
+  max-width: 100%;
+  transition: background-color 0.3s;
 }
+
 @media (max-width: 768px) {
-#gridWrap {
-max-height: 40vh;
+  #gridWrap {
+    max-height: 40vh;
+  }
 }
-}
+
 canvas {
-display: block;
-background: var(--key-color);
-border-radius: 4px;
-width: auto;
-height: auto;
-transition: background-color 0.3s;
+  display: block;
+  background: var(--key-color);
+  border-radius: 4px;
+  width: auto;
+  height: auto;
+  transition: background-color 0.3s;
 }
+
 .small {
-font-size: 12px;
-color: var(--button-color);
-transition: color 0.3s;
+  font-size: 12px;
+  color: var(--button-color);
+  transition: color 0.3s;
 }
+
 .status {
-margin-top: 12px;
-color: var(--text-color);
-padding: 8px;
-border-radius: 4px;
-background: rgba(0, 0, 0, 0.2);
-transition: color 0.3s;
+  margin-top: 12px;
+  color: var(--text-color);
+  padding: 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  transition: color 0.3s;
 }
-/* Status indicators */
+
 .recording-status {
-font-weight: bold;
-color: #ff4136;
-animation: pulse 1s infinite alternate;
+  font-weight: bold;
+  color: #ff4136;
+  animation: pulse 1s infinite alternate;
 }
+
 @keyframes pulse {
-from {
-opacity: 1;
+  from { opacity: 1; }
+  to { opacity: 0.5; }
 }
-to {
-opacity: 0.5;
-}
-}
-/* INDIVIDUAL PROGRAMMABLE KEY STYLES /
-/ Interactive key elements (HTML keypads, grid elements, or mapped items) */
-.synth-key {
---key-custom-color: var(--key-color);
-background-color: var(--key-custom-color);
-border: 1px solid rgba(255, 255, 255, 0.15);
-border-radius: 6px;
-cursor: pointer;
-user-select: none;
-transition: background-color 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
-}
-.synth-key:hover {
-filter: brightness(1.15);
-box-shadow: 0 0 8px var(--key-custom-color);
-}
-.synth-key:active,
-.synth-key.active {
-background-color: var(--key-active) !important;
-transform: scale(0.96);
-box-shadow: 0 0 12px var(--key-active);
-}
-/* KEY COLOR PROGRAMMER MODAL */
+
 .modal-overlay {
-position: fixed;
-top: 0;
-left: 0;
-right: 0;
-bottom: 0;
-background: rgba(0, 0, 0, 0.75);
-backdrop-filter: blur(4px);
-display: none;
-justify-content: center;
-align-items: center;
-z-index: 1000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
+
 .modal-content {
-background: var(--modal-bg);
-padding: 24px;
-border-radius: 12px;
-width: 90%;
-max-width: 500px;
-color: var(--modal-text-color);
-box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
-border: 1px solid rgba(255, 255, 255, 0.1);
-transition: background-color 0.3s, color 0.3s;
+  background: var(--modal-bg);
+  padding: 24px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  color: var(--modal-text-color);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background-color 0.3s, color 0.3s;
+  max-height: 85vh;
+  overflow-y: auto;
 }
+
 .modal-content h3 {
-margin-top: 0;
-font-size: 22px;
-color: var(--button-color);
+  margin-top: 0;
+  font-size: 22px;
+  color: var(--button-color);
 }
+
 .modal-content label {
-color: var(--modal-text-color);
-margin-bottom: 8px;
-font-size: 15px;
+  color: var(--modal-text-color);
+  margin-bottom: 8px;
+  font-size: 15px;
 }
+
 .modal-content input[type="text"],
 .modal-content input[type="number"],
 .modal-content select {
-width: 100%;
-box-sizing: border-box;
-color: var(--modal-text-color);
-font-size: 16px;
-background-color: var(--input-bg);
-border: 1px solid rgba(255, 255, 255, 0.2);
-border-radius: 6px;
-padding: 8px;
-margin-bottom: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  color: var(--modal-text-color);
+  font-size: 16px;
+  background-color: var(--input-bg);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 14px;
 }
-/* Color Picker Input Row inside Modal */
-.color-picker-row {
-display: flex;
-align-items: center;
-gap: 12px;
-margin-bottom: 16px;
-}
-.color-picker-row input[type="color"] {
--webkit-appearance: none;
-border: none;
-width: 48px;
-height: 48px;
-border-radius: 8px;
-cursor: pointer;
-background: transparent;
-}
-.color-picker-row input[type="color"]::-webkit-color-swatch-wrapper {
-padding: 0;
-}
-.color-picker-row input[type="color"]::-webkit-color-swatch {
-border: 1px solid rgba(255, 255, 255, 0.3);
-border-radius: 8px;
-}
-.color-preview-badge {
-display: inline-block;
-padding: 6px 12px;
-border-radius: 4px;
-font-size: 13px;
-font-weight: bold;
-}
+
 .modal-content .modal-controls {
-display: flex;
-justify-content: flex-end;
-margin-top: 20px;
-gap: 10px;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  gap: 10px;
 }
-.modal-content .modal-controls button.cancel-btn {
-background: #4b5563;
-color: #fff;
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.preset-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 10px 0;
 }
 </style>
 </head>
@@ -281,37 +266,37 @@ color: #fff;
 <header>
   <div class="flex items-center gap-3">
     <h2 style="margin:0">Grid Web Synth — EDO Isomorphic Grid</h2>
-    <div class="small">Scale generation uses the currently selected EDO Steps (N) for quantization.</div>
+    <div class="small">Notes are automatically named using smallest fifthspan distance from C.</div>
+  </div>
+  <div>
+    <button id="colorPickerBtn">Palette</button>
   </div>
 </header>
 
 <div class="controls">
   <label>Rows
-    <input id="rows" type="number" min="1" max="4294967296" value="6" />
+    <input id="rows" type="number" min="1" max="64" value="6" />
   </label>
 
   <label>Cols
-    <input id="cols" type="number" min="1" max="4294967296" value="12" />
+    <input id="cols" type="number" min="1" max="64" value="12" />
   </label>
 
   <label>Key size (px)
-    <input id="keySize" type="number" min="1" value="64" />
+    <input id="keySize" type="number" min="16" max="256" value="64" />
   </label>
   
-  <!-- NEW INPUTS START -->
   <label title="1-indexed, starting from top-left (1), wrapping by row">Root Key Index
-    <input id="rootKeyIndex" type="number" min="1" max="4294967296" value="1" />
+    <input id="rootKeyIndex" type="number" min="1" max="4096" value="1" />
   </label>
 
   <label title="Interval in scale degrees/EDO steps for one column to the right.">Horizontal Steps
-    <input id="hSteps" type="number" min="-4294967296" value="1" />
+    <input id="hSteps" type="number" min="-128" max="128" value="1" />
   </label>
 
   <label title="Interval in scale degrees/EDO steps for one row down.">Vertical Steps
-    <input id="vSteps" type="number" min="-4294967296" value="12" />
+    <input id="vSteps" type="number" min="-128" max="128" value="12" />
   </label>
-  <!-- NEW INPUTS END -->
-
 
   <label>Tuning type
     <select id="tuningType">
@@ -320,7 +305,7 @@ color: #fff;
   </label>
 
   <label id="edoParams">EDO steps (N)
-    <input id="edoSteps" type="number" min="2" max="4294967296" value="12" />
+    <input id="edoSteps" type="number" min="2" max="1200" value="12" />
   </label>
 
   <label>Root note (name)
@@ -331,12 +316,17 @@ color: #fff;
     <input id="rootFreq" type="number" min="1" max="20000" value="261.6256" step="0.0000001" />
   </label>
 
-  <label style="min-width: 250px;">Scale Subset (Select Notes)
+  <label style="min-width: 250px;">
+    <span id="scaleSubsetLabel">Scale Subset (Select Notes)</span>
     <select id="scaleSubset" multiple size="6"></select>
     <div class="small mt-1">(Hold Ctrl/Cmd to select multiple)</div>
+    <div class="flex gap-2 mt-1">
+      <button id="selectAllNotesBtn" style="font-size:11px; padding:2px 6px;">Select All</button>
+      <button id="clearNotesBtn" style="font-size:11px; padding:2px 6px;">Clear</button>
+    </div>
   </label>
 
-  <div style="display:flex;gap:8px;align-items:center;">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
     <button id="applyBtn">Apply Grid & Tuning</button>
     <button id="generateScaleBtn">Generate Scale Subset</button>
     <button id="stopAllBtn" title="Stop all playing voices">Stop All</button>
@@ -344,18 +334,14 @@ color: #fff;
 
   <div style="flex:1"></div>
   
-  <!-- NEW MODE ROTATION DROPDOWN -->
   <label style="min-width: 150px;">Start Step (Mode)
     <select id="modeSelector"></select>
   </label>
-  <!-- END NEW DROPDOWN -->
 
-  <!-- Volume Slider -->
   <label>Volume
-    <input id="volumeSlider" type="range" min="0" max="1" step="0.001" value="1" />
+    <input id="volumeSlider" type="range" min="0" max="1" step="0.001" value="0.8" />
   </label>
 
-  <!-- Sustain Toggle -->
   <label>Sustain
     <input id="sustainToggle" type="checkbox" />
   </label>
@@ -363,161 +349,28 @@ color: #fff;
   <label>Waveform
     <select id="wave">
       <optgroup label="Standard Waveforms">
-      <option>sine</option>
-      <option>triangle</option>
-      <option>sawtooth</option>
-      <option>square</option>
+        <option>sine</option>
+        <option>triangle</option>
+        <option>sawtooth</option>
+        <option>square</option>
       </optgroup>
       <optgroup label="Instruments">
-      <option>bell</option>
-      <option>dark-bell</option>
-      <option>organ</option>
-      <option>piano</option>
-      <option>compressed-piano</option>
-      <option>xylophone</option>
-      <option>guitar</option>
-      <option>saxophone</option>
-      <option>vocal-ooh</option>
-      <option>marimba</option>
-      <option>vocal-aah</option>
-      <option>glass-harmonica</option>
-      <option>harp</option>
-      <option>harpsichord</option>
-      <option>sitar</option>
-      <option>slap-bass</option>
-      <option>glockenspiel</option>
-      <option>oud</option>
-      <option>shepard</option>
-      <option>trumpet</option>
-      <option>violin</option>
-      <option>cello</option>
-      <option>recorder</option>
-      <option>mandolin</option>
-      <option>accordion</option>
-      <option>celesta</option>
-      <option>electric-piano</option>
-      <option>clavinet</option>
-      <option>pipe-organ</option>
-      <option>dulcimer</option>
-      <option>kalimba</option>
-      <option>lute</option>
-      <option>vibraphone</option>
-      </optgroup>
-      <optgroup label="Partch Instruments">
-      <option>cloud-chamber-bowls</option>
-      <option>chromelodeon</option>
-      <option>marimba-eroica</option>
-      <option>kithara</option>
-      </optgroup>
-      <optgroup label="Tuning-Optimized Timbres">
-      <option>12edo</option>
-      <option>13edo</option>
-      <option>14edo</option>
-      <option>15edo</option>
-      <option>15edo-alternate</option>
-      <option>16edo</option>
-      <option>17edo</option>
-      <option>18edo</option>
-      <option>19edo</option>
-      <option>20edo</option>
-      <option>21edo</option>
-      <option>22edo</option>
-      <option>23edo</option>
-      <option>24edo</option>
-      <option>25edo</option>
-      <option>26edo</option>
-      <option>27edo</option>
-      <option>28edo</option>
-      <option>29edo</option>
-      <option>30edo</option>
-      <option>31edo</option>
-      <option>32edo</option>
-      <option>33edo</option>
-      <option>34edo</option>
-      <option>35edo</option>
-      <option>36edo</option>
-      <option>37edo</option>
-      <option>38edo</option>
-      <option>39edo</option>
-      <option>40edo</option>
-      <option>5ed3</option>
-      <option>13ed3</option>
-      </optgroup>
-      <optgroup label="Random">
-      <option>random1</option>
-      <option>random2</option>
-      <option>random3</option>
-      <option>random4</option>
-      <option>random5</option>
-      <option>random6</option>
-      <option>random7</option>
-      <option>random8</option>
-      <option>random9</option>
-      <option>random10</option>
-      <option>random11</option>
-      <option>random12</option>
-      <option>random13</option>
-      <option>random14</option>
-      <option>random15</option>
-      <option>random16</option>
-      <option>random17</option>
-      <option>random18</option>
-      <option>random19</option>
-      <option>random20</option>
-      <option>random21</option>
-      <option>random22</option>
-      <option>random23</option>
-      <option>random24</option>
-      <option>random25</option>
-      <option>random26</option>
-      <option>random27</option>
-      <option>random28</option>
-      <option>random29</option>
-      <option>random30</option>
-      <option>random31</option>
-      <option>random32</option>
-      <option>random33</option>
-      <option>random34</option>
-      <option>random35</option>
-      <option>random36</option>
-      <option>random37</option>
-      <option>random38</option>
-      <option>random39</option>
-      <option>random40</option>
-      <option>random41</option>
-      <option>random42</option>
-      <option>random43</option>
-      <option>random44</option>
-      <option>random45</option>
-      <option>random46</option>
-      <option>random47</option>
-      <option>random48</option>
-      <option>random49</option>
-      <option>random50</option>
-      <option>random51</option>
-      <option>random52</option>
-      <option>random53</option>
-      <option>random54</option>
-      <option>random55</option>
-      <option>random56</option>
-      <option>random57</option>
-      </optgroup>
+        <option>bell</option>
+        <option>organ</option>
+        <option>piano</option>
     </select>
   </label>
   
-  <label>Release
-    <input id="release" type="number" min="1" />
+  <label>Release (ms)
+    <input id="release" type="number" min="1" value="120" />
   </label>
   
-  <!-- AUDIO RECORDING CONTROLS -->
   <div class="flex flex-col gap-2">
       <button id="recordBtn" class="!px-4">
           <span id="recordText">Record</span>
       </button>
       <button id="stopRecordBtn" disabled class="!px-4">Stop</button>
   </div>
-  <!-- END AUDIO RECORDING CONTROLS -->
-  
 </div>
 
 <div id="gridWrap">
@@ -529,7 +382,7 @@ color: #fff;
   <div class="small" id="notesLegend"></div>
   <div class="small mt-1">
       <span id="recordingStatus"></span>
-      <span id="recordingHint">The recorder exports as **WAV audio** (uncompressed, lossless quality).</span>
+      <span id="recordingHint">The recorder exports as WAV audio.</span>
   </div>
 </div>
 
@@ -537,7 +390,7 @@ color: #fff;
 <div id="scaleGeneratorModal" class="modal-overlay">
     <div class="modal-content">
         <h3>Circle-of-Fifths Scale Generator</h3>
-        <p class="small" style="color:#666;">This tool uses the current **EDO Steps (N)** value for quantization.</p>
+        <p class="small" style="color:#aaa;">This tool uses the current **EDO Steps (N)** value for quantization.</p>
 
         <label>Generator (Ratio x/y, Cents, or EDO Steps x\y, e.g., 3/2 or 7\12):
           <input id="gen_generator" value="700">
@@ -550,70 +403,53 @@ color: #fff;
         </label>
 
         <div class="modal-controls">
-            <button id="gen_cancelBtn" style="background:#ccc; color:#333;">Cancel</button>
+            <button id="gen_cancelBtn" style="background:#4b5563; color:#fff;">Cancel</button>
             <button id="gen_applyBtn">Generate & Apply</button>
         </div>
     </div>
 </div>
-<!-- /MODAL -->
 
 <!-- KEY COLOR PICKER MODAL -->
 <div id="colorPickerModal" class="modal-overlay">
-    <div class="modal-content">
-        <h3>Key Color Palette Configuration</h3>
-        <p class="small">Customize colors for each pitch class in your <strong id="colorModalEdoTitle">12-EDO</strong> tuning.</p>
+  <div class="modal-content">
+    <h3>Key Color Palette Configuration</h3>
+    <p class="small">Customize colors for each pitch class in your <strong id="colorModalEdoTitle">12-EDO</strong> tuning.</p>
 
     <div class="preset-bar">
       <span class="small" style="font-weight:600;">Presets:</span>
-      <button id="colorPresetRainbow" class="btn-secondary" style="font-size:0.75rem; padding:4px 8px;">Rainbow</button>
-      <button id="colorPresetMonochrome" class="btn-secondary" style="font-size:0.75rem; padding:4px 8px;">Alternating</button>
-      <button id="colorPresetWarm" class="btn-secondary" style="font-size:0.75rem; padding:4px 8px;">Warm</button>
-      <button id="colorPresetCool" class="btn-secondary" style="font-size:0.75rem; padding:4px 8px;">Cool</button>
-      <button id="colorPresetReset" class="btn-secondary" style="font-size:0.75rem; padding:4px 8px;">Reset Default</button>
+      <button id="colorPresetRainbow" style="font-size:0.75rem; padding:4px 8px;">Rainbow</button>
+      <button id="colorPresetMonochrome" style="font-size:0.75rem; padding:4px 8px;">Alternating</button>
+      <button id="colorPresetWarm" style="font-size:0.75rem; padding:4px 8px;">Warm</button>
+      <button id="colorPresetCool" style="font-size:0.75rem; padding:4px 8px;">Cool</button>
+      <button id="colorPresetReset" style="font-size:0.75rem; padding:4px 8px;">Reset Default</button>
     </div>
 
-    <div id="colorGrid" class="color-grid">
-      <!-- Populated dynamically via JS -->
-    </div>
+    <div id="colorGrid" class="color-grid"></div>
 
     <div class="modal-controls">
-        <button id="colorModalClose" class="btn-secondary">Cancel</button>
+        <button id="colorModalClose" style="background:#4b5563; color:#fff;">Cancel</button>
         <button id="colorModalApply">Apply Color Scheme</button>
     </div>
-</div>
+  </div>
 </div>
 
 <script>
 let gridState = {
   rows: 6, cols: 12, keySize: 64,
-  // NEW PROPERTIES
-  rootKeyIndex: 1, // 1-based index for the key that is step 0 of the mode
-  hSteps: 1, // Steps between columns
-  vSteps: 12, // Steps between rows
-  // END NEW PROPERTIES
+  rootKeyIndex: 1,
+  hSteps: 1,
+  vSteps: 12,
   tuning: { type:'edo', edo: 12 },
   rootFreq: 261.6256, rootName: 'C4',
-  edoNameTable: null, nonoInfo: null, jiRatios: null,
-  subsetPattern: [], // Initially populated in buildStateFromUI
+  edoNameTable: null,
+  subsetPattern: [],
+  pitchColors: {}
 };
 
 // --- WEB AUDIO API SETUP ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const masterGain = audioCtx.createGain();
-
-// Connect masterGain only to speakers
 masterGain.connect(audioCtx.destination);
-
-// --- WAV RECORDING STATE AND ELEMENTS ---
-let audioProcessor = null;
-let recordingBuffers = [];
-let isRecording = false; 
-
-const recordBtn = document.getElementById('recordBtn');
-const recordText = document.getElementById('recordText');
-const stopRecordBtn = document.getElementById('stopRecordBtn');
-const recordingStatus = document.getElementById('recordingStatus');
-
 
 // --- TIMBRE DEFINITIONS ---
 const timbres = {
@@ -626,1075 +462,25 @@ const timbres = {
     { mult: 5.4, gain: 0.2, a: 0.01, d: 1, s: 0.02, r: 1 },
     { mult: 9, gain: 0.1, a: 0.01005, d: 0.5, s: 0.00015, r: 0.5}
   ],
-  "dark-bell": [
-    { mult: 0.5, gain: 0.25, a: 0.01, d: 4, s: 0.3, r: 2.5 },
-    { mult: 1, gain: 0.5, a: 0.01, d: 2, s: 0.1, r: 2 },
-    { mult: 1.166667, gain: 0.45, a: 0.01, d: 2.5, s: 0.1, r: 2 },
-    { mult: 1.5, gain: 0.35, a: 0.01, d: 3, s: 0.3, r: 1.875 },
-    { mult: 2.76, gain: 0.3, a: 0.01, d: 1.5, s: 0.05, r: 1.5 },
-    { mult: 5.4, gain: 0.2, a: 0.01, d: 1, s: 0.02, r: 1 },
-    { mult: 9, gain: 0.1, a: 0.01005, d: 0.5, s: 0.00015, r: 0.5}
-  ],
   "organ": [
     { mult: 1, gain: 0.4, a: 0.1, d: 0.1, s: 0.8, r: 0.2 },
     { mult: 2, gain: 0.3, a: 0.1, d: 0.1, s: 0.7, r: 0.2 },
     { mult: 3, gain: 0.2, a: 0.1, d: 0.1, s: 0.6, r: 0.2 },
-    { mult: 4, gain: 0.1, a: 0.1, d: 0.1, s: 0.5, r: 0.2 },
-    { mult: 9, gain: 0.0111, a: 0.09, d: 0.11, s: 0.4, r: 0.2}
+    { mult: 4, gain: 0.1, a: 0.1, d: 0.1, s: 0.5, r: 0.2 }
   ],
   "piano": [
     { mult: 1, gain: 1, a: 0.002, d: 8.0, s: 0, r: 0.2},
     { mult: 2.0006, gain: 0.5, a: 0.002, d: 4.9, s: 0, r: 0.2},
     { mult: 3.002, gain: 0.333, a: 0.003, d: 3.5, s: 0, r: 0.2},
-    { mult: 4.0048, gain: 0.25, a: 0.003, d: 2.0, s: 0, r: 0.2},
-    { mult: 5.0093, gain: 0.2, a: 0.004, d: 1.2, s: 0, r: 0.2},
-    { mult: 6.016, gain: 0.167, a: 0.004, d: 1.2, s: 0, r: 0.2},
-    { mult: 7.0253, gain: 0.0142857, a: 0.005, d: 1.2, s: 0, r: 0.2},
-    { mult: 8.0375, gain: 0.125, a: 0.005, d: 1.2, s: 0, r: 0.2}
-  ],
-  "random1": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 4, gain: 0.27, a: 0.001, d: 0.4975, s: 1, r: 0.04},
-    { mult: 9, gain: 0.12, a: 0.0015, d: 0.495, s: 1, r: 0.04}
-  ],
-  "random2": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 6.65, gain: 0.17, a: 0.001, d: 0.4975, s: 1, r: 0.04},
-    { mult: 9, gain: 0.12, a: 0.0015, d: 0.495, s: 1, r: 0.04}
-  ],
-  "random3": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3, gain: 1.05, a: 0.175, d: 0.5, s: 1, r: 0.04},
-    { mult: 5, gain: 0.17, a: 0.001, d: 0.4975, s: 1, r: 0.04},
-    { mult: 9, gain: 0.12, a: 0.0015, d: 0.495, s: 1, r: 0.04}
-  ],
-  "random4": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.16, gain: 0.316, a: 0.001, d: 0.4975, s: 1, r: 0.04},
-    { mult: 7, gain: 0.15, a: 0.00125, d: 0.515, s: 1, r: 0.04},
-    { mult: 9, gain: 0.12, a: 0.0015, d: 0.495, s: 1, r: 0.04}
-  ],
-  "random5": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.75, gain: 0.14, a: 0.001, d: 0.4975, s: 1, r: 0.04},
-    { mult: 7.15, gain: 0.51, a: 0.00125, d: 0.515, s: 1, r: 0.04},
-    { mult: 9, gain: 0.12, a: 0.0015, d: 0.495, s: 1, r: 0.04},
-    { mult: 10.1, gain: 0.0101, a: 0.0101, d: 0.505, s: 1, r: 0.0404}
-  ],
-  "random6": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.75, gain: 0.14, a: 0.001, d: 0.4975, s: 1, r: 0.04},
-    { mult: 5.25, gain: 0.84, a: 0.00525, d: 0.525, s: 1, r: 0.04},
-    { mult: 9.15, gain: 0.12, a: 0.0015, d: 0.495, s: 1, r: 0.04},
-    { mult: 9.8, gain: 0.096, a: 0.0096, d: 0.48, s: 1, r: 0.0384}
-  ],
-  "random7": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.3, gain: 0.11, a: 0.0011, d: 0.4972, s: 1, r: 0.044},
-    { mult: 4.8, gain: 0.23, a: 0.0023, d: 0.529, s: 1, r: 0.046},
-    { mult: 6.3, gain: 0.4, a: 0.004, d: 0.4, s: 1, r: 0.04},
-    { mult: 8, gain: 0.08, a: 0.008, d: 0.48, s: 1, r: 0.0384}
-  ],
-  "random8": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.3, gain: 0.11, a: 0.0011, d: 0.4972, s: 1, r: 0.044},
-    { mult: 4.8, gain: 0.23, a: 0.0023, d: 0.529, s: 1, r: 0.046},
-    { mult: 5, gain: 0.5, a: 0.005, d: 0.5, s: 1, r: 0.05},
-    { mult: 5.85, gain: 0.17, a: 0.00585, d: 0.585, s: 1, r: 0.0585}
-  ],
-  "random9": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.16, gain: 0.1, a: 0.001, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.475, gain: 0.24, a: 0.0012, d: 0.576, s: 1, r: 0.048},
-    { mult: 6.55, gain: 0.43, a: 0.0043, d: 0.43, s: 1, r: 0.043},
-    { mult: 8.25, gain: 0.68, a: 0.0068, d: 0.68, s: 1, r: 0.068}
-  ],
-  "random10": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3, gain: 0.9, a: 0.0009, d: 0.9, s: 1, r: 0.045},
-    { mult: 3.875, gain: 0.15, a: 0.0015, d: 0.15, s: 1, r: 0.045},
-    { mult: 9.65, gain: 0.93, a: 0.0093, d: 0.093, s: 1, r: 0.093},
-    { mult: 10.1, gain: 0.102, a: 0.0102, d: 1.02, s: 1, r: 0.612}
-  ],
-  "random11": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 1.732, gain: 0.3, a: 0.0003, d: 0.003, s: 1, r: 0.03},
-    { mult: 3, gain: 0.9, a: 0.0009, d: 0.9, s: 1, r: 0.045},
-    { mult: 4.7, gain: 0.22, a: 0.0022, d: 0.22, s: 1, r: 0.044},
-    { mult: 9.1, gain: 0.83, a: 0.0083, d: 0.83, s: 1, r: 0.083},
-    { mult: 10.25, gain: 0.105, a: 0.0105, d: 1.05, s: 1, r: 0.63}
-  ],
-  "random12": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0004, d: 0.4, s: 1, r: 0.04},
-    { mult: 2.82, gain: 0.8, a: 0.0008, d: 0.8, s: 1, r: 0.04},
-    { mult: 6.4, gain: 0.41, a: 0.0041, d: 0.41, s: 1, r: 0.041},
-    { mult: 8.9, gain: 0.8, a: 0.0008, d: 0.8, s: 1, r: 0.08},
-    { mult: 11, gain: 0.121, a: 0.0121, d: 0.121, s: 1, r: 0.605}
-  ],
-  "random13": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 1.4142, gain: 0.9, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 2.65, gain: 0.7, a: 0.0007, d: 7, s: 1, r: 0.07}
-  ],
-  "random14": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 1.785, gain: 0.315, a: 0.0315, d: 3.15, s: 1, r: 0.0315},
-    { mult: 2.605, gain: 0.678, a: 0.0678, d: 6.78, s: 1, r: 0.0678}
-  ],
-  "xylophone": [
-    { mult: 1, gain: 1, a: 0, d: 1, s: 0, r: 0.001},
-    { mult: 3, gain: 0.45, a: 0, d: 0.9, s: 0, r: 0.001},
-    { mult: 7, gain: 0.175, a: 0, d: 0.8, s: 0, r: 0.001}
-  ],
-  "guitar": [
-    { mult: 1, gain: 1, a: 0.025, d: 3.5, s: 0, r: 0.001},
-    { mult: 2, gain: 0.5, a: 0.025, d: 3, s: 0, r: 0.001},
-    { mult: 3, gain: 0.25, a: 0.025, d: 2.5, s: 0, r: 0.001},
-    { mult: 4, gain: 0.125, a: 0.025, d: 2, s: 0, r: 0.001},
-    { mult: 5, gain: 0.0625, a: 0.025, d: 1.5, s: 0, r: 0.001},
-    { mult: 6, gain: 0.03125, a: 0.025, d: 1, s: 0, r: 0.001},
-    { mult: 7, gain: 0.015625, a: 0.025, d: 0.5, s: 0, r: 0.001},
-    { mult: 8, gain: 0.0078125, a: 0.025, d: 0.1, s: 0, r: 0.001}
-  ],
-  "random15": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 3, gain: 0.3333, a: 0.0003, d: 1.5, s: 1, r: 0.03},
-    { mult: 5, gain: 0.2, a: 0.0005, d: 1, s: 1, r: 0.05},
-    { mult: 7, gain: 0.142857, a: 0.0007, d: 0.5, s: 1, r: 0.07}
-  ],
-  "random16": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 4.9, gain: 0.24, a: 0.0024, d: 2.4, s: 1, r: 0.048},
-    { mult: 5.5, gain: 0.3, a: 0.003, d: 1, s: 1, r: 0.03},
-    { mult: 6.4, gain: 0.15625, a: 0.0064, d: 0.64, s: 1, r: 0.064}
-  ],
-  "random17": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 6.4, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 14.1, gain: 0.199, a: 0.0199, d: 1.99, s: 1, r: 0.0398}
-  ],
-  "random18": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 6.55, gain: 0.43, a: 0.0043, d: 4.3, s: 1, r: 0.043},
-    { mult: 13.1, gain: 0.171, a: 0.0171, d: 1.71, s: 1, r: 0.0342}
-  ],
-  "random19": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2.45, gain: 0.6, a: 0.0006, d: 0.6, s: 1, r: 0.06},
-    { mult: 12.4, gain: 0.153, a: 0.0153, d: 1.53, s: 1, r: 0.0306}
-  ],
-  "random20": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.75, gain: 1.4, a: 0.0014, d: 1.4, s: 1, r: 0.07},
-    { mult: 6.4, gain: 0.153, a: 0.0153, d: 1.53, s: 1, r: 0.0306},
-    { mult: 11.5, gain: 0.132, a: 0.0132, d: 1.32, s: 1, r: 0.0484}
-  ],
-  "random21": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.75, gain: 1.4, a: 0.0014, d: 1.4, s: 1, r: 0.07},
-    { mult: 6.4, gain: 0.153, a: 0.0153, d: 1.53, s: 1, r: 0.0306},
-    { mult: 10.5, gain: 0.112, a: 0.0112, d: 1.12, s: 1, r: 0.0226}
-  ],
-  "random22": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 1.732, gain: 0.3, a: 0.0003, d: 3, s: 1, r: 0.03},
-    { mult: 2.45, gain: 0.6, a: 0.0006, d: 3, s: 1, r: 0.03},
-    { mult: 3.16, gain: 1, a: 0.001, d: 1, s: 1, r: 0.04},
-    { mult: 7.675, gain: 0.59, a: 0.0059, d: 0.59, s: 1, r: 0.059}
-  ],
-  "random23": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2.23, gain: 0.5, a: 0.0005, d: 5, s: 1, r: 0.05},
-    { mult: 5, gain: 0.2, a: 0.0005, d: 2.5, s: 1, r: 0.025},
-    { mult: 9.375, gain: 0.87, a: 0.0087, d: 0.87, s: 1, r: 0.0435},
-    { mult: 10, gain: 0.1, a: 0.01, d: 0.1, s: 1, r: 0.04}
-  ],
-  "random24": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 3.74, gain: 1.4, a: 0.0014, d: 1.4, s: 1, r: 0.042},
-    { mult: 5, gain: 0.2, a: 0.0005, d: 2.5, s: 1, r: 0.025},
-    { mult: 9.5, gain: 0.9, a: 0.009, d: 0.9, s: 1, r: 0.045}
-  ],
-  "random25": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.47, gain: 0.6, a: 0.0012, d: 1.2, s: 1, r: 0.048},
-    { mult: 4.8, gain: 0.48, a: 0.0024, d: 2.4, s: 1, r: 0.048}
-  ],
-  "random26": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 3, gain: 0.3, a: 0.0003, d: 1.5, s: 1, r: 0.03},
-    { mult: 3.32, gain: 0.41, a: 0.0011, d: 1.1, s: 1, r: 0.11},
-    { mult: 4.8, gain: 0.48, a: 0.0024, d: 2.4, s: 1, r: 0.048},
-    { mult: 5.3, gain: 0.228, a: 0.0028, d: 1.4, s: 1, r: 0.14},
-    { mult: 9.5, gain: 0.19, a: 0.009, d: 0.9, s: 1, r: 0.09}
-  ],
-  "random27": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 3.32, gain: 0.41, a: 0.0011, d: 1.1, s: 1, r: 0.11},
-    { mult: 4.8, gain: 0.48, a: 0.0024, d: 2.4, s: 1, r: 0.048},
-    { mult: 5.3, gain: 0.228, a: 0.0028, d: 1.4, s: 1, r: 0.14}
-  ],
-  "random28": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 11, gain: 0.09, a: 0.0011, d: 1.1, s: 1, r: 0.11},
-    { mult: 12.75, gain: 0.833333, a: 0.0102, d: 1.02, s: 1, r: 0.102},
-    { mult: 13.25, gain: 0.326923, a: 0.0106, d: 1.06, s: 1, r: 0.106},
-    { mult: 14.6875, gain: 0.135416667, a: 0.0253, d: 1.46875, s: 1, r: 0.253}
-  ],
-  "random29": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 5, gain: 0.1, a: 0.001, d: 1, s: 1, r: 0.1},
-    { mult: 8.5, gain: 0.175, a: 0.0017, d: 0.85, s: 1, r: 0.085},
-    { mult: 11, gain: 0.09, a: 0.0011, d: 1.1, s: 1, r: 0.11},
-    { mult: 12.75, gain: 0.833333, a: 0.0102, d: 1.02, s: 1, r: 0.102},
-    { mult: 13.25, gain: 0.326923, a: 0.0106, d: 1.06, s: 1, r: 0.106},
-    { mult: 14.6875, gain: 0.135416667, a: 0.0253, d: 1.46875, s: 1, r: 0.253}
-  ],
-  "random30": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 5, gain: 0.1, a: 0.001, d: 1, s: 1, r: 0.1},
-    { mult: 8.5, gain: 0.175, a: 0.0017, d: 0.85, s: 1, r: 0.085},
-    { mult: 12, gain: 0.833333, a: 0.0012, d: 1.2, s: 1, r: 0.12},
-    { mult: 13.25, gain: 0.326923, a: 0.0106, d: 1.06, s: 1, r: 0.106},
-    { mult: 14.6875, gain: 0.135416667, a: 0.0253, d: 1.46875, s: 1, r: 0.253}
-  ],
-  "random31": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 5, gain: 0.1, a: 0.001, d: 1, s: 1, r: 0.1},
-    { mult: 10, gain: 0.12, a: 0.002, d: 2, s: 1, r: 0.02},
-    { mult: 12, gain: 0.833333, a: 0.0012, d: 1.2, s: 1, r: 0.12},
-    { mult: 13.25, gain: 0.326923, a: 0.0106, d: 1.06, s: 1, r: 0.106},
-    { mult: 14.6875, gain: 0.135416667, a: 0.0253, d: 1.46875, s: 1, r: 0.253}
-  ],
-  "random32": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 5, gain: 0.1, a: 0.001, d: 1, s: 1, r: 0.1},
-    { mult: 7, gain: 0.7, a: 0.0007, d: 0.7, s: 1, r: 0.07},
-    { mult: 9.5, gain: 0.38, a: 0.0019, d: 1.9, s: 1, r: 0.038},
-    { mult: 10.5, gain: 0.21, a: 0.0168, d: 1.68, s: 1, r: 0.0168},
-    { mult: 12, gain: 0.833333, a: 0.0012, d: 1.2, s: 1, r: 0.12},
-    { mult: 13.25, gain: 0.326923, a: 0.0106, d: 1.06, s: 1, r: 0.106},
-    { mult: 14.6875, gain: 0.135416667, a: 0.0253, d: 1.46875, s: 1, r: 0.253}
-  ],
-  "random33": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 5, gain: 0.1, a: 0.001, d: 1, s: 1, r: 0.1},
-    { mult: 7, gain: 0.7, a: 0.0007, d: 0.7, s: 1, r: 0.07},
-    { mult: 9.5, gain: 0.38, a: 0.0019, d: 1.9, s: 1, r: 0.038},
-    { mult: 10.5, gain: 0.21, a: 0.0168, d: 1.68, s: 1, r: 0.0168},
-    { mult: 11.5, gain: 0.2823, a: 0.2823, d: 2.823, s: 1, r: 0.14115},
-    { mult: 13.25, gain: 0.326923, a: 0.0106, d: 1.06, s: 1, r: 0.106},
-    { mult: 14.6875, gain: 0.135416667, a: 0.0253, d: 1.46875, s: 1, r: 0.253}
-  ],
-  "random34": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 5, gain: 0.1, a: 0.001, d: 1, s: 1, r: 0.1},
-    { mult: 7.5, gain: 0.133, a: 0.0015, d: 0.75, s: 1, r: 0.075},
-    { mult: 9.5, gain: 0.38, a: 0.0019, d: 1.9, s: 1, r: 0.038},
-    { mult: 10.5, gain: 0.21, a: 0.0168, d: 1.68, s: 1, r: 0.0168},
-    { mult: 11.5, gain: 0.2823, a: 0.2823, d: 2.823, s: 1, r: 0.14115},
-    { mult: 12.25, gain: 0.49, a: 0.0049, d: 2.45, s: 1, r: 0.049},
-    { mult: 13.25, gain: 0.326923, a: 0.0106, d: 1.06, s: 1, r: 0.106},
-    { mult: 14.6875, gain: 0.135416667, a: 0.0253, d: 1.46875, s: 1, r: 0.253}
-  ],
-  "random35": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 5.4, gain: 0.29, a: 0.0029, d: 2.9, s: 1, r: 0.029},
-    { mult: 8, gain: 0.125, a: 0.0008, d: 0.8, s: 1, r: 0.08},
-    { mult: 9.5, gain: 0.38, a: 0.0019, d: 1.9, s: 1, r: 0.038},
-    { mult: 11.375, gain: 0.91, a: 0.0091, d: 0.91, s: 1, r: 0.091},
-    { mult: 12.25, gain: 0.49, a: 0.0049, d: 2.45, s: 1, r: 0.049},
-    { mult: 13.25, gain: 0.326923, a: 0.0106, d: 1.06, s: 1, r: 0.106},
-    { mult: 14.6875, gain: 0.135416667, a: 0.0253, d: 1.46875, s: 1, r: 0.253}
-  ],
-  "saxophone": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3, gain: 0.9, a: 0.0029, d: 0.5, s: 1, r: 0.039},
-    { mult: 4, gain: 0.4, a: 0.0053, d: 0.5, s: 1, r: 0.038},
-    { mult: 5, gain: 0.48, a: 0.0075, d: 0.5, s: 1, r: 0.037},
-    { mult: 6, gain: 0.46, a: 0.0091, d: 0.5, s: 1, r: 0.036},
-    { mult: 7, gain: 0.44, a: 0.0104, d: 0.5, s: 1, r: 0.035},
-    { mult: 8, gain: 0.42, a: 0.013, d: 0.5, s: 1, r: 0.034},
-    { mult: 9, gain: 0.35, a: 0.015, d: 0.25, s: 1, r: 0.033},
-    { mult: 10, gain: 0.3, a: 0.017, d: 0.125, s: 1, r: 0.032},
-    { mult: 11, gain: 0.25, a: 0.019, d: 0.0625, s: 1, r: 0.031},
-    { mult: 12, gain: 0.2, a: 0.021, d: 0.03125, s: 1, r: 0.03}
-  ],
-  "random36": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 3, gain: 0.7, a: 1.2, d: 2.4, s: 1, r: 0.036},
-    { mult: 5.7, gain: 0.18, a: 0.36, d: 0.72, s: 1, r: 0.144},
-    { mult: 9.5, gain: 0.38, a: 0.0019, d: 1.9, s: 1, r: 0.038}
-  ],
-  "random37": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 3, gain: 0.333, a: 1.2, d: 2.4, s: 1, r: 0.036},
-    { mult: 6, gain: 0.2, a: 0.4, d: 0.8, s: 1, r: 0.16},
-    { mult: 9, gain: 0.12, a: 0.0024, d: 4.8, s: 1, r: 0.096}
-  ],
-  "random38": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 3, gain: 0.333, a: 1.2, d: 2.4, s: 1, r: 0.036},
-    { mult: 7, gain: 0.15, a: 0.3, d: 0.75, s: 1, r: 0.009},
-    { mult: 9, gain: 0.12, a: 0.0024, d: 4.8, s: 1, r: 0.096},
-    { mult: 11, gain: 0.1, a: 2, d: 4, s: 1, r: 0.08}
-  ],
-  "random39": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 3, gain: 0.333, a: 1.2, d: 2.4, s: 1, r: 0.036},
-    { mult: 5, gain: 0.5, a: 1, d: 2, s: 1, r: 0.04},
-    { mult: 6.00006, gain: 0.2222, a: 0.44, d: 0.88, s: 1, r: 0.176},
-    { mult: 7, gain: 0.15, a: 0.3, d: 0.75, s: 1, r: 0.009}
-  ],
-  "random40": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2, gain: 0.5, a: 0.0002, d: 2, s: 1, r: 0.04},
-    { mult: 3, gain: 0.333, a: 1.2, d: 2.4, s: 1, r: 0.036},
-    { mult: 5, gain: 0.5, a: 1, d: 2, s: 1, r: 0.04},
-    { mult: 7, gain: 0.15, a: 0.3, d: 0.75, s: 1, r: 0.009},
-    { mult: 12.1, gain: 0.06, a: 0.12, d: 0.24, s: 1, r: 0.048},
-    { mult: 13, gain: 0.07, a: 0.14, d: 0.28, s: 1, r: 0.056}
-  ],
-  "vocal-ooh": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 1.5, gain: 0.15, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2.95, gain: 0.025, a: 0.0155, d: 0.5, s: 1, r: 0.04},
-    { mult: 3, gain: 0.65, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.05, gain: 0.025, a: 0.0155, d: 0.5, s: 1, r: 0.04},
-    { mult: 5.9, gain: 0.015, a: 0.0155, d: 0.5, s: 1, r: 0.04},
-    { mult: 6, gain: 0.37, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 6.1, gain: 0.015, a: 0.0155, d: 0.5, s: 1, r: 0.04},
-    { mult: 11.37, gain: 0.05, a: 0.0005, d: 0.01, s: 1, r: 0.04}
-  ],
-  "random41": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2.375, gain: 0.45, a: 0.0019, d: 1.9, s: 1, r: 0.19},
-    { mult: 3.25, gain: 0.31, a: 0.0026, d: 2.6, s: 1, r: 0.26},
-    { mult: 6.1875, gain: 0.17, a: 0.0099, d: 1.98, s: 1, r: 0.99},
-    { mult: 7, gain: 0.15, a: 0.3, d: 0.75, s: 1, r: 0.009}
-  ],
-  "random42": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2.8125, gain: 0.375, a: 0.0045, d: 4.5, s: 1, r: 0.45},
-    { mult: 4.9, gain: 0.2, a: 0.04445, d: 4.41, s: 1, r: 0.45441},
-    { mult: 6.890625, gain: 0.145, a: 0.441, d: 0.0441, s: 1, r: 0.441},
-    { mult: 7, gain: 0.15, a: 0.3, d: 0.75, s: 1, r: 0.009}
-  ],
-  "random43": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.1819, gain: 0.22, a: 0.0162, d: 0.81, s: 1, r: 0.081},
-    { mult: 6.03125, gain: 0.17, a: 0.0031, d: 0.31, s: 1, r: 0.031},
-    { mult: 31, gain: 0.31, a: 0.31, d: 0.62, s: 1, r: 0.031}
-  ],
-  "random44": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 4.8, gain: 0.24, a: 0.0048, d: 0.72, s: 1, r: 0.096},
-    { mult: 6, gain: 0.12, a: 0.0024, d: 0.36, s: 1, r: 0.042},
-    { mult: 7, gain: 0.14, a: 0.0021, d: 0.28, s: 1, r: 0.035},
-    { mult: 10.677, gain: 0.114, a: 0.0228, d: 0.342, s: 1, r: 0.0456}
-  ],
-  "random45": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 4, gain: 0.8, a: 0.0016, d: 0.32, s: 1, r: 0.064},
-    { mult: 8.307, gain: 0.18, a: 0.0036, d: 0.54, s: 1, r: 0.072},
-    { mult: 8.917, gain: 0.25, a: 0.005, d: 1, s: 1, r: 0.02},
-    { mult: 10.275, gain: 0.24, a: 0.0048, d: 0.72, s: 1, r: 0.096}
-  ],
-  "random46": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 4.849, gain: 0.25, a: 0.0075, d: 0.75, s: 1, r: 0.015},
-    { mult: 5.8333, gain: 0.22, a: 0.0044, d: 1, s: 1, r: 0.088},
-    { mult: 8.0625, gain: 0.21, a: 0.0042, d: 0.84, s: 1, r: 0.0168},
-    { mult: 11.7578125, gain: 0.37, a: 0.0074, d: 1.48, s: 1, r: 0.0296}
-  ],
-  "random47": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 4.659, gain: 0.24, a: 0.0048, d: 0.96, s: 1, r: 0.0192},
-    { mult: 5.7875, gain: 0.32, a: 0.0064, d: 1.28, s: 1, r: 0.0256},
-    { mult: 7.5, gain: 0.35, a: 0.007, d: 0.14, s: 1, r: 0.028},
-    { mult: 10.8515625, gain: 0.33, a: 0.0066, d: 1.32, s: 1, r: 0.0264}
-  ],
-  "random48": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 4.2, gain: 0.42, a: 0.0084, d: 1.68, s: 1, r: 0.0336},
-    { mult: 5.645, gain: 0.2, a: 0.004, d: 0.8, s: 1, r: 0.016},
-    { mult: 6.25, gain: 0.13, a: 0.0026, d: 0.52, s: 1, r: 0.0104},
-    { mult: 8.8203125, gain: 0.29, a: 0.0058, d: 1.16, s: 1, r: 0.0232}
-  ],
-  "random49": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.1, gain: 0.4, a: 0.008, d: 1.6, s: 1, r: 0.032},
-    { mult: 4.81, gain: 0.13, a: 0.0026, d: 0.52, s: 1, r: 0.0104},
-    { mult: 6.28125, gain: 0.24, a: 0.0048, d: 0.96, s: 1, r: 0.0192},
-    { mult: 10, gain: 0.1, a: 0.002, d: 0.04, s: 1, r: 0.08}
-  ],
-  "random50": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.06, gain: 0.9, a: 0.0018, d: 0.36, s: 1, r: 0.072},
-    { mult: 5, gain: 0.2, a: 0.004, d: 0.8, s: 1, r: 0.016},
-    { mult: 6.09375, gain: 0.3, a: 0.006, d: 0.12, s: 1, r: 0.024},
-    { mult: 12.221, gain: 0.8, a: 0.0016, d: 0.32, s: 1, r: 0.064}
-  ],
-  "random51": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 4, gain: 0.8, a: 0.0016, d: 0.32, s: 1, r: 0.064},
-    { mult: 5.90625, gain: 0.27, a: 0.0054, d: 1.08, s: 1, r: 0.0216},
-    { mult: 9.13, gain: 0.13, a: 0.0026, d: 0.52, s: 1, r: 0.0104}
-  ],
-  "random52": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 4.463, gain: 0.17, a: 0.0034, d: 0.68, s: 1, r: 0.0136},
-    { mult: 5.78125, gain: 0.28, a: 0.0056, d: 1.12, s: 1, r: 0.0224},
-    { mult: 6.1875, gain: 0.27, a: 0.0054, d: 1.08, s: 1, r: 0.0216}
-  ],
-  "random53": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 4.375, gain: 0.19, a: 0.0038, d: 0.57, s: 1, r: 0.076},
-    { mult: 5, gain: 0.2, a: 0.004, d: 0.6, s: 1, r: 0.8},
-    { mult: 9, gain: 0.1, a: 0.002, d: 0.3, s: 1, r: 0.4}
-  ],
-  "random54": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 1.366, gain: 0.073, a: 0.0146, d: 2.92, s: 1, r: 0.584},
-    { mult: 2, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04}
+    { mult: 4.0048, gain: 0.25, a: 0.003, d: 2.0, s: 0, r: 0.2}
   ],
   "marimba": [
     { mult: 1, gain: 1, a: 0.0005, d: 0.6, s: 0, r: 0.05 },
     { mult: 3.98, gain: 0.6, a: 0.0005, d: 0.15, s: 0, r: 0.02 },
     { mult: 9.2, gain: 0.15, a: 0.0005, d: 0.04, s: 0, r: 0.01 }
-  ],
-  "vocal-aah": [
-    { mult: 1, gain: 0.6, a: 0.04, d: 0.3, s: 0.8, r: 0.1 },
-    { mult: 2, gain: 0.8, a: 0.04, d: 0.3, s: 0.8, r: 0.1 },
-    { mult: 3, gain: 1.0, a: 0.04, d: 0.3, s: 0.9, r: 0.1 },
-    { mult: 4, gain: 0.5, a: 0.05, d: 0.3, s: 0.7, r: 0.1 },
-    { mult: 7, gain: 0.3, a: 0.06, d: 0.3, s: 0.5, r: 0.1 },
-    { mult: 8, gain: 0.2, a: 0.06, d: 0.3, s: 0.4, r: 0.1 }
-  ],
-  "glass-harmonica": [
-    { mult: 1, gain: 1.0, a: 0.18, d: 0.4, s: 0.9, r: 0.3 },
-    { mult: 2, gain: 0.08, a: 0.22, d: 0.15, s: 0, r: 0.1 },
-    { mult: 3, gain: 0.03, a: 0.25, d: 0.10, s: 0, r: 0.1 },
-    { mult: 4, gain: 0.01, a: 0.30, d: 0.08, s: 0, r: 0.05 }
-  ],
-  "harp": [
-    { mult: 1, gain: 1.0, a: 0.015, d: 4.0, s: 0, r: 0.3 },
-    { mult: 2, gain: 0.2, a: 0.012, d: 1.5, s: 0, r: 0.2 },
-    { mult: 3, gain: 0.08, a: 0.010, d: 0.8, s: 0, r: 0.1 },
-    { mult: 4, gain: 0.02, a: 0.010, d: 0.3, s: 0, r: 0.05 }
-  ],
-  "harpsichord": [
-    { mult: 1, gain: 0.7, a: 0.001, d: 2.0, s: 0, r: 0.1 },
-    { mult: 2, gain: 0.6, a: 0.001, d: 1.8, s: 0, r: 0.1 },
-    { mult: 3, gain: 0.5, a: 0.001, d: 1.5, s: 0, r: 0.1 },
-    { mult: 4, gain: 0.4, a: 0.001, d: 1.2, s: 0, r: 0.1 },
-    { mult: 5, gain: 0.3, a: 0.001, d: 0.9, s: 0, r: 0.1 },
-    { mult: 6, gain: 0.2, a: 0.001, d: 0.6, s: 0, r: 0.1 }
-  ],
-  "sitar": [
-    { mult: 1, gain: 0.8, a: 0.005, d: 3.0, s: 0, r: 0.2 },
-    { mult: 2, gain: 0.4, a: 0.020, d: 2.0, s: 0, r: 0.15 },
-    { mult: 3, gain: 0.6, a: 0.035, d: 1.8, s: 0, r: 0.15 },
-    { mult: 4, gain: 0.5, a: 0.040, d: 1.2, s: 0, r: 0.1 },
-    { mult: 5, gain: 0.3, a: 0.045, d: 0.8, s: 0, r: 0.1 }
-  ],
-  "slap-bass": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0, r: 0.05 },
-    { mult: 2, gain: 0.5, a: 0.001, d: 0.8, s: 0, r: 0.05 },
-    { mult: 3, gain: 0.8, a: 0.0005, d: 0.3, s: 0, r: 0.02 },
-    { mult: 4, gain: 0.7, a: 0.0005, d: 0.2, s: 0, r: 0.02 },
-    { mult: 5, gain: 0.6, a: 0.0005, d: 0.1, s: 0, r: 0.01 }
-  ],
-  "glockenspiel": [
-    { mult: 1, gain: 1.0, a: 0.0001, d: 1.5, s: 0, r: 0.4 },
-    { mult: 2.72, gain: 0.35, a: 0.0001, d: 0.6, s: 0, r: 0.2 },
-    { mult: 5.44, gain: 0.15, a: 0.0001, d: 0.3, s: 0, r: 0.1 },
-    { mult: 8.16, gain: 0.05, a: 0.0001, d: 0.1, s: 0, r: 0.05 }
-  ],
-  "oud": [
-    { mult: 1, gain: 1.0, a: 0.0001, d: 1.5, s: 1, r: 0.4 },
-    { mult: 2, gain: 0.85, a: 0.0001, d: 0.6, s: 1, r: 0.2 },
-    { mult: 3, gain: 0.7, a: 0.0001, d: 0.3, s: 1, r: 0.1 },
-    { mult: 4.0023, gain: 0.55, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 5.0072, gain: 0.4, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 6.0139, gain: 0.25, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 7.0243, gain: 0.1, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 8.0417, gain: 0.5, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 9.0469, gain: 0.4, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 10.0521, gain: 0.3, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 11.0161, gain: 0.25, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 12.0636, gain: 0.2, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 13.0713, gain: 0.15, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 14.05, gain: 0.1, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 15.102, gain: 0.05, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-  ],
-  "random55": [
-    { mult: 1, gain: 1.0, a: 0.0001, d: 1.5, s: 1, r: 0.4 },
-    { mult: 2, gain: 0.85, a: 0.0001, d: 0.6, s: 1, r: 0.2 },
-    { mult: 3, gain: 0.7, a: 0.0001, d: 0.3, s: 1, r: 0.1 },
-    { mult: 3.9548, gain: 0.55, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 4.9509, gain: 0.4, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 5.9932, gain: 0.25, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 6.9243, gain: 0.1, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 7.9111, gain: 0.5, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 8.9797, gain: 0.4, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 9.9349, gain: 0.3, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 10.9916, gain: 0.25, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 11.9641, gain: 0.2, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 12.9629, gain: 0.15, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 13.9288, gain: 0.1, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-    { mult: 14.9285, gain: 0.05, a: 0.0001, d: 0.1, s: 1, r: 0.05 },
-  ],
-  "shepard": [
-    { mult: 0.125, gain: 1.0, a: 5, d: 20, s: 0, r: 0.4 },
-    { mult: 0.25, gain: 1, a: 4, d: 15, s: 0, r: 0.2 },
-    { mult: 0.5, gain: 1, a: 3, d: 10, s: 0, r: 0.1 },
-    { mult: 1, gain: 1, a: 2, d: 5, s: 0, r: 0.05 },
-    { mult: 2, gain: 1, a: 1, d: 2.5, s: 0, r: 0.05 },
-    { mult: 4, gain: 1, a: 0.5, d: 1.25, s: 0, r: 0.05 },
-    { mult: 8, gain: 1, a: 0.25, d: 0.625, s: 0, r: 0.05 },
-    { mult: 16, gain: 1, a: 0.125, d: 0.3125, s: 0, r: 0.05 },
-    { mult: 32, gain: 1, a: 0.0625, d: 0.15625, s: 0, r: 0.05 },
-    { mult: 64, gain: 1, a: 0.03125, d: 0.078125, s: 0, r: 0.05 },
-    { mult: 128, gain: 1, a: 0.015625, d: 0.0390625, s: 0, r: 0.05 },
-    { mult: 256, gain: 1, a: 0.0078125, d: 0.01953125, s: 0, r: 0.05 },
-    { mult: 512, gain: 1, a: 0.00390625, d: 0.009765625, s: 0, r: 0.05 },
-    { mult: 1024, gain: 1, a: 0.001953125, d: 0.0048828125, s: 0, r: 0.05 },
-    { mult: 2048, gain: 1, a: 0.0009765625, d: 0.00244140625, s: 0, r: 0.05 },
-  ],
-  "trumpet": [
-    { mult: 1, gain: 1, a: 0.02, d: 0.1, s: 0.9, r: 0.09 },
-    { mult: 2, gain: 0.85, a: 0.03, d: 0.1, s: 0.9, r: 0.09 },
-    { mult: 3, gain: 0.7, a: 0.045, d: 0.15, s: 0.7, r: 0.05 },
-    { mult: 4, gain: 0.55, a: 0.05, d: 0.15, s: 0.7, r: 0.05 },
-    { mult: 5, gain: 0.45, a: 0.055, d: 0.15, s: 0.65, r: 0.05 },
-    { mult: 6, gain: 0.3, a: 0.06, d: 0.15, s: 0.65, r: 0.05 },
-    { mult: 7, gain: 0.2, a: 0.07, d: 0.2, s: 0.5, r: 0.025 },
-    { mult: 8, gain: 0.15, a: 0.075, d: 0.2, s: 0.5, r: 0.025 },
-    { mult: 9, gain: 0.08, a: 0.08, d: 0.2, s: 0.475, r: 0.025 },
-    { mult: 10, gain: 0.06, a: 0.085, d: 0.2, s: 0.45, r: 0.025 },
-    { mult: 11, gain: 0.04, a: 0.09, d: 0.2, s: 0.425, r: 0.025 },
-    { mult: 12, gain: 0.02, a: 0.095, d: 0.2, s: 0.4, r: 0.025 }
-  ],
-  "violin": [
-    { mult: 1, gain: 1, a: 0.12, d: 0.2, s: 0.85, r: 0.35 },
-    { mult: 2, gain: 0.85, a: 0.12, d: 0.2, s: 0.85, r: 0.35 },
-    { mult: 3, gain: 0.7, a: 0.12, d: 0.2, s: 0.85, r: 0.35 },
-    { mult: 4, gain: 0.55, a: 0.16, d: 0.3, s: 0.7, r: 0.3 },
-    { mult: 5, gain: 0.45, a: 0.16, d: 0.3, s: 0.7, r: 0.3 },
-    { mult: 6, gain: 0.35, a: 0.16, d: 0.3, s: 0.7, r: 0.3 },
-    { mult: 7, gain: 0.3, a: 0.22, d: 0.4, s: 0.5, r: 0.2 },
-    { mult: 8, gain: 0.25, a: 0.22, d: 0.4, s: 0.5, r: 0.2 },
-    { mult: 9, gain: 0.2, a: 0.22, d: 0.4, s: 0.5, r: 0.2 },
-    { mult: 10, gain: 0.15, a: 0.22, d: 0.4, s: 0.5, r: 0.2 }
-  ],
-  "cello": [
-    { mult: 1, gain: 1, a: 0.18, d: 0.25, s: 0.9, r: 0.45 },
-    { mult: 2, gain: 0.95, a: 0.18, d: 0.25, s: 0.9, r: 0.45 },
-    { mult: 3, gain: 0.8, a: 0.18, d: 0.25, s: 0.9, r: 0.45 },
-    { mult: 4, gain: 0.65, a: 0.24, d: 0.35, s: 0.75, r: 0.35 },
-    { mult: 5, gain: 0.5, a: 0.24, d: 0.35, s: 0.75, r: 0.35 },
-    { mult: 6, gain: 0.417, a: 0.24, d: 0.35, s: 0.75, r: 0.35 },
-    { mult: 7, gain: 0.333, a: 0.24, d: 0.35, s: 0.75, r: 0.35 },
-    { mult: 8, gain: 0.25, a: 0.24, d: 0.35, s: 0.75, r: 0.35 },
-    { mult: 9, gain: 0.2, a: 0.32, d: 0.5, s: 0.4, r: 0.25 },
-    { mult: 10, gain: 0.15, a: 0.32, d: 0.5, s: 0.4, r: 0.25 },
-    { mult: 11, gain: 0.1, a: 0.32, d: 0.5, s: 0.4, r: 0.25 },
-    { mult: 12, gain: 0.05, a: 0.32, d: 0.5, s: 0.4, r: 0.25 }
-  ],
-  "random56": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3.46, gain: 0.52, a: 0.0026, d: 0.52, s: 1, r: 0.0104},
-    { mult: 6.5, gain: 0.11, a: 0.0022, d: 0.44, s: 1, r: 0.088},
-    { mult: 9.59, gain: 0.69, a: 0.0046, d: 0.92, s: 1, r: 0.184}
-  ],
-  "random57": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 2.807, gain: 0.58, a: 0.0116, d: 2.32, s: 1, r: 0.0464},
-    { mult: 6, gain: 0.2, a: 0.004, d: 0.8, s: 1, r: 0.016},
-    { mult: 9, gain: 0.125, a: 0.0025, d: 0.5, s: 1, r: 0.01}
-  ],
-  "recorder": [
-    { mult: 1, gain: 1, a: 0.05, d: 0.1, s: 0.875, r: 0.065 },
-    { mult: 2, gain: 0.35, a: 0.01, d: 0.1, s: 0.2, r: 0.03 },
-    { mult: 3, gain: 0.2, a: 0.01, d: 0.1, s: 0.2, r: 0.03 },
-    { mult: 4, gain: 0.08, a: 0.01, d: 0.1, s: 0.2, r: 0.03 },
-    { mult: 5, gain: 0.05, a: 0.01, d: 0.1, s: 0.2, r: 0.03 }
-  ],
-  "mandolin": [
-    { mult: 1, gain: 1, a: 0.0035, d: 1.6, s: 0, r: 1.4 },
-    { mult: 1.001, gain: 1, a: 0.0035, d: 1.6, s: 0, r: 1.4 },
-    { mult: 2, gain: 0.85, a: 0.0035, d: 1.6, s: 0, r: 1.4 },
-    { mult: 2.0015, gain: 0.85, a: 0.0035, d: 1.6, s: 0, r: 1.4 },
-    { mult: 3, gain: 0.6, a: 0.002, d: 0.45, s: 0, r: 0.125 },
-    { mult: 3.001, gain: 0.6, a: 0.002, d: 0.45, s: 0, r: 0.125 },
-    { mult: 4, gain: 0.45, a: 0.002, d: 0.45, s: 0, r: 0.125 },
-    { mult: 4.002, gain: 0.45, a: 0.002, d: 0.45, s: 0, r: 0.125 },
-    { mult: 5, gain: 0.45, a: 0.002, d: 0.45, s: 0, r: 0.125 },
-    { mult: 5.001, gain: 0.45, a: 0.002, d: 0.45, s: 0, r: 0.125 },
-    { mult: 6, gain: 0.2, a: 0, d: 0.07, s: 0, r: 0.05 },
-    { mult: 6.0025, gain: 0.2, a: 0, d: 0.07, s: 0, r: 0.05 },
-    { mult: 7, gain: 0.15, a: 0, d: 0.07, s: 0, r: 0.05 },
-    { mult: 7.0015, gain: 0.15, a: 0, d: 0.07, s: 0, r: 0.05 },
-    { mult: 8, gain: 0.1, a: 0, d: 0.07, s: 0, r: 0.05 },
-    { mult: 8.003, gain: 0.1, a: 0, d: 0.07, s: 0, r: 0.05 }
-  ],
-  "accordion": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 3, gain: 0.6, a: 0.0012, d: 0.24, s: 1, r: 0.048},
-    { mult: 8.65, gain: 0.173, a: 0.0346, d: 0.692, s: 1, r: 0.1384},
-    { mult: 10, gain: 0.2, a: 0.0004, d: 0.08, s: 1, r: 0.016}
-  ],
-  "celesta": [
-  	{ mult: 1, gain: 1.0, a: 0.001, d: 3.5, s: 0, r: 0.3 },
-  	{ mult: 2.756, gain: 0.6, a: 0.001, d: 0.8, s: 0, r: 0.15 },
-  	{ mult: 5.404, gain: 0.25, a: 0.001, d: 0.4, s: 0, r: 0.1 },
-  	{ mult: 8.93, gain: 0.12, a: 0.001, d: 0.2, s: 0, r: 0.05 },
-  	{ mult: 13.34, gain: 0.05, a: 0.001, d: 0.1, s: 0, r: 0.05 }
-	],
-  "electric-piano": [
-  	{ "mult": 1, "gain": 1.0, "a": 0.002, "d": 2.5, "s": 0.15, "r": 0.4 },
-  	{ "mult": 2, "gain": 0.45, "a": 0.002, "d": 1.8, "s": 0.08, "r": 0.3 },
-  	{ "mult": 3.01, "gain": 0.35, "a": 0.001, "d": 0.8, "s": 0.02, "r": 0.2 },
-  	{ "mult": 4, "gain": 0.18, "a": 0.001, "d": 0.4, "s": 0, "r": 0.15 },
-  	{ "mult": 6.82, "gain": 0.08, "a": 0.001, "d": 0.12, "s": 0, "r": 0.08 }
-	],
-  "clavinet": [
-  	{ "mult": 1, "gain": 1.0, "a": 0.001, "d": 1.8, "s": 0.12, "r": 0.15 },
-  	{ "mult": 2, "gain": 0.75, "a": 0.001, "d": 1.4, "s": 0.08, "r": 0.12 },
-  	{ "mult": 3, "gain": 0.60, "a": 0.001, "d": 1.0, "s": 0.04, "r": 0.10 },
-  	{ "mult": 4, "gain": 0.45, "a": 0.001, "d": 0.7, "s": 0.01, "r": 0.08 },
-  	{ "mult": 5, "gain": 0.30, "a": 0.001, "d": 0.4, "s": 0, "r": 0.06 },
-  	{ "mult": 6, "gain": 0.20, "a": 0.001, "d": 0.25, "s": 0, "r": 0.05 },
-  	{ "mult": 8.14, "gain": 0.12, "a": 0.0005, "d": 0.08, "s": 0, "r": 0.03 }
-	],
-  "pipe-organ": [
-  	{ "mult": 0.5,  "gain": 0.40, "a": 0.03, "d": 0.1, "s": 0.95, "r": 0.20 },
-  	{ "mult": 1,  "gain": 1.00, "a": 0.02, "d": 0.1, "s": 0.90, "r": 0.18 },
- 	  { "mult": 2,  "gain": 0.80, "a": 0.02, "d": 0.1, "s": 0.88, "r": 0.18 },
-	  { "mult": 3,  "gain": 0.50, "a": 0.015, "d": 0.1, "s": 0.85, "r": 0.15 },
-  	{ "mult": 4,  "gain": 0.60, "a": 0.015, "d": 0.1, "s": 0.85, "r": 0.15 },
-  	{ "mult": 5,  "gain": 0.30, "a": 0.01,  "d": 0.1, "s": 0.80, "r": 0.12 },
-  	{ "mult": 6,  "gain": 0.25, "a": 0.01,  "d": 0.1, "s": 0.80, "r": 0.12 },
-  	{ "mult": 8,  "gain": 0.20, "a": 0.008, "d": 0.1, "s": 0.75, "r": 0.10 }
-	],
-  "dulcimer": [
-  	{ "mult": 1,  "gain": 1.00, "a": 0.002, "d": 0.60, "s": 0.05, "r": 0.40 },
-  	{ "mult": 2,  "gain": 0.75, "a": 0.002, "d": 0.50, "s": 0.04, "r": 0.35 },
-  	{ "mult": 3,  "gain": 0.50, "a": 0.001, "d": 0.40, "s": 0.03, "r": 0.30 },
-  	{ "mult": 4,  "gain": 0.35, "a": 0.001, "d": 0.35, "s": 0.02, "r": 0.25 },
-  	{ "mult": 5,  "gain": 0.20, "a": 0.001, "d": 0.25, "s": 0.01, "r": 0.20 },
-  	{ "mult": 6,  "gain": 0.15, "a": 0.001, "d": 0.20, "s": 0.01, "r": 0.15 },
-  	{ "mult": 8,  "gain": 0.08, "a": 0.001, "d": 0.15, "s": 0.00, "r": 0.10 }
-	],
-  "kalimba": [
-  	{ "mult": 1, "gain": 1.00, "a": 0.001, "d": 1.20, "s": 0.02, "r": 0.50 },
-  	{ "mult": 5.4, "gain": 0.65, "a": 0.001, "d": 0.15, "s": 0.00, "r": 0.10 },
-  	{ "mult": 2, "gain": 0.35, "a": 0.001, "d": 0.08, "s": 0.00, "r": 0.05 },
-  	{ "mult": 15.2, "gain": 0.20, "a": 0.001, "d": 0.04, "s": 0.00, "r": 0.03 }
-	],
-  "lute": [
-  	{ "mult": 1, "gain": 0.85, "a": 0.003, "d": 1.40, "s": 0.02, "r": 0.35 },
-  	{ "mult": 1.003, "gain": 0.75, "a": 0.005, "d": 1.35, "s": 0.02, "r": 0.35 },
-  	{ "mult": 2, "gain": 0.50, "a": 0.002, "d": 0.85, "s": 0.01, "r": 0.25 },
-  	{ "mult": 2.005, "gain": 0.45, "a": 0.004, "d": 0.80, "s": 0.01, "r": 0.25 },
-  	{ "mult": 3, "gain": 0.35, "a": 0.002, "d": 0.50, "s": 0.00, "r": 0.20 },
-  	{ "mult": 3.007, "gain": 0.30, "a": 0.003, "d": 0.45, "s": 0.00, "r": 0.20 },
-  	{ "mult": 4, "gain": 0.22, "a": 0.001, "d": 0.30, "s": 0.00, "r": 0.15 },
-  	{ "mult": 4.009, "gain": 0.18, "a": 0.002, "d": 0.28, "s": 0.00, "r": 0.15 },
-  	{ "mult": 5, "gain": 0.12, "a": 0.001, "d": 0.18, "s": 0.00, "r": 0.10 },
-  	{ "mult": 6, "gain": 0.08, "a": 0.001, "d": 0.10, "s": 0.00, "r": 0.08 }
-	],
-  "vibraphone": [
-  	{ "mult": 1,  "gain": 1.00, "a": 0.001,  "d": 4.5,  "s": 0.0, "r": 1.20 },
-  	{ "mult": 4,  "gain": 0.60, "a": 0.001,  "d": 1.8,  "s": 0.0, "r": 0.60 },
-  	{ "mult": 9.8,  "gain": 0.20, "a": 0.0008, "d": 0.6,  "s": 0.0, "r": 0.25 },
-  	{ "mult": 17.2, "gain": 0.06, "a": 0.0005, "d": 0.15, "s": 0.0, "r": 0.08 },
-  	{ "mult": 24.5, "gain": 0.02, "a": 0.0005, "d": 0.05, "s": 0.0, "r": 0.03 }
-	],
-  "cloud-chamber-bowls": [
-    { "mult": 1, "gain": 1, "a": 0.001, "d": 2.5, "s": 0.05, "r": 1.2 },
-    { "mult": 2.76, "gain": 0.45, "a": 0.0008, "d": 1.8, "s": 0.02, "r": 0.8 },
-    { "mult": 5.41, "gain": 0.28, "a": 0.0005, "d": 1.2, "s": 0.01, "r": 0.5 },
-    { "mult": 8.92, "gain": 0.18, "a": 0.0005, "d": 0.8, "s": 0.0, "r": 0.3 },
-    { "mult": 13.15, "gain": 0.09, "a": 0.0005, "d": 0.4, "s": 0.0, "r": 0.15 }
-  ],
-  "chromelodeon": [
-    { "mult": 1, "gain": 1, "a": 0.035, "d": 0.1, "s": 0.95, "r": 0.05 },
-    { "mult": 2, "gain": 0.65, "a": 0.03, "d": 0.1, "s": 0.9, "r": 0.05 },
-    { "mult": 3, "gain": 0.45, "a": 0.025, "d": 0.1, "s": 0.85, "r": 0.045 },
-    { "mult": 4, "gain": 0.3, "a": 0.02, "d": 0.1, "s": 0.8, "r": 0.04 },
-    { "mult": 5, "gain": 0.22, "a": 0.018, "d": 0.1, "s": 0.7, "r": 0.04 },
-    { "mult": 6, "gain": 0.15, "a": 0.015, "d": 0.1, "s": 0.6, "r": 0.035 },
-    { "mult": 7, "gain": 0.08, "a": 0.012, "d": 0.1, "s": 0.4, "r": 0.03 }
-  ],
-  "marimba-eroica": [
-    { "mult": 1, "gain": 1, "a": 0.008, "d": 1.4, "s": 0.02, "r": 0.6 },
-    { "mult": 3.92, "gain": 0.35, "a": 0.002, "d": 0.45, "s": 0.0, "r": 0.2 },
-    { "mult": 9.18, "gain": 0.12, "a": 0.001, "d": 0.15, "s": 0.0, "r": 0.08 },
-    { "mult": 15.8, "gain": 0.04, "a": 0.001, "d": 0.06, "s": 0.0, "r": 0.04 }
-  ],
-  "kithara": [
-    { "mult": 1, "gain": 1, "a": 0.001, "d": 1.2, "s": 0.15, "r": 0.4 },
-    { "mult": 2, "gain": 0.55, "a": 0.001, "d": 0.95, "s": 0.08, "r": 0.3 },
-    { "mult": 3, "gain": 0.38, "a": 0.001, "d": 0.7, "s": 0.04, "r": 0.25 },
-    { "mult": 4, "gain": 0.22, "a": 0.001, "d": 0.5, "s": 0.02, "r": 0.2 },
-    { "mult": 5.02, "gain": 0.12, "a": 0.001, "d": 0.3, "s": 0.0, "r": 0.15 },
-    { "mult": 6.05, "gain": 0.07, "a": 0.001, "d": 0.18, "s": 0.0, "r": 0.1 }
-  ],
-  "13ed3": [
-    { mult: 1, gain: 1.0, a: 0.005, d: 1.2, s: 0.85, r: 0.4 },
-    { mult: 3, gain: 0.75, a: 0.004, d: 0.9, s: 0.7, r: 0.35 },
-    { mult: 5, gain: 0.5, a: 0.003, d: 0.7, s: 0.55, r: 0.3 },
-    { mult: 7, gain: 0.35, a: 0.003, d: 0.5, s: 0.4, r: 0.25 },
-    { mult: 9, gain: 0.22, a: 0.002, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 11, gain: 0.14, a: 0.002, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 13, gain: 0.08, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 15, gain: 0.04, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "19edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 2.9875, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 4, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 4.9788, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 5.975, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 8, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 9.9576, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "12edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 3, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 4, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 5.0397, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 6, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 8, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 9, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "13edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 4.9509, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 6.4635, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 8, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 9.9018, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 10.4441, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "14edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 5.1056, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 8, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 10.2112, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 12.5, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 16, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "15edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 5.1056, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 6.9644, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 8, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 10.2112, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 11.0553, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "16edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 4.9674, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 7, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 8, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 9.9349, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 11.2441, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "17edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 3, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 4, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 4.8889, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 6, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 8, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 9, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "18edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 5.04, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 8, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 9, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 10.08, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 10.4751, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "20edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 6.9644, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 8, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 10.9283, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 13.9288, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 16, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "21edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 5.04, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 7.0105, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 8, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 10.08, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 14.021, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "22edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 3.0124, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 4, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 4.987, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 6.0248, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 8, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 9.974, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "23edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 8, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 9.0249, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 12.9569, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 16, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 33.9881, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "24edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 3, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 4, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 6, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 8, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 9, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 11, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "25edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 5, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 6.9644, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 8, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 10, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 13.9288, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "26edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 7, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 8, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 11.0161, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 14, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 16, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "27edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 3, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 3.0159, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 4, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 5.04, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 6.0318, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 8, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "28edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 5, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 8, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 10, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 16, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 19.0273, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "29edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 3, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 4, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 6, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 8, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 9.0155, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 12, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "15edo-alternate": [
-    { mult: 1, gain: 1, a: 0.0005, d: 0.5, s: 1, r: 0.04},
-    { mult: 1.203, gain: 0.8313, a: 0.001626, d: 0.3252, s: 1, r: 0.04},
-    { mult: 4.3873, gain: 0.0228, a: 0.000456, d: 0.912, s: 1, r: 0.04},
-    { mult: 6.65, gain: 0.17, a: 0.001, d: 0.4975, s: 1, r: 0.04},
-    { mult: 8.3784, gain: 0.0119, a: 0.00125, d: 0.238, s: 1, r: 0.04},
-    { mult: 9, gain: 0.12, a: 0.0015, d: 0.495, s: 1, r: 0.04}
-  ],
-  "30edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 8, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 8.9797, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 13, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 16, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 17.9594, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "31edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 2.991, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 4, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 5, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 5.9821, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 6.9956, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 8, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "32edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 8, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 15, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 16, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 19, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 30, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "33edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 8, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 12.9688, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 15.0229, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 16, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 21.0236, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "34edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 3.0068, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 4, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 5.0056, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 6.0136, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 8, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 10.0112, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "35edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 8, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 9.0094, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 10.9826, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 16, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 16.9794, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "36edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 2.9966, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 4, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 5.9932, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 7, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 8, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 8.9797, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "37edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 5.0083, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 7.0168, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 8, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 10.0166, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 11.0002, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "38edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 8, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 10.5176, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 11.522, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 16, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 17.5279, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "39edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 8, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 11.0161, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 12.4755, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 16, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 17.4869, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "40edo": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 5.0107, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 6.9644, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 8, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 10.0214, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 12.996, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	],
-  "compressed-piano": [
-    { mult: 1, gain: 1, a: 0.002, d: 8.0, s: 0, r: 0.2},
-    { mult: 1.9971, gain: 0.5, a: 0.002, d: 4.9, s: 0, r: 0.2},
-    { mult: 2.9913, gain: 0.333, a: 0.003, d: 3.5, s: 0, r: 0.2},
-    { mult: 3.9827, gain: 0.25, a: 0.003, d: 2.0, s: 0, r: 0.2},
-    { mult: 4.9712, gain: 0.2, a: 0.004, d: 1.2, s: 0, r: 0.2},
-    { mult: 5.9568, gain: 0.167, a: 0.004, d: 1.2, s: 0, r: 0.2},
-    { mult: 6.9396, gain: 0.0142857, a: 0.005, d: 1.2, s: 0, r: 0.2},
-    { mult: 7.931, gain: 0.125, a: 0.005, d: 1.2, s: 0, r: 0.2},
-    { mult: 8.9224, gain: 0.0111, a: 0.005, d: 1.2, s: 0, r: 0.2},
-    { mult: 9.9137, gain: 0.1, a: 0.005, d: 1.2, s: 0, r: 0.2},
-  ],
-  "5ed3": [
-    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
-    { mult: 3, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
-    { mult: 9, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
-    { mult: 11.2116, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
-    { mult: 14, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
-    { mult: 27, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
-    { mult: 33.6348, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
-    { mult: 42, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	]
+  ]
 };
 
-
-// Synth Class for Audio Generation (same as before)
 class Synth {
     constructor(ctx, gainNode, waveType, releaseTime) {
         this.ctx = ctx;
@@ -1702,11 +488,9 @@ class Synth {
         this.harmonics = [];
         this.waveType = waveType;
 
-        // Check if the selected wave matches a custom timbre
         const definition = timbres[this.waveType];
 
         if (definition) {
-            // Build multiple oscillators based on the timbre object
             definition.forEach(h => {
                 const osc = this.ctx.createOscillator();
                 const g = this.ctx.createGain();
@@ -1716,10 +500,9 @@ class Synth {
                 this.harmonics.push({ osc, g, config: h });
             });
         } else {
-            // Fallback for standard waveforms (sine, square, etc.)
             const osc = this.ctx.createOscillator();
             const g = this.ctx.createGain();
-            osc.type = this.waveType;
+            osc.type = ['sine', 'square', 'sawtooth', 'triangle'].includes(this.waveType) ? this.waveType : 'sine';
             g.gain.setValueAtTime(0, this.ctx.currentTime);
             osc.connect(g);
             g.connect(this.masterGain);
@@ -1735,12 +518,9 @@ class Synth {
         const now = this.ctx.currentTime;
         this.harmonics.forEach(h => {
             h.osc.frequency.setValueAtTime(frequency * h.config.mult, now);
-            
-            // Envelope: Attack -> Decay -> Sustain
             h.g.gain.cancelScheduledValues(now);
             h.g.gain.linearRampToValueAtTime(h.config.gain, now + h.config.a);
-            h.g.gain.exponentialRampToValueAtTime(h.config.gain * h.config.s + 0.001, now + h.config.a + h.config.d);
-            
+            h.g.gain.exponentialRampToValueAtTime(Math.max(0.0001, h.config.gain * h.config.s), now + h.config.a + h.config.d);
             h.osc.start();
         });
     }
@@ -1749,44 +529,35 @@ class Synth {
         const now = this.ctx.currentTime;
         this.harmonics.forEach(h => {
             h.g.gain.cancelScheduledValues(now);
-            h.g.gain.setValueAtTime(h.g.gain.value, now);
-            // Envelope: Release
-            h.g.gain.exponentialRampToValueAtTime(0.001, now + h.config.r);
-            h.osc.stop(now + h.config.r + 0.1);
+            h.g.gain.setValueAtTime(Math.max(0.0001, h.g.gain.value), now);
+            h.g.gain.exponentialRampToValueAtTime(0.0001, now + h.config.r);
+            h.osc.stop(now + h.config.r + 0.05);
         });
     }
 }
 
-
-
 // --- UI ELEMENTS ---
 const canvas = document.getElementById('gridCanvas');
 const body = document.body;
-const darkModeToggle = document.getElementById('darkModeToggle');
 const ctx = canvas.getContext('2d', { alpha:false });
 const rowsInput = document.getElementById('rows');
 const colsInput = document.getElementById('cols');
 const keySizeInput = document.getElementById('keySize');
-// NEW ELEMENTS
 const rootKeyIndexInput = document.getElementById('rootKeyIndex');
 const hStepsInput = document.getElementById('hSteps');
 const vStepsInput = document.getElementById('vSteps');
-// END NEW ELEMENTS
 const tuningType = document.getElementById('tuningType');
 const edoStepsInput = document.getElementById('edoSteps');
-const nonoParams = document.getElementById('nonoParams');
-const nonoSpecInput = document.getElementById('nonoSpec');
-const jiParams = document.getElementById('jiParams');
-const jiPrimeInput = document.getElementById('jiPrime');
 const rootFreqInput = document.getElementById('rootFreq');
 const rootNoteNameInput = document.getElementById('rootNoteName');
 const scaleSubsetSelect = document.getElementById('scaleSubset');
+const scaleSubsetLabel = document.getElementById('scaleSubsetLabel');
+const selectAllNotesBtn = document.getElementById('selectAllNotesBtn');
+const clearNotesBtn = document.getElementById('clearNotesBtn');
 const applyBtn = document.getElementById('applyBtn');
 const tuningText = document.getElementById('tuningText');
-const notesLegend = document.getElementById('notesLegend');
 const waveSel = document.getElementById('wave');
 const releaseInput = document.getElementById('release');
-const edoParams = document.getElementById('edoParams');
 const volumeSlider = document.getElementById('volumeSlider');
 const sustainToggle = document.getElementById('sustainToggle');
 const stopAllBtn = document.getElementById('stopAllBtn');
@@ -1798,16 +569,18 @@ const gen_udp = document.getElementById('gen_udp');
 const gen_cancelBtn = document.getElementById('gen_cancelBtn');
 const gen_applyBtn = document.getElementById('gen_applyBtn');
 const modeSelector = document.getElementById('modeSelector');
+const recordBtn = document.getElementById('recordBtn');
+const recordText = document.getElementById('recordText');
+const stopRecordBtn = document.getElementById('stopRecordBtn');
+const recordingStatus = document.getElementById('recordingStatus');
 
-
-// --- AUDIO/SYNTH STATE ---
+// --- STATE ---
 const activeVoices = new Map(); 
 const pointerToIdx = new Map(); 
 
 let baseSubsetPattern = []; 
 let currentModeIndex = 0; 
 let fullScaleStepsData = []; 
-
 
 if(volumeSlider) {
   masterGain.gain.value = parseFloat(volumeSlider.value);
@@ -1816,7 +589,10 @@ if(volumeSlider) {
   });
 }
 
-// --- CORE HELPER FUNCTIONS (WAV Encoding) ---
+// --- AUDIO RECORDING ---
+let audioProcessor = null;
+let recordingBuffers = [];
+let isRecording = false;
 
 function mergeBuffers(buffers, totalLength) {
     const result = new Float32Array(totalLength);
@@ -1829,7 +605,7 @@ function mergeBuffers(buffers, totalLength) {
 }
 
 function bufferToWave(interleavedData, sampleRate) {
-    const numChannels = NUM_CHANNELS;
+    const numChannels = 1;
     const bitDepth = 16;
     const bytesPerSample = bitDepth / 8;
     const blockAlign = numChannels * bytesPerSample;
@@ -1845,12 +621,10 @@ function bufferToWave(interleavedData, sampleRate) {
         }
     }
 
-    /* RIFF header */
     writeString(view, 0, 'RIFF'); 
     view.setUint32(4, 36 + totalBytes, true); 
     writeString(view, 8, 'WAVE'); 
 
-    /* FMT sub-chunk */
     writeString(view, 12, 'fmt '); 
     view.setUint32(16, 16, true); 
     view.setUint16(20, 1, true); 
@@ -1860,175 +634,76 @@ function bufferToWave(interleavedData, sampleRate) {
     view.setUint16(32, blockAlign, true); 
     view.setUint16(34, bitDepth, true); 
 
-    /* DATA sub-chunk */
     writeString(view, 36, 'data'); 
     view.setUint32(40, totalBytes, true); 
 
-    /* Write PCM data (conversion from Float32 to Int16) */
-    function floatTo16BitPCM(output, offset, input) {
-        for (let i = 0; i < input.length; i++, offset += 2) {
-            const s = Math.max(-1, Math.min(1, input[i]));
-            output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-        }
+    for (let i = 0; i < interleavedData.length; i++) {
+        const s = Math.max(-1, Math.min(1, interleavedData[i]));
+        view.setInt16(44 + (i * 2), s < 0 ? s * 0x8000 : s * 0x7FFF, true);
     }
-    floatTo16BitPCM(view, 44, interleavedData);
 
     return new Blob([view], { type: 'audio/wav' });
 }
 
-// --- AudioWorklet Processor code as a string ---
-const recorderProcessorCode = `
-class RecorderProcessor extends AudioWorkletProcessor {
-  constructor() {
-    super();
-    this.port.onmessage = (event) => {
-      if (event.data === 'stop') {
-        this.recording = false;
-      } else if (event.data === 'start') {
-        this.recording = true;
-      }
-    };
-    this.recording = false;
-  }
-
-  process(inputs) {
-    if (!this.recording) return true;
-
-    const input = inputs[0];
-    if (input.length === 0) return true;
-
-    this.port.postMessage(input);
-
-    return true;
-  }
-}
-
-registerProcessor('recorder-processor', RecorderProcessor);
-`;
-
-// --- Globals ---
-let audioWorkletNode = null;
-let recordedBuffers = [];
-let recording = false;
-
-// Assuming these are defined elsewhere in your code:
-const NUM_CHANNELS = 1; // or 2 for stereo
-// audioCtx and masterGain must be your existing AudioContext and master gain node
-// recordBtn and stopRecordBtn are your UI buttons
-
-// --- Setup AudioWorklet Recorder ---
-async function setupRecorder() {
-  if (!audioCtx.audioWorklet) {
-    alert('AudioWorklet not supported in this browser.');
-    return;
-  }
-
-  const blob = new Blob([recorderProcessorCode], { type: 'application/javascript' });
-  const blobURL = URL.createObjectURL(blob);
-
-  await audioCtx.audioWorklet.addModule(blobURL);
-
-  URL.revokeObjectURL(blobURL);
-
-  audioWorkletNode = new AudioWorkletNode(audioCtx, 'recorder-processor', {
-    numberOfInputs: 1,
-    numberOfOutputs: 0,
-    channelCount: NUM_CHANNELS,
-  });
-
-  audioWorkletNode.port.onmessage = (event) => {
-    const inputChannels = event.data;
-    for (let ch = 0; ch < inputChannels.length; ch++) {
-      recordedBuffers[ch] = recordedBuffers[ch] || [];
-      recordedBuffers[ch].push(new Float32Array(inputChannels[ch]));
-    }
-  };
-
-  masterGain.connect(audioWorkletNode);
-}
-
-// --- Start Recording ---
 function startRecording() {
-  if (!audioWorkletNode) {
-    console.error('Recorder not initialized');
-    return;
-  }
-  recordedBuffers = [];
-  recording = true;
-  audioWorkletNode.port.postMessage('start');
-  console.log('Recording started');
+    if (isRecording) return;
+    if (audioCtx.state !== 'running') audioCtx.resume();
+    
+    recordingBuffers = [];
+    audioProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
+
+    audioProcessor.onaudioprocess = (e) => {
+        if (!isRecording) return;
+        const channelData = e.inputBuffer.getChannelData(0);
+        recordingBuffers.push(new Float32Array(channelData));
+    };
+
+    masterGain.connect(audioProcessor);
+    audioProcessor.connect(audioCtx.destination); 
+
+    isRecording = true;
+    recordBtn.disabled = true;
+    stopRecordBtn.disabled = false;
+    recordText.textContent = '● RECORDING'; 
+    recordingStatus.textContent = 'Recording in progress...';
+    recordingStatus.classList.add('recording-status');
 }
 
-// --- Stop Recording and Export WAV ---
 function stopRecording() {
-  if (!recording) return;
-  recording = false;
-  audioWorkletNode.port.postMessage('stop');
-  console.log('Recording stopped');
+    if (!isRecording) return;
+    
+    masterGain.disconnect(audioProcessor);
+    audioProcessor.disconnect(audioCtx.destination);
+    audioProcessor = null;
+    isRecording = false;
 
-  // Merge buffers per channel
-  const mergedBuffers = [];
-  let totalLength = 0;
-  for (let ch = 0; ch < recordedBuffers.length; ch++) {
-    const merged = mergeBuffers(recordedBuffers[ch], recordedBuffers[ch].reduce((acc, b) => acc + b.length, 0));
-    mergedBuffers.push(merged);
-    totalLength = merged.length; // All channels have same length
-  }
+    recordingStatus.textContent = 'Compiling WAV file...';
+    recordingStatus.classList.remove('recording-status');
+    
+    const totalLength = recordingBuffers.reduce((sum, buffer) => sum + buffer.length, 0);
+    const audioData = mergeBuffers(recordingBuffers, totalLength);
+    const wavBlob = bufferToWave(audioData, audioCtx.sampleRate);
+    
+    const url = URL.createObjectURL(wavBlob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = `synth_recording_${Date.now()}.wav`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
 
-  // Interleave channels
-  const interleaved = new Float32Array(totalLength * NUM_CHANNELS);
-  for (let i = 0; i < totalLength; i++) {
-    for (let ch = 0; ch < NUM_CHANNELS; ch++) {
-      interleaved[i * NUM_CHANNELS + ch] = mergedBuffers[ch][i];
-    }
-  }
-
-  // Encode WAV
-  const wavBlob = bufferToWave(interleaved, audioCtx.sampleRate);
-
-  // Trigger download
-  const url = URL.createObjectURL(wavBlob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'synth_recording.wav';
-  a.click();
-  URL.revokeObjectURL(url);
+    recordBtn.disabled = false;
+    stopRecordBtn.disabled = true;
+    recordText.textContent = 'Record';
+    recordingStatus.textContent = '';
 }
 
-// --- Hook up UI buttons ---
-recordBtn.onclick = async () => {
-  if (audioCtx.state === 'suspended') await audioCtx.resume();
-  if (!audioWorkletNode) await setupRecorder();
-  startRecording();
-  recordBtn.disabled = true;
-  stopRecordBtn.disabled = false;
-};
+recordBtn.addEventListener('click', startRecording);
+stopRecordBtn.addEventListener('click', stopRecording);
 
-stopRecordBtn.onclick = () => {
-  stopRecording();
-  recordBtn.disabled = false;
-  stopRecordBtn.disabled = true;
-};
-
-
-// --- CORE HELPER FUNCTIONS (Tuning/Grid) ---
-
-// ============================================================================
-// KEY COLOR PICKER MODAL LOGIC
-// ============================================================================
-
-// Global color storage initialized in gridState
-if (!gridState.pitchColors) {
-  gridState.pitchColors = {};
-}
-
-// ----------------------------------------------------------------------------
-// Color Utilities & Presets
-// ----------------------------------------------------------------------------
-
-/**
- * Converts HSL values to a Hex color string.
- */
+// --- COLOR PALETTE LOGIC ---
 function hslToHex(h, s, l) {
   l /= 100;
   const a = (s * Math.min(l, 1 - l)) / 100;
@@ -2040,22 +715,15 @@ function hslToHex(h, s, l) {
   return `#${f(0)}${f(8)}${f(4)}`;
 }
 
-/**
- * Generates a default color for a given EDO step.
- * Uses standard 12-EDO black/white styling for N=12, and HSL distribution for other EDOs.
- */
 function getDefaultColorForStep(step, N) {
   if (N === 12) {
     const isBlackKey = [1, 3, 6, 8, 10].includes(step);
-    return isBlackKey ? '#2d3748' : '#f8fafc';
+    return isBlackKey ? '#2d3748' : '#4b5563';
   }
   const hue = Math.round((step / N) * 360);
-  return hslToHex(hue, 60, 55);
+  return hslToHex(hue, 50, 35);
 }
 
-/**
- * Ensures gridState.pitchColors has entries for all pitch classes 0..N-1.
- */
 function ensureColorPalette(N) {
   if (!gridState.pitchColors) gridState.pitchColors = {};
   for (let i = 0; i < N; i++) {
@@ -2065,273 +733,206 @@ function ensureColorPalette(N) {
   }
 }
 
-// ----------------------------------------------------------------------------
-// Modal UI Controller
-// ----------------------------------------------------------------------------
-
-const colorPickerModal = document.getElementById('colorPickerModal');
-const colorGrid = document.getElementById('colorGrid');
-const colorModalEdoTitle = document.getElementById('colorModalEdoTitle');
-const colorModalClose = document.getElementById('colorModalClose');
-const colorModalApply = document.getElementById('colorModalApply');
-
-// Presets
-const colorPresetRainbow = document.getElementById('colorPresetRainbow');
-const colorPresetMonochrome = document.getElementById('colorPresetMonochrome');
-const colorPresetWarm = document.getElementById('colorPresetWarm');
-const colorPresetCool = document.getElementById('colorPresetCool');
-const colorPresetReset = document.getElementById('colorPresetReset');
-
-/**
- * Opens and populates the Key Color Picker Modal.
- */
-function openColorPickerModal() {
-  const N = gridState.tuning?.edo || parseInt(edoStepsInput.value, 10) || 12;
-
-  // Update Modal Title
-  if (colorModalEdoTitle) {
-    colorModalEdoTitle.textContent = `${N}-EDO`;
-  }
-
-  // Ensure palette exists
-  ensureColorPalette(N);
-
-  // Generate EDO naming map for labels
-  const namingTable = gridState.edoNameTable || generateEDONaming(N).names;
-
-  // Populate color grid inputs
-  colorGrid.innerHTML = '';
-  for (let i = 0; i < N; i++) {
-    const cents = Math.round((i / N) * 1200);
-    const stepName = pickSimplestName(namingTable[i] || ['?']);
-    const currentColor = gridState.pitchColors[i] || getDefaultColorForStep(i, N);
-
-    const item = document.createElement('div');
-    item.className = 'color-item';
-    item.style.cssText = `
-      background-color: #18181b;
-      padding: 8px;
-      border-radius: 8px;
-      border: 1px solid #3f3f46;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    `;
-
-    item.innerHTML = `
-      <input type="color" data-step="${i}" value="${currentColor}" style="
-        width: 32px;
-        height: 32px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        background: none;
-        padding: 0;
-      " />
-      <div style="display: flex; flex-direction: column;">
-        <span style="font-weight: 600; font-size: 0.85rem; color: #fff;">
-          Step ${i} (${stepName})
-        </span>
-        <span style="font-size: 0.72rem; color: #9ca3af;">
-          ${cents} cents
-        </span>
-      </div>
-    `;
-    colorGrid.appendChild(item);
-  }
-
-  colorPickerModal.style.display = 'flex';
-}
-
-/**
- * Closes the Key Color Picker Modal without saving.
- */
-function closeColorPickerModal() {
-  colorPickerModal.style.display = 'none';
-}
-
-/**
- * Reads colors from inputs and applies them to gridState.pitchColors, then re-renders grid.
- */
-function applyColorPickerChanges() {
-  const inputs = colorGrid.querySelectorAll('input[type="color"]');
-  inputs.forEach((input) => {
-    const step = parseInt(input.getAttribute('data-step'), 10);
-    gridState.pitchColors[step] = input.value;
-  });
-
-  closeColorPickerModal();
-
-  // Re-render the grid canvas if renderGrid exists
-  if (typeof renderGrid === 'function') {
-    renderGrid();
-  }
-}
-
-// ----------------------------------------------------------------------------
-// Preset Generators
-// ----------------------------------------------------------------------------
-
-if (colorPresetRainbow) {
-  colorPresetRainbow.addEventListener('click', () => {
-    const inputs = colorGrid.querySelectorAll('input[type="color"]');
-    const N = inputs.length;
-    inputs.forEach((input) => {
-      const step = parseInt(input.getAttribute('data-step'), 10);
-      const hue = Math.round((step / N) * 360);
-      input.value = hslToHex(hue, 75, 50);
-    });
-  });
-}
-
-if (colorPresetMonochrome) {
-  colorPresetMonochrome.addEventListener('click', () => {
-    const inputs = colorGrid.querySelectorAll('input[type="color"]');
-    inputs.forEach((input) => {
-      const step = parseInt(input.getAttribute('data-step'), 10);
-      input.value = step % 2 === 0 ? '#f8fafc' : '#334155';
-    });
-  });
-}
-
-if (colorPresetWarm) {
-  colorPresetWarm.addEventListener('click', () => {
-    const inputs = colorGrid.querySelectorAll('input[type="color"]');
-    const N = inputs.length;
-    inputs.forEach((input) => {
-      const step = parseInt(input.getAttribute('data-step'), 10);
-      const hue = Math.round((step / N) * 60); // Red to Yellow
-      input.value = hslToHex(hue, 85, 50);
-    });
-  });
-}
-
-if (colorPresetCool) {
-  colorPresetCool.addEventListener('click', () => {
-    const inputs = colorGrid.querySelectorAll('input[type="color"]');
-    const N = inputs.length;
-    inputs.forEach((input) => {
-      const step = parseInt(input.getAttribute('data-step'), 10);
-      const hue = 180 + Math.round((step / N) * 90); // Cyan to Purple
-      input.value = hslToHex(hue, 75, 50);
-    });
-  });
-}
-
-if (colorPresetReset) {
-  colorPresetReset.addEventListener('click', () => {
-    const inputs = colorGrid.querySelectorAll('input[type="color"]');
-    const N = inputs.length;
-    inputs.forEach((input) => {
-      const step = parseInt(input.getAttribute('data-step'), 10);
-      input.value = getDefaultColorForStep(step, N);
-    });
-  });
-}
-
-// ----------------------------------------------------------------------------
-// Event Listeners & Integration
-// ----------------------------------------------------------------------------
-
-if (colorModalClose) colorModalClose.addEventListener('click', closeColorPickerModal);
-if (colorModalApply) colorModalApply.addEventListener('click', applyColorPickerChanges);
-
-// Close when clicking background overlay
-colorPickerModal.addEventListener('click', (e) => {
-  if (e.target === colorPickerModal) closeColorPickerModal();
-});
-
-// Create button trigger if you have a trigger button `#colorPickerBtn`
-const colorPickerBtn = document.getElementById('colorPickerBtn');
-if (colorPickerBtn) {
-  colorPickerBtn.addEventListener('click', openColorPickerModal);
-}
-
-// ----------------------------------------------------------------------------
-// Grid Canvas Render Helper Integration
-// ----------------------------------------------------------------------------
-/**
- * Helper to get background color for a grid key index.
- * Add this lookup inside your `renderGrid()` loop:
- *
- * const { subsetIndex, octaveShift } = calculateGridMapping(idx);
- * const intervalStep = subset[subsetIndex];
- * const pc = mod(intervalStep, gridState.tuning.edo);
- * const bgKeyColor = getKeyColorForPitchClass(pc);
- */
 function getKeyColorForPitchClass(pc) {
   const N = gridState.tuning?.edo || 12;
   ensureColorPalette(N);
   return gridState.pitchColors[pc] || getDefaultColorForStep(pc, N);
 }
 
+const colorPickerModal = document.getElementById('colorPickerModal');
+const colorGrid = document.getElementById('colorGrid');
+const colorModalEdoTitle = document.getElementById('colorModalEdoTitle');
 
-function centsOfRatio(r){ return 1200 * Math.log2(r); }
+function openColorPickerModal() {
+  const N = gridState.tuning?.edo || 12;
+  if (colorModalEdoTitle) colorModalEdoTitle.textContent = `${N}-EDO`;
+  ensureColorPalette(N);
 
-function parseInterval(input) {
-  input = input.trim();
-  if(!input) return NaN;
+  const namingTable = gridState.edoNameTable || generateEDONaming(N).names;
+  colorGrid.innerHTML = '';
 
-  if (input.includes('\\')) {
-    const parts = input.split('\\').map(x => parseFloat(x.trim()));
-    if (parts.length === 2 && isFinite(parts[0]) && isFinite(parts[1]) && parts[1] !== 0) {
-      return 1200 * (parts[0] / parts[1]); 
-    }
-    return NaN;
-  } 
-  
-  if (input.includes('/')){
-    const [a,b] = input.split('/').map(x=>parseFloat(x.trim()));
-    if(isFinite(a) && isFinite(b) && b!==0) return centsOfRatio(a/b);
-    return NaN;
-  } 
-  
-  const v = parseFloat(input);
-  return isFinite(v) ? v : NaN; 
+  for (let i = 0; i < N; i++) {
+    const stepName = pickSimplestName(namingTable[i] || ['?']);
+    const currentColor = gridState.pitchColors[i] || getDefaultColorForStep(i, N);
+
+    const item = document.createElement('div');
+    item.className = 'color-item';
+    item.style.cssText = `background:#1f2937; padding:8px; border-radius:6px; display:flex; align-items:center; gap:8px; border:1px solid #374151;`;
+    item.innerHTML = `
+      <input type="color" data-step="${i}" value="${currentColor}" style="width:32px; height:32px; border:none; cursor:pointer; background:none;" />
+      <span style="font-size:0.85rem;">Step ${i} (${stepName})</span>
+    `;
+    colorGrid.appendChild(item);
+  }
+  colorPickerModal.style.display = 'flex';
 }
 
-function centsToEDOStepRaw(cents, N) {
-  if (N === 0) return 0;
-  return Math.round((cents / 1200) * N);
-}
+document.getElementById('colorPickerBtn')?.addEventListener('click', openColorPickerModal);
+document.getElementById('colorModalClose')?.addEventListener('click', () => colorPickerModal.style.display = 'none');
+document.getElementById('colorModalApply')?.addEventListener('click', () => {
+  colorGrid.querySelectorAll('input[type="color"]').forEach(input => {
+    gridState.pitchColors[parseInt(input.getAttribute('data-step'))] = input.value;
+  });
+  colorPickerModal.style.display = 'none';
+  renderGrid();
+});
 
-function parseUDP(udpStr) {
-  const match = udpStr.match(/(\d+)\|(\d+)\((\d+)\)/);
-  if (!match) return null;
-  return {
-    up: parseInt(match[1]),
-    down: parseInt(match[2]),
-    periods: parseInt(match[3])
-  };
-}
+document.getElementById('colorPresetRainbow')?.addEventListener('click', () => {
+  const inputs = colorGrid.querySelectorAll('input[type="color"]');
+  const N = inputs.length;
+  inputs.forEach(input => {
+    const step = parseInt(input.getAttribute('data-step'));
+    input.value = hslToHex(Math.round((step / N) * 360), 75, 45);
+  });
+});
+
+document.getElementById('colorPresetReset')?.addEventListener('click', () => {
+  const inputs = colorGrid.querySelectorAll('input[type="color"]');
+  const N = inputs.length;
+  inputs.forEach(input => {
+    const step = parseInt(input.getAttribute('data-step'));
+    input.value = getDefaultColorForStep(step, N);
+  });
+});
+
+// --- HELPER MATH & NOTE NAMING FUNCTIONS ---
 
 function mod(a, b) {
   return ((a % b) + b) % b;
 }
 
-const canonicalChainOfFifths = ["Fbb", "Cbb", "Gbb", "Dbb", "Abb", "Ebb", "Bbb", "Fb","Cb","Gb","Db","Ab","Eb","Bb","F","C","G","D","A","E","B","F#","C#","G#","D#","A#","E#","B#", "F##", "C##", "G##", "D##", "A##", "E##", "B##"];
-const fifthspanMap = {};
-canonicalChainOfFifths.forEach((name, i) => { const span = i - canonicalChainOfFifths.indexOf("C"); fifthspanMap[name] = span; });
+function parseInterval(input) {
+  input = input.trim();
+  if(!input) return NaN;
+  if (input.includes('\\')) {
+    const parts = input.split('\\').map(x => parseFloat(x.trim()));
+    if (parts.length === 2 && isFinite(parts[0]) && isFinite(parts[1]) && parts[1] !== 0) return 1200 * (parts[0] / parts[1]);
+    return NaN;
+  } 
+  if (input.includes('/')){
+    const [a,b] = input.split('/').map(x=>parseFloat(x.trim()));
+    if(isFinite(a) && isFinite(b) && b!==0) return 1200 * Math.log2(a/b);
+    return NaN;
+  } 
+  const v = parseFloat(input);
+  return isFinite(v) ? v : NaN; 
+}
 
-function generateEDONaming(N){ 
-  const kfloat = N * Math.log2(3/2); const k = Math.round(kfloat); const wholeTone = (2 * k) % N; const chromaticRaw = (7 * k) - (4 * N); const chromatic = ((chromaticRaw % N) + N) % N; const diatonic = ((wholeTone - chromatic) % N + N) % N;
-  const fifthOffsets = { 'C':0, 'G':1, 'D':2, 'A':3, 'E':4, 'B':5, 'F':-1 }; const letterSteps = {};
-  for(const [L, offs] of Object.entries(fifthOffsets)){ let pos = (offs * k) % N; pos = (pos + N) % N; letterSteps[L] = pos; }
-  function canonicalNameToStep(name){ const letter = name[0]; const rest = name.slice(1); let base = letterSteps[letter] ?? 0; for(const ch of rest){ if(ch === '#') base = (base + chromatic) % N; else if(ch === 'b') base = (base - chromatic + N) % N; } return (base + N) % N; }
+function centsToEDOStepRaw(cents, N) {
+  return N === 0 ? 0 : Math.round((cents / 1200) * N);
+}
+
+function parseUDP(udpStr) {
+  const match = udpStr.match(/(\d+)\|(\d+)\((\d+)\)/);
+  if (!match) return null;
+  return { up: parseInt(match[1]), down: parseInt(match[2]), periods: parseInt(match[3]) };
+}
+
+// Canonical chain of fifths centered on C
+const canonicalChainOfFifths = [
+  "Fbb", "Cbb", "Gbb", "Dbb", "Abb", "Ebb", "Bbb", 
+  "Fb",  "Cb",  "Gb",  "Db",  "Ab",  "Eb",  "Bb", 
+  "F",   "C",   "G",   "D",   "A",   "E",   "B", 
+  "F#",  "C#",  "G#",  "D#",  "A#",  "E#",  "B#", 
+  "F##", "C##", "G##", "D##", "A##", "E##", "B##"
+];
+
+// Map each fifth name to its offset from C in fifths
+const fifthspanMap = {};
+canonicalChainOfFifths.forEach((name, i) => { 
+  fifthspanMap[name] = i - canonicalChainOfFifths.indexOf("C"); 
+});
+
+/**
+ * Picks the note name from candidate list that has the smallest absolute fifthspan (closest to C).
+ */
+function pickSimplestName(list) {
+  if (!Array.isArray(list) || list.length === 0) return '?';
+  const uniq = Array.from(new Set(list));
+
+  function getFifthSpanScore(name) {
+    let clean = name;
+    let prefixShift = 0;
+    
+    // Count microtonal carets/inflections if present
+    while (clean.startsWith('^') || clean.startsWith('v')) {
+      prefixShift += clean.startsWith('^') ? 1 : -1;
+      clean = clean.slice(1);
+    }
+
+    const baseSpan = fifthspanMap.hasOwnProperty(clean) ? fifthspanMap[clean] : 99;
+    const totalSpan = baseSpan + prefixShift;
+    const absSpan = Math.abs(totalSpan);
+
+    const sharps = (clean.match(/#/g) || []).length;
+    const flats = (clean.match(/b/g) || []).length;
+    const accidentalCount = sharps + flats;
+
+    return { absSpan, accidentalCount, length: name.length, name };
+  }
+
+  const scored = uniq.map(n => getFifthSpanScore(n));
+  
+  scored.sort((a, b) => {
+    if (a.absSpan !== b.absSpan) return a.absSpan - b.absSpan; // Smallest fifthspan closest to C
+    if (a.accidentalCount !== b.accidentalCount) return a.accidentalCount - b.accidentalCount;
+    return a.length - b.length;
+  });
+
+  return scored[0].name;
+}
+
+function generateEDONaming(N) { 
+  const kfloat = N * Math.log2(3/2); 
+  const k = Math.round(kfloat); 
+  const chromaticRaw = (7 * k) - (4 * N); 
+  const chromatic = ((chromaticRaw % N) + N) % N;
+  const fifthOffsets = { 'C':0, 'G':1, 'D':2, 'A':3, 'E':4, 'B':5, 'F':-1 }; 
+  const letterSteps = {};
+  for(const [L, offs] of Object.entries(fifthOffsets)){ letterSteps[L] = mod(offs * k, N); }
+
+  function canonicalNameToStep(name) { 
+    const letter = name[0]; 
+    const rest = name.slice(1); 
+    let base = letterSteps[letter] ?? 0; 
+    for(const ch of rest) { 
+      if(ch === '#') base = mod(base + chromatic, N); 
+      else if(ch === 'b') base = mod(base - chromatic, N); 
+    } 
+    return mod(base, N); 
+  }
+
   const stepToCanonicalNames = new Map();
-  for(const cname of canonicalChainOfFifths){ const s = canonicalNameToStep(cname); if(!stepToCanonicalNames.has(s)) stepToCanonicalNames.set(s, []); stepToCanonicalNames.get(s).push(cname); }
+  for(const cname of canonicalChainOfFifths) { 
+    const s = canonicalNameToStep(cname); 
+    if(!stepToCanonicalNames.has(s)) stepToCanonicalNames.set(s, []); 
+    stepToCanonicalNames.get(s).push(cname); 
+  }
+
   const canonicalSteps = Array.from(stepToCanonicalNames.keys());
-  const names = Array.from({length:N}, ()=>[]);
-  for(const [s,list] of stepToCanonicalNames.entries()) names[s] = [...new Set(list)];
-  for(let s=0; s<N; s++){
+  const names = Array.from({length: N}, () => []);
+
+  for(const [s, list] of stepToCanonicalNames.entries()) {
+    names[s] = [...new Set(list)];
+  }
+
+  for(let s = 0; s < N; s++) {
     if(names[s].length > 0) continue;
-    let best = null; let bestAbs = Infinity; let bestSigned = 0; let bestCanonicalStep = null;
-    for(const cs of canonicalSteps){
+    let bestAbs = Infinity; 
+    let bestSigned = 0; 
+    let bestCanonicalStep = null;
+
+    for(const cs of canonicalSteps) {
       let signed = ((s - cs + N) % N);
       if(signed > N/2) signed -= N;
       const absd = Math.abs(signed);
-      if(absd < bestAbs){ bestAbs = absd; bestSigned = signed; bestCanonicalStep = cs; }
+      if(absd < bestAbs) { 
+        bestAbs = absd; 
+        bestSigned = signed; 
+        bestCanonicalStep = cs; 
+      }
     }
+
     const baseNames = stepToCanonicalNames.get(bestCanonicalStep) || ['?'];
     const prefList = baseNames.map(bn => {
       if(bestSigned > 0) return '^'.repeat(bestSigned) + bn;
@@ -2340,60 +941,16 @@ function generateEDONaming(N){
     });
     names[s] = prefList;
   }
-  return { names, info: {k, wholeTone, chromaticRaw, chromatic, diatonic} };
+
+  return { names };
 }
 
-function pickSimplestName(list){ 
-  if(!Array.isArray(list) || list.length===0) return '?';
-  const uniq = Array.from(new Set(list));
-  function analyze(n){
-    let s = n; let prefixShift = 0;
-    while(s[0] === '^' || s[0] === 'v'){ prefixShift += (s[0] === '^' ? 1 : -1); s = s.slice(1); }
-    const core = s; const spanFromC = (fifthspanMap[core] ?? 0) + prefixShift; const absSpan = Math.abs(spanFromC);
-    const isNatural = /^[A-G]$/.test(core); const sharps = (core.match(/#/g)||[]).length; const flats = (core.match(/b/g)||[]).length;
-    const accidentalCount = sharps + flats; const kindScore = isNatural ? 0 : (sharps>0 ? 1 : (flats>0 ? 2 : 3));
-    return {orig: n, absSpan, kindScore, accidentalCount, length: n.length};
-  }
-  const analyzed = uniq.map(s => ({s, a: analyze(s)}));
-  analyzed.sort((A,B)=>{
-    if(A.a.absSpan !== B.a.absSpan) return A.a.absSpan - B.a.absSpan;  
-    if(A.a.kindScore !== B.a.kindScore) return A.a.kindScore - B.a.kindScore;
-    if(A.a.accidentalCount !== B.a.accidentalCount) return A.a.accidentalCount - B.a.accidentalCount;
-    if(A.a.length !== B.a.length) return A.a.length - B.a.length;
-    return A.s.localeCompare(B.s);
-  });
-  return analyzed[0].s;
-}
-
-
-// --- MODAL CONTROLS ---
-
+// --- MODAL & SCALE GENERATION ---
 function showModal() { scaleGeneratorModal.style.display = 'flex'; }
 function hideModal() { scaleGeneratorModal.style.display = 'none'; }
-function showModalMessage(title, message) {
-    const existing = document.getElementById('temp-modal');
-    if (existing) existing.remove();
-    
-    const modalHtml = `
-      <div id="temp-modal" class="modal-overlay" style="display:flex;">
-          <div class="modal-content">
-              <h3>${title}</h3><p>${message}</p>
-              <div class="modal-controls">
-                  <button onclick="document.getElementById('temp-modal').remove()" style="background:#f00; color:white;">Close</button>
-              </div>
-          </div>
-      </div>`;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-}
 
 generateScaleBtn.addEventListener('click', () => {
-    // Resume audio on button click (secondary check)
-    if (audioCtx.state !== 'running') { audioCtx.resume().catch(e => console.error("Audio resume failed:", e)); }
-    
-    if (tuningType.value !== 'edo') {
-        showModalMessage('Action Required', 'The scale generator only works when **Tuning Type** is set to **EDO**.');
-        return;
-    }
+    if (audioCtx.state !== 'running') audioCtx.resume();
     showModal();
 });
 gen_cancelBtn.addEventListener('click', hideModal);
@@ -2401,185 +958,100 @@ gen_applyBtn.addEventListener('click', () => {
     generateAndApplyScale(gen_generator.value, gen_period.value, gen_udp.value);
 });
 
-
-// --- SCALE GENERATOR & MODE LOGIC ---
-
 function generateAndApplyScale(generatorStr, periodStr, udpStr) {
     const N = parseInt(edoStepsInput.value);
-
-    if (tuningType.value !== 'edo' || !N || N < 2) {
-        showModalMessage('Error', 'Please ensure Tuning Type is EDO and EDO steps (N) is a valid number (> 1).');
-        return;
-    }
-
     const generatorCents = parseInterval(generatorStr);
     const periodCents = parseInterval(periodStr);
     const udp = parseUDP(udpStr);
 
-    if (!udp || isNaN(generatorCents) || isNaN(periodCents)) {
-        showModalMessage('Error', 'Invalid input for Generator, Period, or UDP format. Please check your values.');
-        return;
-    }
+    if (!udp || isNaN(generatorCents) || isNaN(periodCents)) return;
 
     const generatorStepRaw = centsToEDOStepRaw(generatorCents, N);
     const periodStepRaw = centsToEDOStepRaw(periodCents, N);
 
-    if (Math.abs(periodStepRaw) < 1) {
-        showModalMessage('Error', 'The Period interval cannot quantize to zero EDO steps. It must represent at least one full step.');
-        return;
-    }
-
     const pitchesEDOSteps = new Set();
-    
     for (let p = 0; p < udp.periods; p++) {
         const periodOffset = p * periodStepRaw; 
         for (let i = -udp.down; i <= udp.up; i++) {
-            let step = (i * generatorStepRaw) + periodOffset; 
-            step = mod(step, N); 
-            pitchesEDOSteps.add(step);
+            pitchesEDOSteps.add(mod((i * generatorStepRaw) + periodOffset, N));
         }
     }
     
-    // The base pattern MUST be sorted for interval calculation and UI
-    const finalScale = Array.from(pitchesEDOSteps).sort((a, b) => a - b);
-    
-    if (finalScale.length < 2) {
-        showModalMessage('Error', 'The generated scale has fewer than 2 unique steps. Try different parameters.');
-        return;
-    }
-
-    // Set the BASE pattern and reset the mode
-    baseSubsetPattern = finalScale;
+    baseSubsetPattern = Array.from(pitchesEDOSteps).sort((a, b) => a - b);
     currentModeIndex = 0;
-    
-    applyBaseSubsetToGrid(); // Applies mode 0 and updates UI
+    applyBaseSubsetToGrid();
     hideModal();
 }
 
-/**
- * Calculates the current mode pattern by rotating the intervals of the base scale.
- * The result is an UNSORTED array of EDO steps in sequential order.
- */
 function calculateModePattern(basePattern, startIndex) {
     if (basePattern.length === 0) return [];
-    
     const N = gridState.tuning.edo;
     const size = basePattern.length;
-    
-    // 1. Calculate intervals (size intervals including the one closing the octave)
     const intervals = [];
+    
     for (let i = 0; i < size; i++) {
         const currentStep = basePattern[i];
-        const nextStepInFullEDO = (i === size - 1) ? N : basePattern[i + 1];
-        
-        let interval = nextStepInFullEDO - currentStep;
-        
-        if (i === size - 1 && currentStep !== 0) {
-            interval = N - currentStep; 
-        } else if (interval < 0) {
-             interval += N; 
-        }
-        intervals.push(interval);
+        const nextStep = (i === size - 1) ? N : basePattern[i + 1];
+        intervals.push(nextStep - currentStep);
     }
     
-    // 2. Rotate intervals based on the start index
     const rotationAmount = startIndex % size;
     const rotatedIntervals = intervals.slice(rotationAmount).concat(intervals.slice(0, rotationAmount));
     
-    // 3. Reconstruct the steps starting from EDO step 0
     const modePattern = [0];
     let currentStep = 0;
-    
-    // We only need to generate size - 1 steps (steps 1 through size-1)
     for (let i = 0; i < size - 1; i++) { 
-        currentStep = (currentStep + rotatedIntervals[i]);
+        currentStep += rotatedIntervals[i];
         modePattern.push(currentStep);
     }
-
-    // This array is the list of EDO steps for the current mode, e.g., for 12-EDO, C Ionian is [0, 2, 4, 5, 7, 9, 11]
     return modePattern; 
 }
 
-/**
- * Applies the base pattern and current mode index to the grid state, 
- * then updates all related UI elements.
- */
 function applyBaseSubsetToGrid() {
-    // If the base pattern is empty, default to full scale (0..N-1)
     if (baseSubsetPattern.length === 0 && gridState.tuning.edo) {
         baseSubsetPattern = Array.from({length: gridState.tuning.edo}, (_, i) => i);
     }
-    
-    // 1. Calculate the new mode pattern 
-    const modePattern = calculateModePattern(baseSubsetPattern, currentModeIndex);
-    
-    // 2. Apply the calculated pattern to the grid state
-    gridState.subsetPattern = modePattern;
-    
-    // 3. Update the UI controls
+    gridState.subsetPattern = calculateModePattern(baseSubsetPattern, currentModeIndex);
     populateModeSelector(baseSubsetPattern);
-    applySubsetPatternToUI(baseSubsetPattern); // Updates the check marks in the multi-select (shows the original scale notes)
-    
-    // RENDER
+    applySubsetPatternToUI(baseSubsetPattern);
     updateLegend();
     resizeCanvas();
     renderGrid();
 }
 
-// --- STATE MANAGEMENT AND UI UPDATES ---
-
-function generateFullScaleSteps(tuning, edoNameTable, jiRatios) {
-  let steps = []; let N = 0; 
+function generateFullScaleSteps(tuning, edoNameTable) {
+  let steps = [];
   if (tuning.type === 'edo') {
-    N = tuning.edo;
-    for (let i = 0; i < N; i++) {
+    for (let i = 0; i < tuning.edo; i++) {
       steps.push({ index: i, name: pickSimplestName(edoNameTable[i] || ['?']) });
     }
   } 
-  return { steps, N };
+  return { steps, N: tuning.edo };
 }
 
 function populateScaleSubsetSelect(fullSteps) {
-  const select = document.getElementById('scaleSubset');
-  select.innerHTML = ''; 
-  if (fullSteps.length === 0) {
-    select.innerHTML = '<option disabled>No steps available</option>';
-    return;
-  }
-  
-  // Update the label to show item count
-  const labelDiv = select.parentNode.querySelector('.small');
-  if (labelDiv) {
-      labelDiv.previousSibling.textContent = `Scale Subset (Select Notes) [${fullSteps.length} Items]`;
-  }
-  
+  scaleSubsetSelect.innerHTML = ''; 
   for (const step of fullSteps) {
     const option = document.createElement('option');
     option.value = step.index; 
-    option.textContent = `[${step.index}] ${step.name}`; 
-    select.appendChild(option);
+    option.textContent = `[Step ${step.index}] ${step.name}`; 
+    scaleSubsetSelect.appendChild(option);
+  }
+  if (scaleSubsetLabel) {
+    scaleSubsetLabel.textContent = `Scale Subset (Select Notes) [${fullSteps.length} Total]`;
   }
 }
 
 function populateModeSelector(subsetSteps) {
     modeSelector.innerHTML = '';
-    
-    if (subsetSteps.length === 0) {
-        modeSelector.innerHTML = '<option disabled>No steps</option>';
-        return;
-    }
-
     const fullStepsDataMap = new Map(fullScaleStepsData.map(s => [s.index, s.name]));
-
     subsetSteps.forEach((step, index) => {
         const option = document.createElement('option');
+        option.value = index;
         const name = fullStepsDataMap.get(step) || `Step ${step}`;
-        option.value = index; // We store the index into the baseSubsetPattern
         option.textContent = `${name} (${step})`;
         modeSelector.appendChild(option);
     });
-    
-    // Restore mode index selection
     modeSelector.value = currentModeIndex;
 }
 
@@ -2587,37 +1059,48 @@ function applySubsetPatternToUI(pattern) {
     for (const option of scaleSubsetSelect.options) { option.selected = false; }
     const patternSet = new Set(pattern.map(String)); 
     for (const option of scaleSubsetSelect.options) {
-        if (patternSet.has(option.value)) {
-            option.selected = true;
-        }
+        if (patternSet.has(option.value)) option.selected = true;
     }
 }
 
 function getSelectedSubset() {
     const selections = [];
     for (const option of scaleSubsetSelect.options) {
-      if (option.selected) {
-        selections.push(parseInt(option.value, 10));
-      }
+      if (option.selected) selections.push(parseInt(option.value, 10));
     }
-    // Final pattern must always contain 0 and be sorted to correctly represent the base scale steps.
-    const finalPattern = [...new Set([0, ...selections])].sort((a, b) => a - b);
-    return finalPattern;
+    if (selections.length === 0) {
+      return Array.from({length: gridState.tuning.edo}, (_, i) => i);
+    }
+    return [...new Set(selections)].sort((a, b) => a - b);
 }
+
+// SCALE SUBSET EVENT LISTENERS FOR INSTANT UPDATES
+scaleSubsetSelect.addEventListener('change', () => {
+    baseSubsetPattern = getSelectedSubset();
+    currentModeIndex = 0;
+    applyBaseSubsetToGrid();
+});
+
+selectAllNotesBtn?.addEventListener('click', () => {
+    for (const option of scaleSubsetSelect.options) option.selected = true;
+    baseSubsetPattern = getSelectedSubset();
+    currentModeIndex = 0;
+    applyBaseSubsetToGrid();
+});
+
+clearNotesBtn?.addEventListener('click', () => {
+    for (const option of scaleSubsetSelect.options) option.selected = false;
+    // Default to root (0) if cleared
+    scaleSubsetSelect.options[0].selected = true;
+    baseSubsetPattern = getSelectedSubset();
+    currentModeIndex = 0;
+    applyBaseSubsetToGrid();
+});
 
 function updateLegend(){
   const t = gridState.tuning;
   const subsetSize = gridState.subsetPattern.length;
-  let txt = `Grid: ${gridState.rows}×${gridState.cols} • Key size: ${gridState.keySize}px • Root: ${gridState.rootName} @ ${gridState.rootFreq} Hz. `;
-  
-  if(t.type === 'edo') {
-      txt += `${t.edo}-EDO. `;
-      if (subsetSize > 0) {
-          txt += `Scale Size: ${subsetSize}. Mode: ${modeSelector.options[currentModeIndex]?.textContent || 'Ionian'}. `;
-          txt += `Mapping: H=${gridState.hSteps} steps, V=${gridState.vSteps} steps, Root Key=${gridState.rootKeyIndex}.`;
-      }
-  }
-  
+  let txt = `Grid: ${gridState.rows}×${gridState.cols} • Key size: ${gridState.keySize}px • Root: ${gridState.rootName} @ ${gridState.rootFreq} Hz. ${t.edo}-EDO. Scale Size: ${subsetSize}.`;
   tuningText.textContent = `Tuning: ${txt}`;
 }
 
@@ -2627,133 +1110,47 @@ function buildStateFromUI(){
   const keySize = Math.max(8, parseInt(keySizeInput.value) || 64);
   const rootFreq = Math.max(1, parseFloat(rootFreqInput.value) || 261.6256);
   const rootName = rootNoteNameInput.value || 'root';
-  const type = tuningType.value;
-  
-  // NEW: Read grid mapping parameters
-  const maxKeyIndex = rows * cols;
-  const rootKeyIndex = Math.max(1, Math.min(maxKeyIndex, parseInt(rootKeyIndexInput.value) || 1));
-  const hSteps = parseInt(hStepsInput.value) || 1;
-  const vSteps = parseInt(vStepsInput.value) || 7;
+  const N = Math.max(2, parseInt(edoStepsInput.value) || 12);
 
   gridState.rows = rows; gridState.cols = cols; gridState.keySize = keySize;
   gridState.rootFreq = rootFreq; gridState.rootName = rootName;
-  // Set new properties
-  gridState.rootKeyIndex = rootKeyIndex;
-  gridState.hSteps = hSteps;
-  gridState.vSteps = vSteps;
+  gridState.rootKeyIndex = Math.max(1, Math.min(rows * cols, parseInt(rootKeyIndexInput.value) || 1));
+  gridState.hSteps = parseInt(hStepsInput.value) || 1;
+  gridState.vSteps = parseInt(vStepsInput.value) || 12;
 
-  let totalSteps = 0; 
-  let tuningTextContent = '';
-
-  if(type === 'edo'){
-    const N = Math.max(2, parseInt(edoStepsInput.value) || 12);
-    gridState.tuning = { type:'edo', edo: N };
-    gridState.edoNameTable = generateEDONaming(N).names;
-    gridState.nonoInfo = null; gridState.jiRatios = null;
-    tuningTextContent = `${N}-EDO (names generated from chain-of-fifths)`;
-  } 
+  const tuningChanged = gridState.tuning.edo !== N;
+  gridState.tuning = { type:'edo', edo: N };
+  gridState.edoNameTable = generateEDONaming(N).names;
   
-  const fullStepsResult = generateFullScaleSteps(
-    gridState.tuning, 
-    gridState.edoNameTable, 
-    gridState.jiRatios
-  );
-  fullScaleStepsData = fullStepsResult.steps; // Update global list
-  totalSteps = fullStepsResult.N;
-
-  const oldSubsetLength = scaleSubsetSelect.options.length;
-  const tuningChanged = totalSteps !== oldSubsetLength;
-
-  if (tuningChanged || totalSteps === 0) {
-      populateScaleSubsetSelect(fullScaleStepsData);
-      // Default to full scale selection visually
-      for (const option of scaleSubsetSelect.options) { option.selected = true; }
+  fullScaleStepsData = generateFullScaleSteps(gridState.tuning, gridState.edoNameTable).steps;
+  
+  if (tuningChanged || scaleSubsetSelect.options.length !== N) {
+    populateScaleSubsetSelect(fullScaleStepsData);
+    for (const option of scaleSubsetSelect.options) option.selected = true;
   }
   
-  // Update base pattern from manual selection
-  const manuallySelectedSubset = getSelectedSubset();
-  if (JSON.stringify(manuallySelectedSubset) !== JSON.stringify(baseSubsetPattern)) {
-      baseSubsetPattern = manuallySelectedSubset;
-      currentModeIndex = 0; // Reset mode when base scale changes
-  }
-
-  // Apply the currently active mode to the grid state
+  baseSubsetPattern = getSelectedSubset();
   applyBaseSubsetToGrid();
-
-  tuningText.textContent = tuningTextContent;
-  return true;
 }
 
-// Add this inside buildStateFromUI or near your AudioContext initialization
-function startKeepAlive() {
-    if (window.keepAliveStarted) return; // Only do this once
-    
-    const silentOsc = audioCtx.createOscillator();
-    const silentGain = audioCtx.createGain();
-    
-    // 0.0001 is low enough to be inaudible but high enough for the browser to see "activity"
-    silentGain.gain.value = 0.0001; 
-    
-    silentOsc.connect(silentGain);
-    silentGain.connect(audioCtx.destination);
-    
-    silentOsc.start();
-    window.keepAliveStarted = true;
-    
-    // Also tell the browser this is an active media session
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.playbackState = 'playing';
-    }
-}
-
-
-/**
- * Calculates the scale step and octave for a given key index based on the 2D grid mapping.
- * @param {number} idx - The 0-based linear index of the key (r * cols + c).
- * @returns {{subsetIndex: number, octaveShift: number}}
- */
 function calculateGridMapping(idx) {
-    const { rows, cols, rootKeyIndex, hSteps, vSteps, subsetPattern, tuning } = gridState;
+    const { rows, cols, rootKeyIndex, hSteps, vSteps, subsetPattern } = gridState;
     if (subsetPattern.length === 0) return { subsetIndex: 0, octaveShift: 0 };
     
     const subsetLength = subsetPattern.length;
-    
-    // 1. Calculate relative position from the Root Key
-    // Root key is 1-based, convert to 0-based
     const rootIdx0 = rootKeyIndex - 1; 
     
-    // Clamp idx for safety, though it should be valid if called correctly
-    if (idx < 0 || idx >= rows * cols) {
-        console.error("Index out of bounds:", idx);
-        return { subsetIndex: 0, octaveShift: 0 };
-    }
-    
-    // Current (r, c)
     const r = Math.floor(idx / cols);
     const c = idx % cols;
-    
-    // Root (r_root, c_root)
     const r_root = Math.floor(rootIdx0 / cols);
     const c_root = rootIdx0 % cols;
     
-    // Difference in grid coordinates
-    const r_diff = r - r_root;
-    const c_diff = c - c_root;
-    
-    // 2. Calculate total EDO steps shift from root
-    // This is the total number of steps in the *scale subset* that this key represents
-    const gridStep = (c_diff * hSteps) + (r_diff * vSteps);
-    
-    // 3. Convert total scale steps shift into subset index and octave shift
-    // Octave shift relative to the root key of the current mode
+    const gridStep = ((c - c_root) * hSteps) + ((r - r_root) * vSteps);
     const octaveShift = Math.floor(gridStep / subsetLength);
-    
-    // Index within the current scale subset (always positive)
     const subsetIndex = mod(gridStep, subsetLength);
     
     return { subsetIndex, octaveShift, gridStep };
 }
-
 
 function frequencyForIndex(idx){
   const t = gridState.tuning; 
@@ -2762,15 +1159,9 @@ function frequencyForIndex(idx){
   if (subset.length === 0) return root; 
 
   const { subsetIndex, octaveShift } = calculateGridMapping(idx);
-
-  const intervalStep = subset[subsetIndex]; // The EDO step index from the 0 of the mode
-
-  if(t.type === 'edo'){
-    // The final effective step from the *full* EDO 0 (the tuning's 0)
-    const effectiveStep = intervalStep + (octaveShift * t.edo);
-    return root * Math.pow(2, effectiveStep / t.edo);
-  }
-  return root;
+  const intervalStep = subset[subsetIndex]; 
+  const effectiveStep = intervalStep + (octaveShift * t.edo);
+  return root * Math.pow(2, effectiveStep / t.edo);
 }
 
 function nameForIndex(idx){
@@ -2781,152 +1172,107 @@ function nameForIndex(idx){
   const { subsetIndex, octaveShift } = calculateGridMapping(idx);
   const intervalStep = subset[subsetIndex]; 
 
-  // 1. Calculate Octave Shift
-  const rootOctaveMatch = gridState.rootName.match(/\d/);
+  const rootOctaveMatch = gridState.rootName.match(/-?\d+/);
   const rootOctave = rootOctaveMatch ? parseInt(rootOctaveMatch[0], 10) : 4; 
-  
-  // Calculate the effective octave number
   const effectiveOctave = rootOctave + octaveShift;
   
-  let baseName = '';
+  const step = mod(intervalStep, t.edo);
+  const candidates = gridState.edoNameTable ? gridState.edoNameTable[step] : [];
+  let baseName = pickSimplestName(candidates).replace(/\d/g, ''); 
   
-  if(t.type === 'edo'){
-    // Step is used to look up the name in the full EDO table (0 to N-1)
-    const step = ((intervalStep % t.edo) + t.edo) % t.edo;
-    const candidates = gridState.edoNameTable[step] || [];
-    baseName = pickSimplestName(candidates);
-    
-    // Ensure the baseName does not include any number from the EDO naming generator
-    baseName = baseName.replace(/\d/g, ''); 
-  }
-  
-  if (t.type === 'edo') {
-      return `${baseName}${effectiveOctave}`;
-  }
-  return baseName;
+  return `${baseName}${effectiveOctave}`;
 }
 
-// --- MODE SELECTOR HANDLER ---
 modeSelector.addEventListener('change', () => {
     currentModeIndex = parseInt(modeSelector.value, 10);
     applyBaseSubsetToGrid();
 });
 
-// --- CANVAS DRAWING & INTERACTION ---
-
+// --- CANVAS RENDERING ---
 function resizeCanvas(){ 
-  const ks = gridState.keySize; 
-  const width = gridState.cols * ks; 
-  const height = gridState.rows * ks; 
-  
-  canvas.width = width; 
-  canvas.height = height; 
+  canvas.width = gridState.cols * gridState.keySize; 
+  canvas.height = gridState.rows * gridState.keySize; 
 }
 
 function renderGrid(){ 
   const ks = gridState.keySize, rows = gridState.rows, cols = gridState.cols; 
-  const keyColor = getComputedStyle(document.documentElement).getPropertyValue('--key-color').trim();
-  const keyInactive = getComputedStyle(document.documentElement).getPropertyValue('--key-inactive').trim();
+  const keyActiveColor = getComputedStyle(document.documentElement).getPropertyValue('--key-active').trim();
   const keyTextColor = getComputedStyle(document.documentElement).getPropertyValue('--key-text-color').trim();
-  const pc = mod(intervalStep, gridState.tuning.edo);
-	const baseColor = getKeyColorForPitchClass(pc);
-
-ctx.fillStyle = baseColor;
-ctx.fillRect(x, y, ks, ks);
-
-  ctx.fillStyle=keyColor; ctx.fillRect(0,0,canvas.width,canvas.height); 
-  
-  ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1; 
-  ctx.font = Math.max(10, Math.floor(ks/5)) + 'px system-ui, sans-serif'; 
-  ctx.textAlign='center'; ctx.textBaseline='middle'; 
-  
   const rootIdx0 = gridState.rootKeyIndex - 1; 
 
-  for(let r=0;r<rows;r++){ 
-    for(let c=0;c<cols;c++){ 
-      const x=c*ks, y=r*ks; 
-      const idx=r*cols+c; 
-      
-      // Determine if this is the root key index (for visual emphasis)
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.font = Math.max(10, Math.floor(ks/5)) + 'px system-ui, sans-serif'; 
+  ctx.textAlign = 'center'; 
+  ctx.textBaseline = 'middle'; 
+
+  for(let r = 0; r < rows; r++){ 
+    for(let c = 0; c < cols; c++){ 
+      const x = c * ks, y = r * ks; 
+      const idx = r * cols + c; 
       const isRoot = idx === rootIdx0;
 
-      // Draw key background: light gray/white, or yellow if active
-      let bgColor = keyInactive;
+      const { subsetIndex } = calculateGridMapping(idx);
+      const intervalStep = gridState.subsetPattern[subsetIndex] || 0;
+      const pc = mod(intervalStep, gridState.tuning.edo);
+
+      let bgColor = getKeyColorForPitchClass(pc);
       if (activeVoices.has(idx)) {
-        bgColor = getComputedStyle(document.documentElement).getPropertyValue('--key-active').trim();
-      } else if (isRoot) {
-        // Highlight the root key position slightly
-        bgColor = 'rgba(255, 100, 100, 0.3)'; 
+        bgColor = keyActiveColor;
+      }
+
+      ctx.fillStyle = bgColor; 
+      ctx.fillRect(x, y, ks, ks); 
+      
+      if (isRoot) {
+        ctx.strokeStyle = '#ff6e40';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x + 1.5, y + 1.5, ks - 3, ks - 3);
+      } else {
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)'; 
+        ctx.lineWidth = 1; 
+        ctx.strokeRect(x + 0.5, y + 0.5, ks - 1, ks - 1); 
       }
       
-      ctx.fillStyle = bgColor; 
-      
-      ctx.fillRect(x,y,ks,ks); 
-      ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1); 
-      
-      let label = nameForIndex(idx); 
-      ctx.fillStyle=keyTextColor; 
-      let disp=String(label); if(disp.length>14) disp = disp.slice(0,12)+'…';
-      ctx.fillText(disp, x+ks/2, y+ks/2); 
+      ctx.fillStyle = keyTextColor; 
+      let disp = nameForIndex(idx); 
+      if(disp.length > 10) disp = disp.slice(0, 8) + '…';
+      ctx.fillText(disp, x + ks / 2, y + ks / 2); 
     } 
   }
 }
 
 function drawKeyActive(idx, isActive) { 
-  const ks = gridState.keySize; 
-  const cols = gridState.cols;
-  const rootIdx0 = gridState.rootKeyIndex - 1; 
-  
-  const c = idx % cols; 
-  const r = Math.floor(idx / cols); 
-  
-  const x = c * ks; const y = r * ks; 
-  const isRoot = idx === rootIdx0;
-  
-  const keyActive = getComputedStyle(document.documentElement).getPropertyValue('--key-active').trim();
-  const keyInactive = getComputedStyle(document.documentElement).getPropertyValue('--key-inactive').trim();
-  const keyTextColor = getComputedStyle(document.documentElement).getPropertyValue('--key-text-color').trim();
-
-  let bgColor = keyInactive;
-  if (isActive) {
-      bgColor = keyActive;
-  } else if (isRoot) {
-      bgColor = 'rgba(255, 100, 100, 0.3)'; 
-  }
-
-  ctx.fillStyle = bgColor; 
-  
-  ctx.fillRect(x,y,ks,ks); 
-  ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1; ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1); 
-  let label = nameForIndex(idx); 
-  ctx.fillStyle=keyTextColor; 
-  let disp=String(label); if(disp.length>14) disp = disp.slice(0,12)+'…';
-  ctx.fillText(disp, x+ks/2, y+ks/2);
+  renderGrid();
 }
 
 function noteOn(idx){ 
   if(activeVoices.has(idx)) return; 
+  if (audioCtx.state !== 'running') audioCtx.resume();
   
-  if (audioCtx.state === 'suspended') { audioCtx.resume(); } 
-  
-  const freq = frequencyForIndex(idx); const wave = waveSel.value; const release = parseFloat(releaseInput.value) || 120; const voice = new Synth(audioCtx, masterGain, wave, release); activeVoices.set(idx, voice); voice.start(freq); drawKeyActive(idx, true);
+  const freq = frequencyForIndex(idx); 
+  const wave = waveSel.value; 
+  const release = parseFloat(releaseInput.value) || 120; 
+  const voice = new Synth(audioCtx, masterGain, wave, release); 
+  activeVoices.set(idx, voice); 
+  voice.start(freq); 
+  drawKeyActive(idx, true);
 }
 
 function noteOff(idx){ 
-  const voice = activeVoices.get(idx); if(!voice) return; 
-  if (sustainToggle.checked) { 
-    drawKeyActive(idx, false); 
-  } else { 
+  const voice = activeVoices.get(idx); 
+  if(!voice) return; 
+  if (!sustainToggle.checked) { 
     voice.release(); 
     activeVoices.delete(idx); 
-    drawKeyActive(idx, false); 
   }
+  drawKeyActive(idx, false); 
 }
 
 function stopAllVoices() { 
-    if (audioCtx.state !== 'running') { audioCtx.resume(); }
-    
-    activeVoices.forEach((voice, idx) => { voice.release(); drawKeyActive(idx, false); }); activeVoices.clear();
+    if (audioCtx.state !== 'running') audioCtx.resume();
+    activeVoices.forEach((voice, idx) => voice.release()); 
+    activeVoices.clear();
+    renderGrid();
 }
 
 function canvasPosToIndex(e) { 
@@ -2944,18 +1290,13 @@ function canvasPosToIndex(e) {
   return -1;
 }
 
-function pointerdown(e) { 
+canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault(); 
-
-  if (audioCtx.state !== 'running') {
-      audioCtx.resume().catch(e => console.error("Audio resume failed:", e));
-  }
+  if (audioCtx.state !== 'running') audioCtx.resume();
   
   const idx = canvasPosToIndex(e); 
   if(idx !== -1) { 
     try { canvas.setPointerCapture(e.pointerId); } catch(_) {}
-    
-    // Sustain logic: if key is active and sustain is on, tap releases it
     if (activeVoices.has(idx) && sustainToggle.checked) {
         const voice = activeVoices.get(idx);
         voice.release();
@@ -2963,12 +1304,12 @@ function pointerdown(e) {
         drawKeyActive(idx, false);
         return; 
     }
-    
-    pointerToIdx.set(e.pointerId, idx); noteOn(idx); 
+    pointerToIdx.set(e.pointerId, idx); 
+    noteOn(idx); 
   }
-}
+});
 
-function pointermove(e) {
+canvas.addEventListener('pointermove', (e) => {
   if (!pointerToIdx.has(e.pointerId)) return;
   e.preventDefault();
 
@@ -2979,179 +1320,34 @@ function pointermove(e) {
 
   if (currentIdx !== -1 && prevIdx !== -1) {
     noteOff(prevIdx);
-    drawKeyActive(prevIdx, false);
-    
     noteOn(currentIdx);
-    drawKeyActive(currentIdx, true);
-    
     pointerToIdx.set(e.pointerId, currentIdx);
-    return;
   }
-  
-  if (currentIdx === -1 && prevIdx !== -1) {
-    drawKeyActive(prevIdx, false); 
-    return;
-  }
-  
-  if (currentIdx !== -1 && prevIdx === -1) {
-      noteOn(currentIdx);
-      drawKeyActive(currentIdx, true);
-      pointerToIdx.set(e.pointerId, currentIdx); 
-      return;
-  }
-}
+});
 
-
-function pointerup(e) { 
+const handlePointerUp = (e) => {
   e.preventDefault(); 
   const idx = pointerToIdx.get(e.pointerId); 
-  
-  if (typeof idx === 'number' && idx !== undefined && idx !== -1) { 
-    if (activeVoices.has(idx) && !sustainToggle.checked) {
-        noteOff(idx);
-    }
-    drawKeyActive(idx, false);
+  if (typeof idx === 'number' && idx !== -1) { 
+    noteOff(idx);
   }
   pointerToIdx.delete(e.pointerId); 
   try { canvas.releasePointerCapture(e.pointerId); } catch(_) {}
-}
+};
 
-canvas.addEventListener('pointerdown', pointerdown);
-canvas.addEventListener('pointermove', pointermove); 
-canvas.addEventListener('pointerup', pointerup);
-canvas.addEventListener('pointercancel', pointerup);
+canvas.addEventListener('pointerup', handlePointerUp);
+canvas.addEventListener('pointercancel', handlePointerUp);
 
-// --- WAV AUDIO RECORDING FUNCTIONS (NEW) ---
-
-function startRecording() {
-    if (isRecording) return;
-    
-    if (audioCtx.state !== 'running') {
-        audioCtx.resume().catch(e => console.error("Audio resume failed:", e));
-    }
-    
-    recordingBuffers = [];
-    
-    const bufferSize = 4096;
-    audioProcessor = audioCtx.createScriptProcessor(bufferSize, NUM_CHANNELS, NUM_CHANNELS);
-
-    audioProcessor.onaudioprocess = (e) => {
-        if (!isRecording) return;
-        const channelData = e.inputBuffer.getChannelData(0);
-        recordingBuffers.push(new Float32Array(channelData));
-    };
-
-    masterGain.connect(audioProcessor);
-    audioProcessor.connect(audioCtx.destination); 
-
-    isRecording = true;
-    recordBtn.disabled = true;
-    stopRecordBtn.disabled = false;
-    recordText.innerHTML = '&#9679; RECORDING'; 
-    recordingStatus.textContent = 'Recording in progress...';
-    recordingStatus.classList.add('recording-status');
-}
-
-function stopRecording() {
-    if (!isRecording) return;
-    
-    masterGain.disconnect(audioProcessor);
-    audioProcessor.disconnect(audioCtx.destination);
-    
-    audioProcessor = null;
-    isRecording = false;
-
-    recordingStatus.textContent = 'Compiling WAV file...';
-    recordingStatus.classList.remove('recording-status');
-    
-    const totalLength = recordingBuffers.reduce((sum, buffer) => sum + buffer.length, 0);
-    
-    const audioData = mergeBuffers(recordingBuffers, totalLength);
-    
-    const wavBlob = bufferToWave(audioData, audioCtx.sampleRate);
-    
-    const url = URL.createObjectURL(wavBlob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    a.download = `synth_recording_${timestamp}.wav`;
-    
-    document.body.appendChild(a);
-    a.click();
-    URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-
-    recordBtn.disabled = false;
-    stopRecordBtn.disabled = true;
-    recordText.textContent = 'Record';
-    recordingStatus.textContent = '';
-    
-    console.log("Recording successfully exported as WAV.");
-}
-
-// Attach recording event listeners
-recordBtn.addEventListener('click', startRecording);
-stopRecordBtn.addEventListener('click', stopRecording);
-
-
-// --- DARK MODE TOGGLE LOGIC ---
-
-function applyTheme(isDark) {
-    if (isDark) {
-        body.classList.add('dark-mode');
-        darkModeToggle.textContent = 'Disable Dark Mode';
-        localStorage.setItem('theme', 'dark');
-    } else {
-        body.classList.remove('dark-mode');
-        darkModeToggle.textContent = 'Enable Dark Mode';
-        localStorage.setItem('theme', 'light');
-    }
-    renderGrid();
-}
-
-function toggleDarkMode() {
-    const isDark = !body.classList.contains('dark-mode');
-    applyTheme(isDark);
-}
-
-darkModeToggle.addEventListener('click', toggleDarkMode);
-
-// --- EVENT LISTENERS ---
 applyBtn.addEventListener('click', () => { 
-    if (audioCtx.state !== 'running') { audioCtx.resume(); } 
-	 startKeepAlive();
-    buildStateFromUI(); 
+  if (audioCtx.state !== 'running') audioCtx.resume(); 
+  buildStateFromUI(); 
 });
-generateScaleBtn.addEventListener('click', () => {
-    if (audioCtx.state !== 'running') { audioCtx.resume(); } 
-});
+
 stopAllBtn.addEventListener('click', stopAllVoices);
-
-
-// --- INIT ---
 
 window.addEventListener('resize', () => { resizeCanvas(); renderGrid(); });
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Load theme preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-        applyTheme(true);
-    } else {
-        applyTheme(false); 
-    }
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
-});
-
-    
-    // 2. Build initial state and render
     buildStateFromUI();
 });
 </script>
