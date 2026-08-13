@@ -557,6 +557,32 @@ color: #fff;
 </div>
 <!-- /MODAL -->
 
+<!-- KEY COLOR PICKER MODAL -->
+<div id="colorPickerModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Key Color Palette Configuration</h3>
+        <p class="small">Customize colors for each pitch class in your <strong id="colorModalEdoTitle">12-EDO</strong> tuning.</p>
+
+    <div class="preset-bar">
+      <span class="small" style="font-weight:600;">Presets:</span>
+      <button id="colorPresetRainbow" class="btn-secondary" style="font-size:0.75rem; padding:4px 8px;">Rainbow</button>
+      <button id="colorPresetMonochrome" class="btn-secondary" style="font-size:0.75rem; padding:4px 8px;">Alternating</button>
+      <button id="colorPresetWarm" class="btn-secondary" style="font-size:0.75rem; padding:4px 8px;">Warm</button>
+      <button id="colorPresetCool" class="btn-secondary" style="font-size:0.75rem; padding:4px 8px;">Cool</button>
+      <button id="colorPresetReset" class="btn-secondary" style="font-size:0.75rem; padding:4px 8px;">Reset Default</button>
+    </div>
+
+    <div id="colorGrid" class="color-grid">
+      <!-- Populated dynamically via JS -->
+    </div>
+
+    <div class="modal-controls">
+        <button id="colorModalClose" class="btn-secondary">Cancel</button>
+        <button id="colorModalApply">Apply Color Scheme</button>
+    </div>
+</div>
+</div>
+
 <script>
 let gridState = {
   rows: 6, cols: 12, keySize: 64,
