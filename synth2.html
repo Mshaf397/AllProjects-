@@ -6,254 +6,275 @@
 <title>Grid Web Synth — EDO Isomorphic Grid</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  :root {
-    /* LIGHT MODE (Default) */
-    --pad: 10px;
-    --main-bg: #1E90FF; /* DodgerBlue */
-    --control-bg: #323ddd;
-    --text-color: #f1f1f1;
-    --button-color: #12e34b; /* Bright green */
-    --key-color: #228222; /* ForestGreen */
-    --key-text-color: #009;
-    --key-active: #ffccff; /* Yellow */
-    --key-inactive: #228222;
-    --modal-bg: white;
-    --modal-text-color: #111;
-    --input-bg: white;
-    font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    transition: background-color 0.3s;
-  }
-  
-  /* DARK MODE OVERRIDES */
-  .dark-mode {
-    --main-bg: #111827; /* Dark Gray */
-    --control-bg: #2C003E; /* Deep Violet */
-    --text-color: #e5e7eb; /* Light text */
-    --button-color: #BB86FC; /* Light Purple/Magenta */
-    --key-color: #6200EE; /* Medium Violet */
-    --key-text-color: #e5e7eb;
-    --key-active: #FF6E40; /* Vibrant Orange */
-    --key-inactive: #6200DE;
-    --modal-bg: #1f2937;
-    --modal-text-color: #e5e7eb;
-    --input-bg: #374151;
-  }
-
-  body {
-    margin: 0;
-    padding: var(--pad);
-    background: var(--main-bg);
-    color: var(--text-color);
-    transition: background-color 0.3s, color 0.3s;
-  }
-
-  header {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 8px;
-    justify-content: space-between;
-  }
-
-  .controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: end;
-    background: var(--control-bg);
-    padding: 12px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    transition: background-color 0.3s;
-  }
-
-  label {
-    font-size: 13px;
-    display: flex;
-    flex-direction: column;
-    min-width: 120px;
-    color: var(--text-color);
-  }
-
-  input[type="range"] {
-    height: 30px;
-    cursor: grab;
-  }
-
-  input[type="number"],
-  input[type="text"],
-  select {
-    padding: 6px;
-    font-size: 14px;
-    border-radius: 4px;
-    color: var(--key-text-color);
-    background-color: var(--input-bg);
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-  
-  input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
-      margin-top: 5px;
-      background-color: var(--input-bg);
-      border: 1px solid rgba(255,255,255,0.3);
-  }
-
-  select[multiple] {
-    padding: 4px;
-    border: 1px solid rgba(255,255,255,0.2);
-    background: var(--input-bg);
-    min-height: 100px;
-    box-sizing: border-box;
-    color: var(--key-text-color);
-  }
-  
-  /* Style for multiple select options in dark mode */
-  .dark-mode select[multiple] option {
-    background: var(--input-bg);
-    color: var(--key-text-color);
-  }
-  .dark-mode select[multiple] option:checked {
-    background: var(--button-color);
-    color: #111;
-  }
-
-
-  button {
-    padding: 8px 12px;
-    font-size: 14px;
-    cursor: pointer;
-    border-radius: 4px;
-    background: var(--button-color);
-    color: var(--control-bg);
-    border: none;
-    font-weight: bold;
-    transition: background 0.1s, transform 0.1s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  }
-  button:hover {
-    background: var(--button-color); 
-    filter: brightness(1.2);
-    transform: translateY(-1px);
-  }
-  
-  /* Recording Button Styles */
-  #recordBtn {
-    background: #FF4136; /* Red for recording */
-    color: white;
-  }
-  
-  #stopRecordBtn {
-    background: #FFDC00; /* Yellow for stop */
-    color: #111;
-  }
-
-  #gridWrap {
-    margin-top: 12px;
-    border-radius: 8px;
-    overflow: auto;
-    background: var(--control-bg);
-    padding: 8px;
-    max-height: 60vh; 
-    max-width: 100%;
-    transition: background-color 0.3s;
-  }
-  @media (max-width: 768px) {
-    #gridWrap {
-      max-height: 40vh;
-    }
-  }
-
-  canvas {
-    display: block;
-    background: var(--key-color);
-    border-radius: 4px;
-    width: auto; 
-    height: auto;
-    transition: background-color 0.3s;
-  }
-
-  .small {
-    font-size: 12px;
-    color: var(--button-color);
-    transition: color 0.3s;
-  }
-  
-  .status {
-    margin-top: 12px;
-    color: var(--text-color);
-    padding: 8px;
-    border-radius: 4px;
-    background: rgba(0,0,0,0.2);
-    transition: color 0.3s;
-  }
-  
-  /* Status indicators */
-  .recording-status {
-      font-weight: bold;
-      color: #FF4136; /* Red */
-      animation: pulse 1s infinite alternate;
-  }
-
-  @keyframes pulse {
-      from { opacity: 1; }
-      to { opacity: 0.5; }
-  }
-
-
-  /* MODAL STYLES */
-  .modal-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  .modal-content {
-    background: var(--modal-bg);
-    padding: 24px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 1200px;
-    color: var(--modal-text-color);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    font-size: 25px;
-    transition: background-color 0.3s, color 0.3s;
-  }
-  .modal-content h3 {
-    margin-top: 0;
-    color: var(--control-bg);
-  }
-  .dark-mode .modal-content h3 {
-     color: var(--button-color);
-  }
-  .modal-content .modal-controls {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 20px;
-    gap: 10px;
-  }
-  .modal-content label {
-      color: var(--modal-text-color);
-      margin-bottom: 8px;
-      font-size: 20px;
-  }
-  .modal-content input {
-      width: 100%;
-      box-sizing: border-box;
-      color: var(--modal-text-color);
-      font-size: 20px;
-      background-color: var(--input-bg);
-  }
-  
-  /* Dark Mode Toggle Button Specific Styles */
-  #darkModeToggle {
-      min-width: unset;
-      padding: 6px 10px;
-      font-size: 12px;
-  }
+:root {
+/* DARK THEME (Default) /
+--pad: 10px;
+--main-bg: #111827; / Dark Gray /
+--control-bg: #1f2937; / Deep Slate/Violet base /
+--text-color: #e5e7eb; / Light text /
+--button-color: #bb86fc; / Light Purple/Accent /
+--key-color: #6200ee; / Base key color /
+--key-text-color: #e5e7eb;
+--key-active: #ff6e40; / Vibrant Orange for active press */
+--key-inactive: #6200de;
+--modal-bg: #1f2937;
+--modal-text-color: #e5e7eb;
+--input-bg: #374151;
+font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+body {
+margin: 0;
+padding: var(--pad);
+background: var(--main-bg);
+color: var(--text-color);
+transition: background-color 0.3s, color 0.3s;
+}
+header {
+display: flex;
+gap: 12px;
+align-items: center;
+margin-bottom: 8px;
+justify-content: space-between;
+}
+.controls {
+display: flex;
+flex-wrap: wrap;
+gap: 12px;
+align-items: flex-end;
+background: var(--control-bg);
+padding: 12px;
+border-radius: 8px;
+box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+transition: background-color 0.3s;
+}
+label {
+font-size: 13px;
+display: flex;
+flex-direction: column;
+min-width: 120px;
+color: var(--text-color);
+}
+input[type="range"] {
+height: 30px;
+cursor: grab;
+}
+input[type="number"],
+input[type="text"],
+select {
+padding: 6px;
+font-size: 14px;
+border-radius: 4px;
+color: var(--key-text-color);
+background-color: var(--input-bg);
+border: 1px solid rgba(255, 255, 255, 0.1);
+}
+input[type="checkbox"] {
+width: 20px;
+height: 20px;
+margin-top: 5px;
+background-color: var(--input-bg);
+border: 1px solid rgba(255, 255, 255, 0.3);
+}
+select[multiple] {
+padding: 4px;
+border: 1px solid rgba(255, 255, 255, 0.2);
+background: var(--input-bg);
+min-height: 100px;
+box-sizing: border-box;
+color: var(--key-text-color);
+}
+select[multiple] option {
+background: var(--input-bg);
+color: var(--key-text-color);
+}
+select[multiple] option:checked {
+background: var(--button-color);
+color: #111;
+}
+button {
+padding: 8px 12px;
+font-size: 14px;
+cursor: pointer;
+border-radius: 4px;
+background: var(--button-color);
+color: #111827;
+border: none;
+font-weight: bold;
+transition: background 0.1s, transform 0.1s, filter 0.1s;
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+button:hover {
+filter: brightness(1.2);
+transform: translateY(-1px);
+}
+/* Recording Button Styles /
+#recordBtn {
+background: #ff4136; / Red for recording */
+color: white;
+}
+#stopRecordBtn {
+background: #ffdc00; /* Yellow for stop */
+color: #111;
+}
+#gridWrap {
+margin-top: 12px;
+border-radius: 8px;
+overflow: auto;
+background: var(--control-bg);
+padding: 8px;
+max-height: 60vh;
+max-width: 100%;
+transition: background-color 0.3s;
+}
+@media (max-width: 768px) {
+#gridWrap {
+max-height: 40vh;
+}
+}
+canvas {
+display: block;
+background: var(--key-color);
+border-radius: 4px;
+width: auto;
+height: auto;
+transition: background-color 0.3s;
+}
+.small {
+font-size: 12px;
+color: var(--button-color);
+transition: color 0.3s;
+}
+.status {
+margin-top: 12px;
+color: var(--text-color);
+padding: 8px;
+border-radius: 4px;
+background: rgba(0, 0, 0, 0.2);
+transition: color 0.3s;
+}
+/* Status indicators */
+.recording-status {
+font-weight: bold;
+color: #ff4136;
+animation: pulse 1s infinite alternate;
+}
+@keyframes pulse {
+from {
+opacity: 1;
+}
+to {
+opacity: 0.5;
+}
+}
+/* INDIVIDUAL PROGRAMMABLE KEY STYLES /
+/ Interactive key elements (HTML keypads, grid elements, or mapped items) */
+.synth-key {
+--key-custom-color: var(--key-color);
+background-color: var(--key-custom-color);
+border: 1px solid rgba(255, 255, 255, 0.15);
+border-radius: 6px;
+cursor: pointer;
+user-select: none;
+transition: background-color 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
+}
+.synth-key:hover {
+filter: brightness(1.15);
+box-shadow: 0 0 8px var(--key-custom-color);
+}
+.synth-key:active,
+.synth-key.active {
+background-color: var(--key-active) !important;
+transform: scale(0.96);
+box-shadow: 0 0 12px var(--key-active);
+}
+/* KEY COLOR PROGRAMMER MODAL */
+.modal-overlay {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: rgba(0, 0, 0, 0.75);
+backdrop-filter: blur(4px);
+display: none;
+justify-content: center;
+align-items: center;
+z-index: 1000;
+}
+.modal-content {
+background: var(--modal-bg);
+padding: 24px;
+border-radius: 12px;
+width: 90%;
+max-width: 500px;
+color: var(--modal-text-color);
+box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+border: 1px solid rgba(255, 255, 255, 0.1);
+transition: background-color 0.3s, color 0.3s;
+}
+.modal-content h3 {
+margin-top: 0;
+font-size: 22px;
+color: var(--button-color);
+}
+.modal-content label {
+color: var(--modal-text-color);
+margin-bottom: 8px;
+font-size: 15px;
+}
+.modal-content input[type="text"],
+.modal-content input[type="number"],
+.modal-content select {
+width: 100%;
+box-sizing: border-box;
+color: var(--modal-text-color);
+font-size: 16px;
+background-color: var(--input-bg);
+border: 1px solid rgba(255, 255, 255, 0.2);
+border-radius: 6px;
+padding: 8px;
+margin-bottom: 14px;
+}
+/* Color Picker Input Row inside Modal */
+.color-picker-row {
+display: flex;
+align-items: center;
+gap: 12px;
+margin-bottom: 16px;
+}
+.color-picker-row input[type="color"] {
+-webkit-appearance: none;
+border: none;
+width: 48px;
+height: 48px;
+border-radius: 8px;
+cursor: pointer;
+background: transparent;
+}
+.color-picker-row input[type="color"]::-webkit-color-swatch-wrapper {
+padding: 0;
+}
+.color-picker-row input[type="color"]::-webkit-color-swatch {
+border: 1px solid rgba(255, 255, 255, 0.3);
+border-radius: 8px;
+}
+.color-preview-badge {
+display: inline-block;
+padding: 6px 12px;
+border-radius: 4px;
+font-size: 13px;
+font-weight: bold;
+}
+.modal-content .modal-controls {
+display: flex;
+justify-content: flex-end;
+margin-top: 20px;
+gap: 10px;
+}
+.modal-content .modal-controls button.cancel-btn {
+background: #4b5563;
+color: #fff;
+}
 </style>
 </head>
 <body>
@@ -262,7 +283,6 @@
     <h2 style="margin:0">Grid Web Synth — EDO Isomorphic Grid</h2>
     <div class="small">Scale generation uses the currently selected EDO Steps (N) for quantization.</div>
   </div>
-  <button id="darkModeToggle" title="Toggle Dark/Light Mode">Enable Dark Mode</button>
 </header>
 
 <div class="controls">
