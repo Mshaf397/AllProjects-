@@ -275,15 +275,15 @@ canvas {
 
 <div class="controls">
   <label>Rows
-    <input id="rows" type="number" min="1" max="64" value="6" />
+    <input id="rows" type="number" min="1" max="4294967296" value="6" />
   </label>
 
   <label>Cols
-    <input id="cols" type="number" min="1" max="64" value="12" />
+    <input id="cols" type="number" min="1" max="4294967296" value="12" />
   </label>
 
   <label>Key size (px)
-    <input id="keySize" type="number" min="16" max="256" value="64" />
+    <input id="keySize" type="number" min="1" value="64" />
   </label>
   
   <label title="1-indexed, starting from top-left (1), wrapping by row">Root Key Index
@@ -291,11 +291,11 @@ canvas {
   </label>
 
   <label title="Interval in scale degrees/EDO steps for one column to the right.">Horizontal Steps
-    <input id="hSteps" type="number" min="-128" max="128" value="1" />
+    <input id="hSteps" type="number" min="-4294967296" max="4294967296" value="1" />
   </label>
 
   <label title="Interval in scale degrees/EDO steps for one row down.">Vertical Steps
-    <input id="vSteps" type="number" min="-128" max="128" value="12" />
+    <input id="vSteps" type="number" min="-4294967296" max="4294967296" value="12" />
   </label>
 
   <label>Tuning type
@@ -305,7 +305,7 @@ canvas {
   </label>
 
   <label id="edoParams">EDO steps (N)
-    <input id="edoSteps" type="number" min="2" max="1200" value="12" />
+    <input id="edoSteps" type="number" min="2" max="4294967296" value="12" />
   </label>
 
   <label>Root note (name)
