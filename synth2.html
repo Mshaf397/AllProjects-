@@ -2013,6 +2013,259 @@ stopRecordBtn.onclick = () => {
 
 // --- CORE HELPER FUNCTIONS (Tuning/Grid) ---
 
+// ============================================================================
+// KEY COLOR PICKER MODAL LOGIC
+// ============================================================================
+
+// Global color storage initialized in gridState
+if (!gridState.pitchColors) {
+  gridState.pitchColors = {};
+}
+
+// ----------------------------------------------------------------------------
+// Color Utilities & Presets
+// ----------------------------------------------------------------------------
+
+/**
+ * Converts HSL values to a Hex color string.
+ */
+function hslToHex(h, s, l) {
+  l /= 100;
+  const a = (s * Math.min(l, 1 - l)) / 100;
+  const f = (n) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+/**
+ * Generates a default color for a given EDO step.
+ * Uses standard 12-EDO black/white styling for N=12, and HSL distribution for other EDOs.
+ */
+function getDefaultColorForStep(step, N) {
+  if (N === 12) {
+    const isBlackKey = [1, 3, 6, 8, 10].includes(step);
+    return isBlackKey ? '#2d3748' : '#f8fafc';
+  }
+  const hue = Math.round((step / N) * 360);
+  return hslToHex(hue, 60, 55);
+}
+
+/**
+ * Ensures gridState.pitchColors has entries for all pitch classes 0..N-1.
+ */
+function ensureColorPalette(N) {
+  if (!gridState.pitchColors) gridState.pitchColors = {};
+  for (let i = 0; i < N; i++) {
+    if (!gridState.pitchColors[i]) {
+      gridState.pitchColors[i] = getDefaultColorForStep(i, N);
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Modal UI Controller
+// ----------------------------------------------------------------------------
+
+const colorPickerModal = document.getElementById('colorPickerModal');
+const colorGrid = document.getElementById('colorGrid');
+const colorModalEdoTitle = document.getElementById('colorModalEdoTitle');
+const colorModalClose = document.getElementById('colorModalClose');
+const colorModalApply = document.getElementById('colorModalApply');
+
+// Presets
+const colorPresetRainbow = document.getElementById('colorPresetRainbow');
+const colorPresetMonochrome = document.getElementById('colorPresetMonochrome');
+const colorPresetWarm = document.getElementById('colorPresetWarm');
+const colorPresetCool = document.getElementById('colorPresetCool');
+const colorPresetReset = document.getElementById('colorPresetReset');
+
+/**
+ * Opens and populates the Key Color Picker Modal.
+ */
+function openColorPickerModal() {
+  const N = gridState.tuning?.edo || parseInt(edoStepsInput.value, 10) || 12;
+
+  // Update Modal Title
+  if (colorModalEdoTitle) {
+    colorModalEdoTitle.textContent = `${N}-EDO`;
+  }
+
+  // Ensure palette exists
+  ensureColorPalette(N);
+
+  // Generate EDO naming map for labels
+  const namingTable = gridState.edoNameTable || generateEDONaming(N).names;
+
+  // Populate color grid inputs
+  colorGrid.innerHTML = '';
+  for (let i = 0; i < N; i++) {
+    const cents = Math.round((i / N) * 1200);
+    const stepName = pickSimplestName(namingTable[i] || ['?']);
+    const currentColor = gridState.pitchColors[i] || getDefaultColorForStep(i, N);
+
+    const item = document.createElement('div');
+    item.className = 'color-item';
+    item.style.cssText = `
+      background-color: #18181b;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #3f3f46;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    `;
+
+    item.innerHTML = `
+      <input type="color" data-step="${i}" value="${currentColor}" style="
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        background: none;
+        padding: 0;
+      " />
+      <div style="display: flex; flex-direction: column;">
+        <span style="font-weight: 600; font-size: 0.85rem; color: #fff;">
+          Step ${i} (${stepName})
+        </span>
+        <span style="font-size: 0.72rem; color: #9ca3af;">
+          ${cents} cents
+        </span>
+      </div>
+    `;
+    colorGrid.appendChild(item);
+  }
+
+  colorPickerModal.style.display = 'flex';
+}
+
+/**
+ * Closes the Key Color Picker Modal without saving.
+ */
+function closeColorPickerModal() {
+  colorPickerModal.style.display = 'none';
+}
+
+/**
+ * Reads colors from inputs and applies them to gridState.pitchColors, then re-renders grid.
+ */
+function applyColorPickerChanges() {
+  const inputs = colorGrid.querySelectorAll('input[type="color"]');
+  inputs.forEach((input) => {
+    const step = parseInt(input.getAttribute('data-step'), 10);
+    gridState.pitchColors[step] = input.value;
+  });
+
+  closeColorPickerModal();
+
+  // Re-render the grid canvas if renderGrid exists
+  if (typeof renderGrid === 'function') {
+    renderGrid();
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Preset Generators
+// ----------------------------------------------------------------------------
+
+if (colorPresetRainbow) {
+  colorPresetRainbow.addEventListener('click', () => {
+    const inputs = colorGrid.querySelectorAll('input[type="color"]');
+    const N = inputs.length;
+    inputs.forEach((input) => {
+      const step = parseInt(input.getAttribute('data-step'), 10);
+      const hue = Math.round((step / N) * 360);
+      input.value = hslToHex(hue, 75, 50);
+    });
+  });
+}
+
+if (colorPresetMonochrome) {
+  colorPresetMonochrome.addEventListener('click', () => {
+    const inputs = colorGrid.querySelectorAll('input[type="color"]');
+    inputs.forEach((input) => {
+      const step = parseInt(input.getAttribute('data-step'), 10);
+      input.value = step % 2 === 0 ? '#f8fafc' : '#334155';
+    });
+  });
+}
+
+if (colorPresetWarm) {
+  colorPresetWarm.addEventListener('click', () => {
+    const inputs = colorGrid.querySelectorAll('input[type="color"]');
+    const N = inputs.length;
+    inputs.forEach((input) => {
+      const step = parseInt(input.getAttribute('data-step'), 10);
+      const hue = Math.round((step / N) * 60); // Red to Yellow
+      input.value = hslToHex(hue, 85, 50);
+    });
+  });
+}
+
+if (colorPresetCool) {
+  colorPresetCool.addEventListener('click', () => {
+    const inputs = colorGrid.querySelectorAll('input[type="color"]');
+    const N = inputs.length;
+    inputs.forEach((input) => {
+      const step = parseInt(input.getAttribute('data-step'), 10);
+      const hue = 180 + Math.round((step / N) * 90); // Cyan to Purple
+      input.value = hslToHex(hue, 75, 50);
+    });
+  });
+}
+
+if (colorPresetReset) {
+  colorPresetReset.addEventListener('click', () => {
+    const inputs = colorGrid.querySelectorAll('input[type="color"]');
+    const N = inputs.length;
+    inputs.forEach((input) => {
+      const step = parseInt(input.getAttribute('data-step'), 10);
+      input.value = getDefaultColorForStep(step, N);
+    });
+  });
+}
+
+// ----------------------------------------------------------------------------
+// Event Listeners & Integration
+// ----------------------------------------------------------------------------
+
+if (colorModalClose) colorModalClose.addEventListener('click', closeColorPickerModal);
+if (colorModalApply) colorModalApply.addEventListener('click', applyColorPickerChanges);
+
+// Close when clicking background overlay
+colorPickerModal.addEventListener('click', (e) => {
+  if (e.target === colorPickerModal) closeColorPickerModal();
+});
+
+// Create button trigger if you have a trigger button `#colorPickerBtn`
+const colorPickerBtn = document.getElementById('colorPickerBtn');
+if (colorPickerBtn) {
+  colorPickerBtn.addEventListener('click', openColorPickerModal);
+}
+
+// ----------------------------------------------------------------------------
+// Grid Canvas Render Helper Integration
+// ----------------------------------------------------------------------------
+/**
+ * Helper to get background color for a grid key index.
+ * Add this lookup inside your `renderGrid()` loop:
+ *
+ * const { subsetIndex, octaveShift } = calculateGridMapping(idx);
+ * const intervalStep = subset[subsetIndex];
+ * const pc = mod(intervalStep, gridState.tuning.edo);
+ * const bgKeyColor = getKeyColorForPitchClass(pc);
+ */
+function getKeyColorForPitchClass(pc) {
+  const N = gridState.tuning?.edo || 12;
+  ensureColorPalette(N);
+  return gridState.pitchColors[pc] || getDefaultColorForStep(pc, N);
+}
+
+
 function centsOfRatio(r){ return 1200 * Math.log2(r); }
 
 function parseInterval(input) {
@@ -2575,7 +2828,12 @@ function renderGrid(){
   const keyColor = getComputedStyle(document.documentElement).getPropertyValue('--key-color').trim();
   const keyInactive = getComputedStyle(document.documentElement).getPropertyValue('--key-inactive').trim();
   const keyTextColor = getComputedStyle(document.documentElement).getPropertyValue('--key-text-color').trim();
-  
+  const pc = mod(intervalStep, gridState.tuning.edo);
+	const baseColor = getKeyColorForPitchClass(pc);
+
+ctx.fillStyle = baseColor;
+ctx.fillRect(x, y, ks, ks);
+
   ctx.fillStyle=keyColor; ctx.fillRect(0,0,canvas.width,canvas.height); 
   
   ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1; 
