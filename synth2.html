@@ -451,6 +451,66 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const masterGain = audioCtx.createGain();
 masterGain.connect(audioCtx.destination);
 
+// --- BACKGROUND PERSISTENCE & KEEP-ALIVE AUDIO SETUP ---
+let silentAudioEl = null;
+
+function setupBackgroundAudioPersistence() {
+  // Create an HTML5 silent audio loop element.
+  // HTML5 audio playback tells the browser's process/audio manager that this tab is actively outputting sound,
+  // preventing browsers (Chrome, Safari, Firefox) from throttling or suspending the AudioContext when switching tabs or playing other media.
+  if (!silentAudioEl) {
+    silentAudioEl = document.createElement('audio');
+    silentAudioEl.setAttribute('x-webkit-airplay', 'deny');
+    silentAudioEl.preload = 'auto';
+    silentAudioEl.loop = true;
+    // 1-second silent WAV base64 string
+    silentAudioEl.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+    silentAudioEl.style.display = 'none';
+    document.body.appendChild(silentAudioEl);
+  }
+
+  // Setup MediaSession metadata if available
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: 'Grid Web Synth',
+      artist: 'Isomorphic Web Synth',
+      album: 'EDO Grid Synth'
+    });
+    // Register empty handlers to keep media session active
+    ['play', 'pause'].forEach(action => {
+      try {
+        navigator.mediaSession.setActionHandler(action, () => {
+          ensureAudioActive();
+        });
+      } catch (e) {}
+    });
+  }
+}
+
+function ensureAudioActive() {
+  if (silentAudioEl && silentAudioEl.paused) {
+    silentAudioEl.play().catch(() => {});
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+}
+
+// Automatically re-activate context whenever visibility changes or state suspends
+audioCtx.addEventListener('statechange', () => {
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+});
+
+document.addEventListener('visibilitychange', () => {
+  ensureAudioActive();
+});
+
+window.addEventListener('focus', () => {
+  ensureAudioActive();
+});
+
 // --- TIMBRE DEFINITIONS ---
 const timbres = {
   "bell": [
@@ -647,7 +707,7 @@ function bufferToWave(interleavedData, sampleRate) {
 
 function startRecording() {
     if (isRecording) return;
-    if (audioCtx.state !== 'running') audioCtx.resume();
+    ensureAudioActive();
     
     recordingBuffers = [];
     audioProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
@@ -950,7 +1010,7 @@ function showModal() { scaleGeneratorModal.style.display = 'flex'; }
 function hideModal() { scaleGeneratorModal.style.display = 'none'; }
 
 generateScaleBtn.addEventListener('click', () => {
-    if (audioCtx.state !== 'running') audioCtx.resume();
+    ensureAudioActive();
     showModal();
 });
 gen_cancelBtn.addEventListener('click', hideModal);
@@ -1247,7 +1307,7 @@ function drawKeyActive(idx, isActive) {
 
 function noteOn(idx){ 
   if(activeVoices.has(idx)) return; 
-  if (audioCtx.state !== 'running') audioCtx.resume();
+  ensureAudioActive();
   
   const freq = frequencyForIndex(idx); 
   const wave = waveSel.value; 
@@ -1269,7 +1329,7 @@ function noteOff(idx){
 }
 
 function stopAllVoices() { 
-    if (audioCtx.state !== 'running') audioCtx.resume();
+    ensureAudioActive();
     activeVoices.forEach((voice, idx) => voice.release()); 
     activeVoices.clear();
     renderGrid();
@@ -1292,7 +1352,7 @@ function canvasPosToIndex(e) {
 
 canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault(); 
-  if (audioCtx.state !== 'running') audioCtx.resume();
+  ensureAudioActive();
   
   const idx = canvasPosToIndex(e); 
   if(idx !== -1) { 
@@ -1339,7 +1399,7 @@ canvas.addEventListener('pointerup', handlePointerUp);
 canvas.addEventListener('pointercancel', handlePointerUp);
 
 applyBtn.addEventListener('click', () => { 
-  if (audioCtx.state !== 'running') audioCtx.resume(); 
+  ensureAudioActive(); 
   buildStateFromUI(); 
 });
 
@@ -1348,6 +1408,7 @@ stopAllBtn.addEventListener('click', stopAllVoices);
 window.addEventListener('resize', () => { resizeCanvas(); renderGrid(); });
 
 document.addEventListener('DOMContentLoaded', () => {
+    setupBackgroundAudioPersistence();
     buildStateFromUI();
 });
 </script>
