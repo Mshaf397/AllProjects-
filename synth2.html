@@ -353,6 +353,7 @@
       <option>dark-bell</option>
       <option>organ</option>
       <option>piano</option>
+      <option>compressed-piano</option>
       <option>xylophone</option>
       <option>guitar</option>
       <option>saxophone</option>
@@ -418,6 +419,7 @@
       <option>37edo</option>
       <option>38edo</option>
       <option>39edo</option>
+      <option>40edo</option>
       <option>bohlen-pierce</option>
       </optgroup>
       <optgroup label="Random">
@@ -1609,7 +1611,29 @@ const timbres = {
     { mult: 12.4755, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
     { mult: 16, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
     { mult: 17.4869, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
-	]
+	],
+  "40edo": [
+    { mult: 1, gain: 1.0, a: 0.001, d: 1.5, s: 0.8, r: 0.4 },
+    { mult: 2, gain: 0.7, a: 0.001, d: 1.0, s: 0.65, r: 0.35 },
+    { mult: 4, gain: 0.5, a: 0.001, d: 0.8, s: 0.5, r: 0.3 },
+    { mult: 5.0107, gain: 0.35, a: 0.001, d: 0.6, s: 0.4, r: 0.25 },
+    { mult: 6.9644, gain: 0.25, a: 0.001, d: 0.4, s: 0.3, r: 0.2 },
+    { mult: 8, gain: 0.18, a: 0.001, d: 0.3, s: 0.2, r: 0.15 },
+    { mult: 10.0214, gain: 0.12, a: 0.001, d: 0.2, s: 0.1, r: 0.1 },
+    { mult: 12.996, gain: 0.08, a: 0.001, d: 0.15, s: 0.05, r: 0.05 }
+	],
+  "compressed-piano": [
+    { mult: 1, gain: 1, a: 0.002, d: 8.0, s: 0, r: 0.2},
+    { mult: 1.9971, gain: 0.5, a: 0.002, d: 4.9, s: 0, r: 0.2},
+    { mult: 2.9913, gain: 0.333, a: 0.003, d: 3.5, s: 0, r: 0.2},
+    { mult: 3.9827, gain: 0.25, a: 0.003, d: 2.0, s: 0, r: 0.2},
+    { mult: 4.9712, gain: 0.2, a: 0.004, d: 1.2, s: 0, r: 0.2},
+    { mult: 5.9568, gain: 0.167, a: 0.004, d: 1.2, s: 0, r: 0.2},
+    { mult: 6.9396, gain: 0.0142857, a: 0.005, d: 1.2, s: 0, r: 0.2},
+    { mult: 7.931, gain: 0.125, a: 0.005, d: 1.2, s: 0, r: 0.2},
+    { mult: 8.9224, gain: 0.0111, a: 0.005, d: 1.2, s: 0, r: 0.2},
+    { mult: 9.9137, gain: 0.1, a: 0.005, d: 1.2, s: 0, r: 0.2},
+  ]
 };
 
 
