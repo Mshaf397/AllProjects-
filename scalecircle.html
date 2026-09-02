@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EDO Scale Circle Diagram Generator (High Contrast)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #000000;
+      color: #ffffff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+
+  <div class="max-w-5xl w-full flex flex-col gap-6">
+    <!-- Header -->
+    <header class="text-center">
+      <h1 class="text-3xl md:text-4xl font-black text-white tracking-wide uppercase border-b-2 border-yellow-400 pb-2 inline-block">
+        EDO Scale Circle Generator
+      </h1>
+      <p class="text-zinc-300 mt-3 text-sm md:text-base font-medium">
+        High-contrast visualization for octave-repeating and multi-equave microtonal scales across any EDO.
+      </p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Input Panel -->
+      <section class="lg:col-span-5 bg-zinc-950 border-2 border-zinc-700 p-5 rounded-2xl shadow-2xl flex flex-col gap-5 h-fit">
+        <div>
+          <h2 class="text-lg font-black text-yellow-400 uppercase tracking-wider border-b-2 border-zinc-800 pb-2 mb-4">
+            Scale Parameters
+          </h2>
+          
+          <div class="flex flex-col gap-5">
+            <!-- EDO Input -->
+            <div>
+              <label for="edoInput" class="block text-sm font-bold text-white mb-1">
+                Equal Division of Octave (EDO)
+              </label>
+              <input 
+                type="number" 
+                id="edoInput" 
+                min="5" 
+                max="4294967296" 
+                value="31" 
+                class="w-full bg-black border-2 border-zinc-500 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-yellow-400 text-xl font-bold"
+              />
+            </div>
+
+            <!-- Steps Input -->
+            <div>
+              <label for="stepsInput" class="block text-sm font-bold text-white mb-1">
+                Scale Steps (EDOsteps)
+              </label>
+              <textarea 
+                id="stepsInput" 
+                rows="4" 
+                class="w-full bg-black border-2 border-zinc-500 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400 font-mono text-sm leading-relaxed font-bold"
+              >5, 10, 15, 18, 23, 28, 30, 35, 40, 45, 48, 53, 58</textarea>
+              <p class="text-xs text-zinc-300 mt-1.5 font-medium">
+                Root (0) is implied. Separate steps with spaces or commas. Steps &gt; EDO extend into higher octaves.
+              </p>
+            </div>
+
+            <!-- Quick Presets -->
+            <div>
+              <label class="block text-xs font-black text-yellow-400 uppercase tracking-wider mb-2">Presets</label>
+              <div class="flex flex-wrap gap-2">
+                <button onclick="loadPreset(31, '5 10 15 18 23 28 30 35 40 45 48 53 58')" class="text-xs font-bold bg-zinc-800 hover:bg-yellow-400 hover:text-black text-white border border-zinc-600 py-1.5 px-3 rounded-md transition">
+                  31-EDO Double Lydian
+                </button>
+                <button onclick="loadPreset(12, '2 4 5 7 9 11')" class="text-xs font-bold bg-zinc-800 hover:bg-yellow-400 hover:text-black text-white border border-zinc-600 py-1.5 px-3 rounded-md transition">
+                  12-EDO Major
+                </button>
+                <button onclick="loadPreset(19, '3 6 8 11 14 17')" class="text-xs font-bold bg-zinc-800 hover:bg-yellow-400 hover:text-black text-white border border-zinc-600 py-1.5 px-3 rounded-md transition">
+                  19-EDO Major
+                </button>
+                <button onclick="loadPreset(22, '4 8 9 13 17 21')" class="text-xs font-bold bg-zinc-800 hover:bg-yellow-400 hover:text-black text-white border border-zinc-600 py-1.5 px-3 rounded-md transition">
+                  22-EDO Superpyth
+                </button>
+              </div>
+            </div>
+
+            <!-- Options -->
+            <div class="grid grid-cols-2 gap-3 pt-2 border-t border-zinc-800">
+              <label class="flex items-center gap-2 text-sm font-bold text-white cursor-pointer select-none">
+                <input type="checkbox" id="showNumbers" checked class="w-4 h-4 accent-yellow-400">
+                Show Step Labels
+              </label>
+              <label class="flex items-center gap-2 text-sm font-bold text-white cursor-pointer select-none">
+                <input type="checkbox" id="connectPolygon" checked class="w-4 h-4 accent-yellow-400">
+                Draw Scale Polygon
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scale Info summary -->
+        <div id="scaleSummary" class="bg-black rounded-xl p-4 border-2 border-zinc-700 text-xs space-y-2 font-mono">
+          <!-- Filled dynamically -->
+        </div>
+
+      <!-- Diagram Display -->
+      <section class="lg:col-span-7 bg-zinc-950 border-2 border-zinc-700 p-4 md:p-6 rounded-2xl shadow-2xl flex flex-col items-center justify-center min-h-[520px]">
+        <div class="relative w-full max-w-[550px] aspect-square flex items-center justify-center">
+          <canvas id="scaleCanvas" class="w-full h-full block rounded-xl bg-black border-2 border-zinc-800"></canvas>
+        </div>
+
+        <!-- Octave Legend -->
+        <div id="octaveLegend" class="flex flex-wrap items-center justify-center gap-4 mt-5 text-xs font-black">
+          <!-- Dynamically populated legend -->
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // High-Contrast Octave Color Palette
+    // Octave 1 is pure white with black text; subsequent octaves use ultra-saturated neon colors with black text.
+    const OCTAVE_COLORS = [
+      { main: '#ffffff', stroke: '#000000', text: '#000000', label: 'Octave 1' },  // Pure White
+      { main: '#facc15', stroke: '#000000', text: '#000000', label: 'Octave 2' },  // Neon Yellow
+      { main: '#38bdf8', stroke: '#000000', text: '#000000', label: 'Octave 3' },  // Neon Cyan
+      { main: '#f43f5e', stroke: '#000000', text: '#000000', label: 'Octave 4' },  // Hot Pink
+      { main: '#4ade80', stroke: '#000000', text: '#000000', label: 'Octave 5' },  // Lime Green
+      { main: '#fb923c', stroke: '#000000', text: '#000000', label: 'Octave 6' }   // Vivid Orange
+    ];
+
+    const edoInput = document.getElementById('edoInput');
+    const stepsInput = document.getElementById('stepsInput');
+    const showNumbers = document.getElementById('showNumbers');
+    const connectPolygon = document.getElementById('connectPolygon');
+    const canvas = document.getElementById('scaleCanvas');
+    const ctx = canvas.getContext('2d');
+    const summaryDiv = document.getElementById('scaleSummary');
+    const legendDiv = document.getElementById('octaveLegend');
+
+    function setupCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const size = Math.min(rect.width, rect.height) || 500;
+      canvas.width = size * dpr;
+      canvas.height = size * dpr;
+      ctx.scale(dpr, dpr);
+      return size;
+    }
+
+    function parseInputs() {
+      const edo = parseInt(edoInput.value, 10) || 12;
+      
+      const rawText = stepsInput.value.replace(/,/g, ' ');
+      const tokens = rawText.trim().split(/\s+/).filter(t => t.length > 0);
+      
+      let userSteps = tokens.map(t => parseInt(t, 10)).filter(n => !isNaN(n));
+      
+      if (!userSteps.includes(0)) {
+        userSteps.push(0);
+      }
+
+      userSteps = [...new Set(userSteps)].sort((a, b) => a - b);
+
+      const maxStep = Math.max(...userSteps);
+      
+      let octavesNeeded = 1;
+      if (maxStep >= edo) {
+        octavesNeeded = Math.floor(maxStep / edo) + 1;
+      }
+      
+      const equave = octavesNeeded * edo;
+
+      return { edo, steps: userSteps, octavesNeeded, equave, maxStep };
+    }
+
+    function render() {
+      const displaySize = setupCanvas();
+      const center = displaySize / 2;
+      const { edo, steps, octavesNeeded, equave, maxStep } = parseInputs();
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // High-Contrast Solid Black Canvas
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, displaySize, displaySize);
+
+      const baseRadius = displaySize * 0.38;
+      const ringSpacing = octavesNeeded > 1 ? Math.min(32, (displaySize * 0.18) / octavesNeeded) : 0;
+
+      // Summary Info
+      let stepsDiff = [];
+      for (let i = 0; i < steps.length; i++) {
+        const next = i < steps.length - 1 ? steps[i + 1] : equave;
+        stepsDiff.push(next - steps[i]);
+      }
+
+      summaryDiv.innerHTML = `
+        <div class="flex justify-between border-b border-zinc-800 pb-1.5">
+          <span class="text-zinc-400 font-semibold">Scale Degrees:</span>
+          <span class="text-yellow-400 font-extrabold text-sm">${steps.length}</span>
+        </div>
+        <div class="flex justify-between border-b border-zinc-800 pb-1.5">
+          <span class="text-zinc-400 font-semibold">Span:</span>
+          <span class="text-white font-bold">${octavesNeeded} Octave${octavesNeeded > 1 ? 's' : ''} (${equave} steps)</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-zinc-400 font-semibold">Interval Pattern:</span>
+          <span class="text-white font-bold">${stepsDiff.join('-')}</span>
+        </div>
+      `;
+
+      // Legend
+      legendDiv.innerHTML = '';
+      for (let o = 0; o < octavesNeeded; o++) {
+        const color = OCTAVE_COLORS[o % OCTAVE_COLORS.length];
+        const item = document.createElement('div');
+        item.className = 'flex items-center gap-2 text-white border border-zinc-700 bg-zinc-900 px-2.5 py-1 rounded-md';
+        item.innerHTML = `
+          <span class="w-4 h-4 rounded-full inline-block border-2 border-black" style="background-color: ${color.main}"></span>
+          <span>Octave ${o + 1} (${o * edo}–${(o + 1) * edo - 1})</span>
+        `;
+        legendDiv.appendChild(item);
+      }
+
+      // Draw Octave Circles
+      for (let o = 0; o < octavesNeeded; o++) {
+        const r = baseRadius + (o * ringSpacing);
+        ctx.beginPath();
+        ctx.arc(center, center, r, 0, Math.PI * 2);
+        ctx.strokeStyle = '#52525b'; // Solid High-Contrast Zinc Ring
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      // Radial Tick Lines
+      for (let s = 0; s < edo; s++) {
+        const angle = (s / edo) * 2 * Math.PI - (Math.PI / 2);
+        const innerR = baseRadius - 8;
+        const outerR = baseRadius + ((octavesNeeded - 1) * ringSpacing) + 8;
+
+        const x1 = center + innerR * Math.cos(angle);
+        const y1 = center + innerR * Math.sin(angle);
+        const x2 = center + outerR * Math.cos(angle);
+        const y2 = center + outerR * Math.sin(angle);
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        
+        // Step 0 line is bold bright white
+        if (s === 0) {
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3;
+        } else {
+          ctx.strokeStyle = '#3f3f46';
+          ctx.lineWidth = 1.5;
+        }
+        ctx.stroke();
+      }
+
+      // Pre-calculate step positions
+      const stepPoints = steps.map(step => {
+        const octaveIndex = Math.floor(step / edo);
+        const r = baseRadius + (octaveIndex * ringSpacing);
+        const edoFraction = (step % edo) / edo;
+        const angle = edoFraction * 2 * Math.PI - (Math.PI / 2);
+
+        return {
+          step,
+          octaveIndex,
+          r,
+          angle,
+          x: center + r * Math.cos(angle),
+          y: center + r * Math.sin(angle)
+        };
+      });
+
+      // Draw Polygon
+      if (connectPolygon.checked && stepPoints.length > 1) {
+        ctx.beginPath();
+        stepPoints.forEach((pt, i) => {
+          if (i === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        });
+        
+        // Connect to top equave
+        const equavePt = {
+          x: center + (baseRadius + (Math.floor(equave / edo) * ringSpacing)) * Math.cos(-Math.PI / 2),
+          y: center + (baseRadius + (Math.floor(equave / edo) * ringSpacing)) * Math.sin(-Math.PI / 2)
+        };
+        ctx.lineTo(equavePt.x, equavePt.y);
+
+        // High-contrast yellow dashed outline
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([6, 6]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Subtle dark translucent fill
+        ctx.fillStyle = 'rgba(250, 204, 21, 0.08)';
+        ctx.fill();
+      }
+
+      // Draw Step Nodes & Labels
+      stepPoints.forEach(pt => {
+        const color = OCTAVE_COLORS[pt.octaveIndex % OCTAVE_COLORS.length];
+        const nodeRadius = octavesNeeded > 3 ? 12 : 15;
+
+        // Solid node circle
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, nodeRadius, 0, Math.PI * 2);
+        ctx.fillStyle = color.main;
+        ctx.fill();
+        
+        // High-contrast thick black border around node
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#000000';
+        ctx.stroke();
+
+        // Node step number
+        if (showNumbers.checked) {
+          ctx.fillStyle = color.text;
+          ctx.font = `900 ${nodeRadius * 0.95}px system-ui, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(pt.step.toString(), pt.x, pt.y + 0.5);
+        }
+      });
+
+      // Center Title Text
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 24px system-ui, sans-serif';
+      ctx.fillText(`${edo}-EDO`, center, center - 10);
+      
+      ctx.fillStyle = '#facc15';
+      ctx.font = 'bold 13px system-ui, sans-serif';
+      ctx.fillText(`${steps.length} DEGREES`, center, center + 14);
+    }
+
+    function loadPreset(edo, steps) {
+      edoInput.value = edo;
+      stepsInput.value = steps;
+      render();
+    }
+
+
+    // Listeners
+    [edoInput, stepsInput, showNumbers, connectPolygon].forEach(elem => {
+      elem.addEventListener('input', render);
+      elem.addEventListener('change', render);
+    });
+
+    window.addEventListener('resize', render);
+
+    // Initial render
+    window.onload = render;
+  </script>
+</body>
+</html>
+
