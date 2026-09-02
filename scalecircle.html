@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EDO Scale Circle Diagram Generator (Kindle Paperwhite)</title>
+  <title>EDO Scale Circle Diagram Generator (Low RAM)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -22,7 +22,7 @@
         EDO Scale Circle Generator
       </h1>
       <p class="text-xs sm:text-sm font-bold text-zinc-700 mt-1">
-        Monochrome / E-Ink Optimized Edition for Kindle Paperwhite
+        Low-Memory & E-Paper Optimized Edition
       </p>
     </header>
 
@@ -125,14 +125,15 @@
   </div>
 
   <script>
-    // Monochrome high-contrast palette optimized for e-ink displays (Paperwhite)
+    // Cached Octave Styles
     const OCTAVE_STYLES = [
-      { fill: '#000000', text: '#ffffff', stroke: '#000000', label: 'Octave 1', pattern: 'solid' },
-      { fill: '#ffffff', text: '#000000', stroke: '#000000', label: 'Octave 2', pattern: 'inverted' },
-      { fill: '#666666', text: '#ffffff', stroke: '#000000', label: 'Octave 3', pattern: 'gray' },
-      { fill: '#e6e6e6', text: '#000000', stroke: '#000000', label: 'Octave 4', pattern: 'light-gray' }
+      { fill: '#000000', text: '#ffffff', stroke: '#000000', label: 'Octave 1' },
+      { fill: '#ffffff', text: '#000000', stroke: '#000000', label: 'Octave 2' },
+      { fill: '#666666', text: '#ffffff', stroke: '#000000', label: 'Octave 3' },
+      { fill: '#e6e6e6', text: '#000000', stroke: '#000000', label: 'Octave 4' }
     ];
 
+    // DOM Caching
     const edoInput = document.getElementById('edoInput');
     const stepsInput = document.getElementById('stepsInput');
     const showNumbers = document.getElementById('showNumbers');
@@ -143,36 +144,57 @@
     const legendDiv = document.getElementById('octaveLegend');
     const exportBtn = document.getElementById('exportBtn');
 
+    let renderDebounceTimer = null;
+
+    // Cap DPR scaling to max 2.0 to conserve canvas memory buffer
     function setupCanvas() {
       const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const size = Math.min(rect.width, rect.height) || 500;
-      canvas.width = size * dpr;
-      canvas.height = size * dpr;
+      canvas.width = Math.floor(size * dpr);
+      canvas.height = Math.floor(size * dpr);
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform before scaling
       ctx.scale(dpr, dpr);
       return size;
     }
 
     function parseInputs() {
-      const edo = parseInt(edoInput.value, 10) || 12;
-      const rawText = stepsInput.value.replace(/,/g, ' ');
-      const tokens = rawText.trim().split(/\s+/).filter(t => t.length > 0);
+      const edo = Math.max(1, parseInt(edoInput.value, 10) || 12);
+      const rawText = stepsInput.value;
       
-      let userSteps = tokens.map(t => parseInt(t, 10)).filter(n => !isNaN(n));
-      if (!userSteps.includes(0)) {
-        userSteps.push(0);
+      let maxStep = 0;
+      let userSteps = [];
+      let hasZero = false;
+
+      // In-place regex scanning to reduce array allocations
+      const matches = rawText.match(/\d+/g);
+      if (matches) {
+        for (let i = 0; i < matches.length; i++) {
+          const num = parseInt(matches[i], 10);
+          if (!isNaN(num)) {
+            if (num === 0) hasZero = true;
+            userSteps.push(num);
+            if (num > maxStep) maxStep = num;
+          }
+        }
       }
 
-      userSteps = [...new Set(userSteps)].sort((a, b) => a - b);
-      const maxStep = Math.max(...userSteps);
-      
-      let octavesNeeded = 1;
-      if (maxStep >= edo) {
-        octavesNeeded = Math.floor(maxStep / edo) + 1;
+      if (!hasZero) userSteps.push(0);
+
+      // Unique sort
+      userSteps.sort((a, b) => a - b);
+      let uniqueCount = 0;
+      for (let i = 0; i < userSteps.length; i++) {
+        if (i === 0 || userSteps[i] !== userSteps[i - 1]) {
+          userSteps[uniqueCount++] = userSteps[i];
+        }
       }
-      
+      userSteps.length = uniqueCount;
+
+      const octavesNeeded = maxStep >= edo ? Math.floor(maxStep / edo) + 1 : 1;
       const equave = octavesNeeded * edo;
-      return { edo, steps: userSteps, octavesNeeded, equave, maxStep };
+
+      return { edo, steps: userSteps, octavesNeeded, equave };
     }
 
     function render() {
@@ -180,130 +202,92 @@
       const center = displaySize / 2;
       const { edo, steps, octavesNeeded, equave } = parseInputs();
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // E-Paper Pure White Background
+      // Clear canvas buffer
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, displaySize, displaySize);
 
       const baseRadius = displaySize * 0.38;
       const ringSpacing = octavesNeeded > 1 ? Math.min(34, (displaySize * 0.18) / octavesNeeded) : 0;
 
-      // Summary Data
-      let stepsDiff = [];
+      // Build Summary string
+      let diffStr = '';
       for (let i = 0; i < steps.length; i++) {
         const next = i < steps.length - 1 ? steps[i + 1] : equave;
-        stepsDiff.push(next - steps[i]);
+        diffStr += (i > 0 ? '-' : '') + (next - steps[i]);
       }
 
       summaryDiv.innerHTML = `
-        <div class="flex justify-between border-b border-black pb-1">
-          <span>Degrees:</span>
-          <span class="font-black">${steps.length}</span>
-        </div>
-        <div class="flex justify-between border-b border-black pb-1">
-          <span>Octaves:</span>
-          <span class="font-black">${octavesNeeded} (${equave} EDOsteps)</span>
-        </div>
-        <div class="flex justify-between">
-          <span>Pattern:</span>
-          <span class="font-black">${stepsDiff.join('-')}</span>
-        </div>
+        <div class="flex justify-between border-b border-black pb-1"><span>Degrees:</span><span class="font-black">${steps.length}</span></div>
+        <div class="flex justify-between border-b border-black pb-1"><span>Octaves:</span><span class="font-black">${octavesNeeded} (${equave} steps)</span></div>
+        <div class="flex justify-between"><span>Pattern:</span><span class="font-black">${diffStr}</span></div>
       `;
 
-      // Legend
-      legendDiv.innerHTML = '';
+      // Legend update via string template (avoids GC allocations)
+      let legendHtml = '';
       for (let o = 0; o < octavesNeeded; o++) {
         const style = OCTAVE_STYLES[o % OCTAVE_STYLES.length];
-        const item = document.createElement('div');
-        item.className = 'flex items-center gap-1.5 text-black border-2 border-black bg-white px-2 py-0.5';
-        item.innerHTML = `
+        legendHtml += `<div class="flex items-center gap-1.5 text-black border-2 border-black bg-white px-2 py-0.5">
           <span class="w-3.5 h-3.5 rounded-full inline-block border-2 border-black" style="background-color: ${style.fill}"></span>
           <span>Oct ${o + 1} (${o * edo}–${(o + 1) * edo - 1})</span>
-        `;
-        legendDiv.appendChild(item);
+        </div>`;
       }
+      legendDiv.innerHTML = legendHtml;
 
-      // Concentric Rings for Octaves
+      // Draw Rings
       for (let o = 0; o < octavesNeeded; o++) {
         const r = baseRadius + (o * ringSpacing);
         ctx.beginPath();
-        ctx.arc(center, center, r, 0, Math.PI * 2);
-        
-        if (o === 0) {
-          ctx.strokeStyle = '#000000';
-          ctx.lineWidth = 2.5;
-          ctx.setLineDash([]);
-        } else if (o === 1) {
-          ctx.strokeStyle = '#000000';
-          ctx.lineWidth = 2;
-          ctx.setLineDash([4, 4]); // Dashed outer ring for Octave 2
-        } else {
-          ctx.strokeStyle = '#666666';
-          ctx.lineWidth = 1.5;
-          ctx.setLineDash([2, 2]); // Dotted for higher octaves
-        }
+        ctx.arc(center, center, r, 0, 6.28318);
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = o === 0 ? 2.5 : 1.5;
+        if (o > 0) ctx.setLineDash([4, 4]);
         ctx.stroke();
-        ctx.setLineDash([]);
+        if (o > 0) ctx.setLineDash([]);
       }
 
-      // Radial Tick Lines (EDO steps)
+      // Draw Radial Lines
+      const twoPi = Math.PI * 2;
+      const halfPi = Math.PI / 2;
       for (let s = 0; s < edo; s++) {
-        const angle = (s / edo) * 2 * Math.PI - (Math.PI / 2);
+        const angle = (s / edo) * twoPi - halfPi;
         const innerR = baseRadius - 8;
         const outerR = baseRadius + ((octavesNeeded - 1) * ringSpacing) + 8;
 
-        const x1 = center + innerR * Math.cos(angle);
-        const y1 = center + innerR * Math.sin(angle);
-        const x2 = center + outerR * Math.cos(angle);
-        const y2 = center + outerR * Math.sin(angle);
-
         ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-
-        if (s === 0) {
-          // Top root line (0 EDOstep)
-          ctx.strokeStyle = '#000000';
-          ctx.lineWidth = 4;
-        } else {
-          ctx.strokeStyle = '#a1a1aa';
-          ctx.lineWidth = 1.5;
-        }
+        ctx.moveTo(center + innerR * Math.cos(angle), center + innerR * Math.sin(angle));
+        ctx.lineTo(center + outerR * Math.cos(angle), center + outerR * Math.sin(angle));
+        ctx.strokeStyle = s === 0 ? '#000000' : '#a1a1aa';
+        ctx.lineWidth = s === 0 ? 4 : 1.5;
         ctx.stroke();
       }
 
-      // Pre-calculate step positions
-      const stepPoints = steps.map(step => {
-        const octaveIndex = Math.floor(step / edo);
-        const r = baseRadius + (octaveIndex * ringSpacing);
-        const edoFraction = (step % edo) / edo;
-        const angle = edoFraction * 2 * Math.PI - (Math.PI / 2);
+      // Scale Points
+      const numSteps = steps.length;
+      const pointsX = new Float32Array(numSteps);
+      const pointsY = new Float32Array(numSteps);
+      const octaveIndices = new Uint8Array(numSteps);
 
-        return {
-          step,
-          octaveIndex,
-          r,
-          angle,
-          x: center + r * Math.cos(angle),
-          y: center + r * Math.sin(angle)
-        };
-      });
+      for (let i = 0; i < numSteps; i++) {
+        const step = steps[i];
+        const octIdx = Math.floor(step / edo);
+        const r = baseRadius + (octIdx * ringSpacing);
+        const angle = ((step % edo) / edo) * twoPi - halfPi;
 
-      // Polygon Scale Connections
-      if (connectPolygon.checked && stepPoints.length > 1) {
+        pointsX[i] = center + r * Math.cos(angle);
+        pointsY[i] = center + r * Math.sin(angle);
+        octaveIndices[i] = octIdx;
+      }
+
+      // Draw Scale Polygon
+      if (connectPolygon.checked && numSteps > 1) {
         ctx.beginPath();
-        stepPoints.forEach((pt, i) => {
-          if (i === 0) ctx.moveTo(pt.x, pt.y);
-          else ctx.lineTo(pt.x, pt.y);
-        });
-
-        // Top equave
-        const equavePt = {
-          x: center + (baseRadius + (Math.floor(equave / edo) * ringSpacing)) * Math.cos(-Math.PI / 2),
-          y: center + (baseRadius + (Math.floor(equave / edo) * ringSpacing)) * Math.sin(-Math.PI / 2)
-        };
-        ctx.lineTo(equavePt.x, equavePt.y);
+        ctx.moveTo(pointsX[0], pointsY[0]);
+        for (let i = 1; i < numSteps; i++) {
+          ctx.lineTo(pointsX[i], pointsY[i]);
+        }
+        // Connect to equave top point
+        const eqR = baseRadius + (Math.floor(equave / edo) * ringSpacing);
+        ctx.lineTo(center, center - eqR);
 
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 2.5;
@@ -312,40 +296,40 @@
         ctx.setLineDash([]);
       }
 
-      // Draw Step Nodes & Numbers
-      stepPoints.forEach(pt => {
-        const style = OCTAVE_STYLES[pt.octaveIndex % OCTAVE_STYLES.length];
-        const nodeRadius = octavesNeeded > 3 ? 12 : 15;
+      // Draw Nodes
+      const nodeRadius = octavesNeeded > 3 ? 12 : 15;
+      const drawNumbers = showNumbers.checked;
 
-        // Node Circle Background
+      for (let i = 0; i < numSteps; i++) {
+        const px = pointsX[i];
+        const py = pointsY[i];
+        const octIdx = octaveIndices[i];
+        const style = OCTAVE_STYLES[octIdx % OCTAVE_STYLES.length];
+
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, nodeRadius, 0, Math.PI * 2);
+        ctx.arc(px, py, nodeRadius, 0, twoPi);
         ctx.fillStyle = style.fill;
         ctx.fill();
-
-        // Thick Black Border for e-ink definition
         ctx.lineWidth = 3;
         ctx.strokeStyle = style.stroke;
         ctx.stroke();
 
-        // Extra outer ring for Octave 2+ to distinguish without color
-        if (pt.octaveIndex > 0) {
+        if (octIdx > 0) {
           ctx.beginPath();
-          ctx.arc(pt.x, pt.y, nodeRadius + 3, 0, Math.PI * 2);
+          ctx.arc(px, py, nodeRadius + 3, 0, twoPi);
           ctx.lineWidth = 1.5;
           ctx.strokeStyle = '#000000';
           ctx.stroke();
         }
 
-        // Numbers inside node
-        if (showNumbers.checked) {
+        if (drawNumbers) {
           ctx.fillStyle = style.text;
           ctx.font = `900 ${nodeRadius * 0.95}px system-ui, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(pt.step.toString(), pt.x, pt.y + 0.5);
+          ctx.fillText(steps[i].toString(), px, py + 0.5);
         }
-      });
+      }
 
       // Center Title Text
       ctx.textAlign = 'center';
@@ -354,9 +338,14 @@
       ctx.font = '900 24px system-ui, sans-serif';
       ctx.fillText(`${edo}-EDO`, center, center - 8);
 
-      ctx.fillStyle = '#000000';
       ctx.font = 'bold 12px system-ui, sans-serif';
-      ctx.fillText(`${steps.length} DEGREES`, center, center + 14);
+      ctx.fillText(`${numSteps} DEGREES`, center, center + 14);
+    }
+
+    // Debounce rendering for keypresses
+    function debouncedRender() {
+      if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
+      renderDebounceTimer = setTimeout(render, 150);
     }
 
     function loadPreset(edo, steps) {
@@ -372,12 +361,11 @@
       tempLink.click();
     });
 
-    [edoInput, stepsInput, showNumbers, connectPolygon].forEach(elem => {
-      elem.addEventListener('input', render);
-      elem.addEventListener('change', render);
-    });
+    // Attach debounced listeners
+    [edoInput, stepsInput].forEach(elem => elem.addEventListener('input', debouncedRender));
+    [showNumbers, connectPolygon].forEach(elem => elem.addEventListener('change', render));
 
-    window.addEventListener('resize', render);
+    window.addEventListener('resize', debouncedRender);
     window.onload = render;
   </script>
 </body>
