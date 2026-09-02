@@ -3,114 +3,121 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EDO Scale Circle Diagram Generator (High Contrast)</title>
+  <title>EDO Scale Circle Diagram Generator (Kindle Paperwhite)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
-      background-color: #000000;
-      color: #ffffff;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: #ffffff;
+      color: #000000;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
   </style>
 </head>
-<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+<body class="min-h-screen p-3 sm:p-6 flex flex-col items-center">
 
-  <div class="max-w-5xl w-full flex flex-col gap-6">
+  <div class="max-w-5xl w-full flex flex-col gap-5">
     <!-- Header -->
-    <header class="text-center">
-      <h1 class="text-3xl md:text-4xl font-black text-white tracking-wide uppercase border-b-2 border-yellow-400 pb-2 inline-block">
+    <header class="text-center border-b-4 border-black pb-3">
+      <h1 class="text-2xl sm:text-3xl font-black text-black uppercase tracking-wider">
         EDO Scale Circle Generator
       </h1>
-      <p class="text-zinc-300 mt-3 text-sm md:text-base font-medium">
-        High-contrast visualization for octave-repeating and multi-equave microtonal scales across any EDO.
+      <p class="text-xs sm:text-sm font-bold text-zinc-700 mt-1">
+        Monochrome / E-Ink Optimized Edition for Kindle Paperwhite
       </p>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
       <!-- Input Panel -->
-      <section class="lg:col-span-5 bg-zinc-950 border-2 border-zinc-700 p-5 rounded-2xl shadow-2xl flex flex-col gap-5 h-fit">
+      <section class="lg:col-span-5 bg-white border-4 border-black p-4 rounded-none flex flex-col gap-4 shadow-none">
         <div>
-          <h2 class="text-lg font-black text-yellow-400 uppercase tracking-wider border-b-2 border-zinc-800 pb-2 mb-4">
+          <h2 class="text-base font-black text-black uppercase tracking-wider border-b-2 border-black pb-1 mb-3">
             Scale Parameters
           </h2>
           
-          <div class="flex flex-col gap-5">
+          <div class="flex flex-col gap-4">
             <!-- EDO Input -->
             <div>
-              <label for="edoInput" class="block text-sm font-bold text-white mb-1">
+              <label for="edoInput" class="block text-xs font-black uppercase text-black mb-1">
                 Equal Division of Octave (EDO)
               </label>
               <input 
                 type="number" 
                 id="edoInput" 
-                min="5" 
-                max="4294967296" 
+                min="1" 
+                max="300" 
                 value="31" 
-                class="w-full bg-black border-2 border-zinc-500 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-yellow-400 text-xl font-bold"
+                class="w-full bg-white border-2 border-black rounded-none px-2 py-1.5 text-black focus:outline-none text-lg font-black"
               />
             </div>
 
             <!-- Steps Input -->
             <div>
-              <label for="stepsInput" class="block text-sm font-bold text-white mb-1">
+              <label for="stepsInput" class="block text-xs font-black uppercase text-black mb-1">
                 Scale Steps (EDOsteps)
               </label>
               <textarea 
                 id="stepsInput" 
                 rows="4" 
-                class="w-full bg-black border-2 border-zinc-500 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400 font-mono text-sm leading-relaxed font-bold"
+                placeholder="e.g. 5, 10, 15, 18, 23, 28, 30, 35, 40, 45, 48, 53, 58"
+                class="w-full bg-white border-2 border-black rounded-none p-2 text-black focus:outline-none font-mono text-xs leading-relaxed font-bold"
               >5, 10, 15, 18, 23, 28, 30, 35, 40, 45, 48, 53, 58</textarea>
-              <p class="text-xs text-zinc-300 mt-1.5 font-medium">
-                Root (0) is implied. Separate steps with spaces or commas. Steps &gt; EDO extend into higher octaves.
+              <p class="text-[11px] text-zinc-700 mt-1 font-bold">
+                Root (0) implied. Separate with spaces/commas. Steps &gt; EDO extend into outer octave rings.
               </p>
             </div>
 
-            <!-- Quick Presets -->
+            <!-- Presets -->
             <div>
-              <label class="block text-xs font-black text-yellow-400 uppercase tracking-wider mb-2">Presets</label>
-              <div class="flex flex-wrap gap-2">
-                <button onclick="loadPreset(31, '5 10 15 18 23 28 30 35 40 45 48 53 58')" class="text-xs font-bold bg-zinc-800 hover:bg-yellow-400 hover:text-black text-white border border-zinc-600 py-1.5 px-3 rounded-md transition">
+              <label class="block text-[10px] font-black uppercase tracking-wider text-black mb-1.5">Presets</label>
+              <div class="flex flex-wrap gap-1.5">
+                <button onclick="loadPreset(31, '5 10 15 18 23 28 30 35 40 45 48 53 58')" class="text-xs font-black bg-white hover:bg-black hover:text-white text-black border-2 border-black py-1 px-2 transition">
                   31-EDO Double Lydian
                 </button>
-                <button onclick="loadPreset(12, '2 4 5 7 9 11')" class="text-xs font-bold bg-zinc-800 hover:bg-yellow-400 hover:text-black text-white border border-zinc-600 py-1.5 px-3 rounded-md transition">
+                <button onclick="loadPreset(12, '2 4 5 7 9 11')" class="text-xs font-black bg-white hover:bg-black hover:text-white text-black border-2 border-black py-1 px-2 transition">
                   12-EDO Major
                 </button>
-                <button onclick="loadPreset(19, '3 6 8 11 14 17')" class="text-xs font-bold bg-zinc-800 hover:bg-yellow-400 hover:text-black text-white border border-zinc-600 py-1.5 px-3 rounded-md transition">
+                <button onclick="loadPreset(19, '3 6 8 11 14 17')" class="text-xs font-black bg-white hover:bg-black hover:text-white text-black border-2 border-black py-1 px-2 transition">
                   19-EDO Major
                 </button>
-                <button onclick="loadPreset(22, '4 8 9 13 17 21')" class="text-xs font-bold bg-zinc-800 hover:bg-yellow-400 hover:text-black text-white border border-zinc-600 py-1.5 px-3 rounded-md transition">
+                <button onclick="loadPreset(22, '3 7 9 12 16 18')" class="text-xs font-black bg-white hover:bg-black hover:text-white text-black border-2 border-black py-1 px-2 transition">
                   22-EDO Superpyth
                 </button>
               </div>
             </div>
 
             <!-- Options -->
-            <div class="grid grid-cols-2 gap-3 pt-2 border-t border-zinc-800">
-              <label class="flex items-center gap-2 text-sm font-bold text-white cursor-pointer select-none">
-                <input type="checkbox" id="showNumbers" checked class="w-4 h-4 accent-yellow-400">
-                Show Step Labels
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t-2 border-black">
+              <label class="flex items-center gap-1.5 text-xs font-black text-black cursor-pointer select-none">
+                <input type="checkbox" id="showNumbers" checked class="w-4 h-4 border-2 border-black accent-black">
+                Step Numbers
               </label>
-              <label class="flex items-center gap-2 text-sm font-bold text-white cursor-pointer select-none">
-                <input type="checkbox" id="connectPolygon" checked class="w-4 h-4 accent-yellow-400">
-                Draw Scale Polygon
+              <label class="flex items-center gap-1.5 text-xs font-black text-black cursor-pointer select-none">
+                <input type="checkbox" id="connectPolygon" checked class="w-4 h-4 border-2 border-black accent-black">
+                Scale Polygon
               </label>
             </div>
           </div>
         </div>
 
         <!-- Scale Info summary -->
-        <div id="scaleSummary" class="bg-black rounded-xl p-4 border-2 border-zinc-700 text-xs space-y-2 font-mono">
+        <div id="scaleSummary" class="bg-zinc-100 rounded-none p-3 border-2 border-black text-xs space-y-1 font-mono font-bold">
           <!-- Filled dynamically -->
         </div>
 
+        <!-- Export Action -->
+        <button id="exportBtn" class="w-full bg-black hover:bg-zinc-800 text-white font-black py-2.5 px-4 rounded-none transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider border-2 border-black">
+          Export PNG Image
+        </button>
+      </section>
+
       <!-- Diagram Display -->
-      <section class="lg:col-span-7 bg-zinc-950 border-2 border-zinc-700 p-4 md:p-6 rounded-2xl shadow-2xl flex flex-col items-center justify-center min-h-[520px]">
-        <div class="relative w-full max-w-[550px] aspect-square flex items-center justify-center">
-          <canvas id="scaleCanvas" class="w-full h-full block rounded-xl bg-black border-2 border-zinc-800"></canvas>
+      <section class="lg:col-span-7 bg-white border-4 border-black p-3 sm:p-5 rounded-none flex flex-col items-center justify-center min-h-[480px]">
+        <div class="relative w-full max-w-[520px] aspect-square flex items-center justify-center">
+          <canvas id="scaleCanvas" class="w-full h-full block bg-white border-2 border-black"></canvas>
         </div>
 
         <!-- Octave Legend -->
-        <div id="octaveLegend" class="flex flex-wrap items-center justify-center gap-4 mt-5 text-xs font-black">
+        <div id="octaveLegend" class="flex flex-wrap items-center justify-center gap-3 mt-4 text-xs font-black">
           <!-- Dynamically populated legend -->
         </div>
       </section>
@@ -118,15 +125,12 @@
   </div>
 
   <script>
-    // High-Contrast Octave Color Palette
-    // Octave 1 is pure white with black text; subsequent octaves use ultra-saturated neon colors with black text.
-    const OCTAVE_COLORS = [
-      { main: '#ffffff', stroke: '#000000', text: '#000000', label: 'Octave 1' },  // Pure White
-      { main: '#facc15', stroke: '#000000', text: '#000000', label: 'Octave 2' },  // Neon Yellow
-      { main: '#38bdf8', stroke: '#000000', text: '#000000', label: 'Octave 3' },  // Neon Cyan
-      { main: '#f43f5e', stroke: '#000000', text: '#000000', label: 'Octave 4' },  // Hot Pink
-      { main: '#4ade80', stroke: '#000000', text: '#000000', label: 'Octave 5' },  // Lime Green
-      { main: '#fb923c', stroke: '#000000', text: '#000000', label: 'Octave 6' }   // Vivid Orange
+    // Monochrome high-contrast palette optimized for e-ink displays (Paperwhite)
+    const OCTAVE_STYLES = [
+      { fill: '#000000', text: '#ffffff', stroke: '#000000', label: 'Octave 1', pattern: 'solid' },
+      { fill: '#ffffff', text: '#000000', stroke: '#000000', label: 'Octave 2', pattern: 'inverted' },
+      { fill: '#666666', text: '#ffffff', stroke: '#000000', label: 'Octave 3', pattern: 'gray' },
+      { fill: '#e6e6e6', text: '#000000', stroke: '#000000', label: 'Octave 4', pattern: 'light-gray' }
     ];
 
     const edoInput = document.getElementById('edoInput');
@@ -137,6 +141,7 @@
     const ctx = canvas.getContext('2d');
     const summaryDiv = document.getElementById('scaleSummary');
     const legendDiv = document.getElementById('octaveLegend');
+    const exportBtn = document.getElementById('exportBtn');
 
     function setupCanvas() {
       const rect = canvas.getBoundingClientRect();
@@ -150,18 +155,15 @@
 
     function parseInputs() {
       const edo = parseInt(edoInput.value, 10) || 12;
-      
       const rawText = stepsInput.value.replace(/,/g, ' ');
       const tokens = rawText.trim().split(/\s+/).filter(t => t.length > 0);
       
       let userSteps = tokens.map(t => parseInt(t, 10)).filter(n => !isNaN(n));
-      
       if (!userSteps.includes(0)) {
         userSteps.push(0);
       }
 
       userSteps = [...new Set(userSteps)].sort((a, b) => a - b);
-
       const maxStep = Math.max(...userSteps);
       
       let octavesNeeded = 1;
@@ -170,25 +172,24 @@
       }
       
       const equave = octavesNeeded * edo;
-
       return { edo, steps: userSteps, octavesNeeded, equave, maxStep };
     }
 
     function render() {
       const displaySize = setupCanvas();
       const center = displaySize / 2;
-      const { edo, steps, octavesNeeded, equave, maxStep } = parseInputs();
+      const { edo, steps, octavesNeeded, equave } = parseInputs();
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // High-Contrast Solid Black Canvas
-      ctx.fillStyle = '#000000';
+      // E-Paper Pure White Background
+      ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, displaySize, displaySize);
 
       const baseRadius = displaySize * 0.38;
-      const ringSpacing = octavesNeeded > 1 ? Math.min(32, (displaySize * 0.18) / octavesNeeded) : 0;
+      const ringSpacing = octavesNeeded > 1 ? Math.min(34, (displaySize * 0.18) / octavesNeeded) : 0;
 
-      // Summary Info
+      // Summary Data
       let stepsDiff = [];
       for (let i = 0; i < steps.length; i++) {
         const next = i < steps.length - 1 ? steps[i + 1] : equave;
@@ -196,44 +197,57 @@
       }
 
       summaryDiv.innerHTML = `
-        <div class="flex justify-between border-b border-zinc-800 pb-1.5">
-          <span class="text-zinc-400 font-semibold">Scale Degrees:</span>
-          <span class="text-yellow-400 font-extrabold text-sm">${steps.length}</span>
+        <div class="flex justify-between border-b border-black pb-1">
+          <span>Degrees:</span>
+          <span class="font-black">${steps.length}</span>
         </div>
-        <div class="flex justify-between border-b border-zinc-800 pb-1.5">
-          <span class="text-zinc-400 font-semibold">Span:</span>
-          <span class="text-white font-bold">${octavesNeeded} Octave${octavesNeeded > 1 ? 's' : ''} (${equave} steps)</span>
+        <div class="flex justify-between border-b border-black pb-1">
+          <span>Octaves:</span>
+          <span class="font-black">${octavesNeeded} (${equave} EDOsteps)</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-zinc-400 font-semibold">Interval Pattern:</span>
-          <span class="text-white font-bold">${stepsDiff.join('-')}</span>
+          <span>Pattern:</span>
+          <span class="font-black">${stepsDiff.join('-')}</span>
         </div>
       `;
 
       // Legend
       legendDiv.innerHTML = '';
       for (let o = 0; o < octavesNeeded; o++) {
-        const color = OCTAVE_COLORS[o % OCTAVE_COLORS.length];
+        const style = OCTAVE_STYLES[o % OCTAVE_STYLES.length];
         const item = document.createElement('div');
-        item.className = 'flex items-center gap-2 text-white border border-zinc-700 bg-zinc-900 px-2.5 py-1 rounded-md';
+        item.className = 'flex items-center gap-1.5 text-black border-2 border-black bg-white px-2 py-0.5';
         item.innerHTML = `
-          <span class="w-4 h-4 rounded-full inline-block border-2 border-black" style="background-color: ${color.main}"></span>
-          <span>Octave ${o + 1} (${o * edo}–${(o + 1) * edo - 1})</span>
+          <span class="w-3.5 h-3.5 rounded-full inline-block border-2 border-black" style="background-color: ${style.fill}"></span>
+          <span>Oct ${o + 1} (${o * edo}–${(o + 1) * edo - 1})</span>
         `;
         legendDiv.appendChild(item);
       }
 
-      // Draw Octave Circles
+      // Concentric Rings for Octaves
       for (let o = 0; o < octavesNeeded; o++) {
         const r = baseRadius + (o * ringSpacing);
         ctx.beginPath();
         ctx.arc(center, center, r, 0, Math.PI * 2);
-        ctx.strokeStyle = '#52525b'; // Solid High-Contrast Zinc Ring
-        ctx.lineWidth = 2;
+        
+        if (o === 0) {
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([]);
+        } else if (o === 1) {
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 4]); // Dashed outer ring for Octave 2
+        } else {
+          ctx.strokeStyle = '#666666';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([2, 2]); // Dotted for higher octaves
+        }
         ctx.stroke();
+        ctx.setLineDash([]);
       }
 
-      // Radial Tick Lines
+      // Radial Tick Lines (EDO steps)
       for (let s = 0; s < edo; s++) {
         const angle = (s / edo) * 2 * Math.PI - (Math.PI / 2);
         const innerR = baseRadius - 8;
@@ -247,13 +261,13 @@
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
-        
-        // Step 0 line is bold bright white
+
         if (s === 0) {
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 3;
+          // Top root line (0 EDOstep)
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 4;
         } else {
-          ctx.strokeStyle = '#3f3f46';
+          ctx.strokeStyle = '#a1a1aa';
           ctx.lineWidth = 1.5;
         }
         ctx.stroke();
@@ -276,52 +290,56 @@
         };
       });
 
-      // Draw Polygon
+      // Polygon Scale Connections
       if (connectPolygon.checked && stepPoints.length > 1) {
         ctx.beginPath();
         stepPoints.forEach((pt, i) => {
           if (i === 0) ctx.moveTo(pt.x, pt.y);
           else ctx.lineTo(pt.x, pt.y);
         });
-        
-        // Connect to top equave
+
+        // Top equave
         const equavePt = {
           x: center + (baseRadius + (Math.floor(equave / edo) * ringSpacing)) * Math.cos(-Math.PI / 2),
           y: center + (baseRadius + (Math.floor(equave / edo) * ringSpacing)) * Math.sin(-Math.PI / 2)
         };
         ctx.lineTo(equavePt.x, equavePt.y);
 
-        // High-contrast yellow dashed outline
-        ctx.strokeStyle = '#facc15';
-        ctx.lineWidth = 3;
-        ctx.setLineDash([6, 6]);
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([5, 5]);
         ctx.stroke();
         ctx.setLineDash([]);
-
-        // Subtle dark translucent fill
-        ctx.fillStyle = 'rgba(250, 204, 21, 0.08)';
-        ctx.fill();
       }
 
-      // Draw Step Nodes & Labels
+      // Draw Step Nodes & Numbers
       stepPoints.forEach(pt => {
-        const color = OCTAVE_COLORS[pt.octaveIndex % OCTAVE_COLORS.length];
+        const style = OCTAVE_STYLES[pt.octaveIndex % OCTAVE_STYLES.length];
         const nodeRadius = octavesNeeded > 3 ? 12 : 15;
 
-        // Solid node circle
+        // Node Circle Background
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, nodeRadius, 0, Math.PI * 2);
-        ctx.fillStyle = color.main;
+        ctx.fillStyle = style.fill;
         ctx.fill();
-        
-        // High-contrast thick black border around node
+
+        // Thick Black Border for e-ink definition
         ctx.lineWidth = 3;
-        ctx.strokeStyle = '#000000';
+        ctx.strokeStyle = style.stroke;
         ctx.stroke();
 
-        // Node step number
+        // Extra outer ring for Octave 2+ to distinguish without color
+        if (pt.octaveIndex > 0) {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, nodeRadius + 3, 0, Math.PI * 2);
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = '#000000';
+          ctx.stroke();
+        }
+
+        // Numbers inside node
         if (showNumbers.checked) {
-          ctx.fillStyle = color.text;
+          ctx.fillStyle = style.text;
           ctx.font = `900 ${nodeRadius * 0.95}px system-ui, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -332,12 +350,12 @@
       // Center Title Text
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#000000';
       ctx.font = '900 24px system-ui, sans-serif';
-      ctx.fillText(`${edo}-EDO`, center, center - 10);
-      
-      ctx.fillStyle = '#facc15';
-      ctx.font = 'bold 13px system-ui, sans-serif';
+      ctx.fillText(`${edo}-EDO`, center, center - 8);
+
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 12px system-ui, sans-serif';
       ctx.fillText(`${steps.length} DEGREES`, center, center + 14);
     }
 
@@ -347,16 +365,19 @@
       render();
     }
 
+    exportBtn.addEventListener('click', () => {
+      const tempLink = document.createElement('a');
+      tempLink.download = `EDO_${edoInput.value}_Paperwhite_Diagram.png`;
+      tempLink.href = canvas.toDataURL('image/png');
+      tempLink.click();
+    });
 
-    // Listeners
     [edoInput, stepsInput, showNumbers, connectPolygon].forEach(elem => {
       elem.addEventListener('input', render);
       elem.addEventListener('change', render);
     });
 
     window.addEventListener('resize', render);
-
-    // Initial render
     window.onload = render;
   </script>
 </body>
