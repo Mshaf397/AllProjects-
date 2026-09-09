@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acoustic Dynamics - Universal Speed of Sound Calculator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for thermal curves -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#0f172a',
+                            cyan: '#06b6d4',
+                            accent: '#8b5cf6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-gradient-to-tr from-brand-600 to-brand-cyan rounded-xl shadow-lg shadow-brand-500/20">
+                    <i data-lucide="waves" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                        Acoustic dynamics
+                    </h1>
+                    <p class="text-xs text-slate-400">Universal Speed of Sound & Wave Mechanics</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-brand-500/10 text-brand-cyan border border-brand-500/20">
+                    <span class="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse mr-1.5"></span>
+                    Multi-Phase Physics Engine
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <section class="bg-slate-900/60 rounded-2xl p-4 border border-slate-800 backdrop-blur">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-2 text-sm font-semibold text-slate-300">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-brand-cyan"></i>
+                    <span>Quick Presets & Environments:</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2" id="preset-buttons">
+                    <!-- Dynamic Preset Buttons -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Grid Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <div class="lg:col-span-5 space-y-6">
+                <div class="bg-slate-900/90 rounded-2xl p-6 border border-slate-800 shadow-xl space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i data-lucide="sliders" class="w-5 h-5 text-brand-500"></i>
+                            Medium & Physics Parameters
+                        </h2>
+                        <span id="state-badge" class="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-brand-600/20 text-brand-500 border border-brand-500/30">
+                            Gas Phase
+                        </span>
+                    </div>
+
+                    <!-- Phase Selector Tabs -->
+                    <div class="grid grid-cols-4 gap-1 p-1 bg-slate-950 rounded-xl border border-slate-800">
+                        <button onclick="setPhase('gas')" id="tab-gas" class="phase-tab py-2 px-1 text-xs font-medium rounded-lg transition-all text-center flex flex-col items-center gap-1 bg-brand-600 text-white shadow">
+                            <i data-lucide="wind" class="w-4 h-4"></i>
+                            <span>Gas</span>
+                        </button>
+                        <button onclick="setPhase('liquid')" id="tab-liquid" class="phase-tab py-2 px-1 text-xs font-medium rounded-lg transition-all text-center flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200">
+                            <i data-lucide="droplet" class="w-4 h-4"></i>
+                            <span>Liquid</span>
+                        </button>
+                        <button onclick="setPhase('solid')" id="tab-solid" class="phase-tab py-2 px-1 text-xs font-medium rounded-lg transition-all text-center flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200">
+                            <i data-lucide="box" class="w-4 h-4"></i>
+                            <span>Solid</span>
+                        </button>
+                        <button onclick="setPhase('custom')" id="tab-custom" class="phase-tab py-2 px-1 text-xs font-medium rounded-lg transition-all text-center flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200">
+                            <i data-lucide="cpu" class="w-4 h-4"></i>
+                            <span>Custom</span>
+                        </button>
+                    </div>
+
+                    <!-- Inputs Form -->
+                    <form id="calc-form" onsubmit="return false;" class="space-y-4">
+
+                        <!-- Temperature Input (Universal) -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center text-sm">
+                                <label for="input-temp" class="text-slate-300 font-medium flex items-center gap-1.5">
+                                    <i data-lucide="thermometer" class="w-4 h-4 text-rose-400"></i>
+                                    Temperature ($T$)
+                                </label>
+                                <div class="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-xs">
+                                    <button type="button" onclick="setTempUnit('C')" id="unit-C" class="px-2 py-0.5 rounded font-mono bg-brand-600 text-white">°C</button>
+                                    <button type="button" onclick="setTempUnit('K')" id="unit-K" class="px-2 py-0.5 rounded font-mono text-slate-400 hover:text-white">K</button>
+                                    <button type="button" onclick="setTempUnit('F')" id="unit-F" class="px-2 py-0.5 rounded font-mono text-slate-400 hover:text-white">°F</button>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <input type="range" id="slider-temp" min="-273" max="1500" value="20" step="1" class="w-full accent-brand-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                                <input type="number" id="input-temp" value="20" step="any" class="w-28 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-sm font-mono text-right text-white focus:outline-none focus:border-brand-500">
+                            </div>
+                        </div>
+
+                        <!-- Density Input (Universal / Derived) -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center text-sm">
+                                <label for="input-density" class="text-slate-300 font-medium flex items-center gap-1.5">
+                                    <i data-lucide="layers" class="w-4 h-4 text-emerald-400"></i>
+                                    Density ($\rho$)
+                                </label>
+                                <span class="text-xs text-slate-500 font-mono">kg/m³</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <input type="range" id="slider-density" min="0.01" max="20000" value="1.204" step="0.01" class="w-full accent-emerald-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                                <input type="number" id="input-density" value="1.204" step="any" min="0.00001" class="w-28 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-sm font-mono text-right text-white focus:outline-none focus:border-brand-500">
+                            </div>
+                            <p id="density-hint" class="text-[11px] text-slate-500 italic">Auto-calculated from Ideal Gas Law unless manually overridden.</p>
+                        </div>
+
+                        <!-- Gas-Specific Controls -->
+                        <div id="controls-gas" class="space-y-4 pt-2 border-t border-slate-800">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1">Molar Mass ($M$)</label>
+                                    <div class="relative">
+                                        <input type="number" id="input-molar-mass" value="28.97" step="any" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-sm font-mono text-white focus:outline-none focus:border-brand-500 pr-12">
+                                        <span class="absolute right-3 top-1.5 text-xs text-slate-500 font-mono">g/mol</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1">Adiabatic Index ($\gamma$)</label>
+                                    <input type="number" id="input-gamma" value="1.40" step="0.01" min="1.0" max="2.0" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-sm font-mono text-white focus:outline-none focus:border-brand-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Pressure ($P$) [for Density calc]</label>
+                                <div class="relative">
+                                    <input type="number" id="input-pressure" value="101.325" step="any" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-sm font-mono text-white focus:outline-none focus:border-brand-500 pr-12">
+                                    <span class="absolute right-3 top-1.5 text-xs text-slate-500 font-mono">kPa</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Liquid-Specific Controls -->
+                        <div id="controls-liquid" class="space-y-4 pt-2 border-t border-slate-800 hidden">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Bulk Modulus ($K$)</label>
+                                <div class="relative">
+                                    <input type="number" id="input-bulk-modulus" value="2.2" step="any" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-sm font-mono text-white focus:outline-none focus:border-brand-500 pr-12">
+                                    <span class="absolute right-3 top-1.5 text-xs text-slate-500 font-mono">GPa</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Solid-Specific Controls -->
+                        <div id="controls-solid" class="space-y-4 pt-2 border-t border-slate-800 hidden">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Wave Mode</label>
+                                <select id="input-solid-mode" onchange="calculateSpeed()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-brand-500">
+                                    <option value="longitudinal-rod">Thin Rod (Young's Modulus E)</option>
+                                    <option value="bulk-solid">Bulk / Infinite Medium (P-Wave)</option>
+                                    <option value="shear">Shear Wave (S-Wave)</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1">Young's Modulus ($E$)</label>
+                                    <div class="relative">
+                                        <input type="number" id="input-youngs-modulus" value="70" step="any" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-sm font-mono text-white focus:outline-none focus:border-brand-500 pr-10">
+                                        <span class="absolute right-2 top-1.5 text-xs text-slate-500 font-mono">GPa</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1">Poisson's Ratio ($\nu$)</label>
+                                    <input type="number" id="input-poisson" value="0.33" step="0.01" min="0" max="0.49" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-sm font-mono text-white focus:outline-none focus:border-brand-500">
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="input-thermal-softening" checked onchange="calculateSpeed()" class="rounded bg-slate-950 border-slate-800 text-brand-500 focus:ring-0">
+                                <label for="input-thermal-softening" class="text-xs text-slate-400">Apply Varshni Thermal Softening Correction</label>
+                            </div>
+                        </div>
+
+                        <!-- Target Frequency & Distance -->
+                        <div class="pt-2 border-t border-slate-800 grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Target Freq ($f$)</label>
+                                <div class="relative">
+                                    <input type="number" id="input-freq" value="440" step="any" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-sm font-mono text-white focus:outline-none focus:border-brand-500 pr-8">
+                                    <span class="absolute right-2 top-1.5 text-xs text-slate-500 font-mono">Hz</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Distance ($d$)</label>
+                                <div class="relative">
+                                    <input type="number" id="input-dist" value="1000" step="any" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-sm font-mono text-white focus:outline-none focus:border-brand-500 pr-8">
+                                    <span class="absolute right-2 top-1.5 text-xs text-slate-500 font-mono">m</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- Primary Result Display Banner -->
+                <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 rounded-2xl p-6 border border-slate-800 shadow-xl relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-brand-cyan flex items-center gap-1.5">
+                            <i data-lucide="zap" class="w-4 h-4"></i>
+                            Calculated Speed of Sound ($v$)
+                        </span>
+                        <span id="formula-used" class="text-xs font-mono text-slate-400">v = √(γ·R·T / M)</span>
+                    </div>
+
+                    <div class="flex items-baseline gap-3 my-3">
+                        <span id="res-speed-ms" class="text-5xl sm:text-6xl font-black font-mono tracking-tight text-white">343.2</span>
+                        <span class="text-xl font-bold text-slate-400 font-mono">m/s</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 pt-4 border-t border-slate-800/80 text-center sm:text-left">
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/50">
+                            <p class="text-[10px] text-slate-500 uppercase tracking-wider">Kilometers/Hour</p>
+                            <p id="res-speed-kmh" class="text-sm sm:text-base font-bold font-mono text-slate-200">1235.5 km/h</p>
+                        </div>
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/50">
+                            <p class="text-[10px] text-slate-500 uppercase tracking-wider">Miles/Hour</p>
+                            <p id="res-speed-mph" class="text-sm sm:text-base font-bold font-mono text-slate-200">767.7 mph</p>
+                        </div>
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/50">
+                            <p class="text-[10px] text-slate-500 uppercase tracking-wider">Mach Number</p>
+                            <p id="res-mach" class="text-sm sm:text-base font-bold font-mono text-brand-cyan">1.000 Mach</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Auxiliary Metrics Cards -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+                        <span class="text-xs text-slate-400">Acoustic Wavelength</span>
+                        <span id="res-wavelength" class="text-lg font-bold font-mono text-white mt-1">0.780 m</span>
+                        <span class="text-[10px] text-slate-500 mt-1">at target frequency</span>
+                    </div>
+                    <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+                        <span class="text-xs text-slate-400">Acoustic Impedance ($Z$)</span>
+                        <span id="res-impedance" class="text-lg font-bold font-mono text-emerald-400 mt-1">413.2</span>
+                        <span class="text-[10px] text-slate-500 mt-1">Pa·s/m (Rayls)</span>
+                    </div>
+                    <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+                        <span class="text-xs text-slate-400">Pitch Shift (vs Earth)</span>
+                        <span id="res-pitch-shift" class="text-lg font-bold font-mono text-brand-accent mt-1">+0.0 cents</span>
+                        <span class="text-[10px] text-slate-500 mt-1">relative to 343 m/s</span>
+                    </div>
+                    <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+                        <span class="text-xs text-slate-400">Travel Time</span>
+                        <span id="res-travel-time" class="text-lg font-bold font-mono text-amber-400 mt-1">2.914 s</span>
+                        <span class="text-[10px] text-slate-500 mt-1">across specified dist</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/80 rounded-2xl p-5 border border-slate-800 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="line-chart" class="w-4 h-4 text-brand-cyan"></i>
+                            Speed of Sound vs. Temperature Response Curve
+                        </h3>
+                        <span class="text-xs text-slate-500 font-mono">0 K to 1500 K</span>
+                    </div>
+                    <div class="h-52 w-full">
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Live Compression Wave Canvas Visualizer -->
+                <div class="bg-slate-900/80 rounded-2xl p-5 border border-slate-800 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
+                            Real-Time Acoustic Wave Propagation Simulation
+                        </h3>
+                        <span id="sim-status" class="text-xs font-mono text-emerald-400">Propagating...</span>
+                    </div>
+                    <div class="w-full h-24 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden relative">
+                        <canvas id="waveCanvas" class="w-full h-full"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <section class="bg-slate-900/50 rounded-2xl p-6 border border-slate-800 space-y-4">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="book-open" class="w-5 h-5 text-brand-cyan"></i>
+                Governing Acoustic Equations Across Phases
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300 leading-relaxed">
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800/60 space-y-2">
+                    <h4 class="font-bold text-brand-cyan text-sm">Ideal Gas Phase</h4>
+                    <p class="font-mono text-slate-400 bg-slate-900 p-2 rounded border border-slate-800">v = √( γ · R · T / M )</p>
+                    <p>Sound speed depends strictly on temperature ($T$), heat capacity ratio ($\gamma$), and molar mass ($M$). Independent of density at constant pressure because density scales linearly with pressure.</p>
+                </div>
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800/60 space-y-2">
+                    <h4 class="font-bold text-emerald-400 text-sm">Liquid Phase</h4>
+                    <p class="font-mono text-slate-400 bg-slate-900 p-2 rounded border border-slate-800">v = √( K / ρ )</p>
+                    <p>Governed by bulk modulus ($K$) and mass density ($\rho$). As thermal expansion weakens molecular elasticity, $K$ typically decreases faster than density, reducing sound speed at high temperatures.</p>
+                </div>
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800/60 space-y-2">
+                    <h4 class="font-bold text-amber-400 text-sm">Solid Phase (P-Wave)</h4>
+                    <p class="font-mono text-slate-400 bg-slate-900 p-2 rounded border border-slate-800">v_p = √( [K + 4/3·G] / ρ )</p>
+                    <p>Longitudinal pressure waves in bulk solids utilize both compressive ($K$) and shear ($G$) resistance. Includes Varshni lattice thermal softening $v(T) = v_0 \sqrt{1 - s (T/T_m)^2}$.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // State management
+        const R_GAS = 8.314462618; // Universal gas constant J/(mol·K)
+        let currentPhase = 'gas'; // gas, liquid, solid, custom
+        let tempUnit = 'C'; // C, K, F
+        let chartInstance = null;
+        let animationFrameId = null;
+
+        // Presets Database
+        const PRESETS = [
+            {
+                name: 'Air (Earth 20°C)',
+                phase: 'gas',
+                tempC: 20,
+                density: 1.204,
+                molarMass: 28.97,
+                gamma: 1.40,
+                pressure: 101.325
+            },
+            {
+                name: 'Mars Surface (CO₂)',
+                phase: 'gas',
+                tempC: -60,
+                density: 0.020,
+                molarMass: 44.01,
+                gamma: 1.29,
+                pressure: 0.61
+            },
+            {
+                name: 'Venus Surface (CO₂)',
+                phase: 'gas',
+                tempC: 465,
+                density: 65.0,
+                molarMass: 44.01,
+                gamma: 1.22,
+                pressure: 9200
+            },
+            {
+                name: 'Helium Gas',
+                phase: 'gas',
+                tempC: 20,
+                density: 0.166,
+                molarMass: 4.0026,
+                gamma: 1.66,
+                pressure: 101.325
+            },
+            {
+                name: 'Water (Pure)',
+                phase: 'liquid',
+                tempC: 20,
+                density: 998.2,
+                bulkModulus: 2.20
+            },
+            {
+                name: 'Seawater (3.5%)',
+                phase: 'liquid',
+                tempC: 20,
+                density: 1025.0,
+                bulkModulus: 2.34
+            },
+            {
+                name: 'Structural Steel',
+                phase: 'solid',
+                tempC: 20,
+                density: 7850,
+                youngsModulus: 200,
+                poisson: 0.29,
+                solidMode: 'bulk-solid'
+            },
+            {
+                name: 'Aluminum',
+                phase: 'solid',
+                tempC: 20,
+                density: 2700,
+                youngsModulus: 69,
+                poisson: 0.33,
+                solidMode: 'longitudinal-rod'
+            },
+            {
+                name: 'Copper',
+                phase: 'solid',
+                tempC: 20,
+                density: 8960,
+                youngsModulus: 117,
+                poisson: 0.34,
+                solidMode: 'longitudinal-rod'
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderPresetButtons();
+            setupEventListeners();
+            initChart();
+            calculateSpeed();
+            startWaveAnimation();
+        });
+
+        function renderPresetButtons() {
+            const container = document.getElementById('preset-buttons');
+            container.innerHTML = '';
+            PRESETS.forEach((preset, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-colors';
+                btn.innerText = preset.name;
+                btn.onclick = () => applyPreset(idx);
+                container.appendChild(btn);
+            });
+        }
+
+        function applyPreset(index) {
+            const preset = PRESETS[index];
+            setPhase(preset.phase);
+
+            // Set Temp
+            tempUnit = 'C';
+            updateTempUnitButtons();
+            document.getElementById('input-temp').value = preset.tempC;
+            document.getElementById('slider-temp').value = preset.tempC;
+
+            // Set Density
+            document.getElementById('input-density').value = preset.density;
+            document.getElementById('slider-density').value = preset.density;
+
+            if (preset.phase === 'gas') {
+                document.getElementById('input-molar-mass').value = preset.molarMass;
+                document.getElementById('input-gamma').value = preset.gamma;
+                document.getElementById('input-pressure').value = preset.pressure;
+            } else if (preset.phase === 'liquid') {
+                document.getElementById('input-bulk-modulus').value = preset.bulkModulus;
+            } else if (preset.phase === 'solid') {
+                document.getElementById('input-youngs-modulus').value = preset.youngsModulus;
+                document.getElementById('input-poisson').value = preset.poisson;
+                if (preset.solidMode) {
+                    document.getElementById('input-solid-mode').value = preset.solidMode;
+                }
+            }
+
+            calculateSpeed();
+        }
+
+        function setPhase(phase) {
+            currentPhase = phase;
+
+            // Update tab styles
+            document.querySelectorAll('.phase-tab').forEach(tab => {
+                tab.classList.remove('bg-brand-600', 'text-white', 'shadow');
+                tab.classList.add('text-slate-400');
+            });
+
+            const activeTab = document.getElementById(`tab-${phase}`);
+            if (activeTab) {
+                activeTab.classList.add('bg-brand-600', 'text-white', 'shadow');
+                activeTab.classList.remove('text-slate-400');
+            }
+
+            // Update badge & sections
+            const badge = document.getElementById('state-badge');
+            badge.innerText = phase.toUpperCase() + ' PHASE';
+
+            document.getElementById('controls-gas').classList.add('hidden');
+            document.getElementById('controls-liquid').classList.add('hidden');
+            document.getElementById('controls-solid').classList.add('hidden');
+
+            const hint = document.getElementById('density-hint');
+
+            if (phase === 'gas') {
+                document.getElementById('controls-gas').classList.remove('hidden');
+                hint.innerText = "Auto-calculated from Ideal Gas Law (P/(R_specific * T)) unless manually overridden.";
+            } else if (phase === 'liquid') {
+                document.getElementById('controls-liquid').classList.remove('hidden');
+                hint.innerText = "Density directly modulates wave impedance and acoustic travel speed.";
+            } else if (phase === 'solid') {
+                document.getElementById('controls-solid').classList.remove('hidden');
+                hint.innerText = "High-density solid lattice structures transmit compressional & shear waves.";
+            } else {
+                hint.innerText = "Custom matrix parameters.";
+            }
+
+            calculateSpeed();
+        }
+
+        function setTempUnit(unit) {
+            if (tempUnit === unit) return;
+
+            let tempInC = parseFloat(document.getElementById('input-temp').value);
+
+            // Normalize current value to C first
+            if (tempUnit === 'K') tempInC = tempInC - 273.15;
+            else if (tempUnit === 'F') tempInC = (tempInC - 32) * 5 / 9;
+
+            tempUnit = unit;
+            updateTempUnitButtons();
+
+            let newDisplayTemp = tempInC;
+            if (unit === 'K') newDisplayTemp = tempInC + 273.15;
+            else if (unit === 'F') newDisplayTemp = (tempInC * 9 / 5) + 32;
+
+            document.getElementById('input-temp').value = newDisplayTemp.toFixed(2);
+            document.getElementById('slider-temp').value = Math.min(Math.max(tempInC, -273), 1500);
+
+            calculateSpeed();
+        }
+
+        function updateTempUnitButtons() {
+            ['C', 'K', 'F'].forEach(u => {
+                const btn = document.getElementById(`unit-${u}`);
+                if (u === tempUnit) {
+                    btn.className = 'px-2 py-0.5 rounded font-mono bg-brand-600 text-white';
+                } else {
+                    btn.className = 'px-2 py-0.5 rounded font-mono text-slate-400 hover:text-white';
+                }
+            });
+        }
+
+        function getTemperatureInKelvin() {
+            let val = parseFloat(document.getElementById('input-temp').value) || 0;
+            if (tempUnit === 'C') return val + 273.15;
+            if (tempUnit === 'K') return val;
+            if (tempUnit === 'F') return (val - 32) * 5 / 9 + 273.15;
+            return 293.15;
+        }
+
+        function calculateSpeed() {
+            const T_K = Math.max(0.0001, getTemperatureInKelvin());
+            let density = parseFloat(document.getElementById('input-density').value) || 1.204;
+            let speed = 343; // Default
+            let formulaText = "";
+
+            if (currentPhase === 'gas') {
+                const molarMassG = parseFloat(document.getElementById('input-molar-mass').value) || 28.97;
+                const molarMassKg = molarMassG / 1000.0;
+                const gamma = parseFloat(document.getElementById('input-gamma').value) || 1.4;
+                const pressureKPa = parseFloat(document.getElementById('input-pressure').value) || 101.325;
+                const pressurePa = pressureKPa * 1000.0;
+
+                // Ideal Gas Law Density check
+                const idealDensity = pressurePa / ((R_GAS / molarMassKg) * T_K);
+
+                // If user didn't lock density slider manually, update density input to match thermodynamic state
+                if (document.activeElement.id !== 'input-density' && document.activeElement.id !== 'slider-density') {
+                    density = idealDensity;
+                    document.getElementById('input-density').value = density.toFixed(4);
+                    document.getElementById('slider-density').value = density;
+                }
+
+                // Speed equation: v = sqrt(gamma * R * T / M)
+                speed = Math.sqrt((gamma * R_GAS * T_K) / molarMassKg);
+                formulaText = `v = √(${gamma.toFixed(2)} · R · ${T_K.toFixed(1)}K / ${molarMassG}g/mol)`;
+
+            } else if (currentPhase === 'liquid') {
+                const bulkGPa = parseFloat(document.getElementById('input-bulk-modulus').value) || 2.2;
+                const bulkPa = bulkGPa * 1e9;
+
+                // Basic Speed equation: v = sqrt(K / rho)
+                speed = Math.sqrt(bulkPa / density);
+                formulaText = `v = √(${bulkGPa} GPa / ${density.toFixed(1)} kg/m³)`;
+
+            } else if (currentPhase === 'solid') {
+                const youngsGPa = parseFloat(document.getElementById('input-youngs-modulus').value) || 70;
+                const poisson = parseFloat(document.getElementById('input-poisson').value) || 0.33;
+                const solidMode = document.getElementById('input-solid-mode').value;
+                const applySoftening = document.getElementById('input-thermal-softening').checked;
+
+                let youngsPa = youngsGPa * 1e9;
+
+                // Apply Varshni thermal softening approximation if checked
+                if (applySoftening) {
+                    const T_ref = 293.15;
+                    const softeningFactor = Math.max(0.2, 1 - 0.0003 * (T_K - T_ref));
+                    youngsPa *= softeningFactor;
+                }
+
+                if (solidMode === 'longitudinal-rod') {
+                    speed = Math.sqrt(youngsPa / density);
+                    formulaText = `v_rod = √(E / ρ)`;
+                } else if (solidMode === 'bulk-solid') {
+                    // Longitudinal P-wave in infinite medium: K_eff = E(1-v) / ((1+v)(1-2v))
+                    const factor = (1 - poisson) / ((1 + poisson) * (1 - 2 * poisson));
+                    speed = Math.sqrt((youngsPa * factor) / density);
+                    formulaText = `v_P = √(E(1-ν) / [ρ(1+ν)(1-2ν)])`;
+                } else if (solidMode === 'shear') {
+                    // Shear S-wave: G = E / (2(1+v))
+                    const shearModulus = youngsPa / (2 * (1 + poisson));
+                    speed = Math.sqrt(shearModulus / density);
+                    formulaText = `v_S = √(G / ρ)`;
+                }
+            } else {
+                // Custom
+                const bulkGPa = parseFloat(document.getElementById('input-bulk-modulus').value) || 2.2;
+                speed = Math.sqrt((bulkGPa * 1e9) / density);
+                formulaText = `v = √(C_eff / ρ)`;
+            }
+
+            updateDisplays(speed, density, formulaText);
+            updateChart(currentPhase);
+        }
+
+        function updateDisplays(speed, density, formulaText) {
+            document.getElementById('res-speed-ms').innerText = speed.toFixed(1);
+            document.getElementById('res-speed-kmh').innerText = (speed * 3.6).toFixed(1) + ' km/h';
+            document.getElementById('res-speed-mph').innerText = (speed * 2.23694).toFixed(1) + ' mph';
+            
+            const machNumber = speed / 343.2; // relative to Earth standard air
+            document.getElementById('res-mach').innerText = machNumber.toFixed(3) + ' Mach';
+            document.getElementById('formula-used').innerText = formulaText;
+
+            // Target Frequency calculations
+            const freq = parseFloat(document.getElementById('input-freq').value) || 440;
+            const wavelength = speed / freq;
+            document.getElementById('res-wavelength').innerText = wavelength < 0.01 ? (wavelength * 1000).toFixed(2) + ' mm' : wavelength.toFixed(3) + ' m';
+
+            // Acoustic Impedance Z = rho * v
+            const impedance = density * speed;
+            document.getElementById('res-impedance').innerText = impedance > 1e6 ? (impedance / 1e6).toFixed(2) + ' MPa·s/m' : impedance.toFixed(1);
+
+            // Pitch Shift relative to 343.2 m/s in cents
+            const cents = 1200 * Math.log2(speed / 343.2);
+            const sign = cents >= 0 ? '+' : '';
+            document.getElementById('res-pitch-shift').innerText = sign + cents.toFixed(1) + ' cents';
+
+            // Travel time
+            const dist = parseFloat(document.getElementById('input-dist').value) || 1000;
+            const travelTime = dist / speed;
+            document.getElementById('res-travel-time').innerText = travelTime < 0.001 ? (travelTime * 1000).toFixed(3) + ' ms' : travelTime.toFixed(3) + ' s';
+        }
+
+        function setupEventListeners() {
+            // Slider to Input Sync
+            document.getElementById('slider-temp').addEventListener('input', (e) => {
+                document.getElementById('input-temp').value = e.target.value;
+                calculateSpeed();
+            });
+            document.getElementById('input-temp').addEventListener('input', (e) => {
+                document.getElementById('slider-temp').value = e.target.value;
+                calculateSpeed();
+            });
+
+            document.getElementById('slider-density').addEventListener('input', (e) => {
+                document.getElementById('input-density').value = e.target.value;
+                calculateSpeed();
+            });
+            document.getElementById('input-density').addEventListener('input', (e) => {
+                document.getElementById('slider-density').value = e.target.value;
+                calculateSpeed();
+            });
+
+            // Input change triggers recalculation
+            const triggerInputs = [
+                'input-molar-mass', 'input-gamma', 'input-pressure',
+                'input-bulk-modulus', 'input-youngs-modulus', 'input-poisson',
+                'input-freq', 'input-dist'
+            ];
+            triggerInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', calculateSpeed);
+            });
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('tempChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Speed of Sound (m/s)',
+                        data: [],
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: (context) => ` ${context.parsed.y.toFixed(1)} m/s`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#1e293b' },
+                            ticks: { color: '#64748b', font: { size: 10 } },
+                            title: { display: true, text: 'Temperature (Kelvin)', color: '#64748b', font: { size: 11 } }
+                        },
+                        y: {
+                            grid: { color: '#1e293b' },
+                            ticks: { color: '#64748b', font: { size: 10 } },
+                            title: { display: true, text: 'Speed (m/s)', color: '#64748b', font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            if (!chartInstance) return;
+
+            const temps = [];
+            const speeds = [];
+
+            const gamma = parseFloat(document.getElementById('input-gamma').value) || 1.4;
+            const molarMassKg = (parseFloat(document.getElementById('input-molar-mass').value) || 28.97) / 1000.0;
+            const bulkPa = (parseFloat(document.getElementById('input-bulk-modulus').value) || 2.2) * 1e9;
+            const density = parseFloat(document.getElementById('input-density').value) || 1000;
+            const youngsPa = (parseFloat(document.getElementById('input-youngs-modulus').value) || 70) * 1e9;
+
+            for (let T = 10; T <= 1500; T += 30) {
+                temps.push(T + 'K');
+                let s = 343;
+                if (currentPhase === 'gas') {
+                    s = Math.sqrt((gamma * R_GAS * T) / molarMassKg);
+                } else if (currentPhase === 'liquid') {
+                    s = Math.sqrt(bulkPa / density);
+                } else if (currentPhase === 'solid') {
+                    const T_ref = 293.15;
+                    const softening = Math.max(0.2, 1 - 0.0003 * (T - T_ref));
+                    s = Math.sqrt((youngsPa * softening) / density);
+                }
+                speeds.push(s);
+            }
+
+            chartInstance.data.labels = temps;
+            chartInstance.data.datasets[0].data = speeds;
+            chartInstance.update('none');
+        }
+
+        function startWaveAnimation() {
+            const canvas = document.getElementById('waveCanvas');
+            const ctx = canvas.getContext('2d');
+
+            function resizeCanvas() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            const numParticles = 120;
+            let time = 0;
+
+            function animate() {
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const speedMs = parseFloat(document.getElementById('res-speed-ms').innerText) || 343;
+                const normalizedSpeed = Math.min(Math.max(speedMs / 343, 0.2), 5.0);
+
+                time += 0.03 * normalizedSpeed;
+
+                const amplitude = 12;
+                const wavelength = canvas.width / 4;
+                const k = (2 * Math.PI) / wavelength;
+
+                for (let i = 0; i < numParticles; i++) {
+                    const x0 = (canvas.width / numParticles) * i;
+                    const displacement = amplitude * Math.sin(k * x0 - time);
+                    const x = x0 + displacement;
+                    const y = canvas.height / 2 + (Math.sin(i * 0.5) * 8);
+
+                    // Color based on local density (compression vs rarefaction)
+                    const densityGradient = Math.cos(k * x0 - time);
+                    const red = Math.floor(100 + densityGradient * 100);
+                    const blue = Math.floor(200 - densityGradient * 100);
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgb(${red}, 180, ${blue})`;
+                    ctx.shadowBlur = 4;
+                    ctx.shadowColor = `rgb(${red}, 180, ${blue})`;
+                    ctx.fill();
+                }
+
+                animationFrameId = requestAnimationFrame(animate);
+            }
+
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animate();
+        }
+    </script>
+</body>
+</html>
