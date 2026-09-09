@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Microtonal Well Temperament Studio (Kindle Edition)</title>
+  <style>
+    /* Lightweight, High-Contrast CSS tailored for E-Ink & Kindle WebKit */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background-color: #ffffff;
+      color: #000000;
+      padding: 10px;
+      line-height: 1.3;
+      font-size: 13px;
+    }
+    header {
+      border-bottom: 2px solid #000000;
+      padding-bottom: 6px;
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .subtitle {
+      font-size: 11px;
+      color: #333333;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    @media (min-width: 640px) {
+      .container {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+      }
+    }
+    .card {
+      border: 1px solid #000000;
+      padding: 8px;
+      background: #ffffff;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      border-bottom: 1px solid #000000;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+    }
+    .form-group {
+      margin-bottom: 8px;
+    }
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+    input[type="text"],
+    input[type="number"],
+    input[type="range"],
+    select {
+      width: 100%;
+      padding: 4px;
+      font-size: 13px;
+      border: 1px solid #000000;
+      background: #ffffff;
+      color: #000000;
+      border-radius: 0;
+    }
+    .btn-group {
+      display: flex;
+      gap: 3px;
+      margin-top: 3px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #000000;
+      padding: 4px 6px;
+      font-size: 11px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:active {
+      background: #000000;
+      color: #ffffff;
+    }
+    .hint {
+      font-size: 10px;
+      color: #555555;
+      margin-top: 2px;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .metric-box {
+      border: 1px dashed #000000;
+      padding: 4px;
+      text-align: center;
+    }
+    .metric-label {
+      font-size: 9px;
+      text-transform: uppercase;
+    }
+    .metric-val {
+      font-size: 12px;
+      font-weight: bold;
+      font-family: monospace;
+    }
+    .table-container {
+      overflow-x: auto;
+      max-height: 480px;
+      overflow-y: auto;
+      border: 1px solid #000000;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      text-align: left;
+    }
+    th, td {
+      border: 1px solid #888888;
+      padding: 4px 5px;
+      font-family: monospace;
+    }
+    th {
+      background: #dddddd;
+      color: #000000;
+      font-weight: bold;
+      position: sticky;
+      top: 0;
+      border-bottom: 2px solid #000000;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    .status-bar {
+      border: 1px solid #000000;
+      padding: 6px;
+      font-size: 11px;
+      margin-top: 6px;
+      background: #fafafa;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <h1>Well Temperament Studio</h1>
+    <div class="subtitle">E-Ink Optimized Pitch & Generator Matrix Calculator</div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="container">
+
+    <!-- Left Controls Panel -->
+    <div>
+      <div class="card">
+        <div class="card-title">System Parameters</div>
+
+        <!-- Tone Count N -->
+        <div class="form-group">
+          <label for="input-n">Number of Tones (N):</label>
+          <input type="number" id="input-n" value="24" min="3" max="120" step="1">
+          <div class="btn-group">
+            <button onclick="setN(12)">12</button>
+            <button onclick="setN(19)">19</button>
+            <button onclick="setN(24)">24</button>
+            <button onclick="setN(31)">31</button>
+          </div>
+        </div>
+
+        <!-- Generator Ratio Input -->
+        <div class="form-group">
+          <label for="input-gen">Generator (g):</label>
+          <input type="text" id="input-gen" value="16/13">
+          <div class="hint">Accepts ratio (16/13), decimal (1.2307), or cents (359.472).</div>
+        </div>
+
+        <!-- Period Ratio Input -->
+        <div class="form-group">
+          <label for="input-period">Period / Octave:</label>
+          <input type="text" id="input-period" value="2/1">
+        </div>
+
+        <!-- Quick Presets -->
+        <div class="form-group">
+          <label>Presets:</label>
+          <div class="btn-group">
+            <button onclick="applyPreset('16/13', 24)">16/13 (24T)</button>
+            <button onclick="applyPreset('11/9', 24)">11/9 (24T)</button>
+            <button onclick="applyPreset('3/2', 12)">3/2 (12T)</button>
+            <button onclick="applyPreset('3/2', 19)">3/2 (19T)</button>
+          </div>
+        </div>
+
+        <!-- Profile Selection -->
+        <div class="form-group">
+          <label for="select-profile">Profile:</label>
+          <select id="select-profile">
+            <option value="two-zone" selected>Two-Zone (Pure Core + Tempered)</option>
+            <option value="cosine">Cosine Wave Shift</option>
+            <option value="linear">Linear Ramp Shift</option>
+          </select>
+        </div>
+
+        <!-- Pure Count Slider -->
+        <div class="form-group" id="wrapper-pure-count">
+          <label>Pure Generators (K): <span id="label-pure-count">12</span></label>
+          <input type="range" id="input-pure-count" min="1" max="23" value="12" step="1">
+        </div>
+      </div>
+
+      <!-- Analysis Metrics -->
+      <div class="card">
+        <div class="card-title">Acoustic Metrics</div>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-label">Pure g</div>
+            <div id="metric-pure-g" class="metric-val">359.472 c</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Comma</div>
+            <div id="metric-comma" class="metric-val">-227.335 c</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Tempered g</div>
+            <div id="metric-temp-g" class="metric-val">340.528 c</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">EDO g</div>
+            <div id="metric-edo-g" class="metric-val">350.000 c</div>
+          </div>
+        </div>
+        <div class="status-bar" id="mos-status">
+          Status: <strong id="mos-status-text">Valid Scale</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Workspace Area -->
+    <div>
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div class="card-title" style="margin-bottom:0; border:none;">Generator Step Table</div>
+          <div class="btn-group">
+            <button id="btn-sort-pitch">Sort: Pitch</button>
+            <button id="btn-sort-gen">Sort: Chain</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Idx</th>
+                <th>Gen (n)</th>
+                <th style="text-align: right;">Step g_n (c)</th>
+                <th style="text-align: center;">Status</th>
+                <th style="text-align: right;">Pitch (c)</th>
+                <th style="text-align: right;">Delta (c)</th>
+                <th style="text-align: right;">Ratio</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Polyfill Math.log2 for legacy WebKit engines (older Kindle firmware)
+    if (!Math.log2) {
+      Math.log2 = function(x) {
+        return Math.log(x) / Math.LN2;
+      };
+    }
+
+    var state = {
+      N: 24,
+      generatorInput: "16/13",
+      periodInput: "2/1",
+      pureCount: 12,
+      profile: "two-zone",
+      sortMode: "pitch",
+
+      periodCents: 1200,
+      pureGenCents: 359.472,
+      temperedGenCents: 340.528,
+      totalCommaCents: -227.335,
+      edoGenCents: 350.00,
+      generators: [],
+      pitches: [],
+      sortedPitches: []
+    };
+
+    function parseIntervalToCents(str) {
+      if (!str) return 0;
+      str = str.toString().replace(/^\s+|\s+$/g, '');
+
+      if (str.toLowerCase().indexOf('c') !== -1) {
+        return parseFloat(str.replace(/c/i, '')) || 0;
+      }
+
+      if (str.indexOf('/') !== -1) {
+        const parts = str.split('/');
+        const num = parseFloat(parts[0]);
+        const den = parseFloat(parts[1]);
+        if (num > 0 && den > 0) {
+          return 1200 * Math.log2(num / den);
+        }
+      }
+
+      const val = parseFloat(str);
+      if (isNaN(val)) return 0;
+
+      if (val > 15) {
+        return val;
+      } else {
+        return 1200 * Math.log2(val);
+      }
+    }
+
+    function calculateTemperament() {
+      state.periodCents = parseIntervalToCents(state.periodInput) || 1200;
+      state.pureGenCents = parseIntervalToCents(state.generatorInput);
+
+      state.N = Math.max(3, Math.min(120, parseInt(state.N) || 24));
+
+      const pureSlider = document.getElementById('input-pure-count');
+      if (pureSlider) {
+        pureSlider.max = state.N - 1;
+        if (state.pureCount >= state.N) {
+          state.pureCount = Math.floor(state.N / 2);
+          pureSlider.value = state.pureCount;
+        }
+      }
+
+      const M = Math.round((state.N * state.pureGenCents) / state.periodCents);
+      state.edoGenCents = (M * state.periodCents) / state.N;
+      state.totalCommaCents = (M * state.periodCents) - (state.N * state.pureGenCents);
+
+      state.generators = new Array(state.N);
+
+      if (state.profile === "two-zone") {
+        const K = Math.max(1, Math.min(state.N - 1, state.pureCount));
+        const temperedCount = state.N - K;
+
+        for (let i = 0; i < K; i++) {
+          state.generators[i] = state.pureGenCents;
+        }
+
+        const tempGen = state.pureGenCents + (state.totalCommaCents / temperedCount);
+        state.temperedGenCents = tempGen;
+        for (let i = K; i < state.N; i++) {
+          state.generators[i] = tempGen;
+        }
+      } 
+      else if (state.profile === "cosine") {
+        let sumWeights = 0;
+        const weights = new Array(state.N);
+        for (let i = 0; i < state.N; i++) {
+          weights[i] = 1 - Math.cos((2 * Math.PI * i) / state.N);
+          sumWeights += weights[i];
+        }
+        for (let i = 0; i < state.N; i++) {
+          state.generators[i] = state.pureGenCents + (state.totalCommaCents * (weights[i] / sumWeights));
+        }
+        state.temperedGenCents = state.generators[Math.floor(state.N / 2)];
+      }
+      else if (state.profile === "linear") {
+        const delta = (2 * state.totalCommaCents) / (state.N * (state.N - 1));
+        for (let i = 0; i < state.N; i++) {
+          state.generators[i] = state.pureGenCents + (i * delta);
+        }
+        state.temperedGenCents = state.generators[state.N - 1];
+      }
+
+      // Generate Pitch Chain
+      state.pitches = [];
+      let currentCents = 0;
+
+      for (let i = 0; i < state.N; i++) {
+        let pitchClass = currentCents % state.periodCents;
+        if (pitchClass < 0) pitchClass += state.periodCents;
+
+        const ratio = Math.pow(2, pitchClass / 1200);
+
+        state.pitches.push({
+          genIndex: i,
+          genSize: state.generators[i],
+          rawCents: currentCents,
+          pitchCents: pitchClass,
+          freqRatio: ratio
+        });
+
+        currentCents += state.generators[i];
+      }
+
+      // Sort pitches ascending
+      state.sortedPitches = state.pitches.slice().sort(function(a, b) {
+        return a.pitchCents - b.pitchCents;
+      });
+
+      for (let i = 0; i < state.N; i++) {
+        const nextIdx = (i + 1) % state.N;
+        const diff = (nextIdx === 0) 
+          ? (state.periodCents - state.sortedPitches[i].pitchCents) 
+          : (state.sortedPitches[nextIdx].pitchCents - state.sortedPitches[i].pitchCents);
+        state.sortedPitches[i].stepDelta = diff;
+      }
+
+      updateUI();
+    }
+
+    function updateUI() {
+      document.getElementById('metric-pure-g').innerText = state.pureGenCents.toFixed(3) + 'c';
+      document.getElementById('metric-comma').innerText = (state.totalCommaCents >= 0 ? '+' : '') + state.totalCommaCents.toFixed(3) + 'c';
+      document.getElementById('metric-temp-g').innerText = state.temperedGenCents.toFixed(3) + 'c';
+      document.getElementById('metric-edo-g').innerText = state.edoGenCents.toFixed(3) + 'c';
+      document.getElementById('label-pure-count').innerText = state.pureCount;
+
+      let minG = state.generators[0];
+      let maxG = state.generators[0];
+      for (let i = 1; i < state.generators.length; i++) {
+        if (state.generators[i] < minG) minG = state.generators[i];
+        if (state.generators[i] > maxG) maxG = state.generators[i];
+      }
+
+      const mosText = document.getElementById('mos-status-text');
+      if ((maxG - minG) < 80) {
+        mosText.innerText = "Valid Circulating Scale";
+      } else {
+        mosText.innerText = "High Distortion Scale";
+      }
+
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = '';
+
+      const list = (state.sortMode === 'pitch') ? state.sortedPitches : state.pitches;
+
+      for (let displayIndex = 0; displayIndex < list.length; displayIndex++) {
+        const p = list[displayIndex];
+        const tr = document.createElement('tr');
+
+        const isPure = Math.abs(p.genSize - state.pureGenCents) < 0.001;
+        const statusText = isPure ? "Pure" : "Tempered";
+
+        tr.innerHTML = 
+          '<td>' + displayIndex + '</td>' +
+          '<td>g<sub>' + p.genIndex + '</sub></td>' +
+          '<td style="text-align: right; font-weight: bold;">' + p.genSize.toFixed(3) + '</td>' +
+          '<td style="text-align: center;">' + statusText + '</td>' +
+          '<td style="text-align: right; font-weight: bold;">' + p.pitchCents.toFixed(3) + '</td>' +
+          '<td style="text-align: right;">' + (p.stepDelta || 0).toFixed(3) + '</td>' +
+          '<td style="text-align: right;">' + p.freqRatio.toFixed(5) + '</td>';
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    function setN(n) {
+      document.getElementById('input-n').value = n;
+      state.N = n;
+      calculateTemperament();
+    }
+
+    function applyPreset(gen, n) {
+      document.getElementById('input-gen').value = gen;
+      document.getElementById('input-n').value = n;
+      state.generatorInput = gen;
+      state.N = n;
+      calculateTemperament();
+    }
+
+    function attachEventListeners() {
+      document.getElementById('input-n').addEventListener('change', function(e) {
+        state.N = parseInt(e.target.value) || 24;
+        calculateTemperament();
+      });
+
+      document.getElementById('input-gen').addEventListener('input', function(e) {
+        state.generatorInput = e.target.value;
+        calculateTemperament();
+      });
+
+      document.getElementById('input-period').addEventListener('input', function(e) {
+        state.periodInput = e.target.value;
+        calculateTemperament();
+      });
+
+      document.getElementById('select-profile').addEventListener('change', function(e) {
+        state.profile = e.target.value;
+        const pureWrapper = document.getElementById('wrapper-pure-count');
+        pureWrapper.style.display = (state.profile === 'two-zone') ? 'block' : 'none';
+        calculateTemperament();
+      });
+
+      document.getElementById('input-pure-count').addEventListener('input', function(e) {
+        state.pureCount = parseInt(e.target.value) || 12;
+        calculateTemperament();
+      });
+
+      document.getElementById('btn-sort-pitch').addEventListener('click', function() {
+        state.sortMode = 'pitch';
+        renderTable();
+      });
+
+      document.getElementById('btn-sort-gen').addEventListener('click', function() {
+        state.sortMode = 'generator';
+        renderTable();
+      });
+    }
+
+    window.onload = function() {
+      attachEventListeners();
+      calculateTemperament();
+    };
+  </script>
+</body>
+</html>
