@@ -449,16 +449,23 @@
         if (state.generators[i] > maxG) maxG = state.generators[i];
       }
 
+            // Calculate the average step size (EDO step size in cents)
+      const avgStepCents = state.periodCents / state.N;
+
+      // Allow maximum generator distortion to be a ratio of 1 EDO step
+      // e.g., 0.50 means maxG - minG must be less than 50% of an EDO step
+      const stepDistortionRatio = 0.25; 
+      const relativeThreshold = avgStepCents * stepDistortionRatio;
+
       const mosText = document.getElementById('mos-status-text');
-const relativeThreshold = 0.20; // 10% relative threshold
 
-if ((maxG - minG) / maxG < relativeThreshold) {
-  mosText.innerText = "Valid Circulating Scale";
-} else {
-  mosText.innerText = "High Distortion Scale";
-}
+      if ((maxG - minG) < relativeThreshold) {
+        mosText.innerText = "Valid Circulating Scale";
+      } else {
+        mosText.innerText = "High Distortion Scale";
+      }
 
-renderTable();
+      renderTable();
 }
 
     function renderTable() {
