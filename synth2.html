@@ -541,52 +541,12 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const masterGain = audioCtx.createGain();
 masterGain.connect(audioCtx.destination);
 
-// --- COMPREHENSIVE BACKGROUND PERSISTENCE SETUP ---
-let silentAudioEl = null;
+// --- AMBIENT BACKGROUND PERSISTENCE SETUP FOR IPADOS ---
 let workerKeepAlive = null;
 
 function setupBackgroundAudioPersistence() {
-  // 1. Create a dynamic silent stream using Web Audio destination
-  const streamDest = audioCtx.createMediaStreamDestination();
-  
-  // Continuous near-silent node to keep pipeline active without clipping
-  const silenceOsc = audioCtx.createOscillator();
-  const silenceGain = audioCtx.createGain();
-  silenceGain.gain.value = 0.0001; // Ultra low gain to prevent power-off suspend
-  silenceOsc.connect(silenceGain);
-  silenceGain.connect(streamDest);
-  silenceGain.connect(masterGain); // Route to output
-  silenceOsc.start();
-
-  // 2. Attach the active stream to HTML5 audio element
-  if (!silentAudioEl) {
-    silentAudioEl = document.createElement('audio');
-    silentAudioEl.setAttribute('x-webkit-airplay', 'deny');
-    silentAudioEl.preload = 'auto';
-    silentAudioEl.loop = true;
-    silentAudioEl.srcObject = streamDest.stream;
-    silentAudioEl.style.display = 'none';
-    document.body.appendChild(silentAudioEl);
-  }
-
-  // 3. MediaSession API integration
-  if ('mediaSession' in navigator) {
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: 'Grid Web Synth',
-      artist: 'Isomorphic Web Synth',
-      album: 'Microtonal Grid Synth'
-    });
-
-    ['play', 'pause'].forEach(action => {
-      try {
-        navigator.mediaSession.setActionHandler(action, () => {
-          ensureAudioActive();
-        });
-      } catch (e) {}
-    });
-  }
-
-  // 4. Web Worker keep-alive to bypass background tab timer throttling
+  // 1. Web Worker keep-alive to prevent tab throttling
+  // We use an inline worker blob to keep processing on a background thread
   const workerBlob = new Blob([`
     let interval;
     self.onmessage = function(e) {
@@ -598,7 +558,10 @@ function setupBackgroundAudioPersistence() {
     };
   `], { type: 'application/javascript' });
 
-  workerKeepAlive = new Worker(URL.revokeObjectURL(URL.createObjectURL(workerBlob)));
+  const blobUrl = URL.createObjectURL(workerBlob);
+  workerKeepAlive = new Worker(blobUrl);
+  URL.revokeObjectURL(blobUrl);
+
   workerKeepAlive.onmessage = () => {
     ensureAudioActive();
   };
@@ -606,15 +569,24 @@ function setupBackgroundAudioPersistence() {
 }
 
 function ensureAudioActive() {
-  if (silentAudioEl && silentAudioEl.paused) {
-    silentAudioEl.play().catch(() => {});
-  }
+  // Pure Web Audio resume allows ambient mixing on iPadOS
   if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
     audioCtx.resume().catch(() => {});
   }
 }
 
-// Ensure context handles visibility and focus changes cleanly
+// User interaction unlocks audio on iPadOS Safari without taking focus
+function unlockAudioContext() {
+  ensureAudioActive();
+  if (audioCtx.state === 'running') {
+    window.removeEventListener('touchstart', unlockAudioContext);
+    window.removeEventListener('click', unlockAudioContext);
+  }
+}
+
+window.addEventListener('touchstart', unlockAudioContext, { passive: true });
+window.addEventListener('click', unlockAudioContext);
+
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     ensureAudioActive();
@@ -622,8 +594,6 @@ document.addEventListener('visibilitychange', () => {
 });
 
 window.addEventListener('focus', ensureAudioActive);
-window.addEventListener('touchstart', ensureAudioActive, { passive: true });
-window.addEventListener('click', ensureAudioActive);
 
 audioCtx.addEventListener('statechange', () => {
   if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
@@ -631,14 +601,6 @@ audioCtx.addEventListener('statechange', () => {
   }
 });
 
-
-document.addEventListener('visibilitychange', () => {
-  ensureAudioActive();
-});
-
-window.addEventListener('focus', () => {
-  ensureAudioActive();
-});
 
 const timbres = {
   "bell": [
