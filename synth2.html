@@ -541,30 +541,42 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const masterGain = audioCtx.createGain();
 masterGain.connect(audioCtx.destination);
 
-// --- BACKGROUND PERSISTENCE & AUDIO KEEP-ALIVE ---
+// --- COMPREHENSIVE BACKGROUND PERSISTENCE SETUP ---
 let silentAudioEl = null;
+let workerKeepAlive = null;
 
 function setupBackgroundAudioPersistence() {
-  // Create an HTML5 silent audio loop element.
-  // HTML5 audio playback signals the browser process that this tab is an active media output,
-  // preventing browser suspension when switching tabs or playing YouTube in other tabs.
+  // 1. Create a dynamic silent stream using Web Audio destination
+  const streamDest = audioCtx.createMediaStreamDestination();
+  
+  // Continuous near-silent node to keep pipeline active without clipping
+  const silenceOsc = audioCtx.createOscillator();
+  const silenceGain = audioCtx.createGain();
+  silenceGain.gain.value = 0.0001; // Ultra low gain to prevent power-off suspend
+  silenceOsc.connect(silenceGain);
+  silenceGain.connect(streamDest);
+  silenceGain.connect(masterGain); // Route to output
+  silenceOsc.start();
+
+  // 2. Attach the active stream to HTML5 audio element
   if (!silentAudioEl) {
     silentAudioEl = document.createElement('audio');
     silentAudioEl.setAttribute('x-webkit-airplay', 'deny');
     silentAudioEl.preload = 'auto';
     silentAudioEl.loop = true;
-    // 1-second silent WAV base64 string
-    silentAudioEl.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+    silentAudioEl.srcObject = streamDest.stream;
     silentAudioEl.style.display = 'none';
     document.body.appendChild(silentAudioEl);
   }
 
+  // 3. MediaSession API integration
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: 'Grid Web Synth',
       artist: 'Isomorphic Web Synth',
       album: 'Microtonal Grid Synth'
     });
+
     ['play', 'pause'].forEach(action => {
       try {
         navigator.mediaSession.setActionHandler(action, () => {
@@ -573,6 +585,24 @@ function setupBackgroundAudioPersistence() {
       } catch (e) {}
     });
   }
+
+  // 4. Web Worker keep-alive to bypass background tab timer throttling
+  const workerBlob = new Blob([`
+    let interval;
+    self.onmessage = function(e) {
+      if (e.data === 'start') {
+        interval = setInterval(() => self.postMessage('tick'), 1000);
+      } else if (e.data === 'stop') {
+        clearInterval(interval);
+      }
+    };
+  `], { type: 'application/javascript' });
+
+  workerKeepAlive = new Worker(URL.revokeObjectURL(URL.createObjectURL(workerBlob)));
+  workerKeepAlive.onmessage = () => {
+    ensureAudioActive();
+  };
+  workerKeepAlive.postMessage('start');
 }
 
 function ensureAudioActive() {
@@ -584,12 +614,23 @@ function ensureAudioActive() {
   }
 }
 
-// Ensure context is auto-resumed on user activity or state changes
-audioCtx.addEventListener('statechange', () => {
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(() => {});
+// Ensure context handles visibility and focus changes cleanly
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    ensureAudioActive();
   }
 });
+
+window.addEventListener('focus', ensureAudioActive);
+window.addEventListener('touchstart', ensureAudioActive, { passive: true });
+window.addEventListener('click', ensureAudioActive);
+
+audioCtx.addEventListener('statechange', () => {
+  if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
+    ensureAudioActive();
+  }
+});
+
 
 document.addEventListener('visibilitychange', () => {
   ensureAudioActive();
