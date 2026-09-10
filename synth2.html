@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Grid Web Synth — EDO Isomorphic Grid</title>
+<title>Grid Web Synth — EDO & Scala Isomorphic Grid</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 :root {
@@ -202,7 +202,7 @@ canvas {
   padding: 24px;
   border-radius: 12px;
   width: 90%;
-  max-width: 500px;
+  max-width: 550px;
   color: var(--modal-text-color);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -249,8 +249,32 @@ canvas {
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 8px;
   margin-top: 12px;
-  max-height: 400px;
+  max-height: 380px;
   overflow-y: auto;
+}
+
+.scala-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.symbol-btn {
+  background: var(--input-bg);
+  color: var(--text-color);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+.symbol-btn:hover {
+  background: var(--button-color);
+  color: #111;
 }
 
 .preset-bar {
@@ -265,12 +289,14 @@ canvas {
 <body>
 <header>
   <div class="flex items-center gap-3">
-    <h2 style="margin:0">Grid Web Synth — EDO Isomorphic Grid</h2>
-    <div class="small">Notes are automatically named using smallest fifthspan distance from C.</div>
+    <h2 style="margin:0">Grid Web Synth — Isomorphic Grid</h2>
+    <div class="small" id="headerSubtext">Notes automatically named or configured via Scala.</div>
   </div>
-  <div>
+  <div class="flex gap-2">
+    <button id="importScalaBtn" style="background:#059669; color:#fff;" title="Import a Scala (.scl) scale file">Import Scala (.scl)</button>
     <button id="colorPickerBtn">Palette</button>
   </div>
+  <input type="file" id="scalaFileInput" accept=".scl,.txt" style="display:none;" />
 </header>
 
 <div class="controls">
@@ -290,17 +316,18 @@ canvas {
     <input id="rootKeyIndex" type="number" min="1" max="4096" value="1" />
   </label>
 
-  <label title="Interval in scale degrees/EDO steps for one column to the right.">Horizontal Steps
+  <label title="Interval in scale degrees for one column to the right.">Horizontal Steps
     <input id="hSteps" type="number" min="-4294967296" max="4294967296" value="1" />
   </label>
 
-  <label title="Interval in scale degrees/EDO steps for one row down.">Vertical Steps
+  <label title="Interval in scale degrees for one row down.">Vertical Steps
     <input id="vSteps" type="number" min="-4294967296" max="4294967296" value="12" />
   </label>
 
   <label>Tuning type
     <select id="tuningType">
       <option value="edo">EDO</option>
+      <option value="scala" id="scalaOption" disabled>Scala File (None loaded)</option>
     </select>
   </label>
 
@@ -359,6 +386,7 @@ canvas {
         <option>organ</option>
         <option>piano</option>
         <option>marimba</option>
+      </optgroup>
     </select>
   </label>
   
@@ -434,6 +462,56 @@ canvas {
   </div>
 </div>
 
+<!-- SCALA NOTE NAMING & COLOR MODAL -->
+<div id="scalaNamingModal" class="modal-overlay">
+  <div class="modal-content" style="max-width: 650px;">
+    <h3>Scala Scale Configuration & Note Naming</h3>
+    <p id="scalaModalDesc" class="small" style="color:#38bdf8;">Loaded scale information</p>
+
+    <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; margin: 10px 0;">
+      <div class="small" style="font-weight:bold; margin-bottom:4px; color:#facc15;">Allowed Note Naming Notation:</div>
+      <div class="small" style="color:#d1d5db;">
+        Note letters <strong style="color:#fff;">A-G</strong>, flats (<strong style="color:#fff;">b</strong>), sharps (<strong style="color:#fff;">#</strong>), double flats (<strong style="color:#fff;">bb</strong>), double sharps (<strong style="color:#fff;">x</strong>), carets (<strong style="color:#fff;">^</strong>), and down-carets (<strong style="color:#fff;">v</strong>).
+      </div>
+      <div class="flex flex-wrap gap-1 mt-2 items-center">
+        <span class="small mr-1" style="color:#aaa;">Quick symbol insertion:</span>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('A')">A</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('B')">B</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('C')">C</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('D')">D</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('E')">E</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('F')">F</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('G')">G</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('#')">#</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('b')">b</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('bb')">bb</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('x')">x</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('^')">^</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('v')">v</button>
+      </div>
+    </div>
+
+    <div id="scalaNoteList" class="scala-grid"></div>
+
+    <div id="scalaErrorMsg" class="small" style="color:#f87171; margin-top:8px; display:none;"></div>
+
+    <div class="modal-controls">
+        <button id="scalaModalCancel" style="background:#4b5563; color:#fff;">Cancel</button>
+        <button id="scalaModalApply" style="background:#10b981; color:#fff;">Apply Scala Scale</button>
+    </div>
+  </div>
+</div>
+
+<div id="customNoticeModal" class="modal-overlay">
+  <div class="modal-content" style="max-width: 400px; text-align:center;">
+    <h3 id="noticeTitle">Notice</h3>
+    <p id="noticeMessage" style="margin: 16px 0; font-size:14px; color:#e5e7eb;"></p>
+    <div class="modal-controls" style="justify-content:center;">
+      <button id="noticeCloseBtn">OK</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let gridState = {
   rows: 6, cols: 12, keySize: 64,
@@ -444,21 +522,32 @@ let gridState = {
   rootFreq: 261.6256, rootName: 'C4',
   edoNameTable: null,
   subsetPattern: [],
-  pitchColors: {}
+  pitchColors: {},
+  scalaData: null // Stores loaded Scala file parsed info
 };
 
-// --- WEB AUDIO API SETUP ---
+let lastFocusedScalaInput = null;
+
+function showNotice(title, message) {
+  document.getElementById('noticeTitle').textContent = title;
+  document.getElementById('noticeMessage').textContent = message;
+  document.getElementById('customNoticeModal').style.display = 'flex';
+}
+document.getElementById('noticeCloseBtn').addEventListener('click', () => {
+  document.getElementById('customNoticeModal').style.display = 'none';
+});
+
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const masterGain = audioCtx.createGain();
 masterGain.connect(audioCtx.destination);
 
-// --- BACKGROUND PERSISTENCE & KEEP-ALIVE AUDIO SETUP ---
+// --- BACKGROUND PERSISTENCE & AUDIO KEEP-ALIVE ---
 let silentAudioEl = null;
 
 function setupBackgroundAudioPersistence() {
   // Create an HTML5 silent audio loop element.
-  // HTML5 audio playback tells the browser's process/audio manager that this tab is actively outputting sound,
-  // preventing browsers (Chrome, Safari, Firefox) from throttling or suspending the AudioContext when switching tabs or playing other media.
+  // HTML5 audio playback signals the browser process that this tab is an active media output,
+  // preventing browser suspension when switching tabs or playing YouTube in other tabs.
   if (!silentAudioEl) {
     silentAudioEl = document.createElement('audio');
     silentAudioEl.setAttribute('x-webkit-airplay', 'deny');
@@ -470,14 +559,12 @@ function setupBackgroundAudioPersistence() {
     document.body.appendChild(silentAudioEl);
   }
 
-  // Setup MediaSession metadata if available
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: 'Grid Web Synth',
       artist: 'Isomorphic Web Synth',
-      album: 'EDO Grid Synth'
+      album: 'Microtonal Grid Synth'
     });
-    // Register empty handlers to keep media session active
     ['play', 'pause'].forEach(action => {
       try {
         navigator.mediaSession.setActionHandler(action, () => {
@@ -492,12 +579,12 @@ function ensureAudioActive() {
   if (silentAudioEl && silentAudioEl.paused) {
     silentAudioEl.play().catch(() => {});
   }
-  if (audioCtx.state === 'suspended') {
+  if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
     audioCtx.resume().catch(() => {});
   }
 }
 
-// Automatically re-activate context whenever visibility changes or state suspends
+// Ensure context is auto-resumed on user activity or state changes
 audioCtx.addEventListener('statechange', () => {
   if (audioCtx.state === 'suspended') {
     audioCtx.resume().catch(() => {});
@@ -512,7 +599,6 @@ window.addEventListener('focus', () => {
   ensureAudioActive();
 });
 
-// --- TIMBRE DEFINITIONS ---
 const timbres = {
   "bell": [
     { mult: 0.5, gain: 0.25, a: 0.01, d: 4, s: 0.3, r: 2.5 },
@@ -601,7 +687,6 @@ class Synth {
     }
 }
 
-// --- UI ELEMENTS ---
 const canvas = document.getElementById('gridCanvas');
 const body = document.body;
 const ctx = canvas.getContext('2d', { alpha:false });
@@ -612,6 +697,7 @@ const rootKeyIndexInput = document.getElementById('rootKeyIndex');
 const hStepsInput = document.getElementById('hSteps');
 const vStepsInput = document.getElementById('vSteps');
 const tuningType = document.getElementById('tuningType');
+const edoParams = document.getElementById('edoParams');
 const edoStepsInput = document.getElementById('edoSteps');
 const rootFreqInput = document.getElementById('rootFreq');
 const rootNoteNameInput = document.getElementById('rootNoteName');
@@ -639,7 +725,16 @@ const recordText = document.getElementById('recordText');
 const stopRecordBtn = document.getElementById('stopRecordBtn');
 const recordingStatus = document.getElementById('recordingStatus');
 
-// --- STATE ---
+const importScalaBtn = document.getElementById('importScalaBtn');
+const scalaFileInput = document.getElementById('scalaFileInput');
+const scalaNamingModal = document.getElementById('scalaNamingModal');
+const scalaModalDesc = document.getElementById('scalaModalDesc');
+const scalaNoteList = document.getElementById('scalaNoteList');
+const scalaErrorMsg = document.getElementById('scalaErrorMsg');
+const scalaModalCancel = document.getElementById('scalaModalCancel');
+const scalaModalApply = document.getElementById('scalaModalApply');
+const scalaOption = document.getElementById('scalaOption');
+
 const activeVoices = new Map(); 
 const pointerToIdx = new Map(); 
 
@@ -654,7 +749,6 @@ if(volumeSlider) {
   });
 }
 
-// --- AUDIO RECORDING ---
 let audioProcessor = null;
 let recordingBuffers = [];
 let isRecording = false;
@@ -768,7 +862,6 @@ function stopRecording() {
 recordBtn.addEventListener('click', startRecording);
 stopRecordBtn.addEventListener('click', stopRecording);
 
-// --- COLOR PALETTE LOGIC ---
 function hslToHex(h, s, l) {
   l /= 100;
   const a = (s * Math.min(l, 1 - l)) / 100;
@@ -799,9 +892,16 @@ function ensureColorPalette(N) {
 }
 
 function getKeyColorForPitchClass(pc) {
-  const N = gridState.tuning?.edo || 12;
+  const N = getScaleSize();
   ensureColorPalette(N);
   return gridState.pitchColors[pc] || getDefaultColorForStep(pc, N);
+}
+
+function getScaleSize() {
+  if (gridState.tuning.type === 'scala' && gridState.scalaData) {
+    return gridState.scalaData.count;
+  }
+  return gridState.tuning.edo || 12;
 }
 
 const colorPickerModal = document.getElementById('colorPickerModal');
@@ -809,15 +909,25 @@ const colorGrid = document.getElementById('colorGrid');
 const colorModalEdoTitle = document.getElementById('colorModalEdoTitle');
 
 function openColorPickerModal() {
-  const N = gridState.tuning?.edo || 12;
-  if (colorModalEdoTitle) colorModalEdoTitle.textContent = `${N}-EDO`;
+  const N = getScaleSize();
+  const isScala = gridState.tuning.type === 'scala';
+  
+  if (colorModalEdoTitle) {
+    colorModalEdoTitle.textContent = isScala ? `Scala Scale (${N} Degrees)` : `${N}-EDO`;
+  }
   ensureColorPalette(N);
 
-  const namingTable = gridState.edoNameTable || generateEDONaming(N).names;
+  let namingTable = [];
+  if (isScala && gridState.scalaData) {
+    namingTable = gridState.scalaData.names.map(name => [name]);
+  } else {
+    namingTable = gridState.edoNameTable || generateEDONaming(N).names;
+  }
+
   colorGrid.innerHTML = '';
 
   for (let i = 0; i < N; i++) {
-    const stepName = pickSimplestName(namingTable[i] || ['?']);
+    const stepName = isScala ? (gridState.scalaData?.names[i] || `Step ${i}`) : pickSimplestName(namingTable[i] || ['?']);
     const currentColor = gridState.pitchColors[i] || getDefaultColorForStep(i, N);
 
     const item = document.createElement('div');
@@ -860,7 +970,211 @@ document.getElementById('colorPresetReset')?.addEventListener('click', () => {
   });
 });
 
-// --- HELPER MATH & NOTE NAMING FUNCTIONS ---
+function parseScalaFile(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('!'));
+  if (lines.length < 2) throw new Error("Invalid Scala file structure. File is too short.");
+
+  const description = lines[0];
+  const count = parseInt(lines[1], 10);
+  if (isNaN(count) || count <= 0) throw new Error("Invalid Scala degree count in file header.");
+
+  const pitches = [];
+  let lineIdx = 2;
+
+  for (let i = 0; i < count && lineIdx < lines.length; i++, lineIdx++) {
+    const token = lines[lineIdx].split(/\s+/)[0]; // First token on pitch line
+    if (!token) continue;
+
+    if (token.includes('.')) {
+      // Cents value
+      const cents = parseFloat(token);
+      pitches.push({ type: 'cents', cents: cents, ratio: Math.pow(2, cents / 1200), raw: token });
+    } else if (token.includes('/')) {
+      // Ratio
+      const [num, den] = token.split('/').map(Number);
+      if (isNaN(num) || isNaN(den) || den === 0) throw new Error(`Invalid ratio on line ${lineIdx + 1}: ${token}`);
+      const ratio = num / den;
+      const cents = 1200 * Math.log2(ratio);
+      pitches.push({ type: 'ratio', cents: cents, ratio: ratio, raw: token });
+    } else {
+      // Integer ratio (e.g. 2 -> 2/1)
+      const num = parseInt(token, 10);
+      if (isNaN(num)) throw new Error(`Invalid step value on line ${lineIdx + 1}: ${token}`);
+      const ratio = num;
+      const cents = 1200 * Math.log2(ratio);
+      pitches.push({ type: 'ratio', cents: cents, ratio: ratio, raw: `${num}/1` });
+    }
+  }
+
+  if (pitches.length < count) {
+    throw new Error(`Scala file header specified ${count} degrees, but only ${pitches.length} were found.`);
+  }
+
+  return { description, count, pitches };
+}
+
+function autoSuggestScalaName(cents, index, total) {
+  if (index === 0) return 'C';
+  // Standard 12-EDO step approximation for naming starting point
+  const approx12 = Math.round((cents / 1200) * 12) % 12;
+  const standard12Names = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'];
+  const baseName = standard12Names[approx12] || 'C';
+  
+  // Calculate microtonal variance in cents relative to 12-EDO
+  const targetCents = (approx12 * 100);
+  const diff = cents - targetCents;
+  
+  if (diff > 15) return `^${baseName}`;
+  if (diff < -15) return `v${baseName}`;
+  return baseName;
+}
+
+let pendingScalaData = null;
+
+function openScalaNamingModal(parsed) {
+  pendingScalaData = parsed;
+  scalaModalDesc.textContent = `File: "${parsed.description}" (${parsed.count} scale degrees)`;
+  scalaErrorMsg.style.display = 'none';
+  scalaNoteList.innerHTML = '';
+
+  const centsList = [0]; // Step 0 is implicitly 0 cents
+  for (let i = 0; i < parsed.count - 1; i++) {
+    centsList.push(parsed.pitches[i].cents);
+  }
+
+  for (let i = 0; i < parsed.count; i++) {
+    const degreeCents = centsList[i];
+    const rawDesc = (i === 0) ? '1/1 (Root)' : parsed.pitches[i - 1].raw;
+    const suggestedName = autoSuggestScalaName(degreeCents, i, parsed.count);
+    const defaultColor = getDefaultColorForStep(i, parsed.count);
+
+    const row = document.createElement('div');
+    row.style.cssText = `background:#111827; padding:10px; border-radius:6px; border:1px solid #374151; display:flex; align-items:center; gap:10px; flex-wrap:wrap;`;
+    
+    row.innerHTML = `
+      <div style="min-width:110px; font-weight:bold; font-size:13px; color:#bb86fc;">
+        Step ${i} <span style="font-size:11px; color:#aaa; font-weight:normal;">(${rawDesc})</span>
+      </div>
+      <div style="font-size:12px; color:#9ca3af; width:80px;">${degreeCents.toFixed(1)} ¢</div>
+      <div style="flex:1; min-width:140px;">
+        <input type="text" class="scala-note-input" data-index="${i}" value="${suggestedName}" placeholder="e.g. C, F#, ^G, vBb, xD" style="margin-bottom:0; font-family:monospace; font-weight:bold;" />
+      </div>
+      <div style="display:flex; align-items:center; gap:4px;">
+        <span style="font-size:11px; color:#aaa;">Color:</span>
+        <input type="color" class="scala-color-input" data-index="${i}" value="${defaultColor}" style="width:28px; height:28px; border:none; cursor:pointer; background:none;" />
+      </div>
+    `;
+
+    scalaNoteList.appendChild(row);
+  }
+
+  // Attach focus trackers to input elements for quick symbol button insertion
+  scalaNoteList.querySelectorAll('.scala-note-input').forEach(inp => {
+    inp.addEventListener('focus', (e) => { lastFocusedScalaInput = e.target; });
+  });
+
+  scalaNamingModal.style.display = 'flex';
+}
+
+function insertSymbolIntoScalaFocus(symbol) {
+  if (!lastFocusedScalaInput) {
+    lastFocusedScalaInput = scalaNoteList.querySelector('.scala-note-input');
+  }
+  if (lastFocusedScalaInput) {
+    const start = lastFocusedScalaInput.selectionStart || 0;
+    const end = lastFocusedScalaInput.selectionEnd || 0;
+    const val = lastFocusedScalaInput.value;
+    lastFocusedScalaInput.value = val.substring(0, start) + symbol + val.substring(end);
+    lastFocusedScalaInput.focus();
+    lastFocusedScalaInput.setSelectionRange(start + symbol.length, start + symbol.length);
+  }
+}
+
+const scalaNameRegex = /^[v^]*[A-G](bb|x|b|#)?$/i;
+
+function validateAndApplyScala() {
+  if (!pendingScalaData) return;
+
+  const inputs = scalaNoteList.querySelectorAll('.scala-note-input');
+  const colorInputs = scalaNoteList.querySelectorAll('.scala-color-input');
+  const names = [];
+  const colors = {};
+
+  let invalidInput = null;
+
+  inputs.forEach((inp, i) => {
+    const val = inp.value.trim();
+    if (!val || !scalaNameRegex.test(val)) {
+      invalidInput = val;
+    }
+    names.push(val || `S${i}`);
+  });
+
+  if (invalidInput) {
+    scalaErrorMsg.textContent = `Warning: "${invalidInput}" contains non-standard note symbols. Accepted symbols: A-G, b, #, bb, x, ^, v.`;
+    scalaErrorMsg.style.display = 'block';
+    // Allow applying while warning user
+  }
+
+  colorInputs.forEach((cinp, i) => {
+    colors[i] = cinp.value;
+  });
+
+  const centsList = [0];
+  for (let i = 0; i < pendingScalaData.count - 1; i++) {
+    centsList.push(pendingScalaData.pitches[i].cents);
+  }
+
+  gridState.scalaData = {
+    description: pendingScalaData.description,
+    count: pendingScalaData.count,
+    pitches: pendingScalaData.pitches,
+    centsList: centsList,
+    names: names
+  };
+
+  gridState.pitchColors = colors;
+  gridState.tuning.type = 'scala';
+
+  // Enable and select Scala in Tuning dropdown
+  scalaOption.disabled = false;
+  scalaOption.textContent = `Scala: ${pendingScalaData.description.slice(0, 20)}...`;
+  tuningType.value = 'scala';
+  edoParams.style.display = 'none';
+
+  scalaNamingModal.style.display = 'none';
+
+  buildStateFromUI();
+  showNotice("Scala Tuning Applied", `Successfully loaded scale "${pendingScalaData.description}" (${pendingScalaData.count} degrees).`);
+}
+
+scalaModalCancel.addEventListener('click', () => {
+  scalaNamingModal.style.display = 'none';
+});
+scalaModalApply.addEventListener('click', validateAndApplyScala);
+
+// Import Scala file click handlers
+importScalaBtn.addEventListener('click', () => {
+  ensureAudioActive();
+  scalaFileInput.click();
+});
+
+scalaFileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const parsed = parseScalaFile(event.target.result);
+      openScalaNamingModal(parsed);
+    } catch (err) {
+      showNotice("Scala Import Error", err.message || "Failed to parse Scala file.");
+    }
+  };
+  reader.readAsText(file);
+  scalaFileInput.value = ''; // Reset input
+});
 
 function mod(a, b) {
   return ((a % b) + b) % b;
@@ -893,7 +1207,6 @@ function parseUDP(udpStr) {
   return { up: parseInt(match[1]), down: parseInt(match[2]), periods: parseInt(match[3]) };
 }
 
-// Canonical chain of fifths centered on C
 const canonicalChainOfFifths = [
   "Fbb", "Cbb", "Gbb", "Dbb", "Abb", "Ebb", "Bbb", 
   "Fb",  "Cb",  "Gb",  "Db",  "Ab",  "Eb",  "Bb", 
@@ -902,15 +1215,11 @@ const canonicalChainOfFifths = [
   "F##", "C##", "G##", "D##", "A##", "E##", "B##"
 ];
 
-// Map each fifth name to its offset from C in fifths
 const fifthspanMap = {};
 canonicalChainOfFifths.forEach((name, i) => { 
   fifthspanMap[name] = i - canonicalChainOfFifths.indexOf("C"); 
 });
 
-/**
- * Picks the note name from candidate list that has the smallest absolute fifthspan (closest to C).
- */
 function pickSimplestName(list) {
   if (!Array.isArray(list) || list.length === 0) return '?';
   const uniq = Array.from(new Set(list));
@@ -919,7 +1228,6 @@ function pickSimplestName(list) {
     let clean = name;
     let prefixShift = 0;
     
-    // Count microtonal carets/inflections if present
     while (clean.startsWith('^') || clean.startsWith('v')) {
       prefixShift += clean.startsWith('^') ? 1 : -1;
       clean = clean.slice(1);
@@ -939,7 +1247,7 @@ function pickSimplestName(list) {
   const scored = uniq.map(n => getFifthSpanScore(n));
   
   scored.sort((a, b) => {
-    if (a.absSpan !== b.absSpan) return a.absSpan - b.absSpan; // Smallest fifthspan closest to C
+    if (a.absSpan !== b.absSpan) return a.absSpan - b.absSpan; 
     if (a.accidentalCount !== b.accidentalCount) return a.accidentalCount - b.accidentalCount;
     return a.length - b.length;
   });
@@ -1010,7 +1318,6 @@ function generateEDONaming(N) {
   return { names };
 }
 
-// --- MODAL & SCALE GENERATION ---
 function showModal() { scaleGeneratorModal.style.display = 'flex'; }
 function hideModal() { scaleGeneratorModal.style.display = 'none'; }
 
@@ -1024,7 +1331,7 @@ gen_applyBtn.addEventListener('click', () => {
 });
 
 function generateAndApplyScale(generatorStr, periodStr, udpStr) {
-    const N = parseInt(edoStepsInput.value);
+    const N = getScaleSize();
     const generatorCents = parseInterval(generatorStr);
     const periodCents = parseInterval(periodStr);
     const udp = parseUDP(udpStr);
@@ -1050,7 +1357,7 @@ function generateAndApplyScale(generatorStr, periodStr, udpStr) {
 
 function calculateModePattern(basePattern, startIndex) {
     if (basePattern.length === 0) return [];
-    const N = gridState.tuning.edo;
+    const N = getScaleSize();
     const size = basePattern.length;
     const intervals = [];
     
@@ -1073,8 +1380,9 @@ function calculateModePattern(basePattern, startIndex) {
 }
 
 function applyBaseSubsetToGrid() {
-    if (baseSubsetPattern.length === 0 && gridState.tuning.edo) {
-        baseSubsetPattern = Array.from({length: gridState.tuning.edo}, (_, i) => i);
+    const N = getScaleSize();
+    if (baseSubsetPattern.length === 0 && N) {
+        baseSubsetPattern = Array.from({length: N}, (_, i) => i);
     }
     gridState.subsetPattern = calculateModePattern(baseSubsetPattern, currentModeIndex);
     populateModeSelector(baseSubsetPattern);
@@ -1086,12 +1394,17 @@ function applyBaseSubsetToGrid() {
 
 function generateFullScaleSteps(tuning, edoNameTable) {
   let steps = [];
-  if (tuning.type === 'edo') {
+  if (tuning.type === 'scala' && gridState.scalaData) {
+    for (let i = 0; i < gridState.scalaData.count; i++) {
+      steps.push({ index: i, name: gridState.scalaData.names[i] || `Step ${i}` });
+    }
+    return { steps, N: gridState.scalaData.count };
+  } else {
     for (let i = 0; i < tuning.edo; i++) {
       steps.push({ index: i, name: pickSimplestName(edoNameTable[i] || ['?']) });
     }
-  } 
-  return { steps, N: tuning.edo };
+    return { steps, N: tuning.edo };
+  }
 }
 
 function populateScaleSubsetSelect(fullSteps) {
@@ -1134,7 +1447,7 @@ function getSelectedSubset() {
       if (option.selected) selections.push(parseInt(option.value, 10));
     }
     if (selections.length === 0) {
-      return Array.from({length: gridState.tuning.edo}, (_, i) => i);
+      return Array.from({length: getScaleSize()}, (_, i) => i);
     }
     return [...new Set(selections)].sort((a, b) => a - b);
 }
@@ -1155,17 +1468,17 @@ selectAllNotesBtn?.addEventListener('click', () => {
 
 clearNotesBtn?.addEventListener('click', () => {
     for (const option of scaleSubsetSelect.options) option.selected = false;
-    // Default to root (0) if cleared
-    scaleSubsetSelect.options[0].selected = true;
+    if (scaleSubsetSelect.options.length > 0) scaleSubsetSelect.options[0].selected = true;
     baseSubsetPattern = getSelectedSubset();
     currentModeIndex = 0;
     applyBaseSubsetToGrid();
 });
 
 function updateLegend(){
-  const t = gridState.tuning;
   const subsetSize = gridState.subsetPattern.length;
-  let txt = `Grid: ${gridState.rows}×${gridState.cols} • Key size: ${gridState.keySize}px • Root: ${gridState.rootName} @ ${gridState.rootFreq} Hz. ${t.edo}-EDO. Scale Size: ${subsetSize}.`;
+  const size = getScaleSize();
+  let modeDesc = (gridState.tuning.type === 'scala' && gridState.scalaData) ? `Scala ("${gridState.scalaData.description}")` : `${size}-EDO`;
+  let txt = `Grid: ${gridState.rows}×${gridState.cols} • Key size: ${gridState.keySize}px • Root: ${gridState.rootName} @ ${gridState.rootFreq} Hz. ${modeDesc}. Scale Size: ${subsetSize}.`;
   tuningText.textContent = `Tuning: ${txt}`;
 }
 
@@ -1175,7 +1488,7 @@ function buildStateFromUI(){
   const keySize = Math.max(8, parseInt(keySizeInput.value) || 64);
   const rootFreq = Math.max(1, parseFloat(rootFreqInput.value) || 261.6256);
   const rootName = rootNoteNameInput.value || 'root';
-  const N = Math.max(2, parseInt(edoStepsInput.value) || 12);
+  const selectedTuningType = tuningType.value;
 
   gridState.rows = rows; gridState.cols = cols; gridState.keySize = keySize;
   gridState.rootFreq = rootFreq; gridState.rootName = rootName;
@@ -1183,20 +1496,29 @@ function buildStateFromUI(){
   gridState.hSteps = parseInt(hStepsInput.value) || 1;
   gridState.vSteps = parseInt(vStepsInput.value) || 12;
 
-  const tuningChanged = gridState.tuning.edo !== N;
-  gridState.tuning = { type:'edo', edo: N };
-  gridState.edoNameTable = generateEDONaming(N).names;
+  if (selectedTuningType === 'scala' && gridState.scalaData) {
+    gridState.tuning = { type: 'scala' };
+    edoParams.style.display = 'none';
+  } else {
+    const N = Math.max(2, parseInt(edoStepsInput.value) || 12);
+    const tuningChanged = gridState.tuning.edo !== N || gridState.tuning.type !== 'edo';
+    gridState.tuning = { type:'edo', edo: N };
+    gridState.edoNameTable = generateEDONaming(N).names;
+    edoParams.style.display = 'flex';
+  }
   
   fullScaleStepsData = generateFullScaleSteps(gridState.tuning, gridState.edoNameTable).steps;
   
-  if (tuningChanged || scaleSubsetSelect.options.length !== N) {
-    populateScaleSubsetSelect(fullScaleStepsData);
-    for (const option of scaleSubsetSelect.options) option.selected = true;
-  }
+  populateScaleSubsetSelect(fullScaleStepsData);
+  for (const option of scaleSubsetSelect.options) option.selected = true;
   
   baseSubsetPattern = getSelectedSubset();
   applyBaseSubsetToGrid();
 }
+
+tuningType.addEventListener('change', () => {
+  buildStateFromUI();
+});
 
 function calculateGridMapping(idx) {
     const { rows, cols, rootKeyIndex, hSteps, vSteps, subsetPattern } = gridState;
@@ -1218,19 +1540,32 @@ function calculateGridMapping(idx) {
 }
 
 function frequencyForIndex(idx){
-  const t = gridState.tuning; 
   const root = gridState.rootFreq;
   const subset = gridState.subsetPattern; 
   if (subset.length === 0) return root; 
 
   const { subsetIndex, octaveShift } = calculateGridMapping(idx);
-  const intervalStep = subset[subsetIndex]; 
-  const effectiveStep = intervalStep + (octaveShift * t.edo);
-  return root * Math.pow(2, effectiveStep / t.edo);
+  const intervalStep = subset[subsetIndex];
+
+  if (gridState.tuning.type === 'scala' && gridState.scalaData) {
+    const scala = gridState.scalaData;
+    const S = scala.count;
+    const deg = mod(intervalStep, S);
+    const periodCents = scala.pitches[S - 1].cents || 1200;
+    const degCents = scala.centsList[deg] || 0;
+    
+    const totalPeriods = octaveShift + Math.floor(intervalStep / S);
+    const totalCents = (totalPeriods * periodCents) + degCents;
+    
+    return root * Math.pow(2, totalCents / 1200);
+  } else {
+    const N = gridState.tuning.edo || 12;
+    const effectiveStep = intervalStep + (octaveShift * N);
+    return root * Math.pow(2, effectiveStep / N);
+  }
 }
 
 function nameForIndex(idx){
-  const t = gridState.tuning;
   const subset = gridState.subsetPattern; 
   if (subset.length === 0) return 'Error';
   
@@ -1239,13 +1574,24 @@ function nameForIndex(idx){
 
   const rootOctaveMatch = gridState.rootName.match(/-?\d+/);
   const rootOctave = rootOctaveMatch ? parseInt(rootOctaveMatch[0], 10) : 4; 
-  const effectiveOctave = rootOctave + octaveShift;
   
-  const step = mod(intervalStep, t.edo);
-  const candidates = gridState.edoNameTable ? gridState.edoNameTable[step] : [];
-  let baseName = pickSimplestName(candidates).replace(/\d/g, ''); 
-  
-  return `${baseName}${effectiveOctave}`;
+  if (gridState.tuning.type === 'scala' && gridState.scalaData) {
+    const scala = gridState.scalaData;
+    const S = scala.count;
+    const deg = mod(intervalStep, S);
+    const totalPeriods = octaveShift + Math.floor(intervalStep / S);
+    const effectiveOctave = rootOctave + totalPeriods;
+    const baseName = scala.names[deg] || `S${deg}`;
+    return `${baseName}${effectiveOctave}`;
+  } else {
+    const N = gridState.tuning.edo || 12;
+    const totalPeriods = octaveShift + Math.floor(intervalStep / N);
+    const effectiveOctave = rootOctave + totalPeriods;
+    const step = mod(intervalStep, N);
+    const candidates = gridState.edoNameTable ? gridState.edoNameTable[step] : [];
+    let baseName = pickSimplestName(candidates).replace(/\d/g, ''); 
+    return `${baseName}${effectiveOctave}`;
+  }
 }
 
 modeSelector.addEventListener('change', () => {
@@ -1253,7 +1599,6 @@ modeSelector.addEventListener('change', () => {
     applyBaseSubsetToGrid();
 });
 
-// --- CANVAS RENDERING ---
 function resizeCanvas(){ 
   canvas.width = gridState.cols * gridState.keySize; 
   canvas.height = gridState.rows * gridState.keySize; 
@@ -1270,6 +1615,8 @@ function renderGrid(){
   ctx.textAlign = 'center'; 
   ctx.textBaseline = 'middle'; 
 
+  const scaleSize = getScaleSize();
+
   for(let r = 0; r < rows; r++){ 
     for(let c = 0; c < cols; c++){ 
       const x = c * ks, y = r * ks; 
@@ -1278,7 +1625,7 @@ function renderGrid(){
 
       const { subsetIndex } = calculateGridMapping(idx);
       const intervalStep = gridState.subsetPattern[subsetIndex] || 0;
-      const pc = mod(intervalStep, gridState.tuning.edo);
+      const pc = mod(intervalStep, scaleSize);
 
       let bgColor = getKeyColorForPitchClass(pc);
       if (activeVoices.has(idx)) {
@@ -1419,4 +1766,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-
