@@ -450,14 +450,16 @@
       }
 
       const mosText = document.getElementById('mos-status-text');
-      if ((maxG - minG) < 80) {
-        mosText.innerText = "Valid Circulating Scale";
-      } else {
-        mosText.innerText = "High Distortion Scale";
-      }
+const relativeThreshold = 0.20; // 10% relative threshold
 
-      renderTable();
-    }
+if ((maxG - minG) / maxG < relativeThreshold) {
+  mosText.innerText = "Valid Circulating Scale";
+} else {
+  mosText.innerText = "High Distortion Scale";
+}
+
+renderTable();
+}
 
     function renderTable() {
       const tbody = document.getElementById('table-body');
