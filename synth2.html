@@ -971,38 +971,72 @@ document.getElementById('colorPresetReset')?.addEventListener('click', () => {
 });
 
 function parseScalaFile(text) {
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('!'));
-  if (lines.length < 2) throw new Error("Invalid Scala file structure. File is too short.");
+  // 1. Clean lines: strip inline comments starting with '!', trim, and filter empty lines
+  const lines = text
+    .split(/\r?\n/)
+    .map(line => {
+      const commentIdx = line.indexOf('!');
+      const cleanLine = commentIdx !== -1 ? line.slice(0, commentIdx) : line;
+      return cleanLine.trim();
+    })
+    .filter(line => line.length > 0);
+
+  if (lines.length < 2) {
+    throw new Error("Invalid Scala file structure. File is too short.");
+  }
 
   const description = lines[0];
   const count = parseInt(lines[1], 10);
-  if (isNaN(count) || count <= 0) throw new Error("Invalid Scala degree count in file header.");
+
+  if (isNaN(count) || count < 0) {
+    throw new Error("Invalid Scala degree count in file header.");
+  }
 
   const pitches = [];
   let lineIdx = 2;
 
-  for (let i = 0; i < count && lineIdx < lines.length; i++, lineIdx++) {
-    const token = lines[lineIdx].split(/\s+/)[0]; // First token on pitch line
+  while (pitches.length < count && lineIdx < lines.length) {
+    const currentLine = lines[lineIdx++];
+    const token = currentLine.split(/\s+/)[0];
+
     if (!token) continue;
 
-    if (token.includes('.')) {
-      // Cents value
-      const cents = parseFloat(token);
-      pitches.push({ type: 'cents', cents: cents, ratio: Math.pow(2, cents / 1200), raw: token });
-    } else if (token.includes('/')) {
-      // Ratio
-      const [num, den] = token.split('/').map(Number);
-      if (isNaN(num) || isNaN(den) || den === 0) throw new Error(`Invalid ratio on line ${lineIdx + 1}: ${token}`);
+    if (token.includes('/')) {
+      // Ratio (e.g., "3/2" or "81.0/80.0")
+      const parts = token.split('/');
+      const num = parseFloat(parts[0]);
+      const den = parseFloat(parts[1]);
+
+      if (isNaN(num) || isNaN(den) || den === 0) {
+        throw new Error(`Invalid ratio on line ${lineIdx}: ${token}`);
+      }
+
       const ratio = num / den;
       const cents = 1200 * Math.log2(ratio);
-      pitches.push({ type: 'ratio', cents: cents, ratio: ratio, raw: token });
+      pitches.push({ type: 'ratio', cents, ratio, raw: token });
+
+    } else if (token.includes('.')) {
+      // Cents value (e.g., "100.0" or "1200.")
+      const cents = parseFloat(token);
+
+      if (isNaN(cents)) {
+        throw new Error(`Invalid cents value on line ${lineIdx}: ${token}`);
+      }
+
+      const ratio = Math.pow(2, cents / 1200);
+      pitches.push({ type: 'cents', cents, ratio, raw: token });
+
     } else {
-      // Integer ratio (e.g. 2 -> 2/1)
+      // Integer ratio (e.g., "2" -> 2/1 ratio according to Scala spec)
       const num = parseInt(token, 10);
-      if (isNaN(num)) throw new Error(`Invalid step value on line ${lineIdx + 1}: ${token}`);
+
+      if (isNaN(num)) {
+        throw new Error(`Invalid step value on line ${lineIdx}: ${token}`);
+      }
+
       const ratio = num;
       const cents = 1200 * Math.log2(ratio);
-      pitches.push({ type: 'ratio', cents: cents, ratio: ratio, raw: `${num}/1` });
+      pitches.push({ type: 'ratio', cents, ratio, raw: `${num}/1` });
     }
   }
 
@@ -1014,20 +1048,24 @@ function parseScalaFile(text) {
 }
 
 function autoSuggestScalaName(cents, index, total) {
-  if (index === 0) return 'C';
-  // Standard 12-EDO step approximation for naming starting point
-  const approx12 = Math.round((cents / 1200) * 12) % 12;
+  if (index === 0 && cents === 0) return 'C';
+
+  // Standard 12-EDO step approximation with safe positive modulo handling
+  const rawStep = Math.round((cents / 1200) * 12);
+  const approx12 = ((rawStep % 12) + 12) % 12;
+
   const standard12Names = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'];
-  const baseName = standard12Names[approx12] || 'C';
-  
-  // Calculate microtonal variance in cents relative to 12-EDO
-  const targetCents = (approx12 * 100);
+  const baseName = standard12Names[approx12];
+
+  // Calculate microtonal variance in cents relative to nearest 12-EDO semitone
+  const targetCents = rawStep * 100;
   const diff = cents - targetCents;
-  
+
   if (diff > 15) return `^${baseName}`;
   if (diff < -15) return `v${baseName}`;
   return baseName;
 }
+
 
 let pendingScalaData = null;
 
