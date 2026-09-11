@@ -155,6 +155,7 @@ canvas {
   width: auto;
   height: auto;
   transition: background-color 0.3s;
+  touch-action: none;
 }
 
 .small {
@@ -290,7 +291,7 @@ canvas {
 <header>
   <div class="flex items-center gap-3">
     <h2 style="margin:0">Grid Web Synth — Isomorphic Grid</h2>
-    <div class="small" id="headerSubtext">Notes automatically named or configured via Scala.</div>
+    <div class="small" id="headerSubtext">Ambient Mode: Plays seamlessly alongside YouTube and external media.</div>
   </div>
   <div class="flex gap-2">
     <button id="importScalaBtn" style="background:#059669; color:#fff;" title="Import a Scala (.scl) scale file">Import Scala (.scl)</button>
@@ -411,7 +412,7 @@ canvas {
   <div class="small" id="notesLegend"></div>
   <div class="small mt-1">
       <span id="recordingStatus"></span>
-      <span id="recordingHint">The recorder exports as WAV audio.</span>
+      <span id="recordingHint">Audio session configured in non-interrupting Ambient mode for YouTube/background audio compatibility.</span>
   </div>
 </div>
 
@@ -523,7 +524,7 @@ let gridState = {
   edoNameTable: null,
   subsetPattern: [],
   pitchColors: {},
-  scalaData: null // Stores loaded Scala file parsed info
+  scalaData: null 
 };
 
 let lastFocusedScalaInput = null;
@@ -537,154 +538,95 @@ document.getElementById('noticeCloseBtn').addEventListener('click', () => {
   document.getElementById('customNoticeModal').style.display = 'none';
 });
 
-// Master AudioContext initialization supporting webkit prefix for iPadOS WebKit browsers
-const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-const audioCtx = new AudioContextClass();
-const masterGain = audioCtx.createGain();
-masterGain.connect(audioCtx.destination);
-
-// Set WebKit AudioSession to 'ambient' on iPadOS.
-// Ambient audio allows Web Audio API to mix concurrently with background sound sources 
-// (e.g. YouTube app or YouTube playing in another tab) without interrupting them or getting killed.
-function configureAmbientAudioSession() {
-  if ('audioSession' in navigator) {
+// CRITICAL AUDIO SESSION & YOUTUBE CO-EXISTENCE ENGINE:
+// Enforce 'ambient' mode repeatedly to prevent Web Audio from interrupting or killing
+// background YouTube, Spotify, or external audio playback, and vice versa.
+function enforceAmbientAudioSession() {
+  if ('audioSession' in navigator && navigator.audioSession) {
     try {
-      navigator.audioSession.type = 'ambient';
-    } catch (e) {
-      // Graceful fallback for older iOS WebKit releases
+      if (navigator.audioSession.type !== 'ambient') {
+        navigator.audioSession.type = 'ambient';
+      }
+    } catch (e) {}
+  }
+  if ('webkitAudioSession' in navigator && navigator.webkitAudioSession) {
+    try {
+      if (navigator.webkitAudioSession.type !== 'ambient') {
+        navigator.webkitAudioSession.type = 'ambient';
+      }
+    } catch (e) {}
+  }
+}
+enforceAmbientAudioSession();
+
+let silentAudioAnchor = null;
+
+// HTML5 Silent Anchor keeps WebKit audio session alive in ambient mode when YouTube or external media toggles.
+function initSilentAudioAnchor() {
+  if (silentAudioAnchor) return;
+  // Short 0.5s silent WAV
+  const silentWav = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==";
+  silentAudioAnchor = new Audio(silentWav);
+  silentAudioAnchor.loop = true;
+  silentAudioAnchor.volume = 0.001;
+  silentAudioAnchor.setAttribute('playsinline', '');
+  silentAudioAnchor.setAttribute('webkit-playsinline', '');
+}
+
+function unlockAudio() {
+  enforceAmbientAudioSession();
+  initSilentAudioAnchor();
+  if (silentAudioAnchor && silentAudioAnchor.paused) {
+    silentAudioAnchor.play().catch(() => {});
+  }
+  if (audioCtx) {
+    if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
+      audioCtx.resume().catch(() => {});
     }
   }
 }
-configureAmbientAudioSession();
 
-// WebKit on iPadOS suspends AudioContext instances that have no active signal processing nodes.
-// We attach an active silent oscillator into the Web Audio graph to keep the audio engine active.
-const keepAliveOsc = audioCtx.createOscillator();
-const keepAliveGain = audioCtx.createGain();
-keepAliveGain.gain.value = 0.00001; // Ultra-low signal keeps WebKit audio thread active without audible noise
-keepAliveOsc.connect(keepAliveGain);
-keepAliveGain.connect(masterGain);
-keepAliveOsc.start();
+let audioCtx = null;
+let masterGain = null;
 
-// iPadOS WebKit suspends pure Web Audio API when switching tabs.
-// Running a looped HTML5 <audio> element preserves the system AudioSession anchor across all WebKit browsers 
-// (Safari, Chrome, Opera, DuckDuckGo).
-const silentAudio = document.createElement('audio');
-silentAudio.setAttribute('playsinline', 'true');
-silentAudio.setAttribute('webkit-playsinline', 'true');
-silentAudio.setAttribute('loop', 'true');
-silentAudio.preload = 'auto';
-// 1-second silent WAV Data URL
-silentAudio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+function getAudioContext() {
+  enforceAmbientAudioSession();
+  if (!audioCtx) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioContextClass();
+    masterGain = audioCtx.createGain();
+    const volumeSlider = document.getElementById('volumeSlider');
+    masterGain.gain.value = volumeSlider ? parseFloat(volumeSlider.value) : 0.8;
+    masterGain.connect(audioCtx.destination);
 
-let isUnlocked = false;
-
-// Main function to maintain active state across interruptions, tab switches, and app backgrounding
-async function ensureAudioActive() {
-  configureAmbientAudioSession();
-
-  // Inform MediaSession API of continuous playback state
-  if ('mediaSession' in navigator) {
-    try {
-      navigator.mediaSession.playbackState = 'playing';
-    } catch (e) {}
-  }
-
-  // Keep HTML5 background audio anchor playing
-  if (silentAudio.paused && isUnlocked) {
-    silentAudio.play().catch(() => {});
-  }
-
-  // Resume Web Audio Context if suspended or interrupted by YouTube or tab switches
-  if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
-    // Calling resume during an active iOS system interruption returns a rejected promise;
-    // .catch() prevents uncaught promise errors while waiting for WebKit focus restore.
-    audioCtx.resume().catch(() => {});
-  }
-}
-
-// Unlocks both AudioContext and HTML5 silent anchor upon first touch/click gesture on iPadOS
-function unlockAudioContext() {
-  configureAmbientAudioSession();
-
-  if (silentAudio.paused) {
-    silentAudio.play().then(() => {
-      isUnlocked = true;
-      ensureAudioActive();
-    }).catch(() => {});
-  } else {
-    isUnlocked = true;
-    ensureAudioActive();
-  }
-
-  if (audioCtx.state === 'running' && isUnlocked) {
-    window.removeEventListener('touchstart', unlockAudioContext);
-    window.removeEventListener('touchend', unlockAudioContext);
-    window.removeEventListener('pointerdown', unlockAudioContext);
-    window.removeEventListener('click', unlockAudioContext);
-    window.removeEventListener('keydown', unlockAudioContext);
-  }
-}
-
-// Web Worker thread to bypass main thread timer throttling in background tabs on iOS WebKit
-let workerKeepAlive = null;
-
-function setupBackgroundWorker() {
-  try {
-    const workerBlob = new Blob([`
-      let timer = null;
-      self.onmessage = function(e) {
-        if (e.data === 'start') {
-          if (!timer) timer = setInterval(() => self.postMessage('tick'), 500);
-        } else if (e.data === 'stop') {
-          if (timer) { clearInterval(timer); timer = null; }
-        }
-      };
-    `], { type: 'application/javascript' });
-
-    const blobUrl = URL.createObjectURL(workerBlob);
-    workerKeepAlive = new Worker(blobUrl);
-    URL.revokeObjectURL(blobUrl);
-
-    workerKeepAlive.onmessage = () => {
-      ensureAudioActive();
+    // Monitor context state transitions (e.g., when YouTube interrupts or unpauses)
+    audioCtx.onstatechange = () => {
+      enforceAmbientAudioSession();
+      if ((audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') && document.visibilityState === 'visible') {
+        audioCtx.resume().catch(() => {});
+      }
     };
-    workerKeepAlive.postMessage('start');
-  } catch (e) {
-    // Fallback if workers are blocked in custom webview wrappers
   }
+
+  unlockAudio();
+  return audioCtx;
 }
 
-setupBackgroundWorker();
-
-// Bind unlock handlers to screen interaction events
-window.addEventListener('touchstart', unlockAudioContext, { passive: true });
-window.addEventListener('touchend', unlockAudioContext, { passive: true });
-window.addEventListener('pointerdown', unlockAudioContext, { passive: true });
-window.addEventListener('click', unlockAudioContext);
-window.addEventListener('keydown', unlockAudioContext);
-
-// Re-attempt audio restoration on iPadOS WebKit state changes
-audioCtx.addEventListener('statechange', () => {
-  if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
-    ensureAudioActive();
+// Ensure visibility changes or system audio focus events auto-resume audio context smoothly
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    unlockAudio();
   }
 });
 
-// Tab visibility, focus, and lifecycle listeners
-document.addEventListener('visibilitychange', ensureAudioActive);
-window.addEventListener('focus', ensureAudioActive);
-window.addEventListener('blur', ensureAudioActive);
-window.addEventListener('pageshow', ensureAudioActive);
-window.addEventListener('pagehide', ensureAudioActive);
-
-// Auto re-trigger silent audio if paused by system interruption
-silentAudio.addEventListener('pause', () => {
-  if (isUnlocked) {
-    ensureAudioActive();
-  }
-});
-
+if ('audioSession' in navigator && navigator.audioSession) {
+  try {
+    navigator.audioSession.addEventListener('statechange', () => {
+      enforceAmbientAudioSession();
+      unlockAudio();
+    });
+  } catch (e) {}
+}
 
 const timbres = {
   "bell": [
@@ -829,10 +771,9 @@ let baseSubsetPattern = [];
 let currentModeIndex = 0; 
 let fullScaleStepsData = []; 
 
-if(volumeSlider) {
-  masterGain.gain.value = parseFloat(volumeSlider.value);
+if (volumeSlider) {
   volumeSlider.addEventListener('input', (e) => {
-    masterGain.gain.value = parseFloat(e.target.value);
+    if (masterGain) masterGain.gain.value = parseFloat(e.target.value);
   });
 }
 
@@ -893,10 +834,10 @@ function bufferToWave(interleavedData, sampleRate) {
 
 function startRecording() {
     if (isRecording) return;
-    ensureAudioActive();
+    const ctx = getAudioContext();
     
     recordingBuffers = [];
-    audioProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
+    audioProcessor = ctx.createScriptProcessor(4096, 1, 1);
 
     audioProcessor.onaudioprocess = (e) => {
         if (!isRecording) return;
@@ -905,7 +846,7 @@ function startRecording() {
     };
 
     masterGain.connect(audioProcessor);
-    audioProcessor.connect(audioCtx.destination); 
+    audioProcessor.connect(ctx.destination); 
 
     isRecording = true;
     recordBtn.disabled = true;
@@ -916,7 +857,7 @@ function startRecording() {
 }
 
 function stopRecording() {
-    if (!isRecording) return;
+    if (!isRecording || !audioCtx) return;
     
     masterGain.disconnect(audioProcessor);
     audioProcessor.disconnect(audioCtx.destination);
@@ -1058,7 +999,6 @@ document.getElementById('colorPresetReset')?.addEventListener('click', () => {
 });
 
 function parseScalaFile(text) {
-  // 1. Clean lines: strip inline comments starting with '!', trim, and filter empty lines
   const lines = text
     .split(/\r?\n/)
     .map(line => {
@@ -1075,7 +1015,7 @@ function parseScalaFile(text) {
   const description = lines[0];
   const count = parseInt(lines[1], 10);
 
-  if (isNaN(count) || count < 0) {
+  if (isNaN(count) || count <= 0) {
     throw new Error("Invalid Scala degree count in file header.");
   }
 
@@ -1089,7 +1029,6 @@ function parseScalaFile(text) {
     if (!token) continue;
 
     if (token.includes('/')) {
-      // Ratio (e.g., "3/2" or "81.0/80.0")
       const parts = token.split('/');
       const num = parseFloat(parts[0]);
       const den = parseFloat(parts[1]);
@@ -1103,7 +1042,6 @@ function parseScalaFile(text) {
       pitches.push({ type: 'ratio', cents, ratio, raw: token });
 
     } else if (token.includes('.')) {
-      // Cents value (e.g., "100.0" or "1200.")
       const cents = parseFloat(token);
 
       if (isNaN(cents)) {
@@ -1114,7 +1052,6 @@ function parseScalaFile(text) {
       pitches.push({ type: 'cents', cents, ratio, raw: token });
 
     } else {
-      // Integer ratio (e.g., "2" -> 2/1 ratio according to Scala spec)
       const num = parseInt(token, 10);
 
       if (isNaN(num)) {
@@ -1137,14 +1074,12 @@ function parseScalaFile(text) {
 function autoSuggestScalaName(cents, index, total) {
   if (index === 0 && cents === 0) return 'C';
 
-  // Standard 12-EDO step approximation with safe positive modulo handling
   const rawStep = Math.round((cents / 1200) * 12);
   const approx12 = ((rawStep % 12) + 12) % 12;
 
   const standard12Names = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'];
   const baseName = standard12Names[approx12];
 
-  // Calculate microtonal variance in cents relative to nearest 12-EDO semitone
   const targetCents = rawStep * 100;
   const diff = cents - targetCents;
 
@@ -1152,7 +1087,6 @@ function autoSuggestScalaName(cents, index, total) {
   if (diff < -15) return `v${baseName}`;
   return baseName;
 }
-
 
 let pendingScalaData = null;
 
@@ -1162,7 +1096,7 @@ function openScalaNamingModal(parsed) {
   scalaErrorMsg.style.display = 'none';
   scalaNoteList.innerHTML = '';
 
-  const centsList = [0]; // Step 0 is implicitly 0 cents
+  const centsList = [0];
   for (let i = 0; i < parsed.count - 1; i++) {
     centsList.push(parsed.pitches[i].cents);
   }
@@ -1193,7 +1127,6 @@ function openScalaNamingModal(parsed) {
     scalaNoteList.appendChild(row);
   }
 
-  // Attach focus trackers to input elements for quick symbol button insertion
   scalaNoteList.querySelectorAll('.scala-note-input').forEach(inp => {
     inp.addEventListener('focus', (e) => { lastFocusedScalaInput = e.target; });
   });
@@ -1238,7 +1171,6 @@ function validateAndApplyScala() {
   if (invalidInput) {
     scalaErrorMsg.textContent = `Warning: "${invalidInput}" contains non-standard note symbols. Accepted symbols: A-G, b, #, bb, x, ^, v.`;
     scalaErrorMsg.style.display = 'block';
-    // Allow applying while warning user
   }
 
   colorInputs.forEach((cinp, i) => {
@@ -1261,7 +1193,6 @@ function validateAndApplyScala() {
   gridState.pitchColors = colors;
   gridState.tuning.type = 'scala';
 
-  // Enable and select Scala in Tuning dropdown
   scalaOption.disabled = false;
   scalaOption.textContent = `Scala: ${pendingScalaData.description.slice(0, 20)}...`;
   tuningType.value = 'scala';
@@ -1278,9 +1209,8 @@ scalaModalCancel.addEventListener('click', () => {
 });
 scalaModalApply.addEventListener('click', validateAndApplyScala);
 
-// Import Scala file click handlers
 importScalaBtn.addEventListener('click', () => {
-  ensureAudioActive();
+  scalaFileInput.value = '';
   scalaFileInput.click();
 });
 
@@ -1298,7 +1228,6 @@ scalaFileInput.addEventListener('change', (e) => {
     }
   };
   reader.readAsText(file);
-  scalaFileInput.value = ''; // Reset input
 });
 
 function mod(a, b) {
@@ -1446,10 +1375,7 @@ function generateEDONaming(N) {
 function showModal() { scaleGeneratorModal.style.display = 'flex'; }
 function hideModal() { scaleGeneratorModal.style.display = 'none'; }
 
-generateScaleBtn.addEventListener('click', () => {
-    ensureAudioActive();
-    showModal();
-});
+generateScaleBtn.addEventListener('click', showModal);
 gen_cancelBtn.addEventListener('click', hideModal);
 gen_applyBtn.addEventListener('click', () => {
     generateAndApplyScale(gen_generator.value, gen_period.value, gen_udp.value);
@@ -1577,7 +1503,6 @@ function getSelectedSubset() {
     return [...new Set(selections)].sort((a, b) => a - b);
 }
 
-// SCALE SUBSET EVENT LISTENERS FOR INSTANT UPDATES
 scaleSubsetSelect.addEventListener('change', () => {
     baseSubsetPattern = getSelectedSubset();
     currentModeIndex = 0;
@@ -1626,7 +1551,6 @@ function buildStateFromUI(){
     edoParams.style.display = 'none';
   } else {
     const N = Math.max(2, parseInt(edoStepsInput.value) || 12);
-    const tuningChanged = gridState.tuning.edo !== N || gridState.tuning.type !== 'edo';
     gridState.tuning = { type:'edo', edo: N };
     gridState.edoNameTable = generateEDONaming(N).names;
     edoParams.style.display = 'flex';
@@ -1676,8 +1600,9 @@ function frequencyForIndex(idx){
     const scala = gridState.scalaData;
     const S = scala.count;
     const deg = mod(intervalStep, S);
-    const periodCents = scala.pitches[S - 1].cents || 1200;
-    const degCents = scala.centsList[deg] || 0;
+    const periodEntry = scala.pitches ? scala.pitches[S - 1] : null;
+    const periodCents = (periodEntry && isFinite(periodEntry.cents)) ? periodEntry.cents : 1200;
+    const degCents = (scala.centsList && isFinite(scala.centsList[deg])) ? scala.centsList[deg] : 0;
     
     const totalPeriods = octaveShift + Math.floor(intervalStep / S);
     const totalCents = (totalPeriods * periodCents) + degCents;
@@ -1706,7 +1631,7 @@ function nameForIndex(idx){
     const deg = mod(intervalStep, S);
     const totalPeriods = octaveShift + Math.floor(intervalStep / S);
     const effectiveOctave = rootOctave + totalPeriods;
-    const baseName = scala.names[deg] || `S${deg}`;
+    const baseName = (scala.names && scala.names[deg]) ? scala.names[deg] : `S${deg}`;
     return `${baseName}${effectiveOctave}`;
   } else {
     const N = gridState.tuning.edo || 12;
@@ -1784,12 +1709,13 @@ function drawKeyActive(idx, isActive) {
 
 function noteOn(idx){ 
   if(activeVoices.has(idx)) return; 
-  ensureAudioActive();
+  unlockAudio();
+  const ctx = getAudioContext();
   
   const freq = frequencyForIndex(idx); 
   const wave = waveSel.value; 
   const release = parseFloat(releaseInput.value) || 120; 
-  const voice = new Synth(audioCtx, masterGain, wave, release); 
+  const voice = new Synth(ctx, masterGain, wave, release); 
   activeVoices.set(idx, voice); 
   voice.start(freq); 
   drawKeyActive(idx, true);
@@ -1806,7 +1732,6 @@ function noteOff(idx){
 }
 
 function stopAllVoices() { 
-    ensureAudioActive();
     activeVoices.forEach((voice, idx) => voice.release()); 
     activeVoices.clear();
     renderGrid();
@@ -1829,7 +1754,7 @@ function canvasPosToIndex(e) {
 
 canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault(); 
-  ensureAudioActive();
+  unlockAudio();
   
   const idx = canvasPosToIndex(e); 
   if(idx !== -1) { 
@@ -1876,7 +1801,7 @@ canvas.addEventListener('pointerup', handlePointerUp);
 canvas.addEventListener('pointercancel', handlePointerUp);
 
 applyBtn.addEventListener('click', () => { 
-  ensureAudioActive(); 
+  unlockAudio();
   buildStateFromUI(); 
 });
 
@@ -1885,7 +1810,6 @@ stopAllBtn.addEventListener('click', stopAllVoices);
 window.addEventListener('resize', () => { resizeCanvas(); renderGrid(); });
 
 document.addEventListener('DOMContentLoaded', () => {
-    setupBackgroundAudioPersistence();
     buildStateFromUI();
 });
 </script>
