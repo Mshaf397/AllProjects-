@@ -537,66 +537,119 @@ document.getElementById('noticeCloseBtn').addEventListener('click', () => {
   document.getElementById('customNoticeModal').style.display = 'none';
 });
 
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+// Master AudioContext initialization with webkit prefix support for iPadOS WebKit browsers
+const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContextClass();
 const masterGain = audioCtx.createGain();
 masterGain.connect(audioCtx.destination);
 
-// --- AMBIENT BACKGROUND PERSISTENCE SETUP FOR IPADOS ---
-let workerKeepAlive = null;
+// On iPadOS, Web Audio (AudioContext) alone is suspended when switching tabs or backgrounding.
+// iOS WebKit requires an active HTML5 <audio> element to maintain the system AudioSession.
+// We create a silent audio element running a looped base64 WAV file to trick WebKit into keeping
+// the tab's audio session alive in background across Safari, Chrome, Opera, and DuckDuckGo.
+const silentAudio = document.createElement('audio');
+silentAudio.setAttribute('playsinline', 'true');
+silentAudio.setAttribute('webkit-playsinline', 'true');
+silentAudio.setAttribute('loop', 'true');
+silentAudio.preload = 'auto';
+// 1-second silent WAV Data URL
+silentAudio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
 
-function setupBackgroundAudioPersistence() {
-  // 1. Web Worker keep-alive to prevent tab throttling
-  // We use an inline worker blob to keep processing on a background thread
-  const workerBlob = new Blob([`
-    let interval;
-    self.onmessage = function(e) {
-      if (e.data === 'start') {
-        interval = setInterval(() => self.postMessage('tick'), 1000);
-      } else if (e.data === 'stop') {
-        clearInterval(interval);
-      }
-    };
-  `], { type: 'application/javascript' });
+let isUnlocked = false;
 
-  const blobUrl = URL.createObjectURL(workerBlob);
-  workerKeepAlive = new Worker(blobUrl);
-  URL.revokeObjectURL(blobUrl);
+// Function to keep both AudioContext and the silent background audio active
+async function ensureAudioActive() {
+  try {
+    // Keep silent HTML5 audio playing to preserve WebKit AudioSession focus
+    if (silentAudio.paused && isUnlocked) {
+      await silentAudio.play().catch(() => {});
+    }
 
-  workerKeepAlive.onmessage = () => {
-    ensureAudioActive();
-  };
-  workerKeepAlive.postMessage('start');
-}
-
-function ensureAudioActive() {
-  // Pure Web Audio resume allows ambient mixing on iPadOS
-  if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
-    audioCtx.resume().catch(() => {});
+    // Resume Web Audio Context if suspended or interrupted by YouTube / background apps
+    if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
+      await audioCtx.resume().catch(() => {});
+    }
+  } catch (err) {
+    // Suppress potential autoplay rejection errors before user gesture
   }
 }
 
-// User interaction unlocks audio on iPadOS Safari without taking focus
+// iPadOS requires an explicit user gesture (touch/click) to unlock audio playback privileges.
 function unlockAudioContext() {
   ensureAudioActive();
-  if (audioCtx.state === 'running') {
+
+  if (silentAudio.paused) {
+    silentAudio.play().then(() => {
+      isUnlocked = true;
+    }).catch(() => {});
+  } else {
+    isUnlocked = true;
+  }
+
+  // Once audio context is running and unlocked, clean up initial interaction listeners
+  if (audioCtx.state === 'running' && isUnlocked) {
     window.removeEventListener('touchstart', unlockAudioContext);
+    window.removeEventListener('touchend', unlockAudioContext);
     window.removeEventListener('click', unlockAudioContext);
+    window.removeEventListener('keydown', unlockAudioContext);
   }
 }
 
+// Bind unlock handlers to screen touch and interaction events
 window.addEventListener('touchstart', unlockAudioContext, { passive: true });
+window.addEventListener('touchend', unlockAudioContext, { passive: true });
 window.addEventListener('click', unlockAudioContext);
+window.addEventListener('keydown', unlockAudioContext);
 
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
+// Web Worker keep-alive thread to periodically trigger state checks
+let workerKeepAlive = null;
+
+function setupBackgroundWorker() {
+  try {
+    const workerBlob = new Blob([`
+      let timer = null;
+      self.onmessage = function(e) {
+        if (e.data === 'start') {
+          if (!timer) timer = setInterval(() => self.postMessage('tick'), 500);
+        } else if (e.data === 'stop') {
+          if (timer) { clearInterval(timer); timer = null; }
+        }
+      };
+    `], { type: 'application/javascript' });
+
+    const blobUrl = URL.createObjectURL(workerBlob);
+    workerKeepAlive = new Worker(blobUrl);
+    URL.revokeObjectURL(blobUrl);
+
+    workerKeepAlive.onmessage = () => {
+      ensureAudioActive();
+    };
+    workerKeepAlive.postMessage('start');
+  } catch (e) {
+    // Fallback if workers are restricted in custom webview containers
+  }
+}
+
+setupBackgroundWorker();
+
+// iOS WebKit triggers statechange 'interrupted' when YouTube or system audio takes focus.
+// Re-attempting audio context resumption instantly on statechange allows audio recovery.
+audioCtx.addEventListener('statechange', () => {
+  if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
     ensureAudioActive();
   }
 });
 
+// Monitor tab switches, visibility changes, page hide/show, and window blur/focus events
+document.addEventListener('visibilitychange', ensureAudioActive);
 window.addEventListener('focus', ensureAudioActive);
+window.addEventListener('blur', ensureAudioActive);
+window.addEventListener('pageshow', ensureAudioActive);
+window.addEventListener('pagehide', ensureAudioActive);
 
-audioCtx.addEventListener('statechange', () => {
-  if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
+// Automatically re-trigger silent audio if paused by system interruption or tab freeze
+silentAudio.addEventListener('pause', () => {
+  if (isUnlocked) {
     ensureAudioActive();
   }
 });
