@@ -97,6 +97,13 @@
       background: #000000;
       color: #ffffff;
     }
+    button.btn-accent {
+      background: #000000;
+      color: #ffffff;
+    }
+    button.btn-accent:active {
+      background: #444444;
+    }
     .hint {
       font-size: 10px;
       color: #555555;
@@ -156,6 +163,57 @@
       font-size: 11px;
       margin-top: 6px;
       background: #fafafa;
+    }
+    /* Modal / Drawer Overlay styling */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-card {
+      background: #ffffff;
+      border: 2px solid #000000;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      box-shadow: 4px 4px 0px #000000;
+    }
+    .scl-preview {
+      width: 100%;
+      height: 220px;
+      font-family: monospace;
+      font-size: 11px;
+      border: 1px solid #000000;
+      padding: 6px;
+      white-space: pre;
+      overflow: auto;
+      background: #fdfdfd;
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+    .toast-msg {
+      display: none;
+      border: 1px solid #000000;
+      background: #000000;
+      color: #ffffff;
+      padding: 6px 10px;
+      font-size: 11px;
+      margin-top: 6px;
+      text-align: center;
     }
   </style>
 </head>
@@ -254,6 +312,17 @@
           Status: <strong id="mos-status-text">Valid Scale</strong>
         </div>
       </div>
+
+      <!-- Scala Export Card -->
+      <div class="card">
+        <div class="card-title">Scala Export (.scl)</div>
+        <div style="font-size: 11px; margin-bottom: 6px;">Export current temperament as a standard Scala tuning file.</div>
+        <div class="btn-group">
+          <button id="btn-export-scl" class="btn-accent" style="flex:1;">Download .scl File</button>
+          <button id="btn-preview-scl" style="flex:1;">View / Copy SCL</button>
+        </div>
+        <div id="toast-message" class="toast-msg"></div>
+      </div>
     </div>
 
     <!-- Right Workspace Area -->
@@ -264,6 +333,7 @@
           <div class="btn-group">
             <button id="btn-sort-pitch">Sort: Pitch</button>
             <button id="btn-sort-gen">Sort: Chain</button>
+            <button id="btn-quick-export" title="Export .scl file">Save .scl</button>
           </div>
         </div>
 
@@ -288,6 +358,23 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- Scala Preview Modal -->
+  <div class="modal-overlay" id="scl-modal">
+    <div class="modal-card">
+      <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Scala File Preview (.scl)</span>
+        <button id="btn-close-modal">✕</button>
+      </div>
+      <div style="font-size: 11px; color: #444;">Standard Scala format scale representation:</div>
+      <textarea id="scl-preview-text" class="scl-preview" readonly></textarea>
+      <div class="btn-group">
+        <button id="btn-modal-copy" class="btn-accent">Copy to Clipboard</button>
+        <button id="btn-modal-download">Download .scl</button>
+        <button id="btn-modal-close-2">Close</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -449,11 +536,10 @@
         if (state.generators[i] > maxG) maxG = state.generators[i];
       }
 
-            // Calculate the average step size (EDO step size in cents)
+      // Calculate the average step size (EDO step size in cents)
       const avgStepCents = state.periodCents / state.N;
 
       // Allow maximum generator distortion to be a ratio of 1 EDO step
-      // e.g., 0.50 means maxG - minG must be less than 50% of an EDO step
       const stepDistortionRatio = 0.25; 
       const relativeThreshold = avgStepCents * stepDistortionRatio;
 
@@ -466,7 +552,7 @@
       }
 
       renderTable();
-}
+    }
 
     function renderTable() {
       const tbody = document.getElementById('table-body');
@@ -492,6 +578,107 @@
 
         tbody.appendChild(tr);
       }
+    }
+
+    /**
+     * Generates a valid .scl (Scala) string representation.
+     * Scala format spec:
+     * Line 1: Description text
+     * Line 2: Count of notes N
+     * Lines 3..N+2: Pitch degrees (1 to N). Note N is period (e.g. 1200.0).
+     * Pitch values with explicit decimal point '.' are treated as cents.
+     */
+    function generateSclContent() {
+      var safeGenStr = state.generatorInput.replace(/[^a-zA-Z0-9.\/]/g, '');
+      var safePeriodStr = state.periodInput.replace(/[^a-zA-Z0-9.\/]/g, '');
+      
+      var lines = [];
+      lines.push("! well_temperament_" + state.N + "T.scl");
+      lines.push("!");
+      lines.push("Well Temperament Studio: " + state.N + " tones, g=" + safeGenStr + ", period=" + safePeriodStr + ", profile=" + state.profile);
+      lines.push(" " + state.N);
+      lines.push("!");
+
+      // Degree 0 (1/1, 0.0 cents) is implicit in Scala format.
+      // We iterate degrees 1 to N-1 from state.sortedPitches (skipping degree 0 which is ~0.0 cents)
+      for (var i = 1; i < state.sortedPitches.length; i++) {
+        var centsVal = state.sortedPitches[i].pitchCents;
+        lines.push(" " + centsVal.toFixed(5));
+      }
+
+      // Degree N is the formal period (e.g., 1200.00000 cents)
+      lines.push(" " + state.periodCents.toFixed(5));
+
+      return lines.join("\r\n") + "\r\n";
+    }
+
+    function exportSclFile() {
+      try {
+        var sclContent = generateSclContent();
+        var cleanGenName = state.generatorInput.replace(/[\/\\]/g, '_');
+        var filename = "well_temp_" + state.N + "T_g" + cleanGenName + ".scl";
+
+        var blob = new Blob([sclContent], { type: "text/plain;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(function() {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 150);
+
+        showNotification("Exported " + filename);
+      } catch (e) {
+        showNotification("Export error: " + e.message);
+      }
+    }
+
+    function copySclToClipboard() {
+      var sclText = generateSclContent();
+      var textarea = document.createElement('textarea');
+      textarea.value = sclText;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      textarea.style.top = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      
+      var successful = false;
+      try {
+        successful = document.execCommand('copy');
+      } catch (err) {
+        successful = false;
+      }
+      document.body.removeChild(textarea);
+
+      if (successful) {
+        showNotification("SCL copied to clipboard!");
+      } else {
+        showNotification("Unable to auto-copy. Select text in preview modal.");
+      }
+    }
+
+    function openSclModal() {
+      var sclText = generateSclContent();
+      document.getElementById('scl-preview-text').value = sclText;
+      document.getElementById('scl-modal').classList.add('active');
+    }
+
+    function closeSclModal() {
+      document.getElementById('scl-modal').classList.remove('active');
+    }
+
+    function showNotification(msg) {
+      var toast = document.getElementById('toast-message');
+      toast.innerText = msg;
+      toast.style.display = 'block';
+      setTimeout(function() {
+        toast.style.display = 'none';
+      }, 3000);
     }
 
     function setN(n) {
@@ -545,6 +732,15 @@
         state.sortMode = 'generator';
         renderTable();
       });
+
+      // Export & Modal Event Listeners
+      document.getElementById('btn-export-scl').addEventListener('click', exportSclFile);
+      document.getElementById('btn-quick-export').addEventListener('click', exportSclFile);
+      document.getElementById('btn-preview-scl').addEventListener('click', openSclModal);
+      document.getElementById('btn-close-modal').addEventListener('click', closeSclModal);
+      document.getElementById('btn-modal-close-2').addEventListener('click', closeSclModal);
+      document.getElementById('btn-modal-download').addEventListener('click', exportSclFile);
+      document.getElementById('btn-modal-copy').addEventListener('click', copySclToClipboard);
     }
 
     window.onload = function() {
