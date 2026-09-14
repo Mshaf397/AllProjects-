@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spark Quest - Gentle Responsibility Gamifier</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --color-cat1: #1e3a8a; /* Slate Blue - Dark contrast on e-ink */
+            --color-cat2: #065f46; /* Emerald Teal - Medium dark pattern */
+            --color-cat3: #7c2d12; /* Warm Amber/Rust */
+            --color-cat4: #581c87; /* Plum/Purple */
+            --color-cat5: #831843; /* Deep Rose */
+        }
+
+        body { 
+            background-color: #ffffff; 
+            color: #000000; 
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            -webkit-font-smoothing: antialiased;
+            touch-action: manipulation;
+        }
+
+        /* Kindle E-Ink high contrast borders & tactile buttons */
+        .kindle-border { border: 3px solid #000000; }
+        .kindle-border-sm { border: 2px solid #000000; }
+        
+        .kindle-btn { 
+            background-color: #ffffff; 
+            border: 3px solid #000000; 
+            color: #000000; 
+            touch-action: manipulation; 
+            font-weight: 800; 
+            min-height: 48px; 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 3px 3px 0px #000000;
+            transition: transform 0.05s, box-shadow 0.05s;
+        }
+        
+        .kindle-btn:active { 
+            background-color: #000000 !important; 
+            color: #ffffff !important; 
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px #000000;
+        }
+
+        .kindle-btn-sm {
+            min-height: 38px;
+            padding: 4px 10px;
+            font-size: 0.875rem;
+        }
+
+        /* Progress Bar High Contrast */
+        .progress-container { 
+            height: 32px; 
+            border: 3px solid #000000; 
+            background: #ffffff; 
+            position: relative; 
+            overflow: hidden; 
+        }
+        
+        .progress-bar { 
+            height: 100%; 
+            background-color: #000000; 
+            width: 0%; 
+            transition: width 0.3s ease-in-out; 
+        }
+
+        input, select { 
+            border: 3px solid #000000 !important; 
+            border-radius: 0 !important; 
+            min-height: 48px; 
+            padding: 8px 12px; 
+            font-size: 16px; 
+            background-color: #ffffff;
+            color: #000000;
+            font-weight: bold;
+        }
+
+        .hidden { display: none !important; }
+
+        #error-popup { 
+            position: fixed; 
+            bottom: 12px; 
+            left: 12px; 
+            right: 12px; 
+            background: #000; 
+            color: #fff; 
+            padding: 12px; 
+            border: 3px solid #fff; 
+            z-index: 200; 
+            display: none; 
+            font-size: 14px; 
+            font-weight: bold;
+        }
+
+        .nav-bar { 
+            display: flex; 
+            border-bottom: 4px solid #000; 
+            background: #fff; 
+            position: sticky; 
+            top: 0; 
+            z-index: 50; 
+        }
+
+        .nav-item { 
+            flex: 1; 
+            text-align: center; 
+            padding: 12px 2px; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            font-size: 12px; 
+            border-right: 2px solid #000; 
+            cursor: pointer; 
+            user-select: none;
+        }
+        
+        .nav-item.active { 
+            background: #000; 
+            color: #fff; 
+        }
+
+        .category-tab {
+            border: 3px solid #000;
+            padding: 8px 12px;
+            font-weight: 800;
+            font-size: 13px;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 2px 2px 0px #000;
+            margin-bottom: 6px;
+        }
+
+        .category-tab.active {
+            background-color: #000 !important;
+            color: #fff !important;
+        }
+
+        /* Distinct color accents that map clearly to grayscale shading */
+        .cat-bg-0 { background-color: #eff6ff; border-left: 8px solid var(--color-cat1); }
+        .cat-bg-1 { background-color: #ecfdf5; border-left: 8px solid var(--color-cat2); }
+        .cat-bg-2 { background-color: #fff7ed; border-left: 8px solid var(--color-cat3); }
+        .cat-bg-3 { background-color: #faf5ff; border-left: 8px solid var(--color-cat4); }
+        .cat-bg-4 { background-color: #fdf2f8; border-left: 8px solid var(--color-cat5); }
+
+        .cat-pill-0 { background-color: var(--color-cat1); color: #fff; }
+        .cat-pill-1 { background-color: var(--color-cat2); color: #fff; }
+        .cat-pill-2 { background-color: var(--color-cat3); color: #fff; }
+        .cat-pill-3 { background-color: var(--color-cat4); color: #fff; }
+        .cat-pill-4 { background-color: var(--color-cat5); color: #fff; }
+
+        /* Banner animation for level up */
+        @keyframes pulse-border {
+            0%, 100% { border-color: #000; }
+            50% { border-color: #666; }
+        }
+        .level-up-banner {
+            animation: pulse-border 1s infinite;
+        }
+    </style>
+</head>
+<body class="max-w-md mx-auto bg-white min-h-screen pb-12">
+    <div id="error-popup"></div>
+
+    <div id="app-container">
+        <!-- Auth Screen -->
+        <div id="auth-screen" class="p-4 py-8 space-y-6">
+            <header class="border-b-4 border-black pb-3 text-center">
+                <h1 class="text-3xl font-black uppercase tracking-tight">Spark Quest</h1>
+                <p class="text-xs font-bold uppercase mt-1 tracking-widest bg-black text-white py-1">Low-Demand XP Deck</p>
+            </header>
+            
+            <div class="kindle-border p-4 bg-gray-50 space-y-3">
+                <p class="text-xs font-bold uppercase leading-relaxed">
+                    Welcome! This tool offers gentle, demand-free choices. Everything is optional. Earn XP at your own pace with zero penalties.
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <label class="block text-xs font-black uppercase">Enter Your Passkey</label>
+                <input type="text" id="passkey-input" placeholder="e.g. spark2026" class="w-full text-lowercase">
+                <button id="enter-btn" class="kindle-btn w-full uppercase text-xl">Enter Quest Deck</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content" class="hidden">
+            <nav class="nav-bar">
+                <div id="nav-quests" class="nav-item active" onclick="switchTab('quests')">Quests</div>
+                <div id="nav-random" class="nav-item" onclick="switchTab('random')">Pick 4 Me</div>
+                <div id="nav-log" class="nav-item" onclick="switchTab('log')">History</div>
+                <div class="nav-item" onclick="logout()" style="border-right:none; background:#eee; color:black; max-width: 44px;">X</div>
+            </nav>
+
+            <div class="p-3 space-y-4">
+                <!-- Status & Clock Bar -->
+                <div class="flex justify-between items-center border-b-4 border-black pb-2">
+                    <div class="flex items-center space-x-2">
+                        <span id="passkey-display" class="font-black text-xs uppercase bg-black text-white px-2 py-0.5">KEY</span>
+                        <span id="sync-status" class="text-xs font-bold">Synced</span>
+                    </div>
+                    <div id="clock" class="text-base font-mono font-black">00:00</div>
+                </div>
+
+                <section id="level-card" class="kindle-border p-3 space-y-2 bg-white">
+                    <div class="flex justify-between items-baseline">
+                        <div>
+                            <span class="text-xs font-black uppercase text-gray-600 block">Current Status</span>
+                            <span class="text-3xl font-black uppercase">LEVEL <span id="player-level">1</span></span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-bold uppercase text-gray-600 block">Total Earned</span>
+                            <span class="text-lg font-black"><span id="player-total-xp">0</span> XP</span>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar for Current Level -->
+                    <div class="space-y-1">
+                        <div class="progress-container">
+                            <div id="xp-progress-bar" class="progress-bar"></div>
+                        </div>
+                        <div class="flex justify-between text-xs font-black uppercase">
+                            <span>Level Progress: <span id="level-current-xp">0</span> / <span id="level-target-xp">32</span> XP</span>
+                            <span id="level-percent">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Formula Info -->
+                    <div class="text-[10px] font-bold text-gray-700 uppercase border-t-2 border-black pt-1 mt-1 flex justify-between">
+                        <span>Level Formula: 2^(L+4) XP</span>
+                        <span id="next-level-req">Next Level: 64 XP</span>
+                    </div>
+                </section>
+
+                <!-- Level Up Banner Modal Notification -->
+                <div id="level-up-banner" class="hidden kindle-border level-up-banner bg-black text-white p-3 text-center space-y-1">
+                    <div class="text-xl font-black uppercase text-yellow-300">Level Up Achieved!</div>
+                    <div class="text-xs font-bold">You reached Level <span id="new-level-num">2</span>! Extraordinary work taking care of yourself.</div>
+                    <button onclick="dismissLevelUp()" class="kindle-btn kindle-btn-sm w-full mt-2 text-black bg-white">AWESOME</button>
+                </div>
+
+                <!-- VIEW 1: QUEST DECK -->
+                <div id="view-quests" class="view-panel space-y-4">
+                    <!-- Category Selector Bar -->
+                    <div>
+                        <span class="text-xs font-black uppercase block mb-1">Select Realm / Focus:</span>
+                        <div id="category-tabs" class="grid grid-cols-2 gap-1.5">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Actions List -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center border-b-2 border-black pb-1">
+                            <h2 id="current-category-title" class="font-black uppercase text-sm">Category Actions</h2>
+                            <span id="category-action-count" class="text-xs font-bold bg-black text-white px-1.5 py-0.5">0 actions</span>
+                        </div>
+                        
+                        <div id="action-deck-container" class="space-y-2.5">
+                            <!-- Action Cards dynamically rendered -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: PICK FOR ME (PDA Choice Paralysis Assistant) -->
+                <div id="view-random" class="view-panel hidden space-y-4">
+                    <div class="kindle-border p-3 bg-gray-50 space-y-2">
+                        <h2 class="font-black uppercase text-base">Surprise Choice (Zero Pressure)</h2>
+                        <p class="text-xs font-bold leading-relaxed">
+                            Feeling overwhelmed by options? Click below for a single suggested micro-action. You can roll as many times as you like, or ignore it completely.
+                        </p>
+                    </div>
+
+                    <div id="random-card-container" class="kindle-border p-4 text-center space-y-4 bg-white">
+                        <div class="text-xs font-bold uppercase text-gray-500" id="random-cat-badge">Tap below to spark an idea</div>
+                        <div id="random-action-title" class="text-2xl font-black uppercase py-4">Ready when you are!</div>
+                        <div id="random-xp-tag" class="text-sm font-black bg-black text-white py-1 px-3 inline-block">-- XP</div>
+                        
+                        <div class="pt-2 space-y-2">
+                            <button id="do-random-btn" onclick="completeRandomAction()" class="kindle-btn w-full uppercase hidden bg-black text-white">Log This Action</button>
+                            <button onclick="generateRandomAction()" class="kindle-btn w-full uppercase">Surprise Me / Reroll</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 3: HISTORY LOG -->
+                <div id="view-log" class="view-panel hidden space-y-4">
+                    <div class="flex justify-between items-center border-b-2 border-black pb-1">
+                        <h2 class="font-black uppercase text-sm">Recent Accomplishments</h2>
+                        <button onclick="clearTodayLogPrompt()" class="kindle-btn kindle-btn-sm text-xs">Reset Deck</button>
+                    </div>
+
+                    <div id="history-log-list" class="space-y-2 text-sm">
+                        <!-- History items -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Configuration (supports environment config or fallback)
+        const myConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyC-UIB5l1bo_apccqskT6LAHvliQoc-U-s",
+            authDomain: "all-my-projects-3cf20.firebaseapp.com",
+            projectId: "all-my-projects-3cf20",
+            storageBucket: "all-my-projects-3cf20.firebasestorage.app",
+            messagingSenderId: "245058314875",
+            appId: "1:245058314875:web:1b9fead1655343416838de"
+        };
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'spark-quest-pda';
+
+        // Initialize Firebase
+        const app = initializeApp(myConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Awaitable authentication initialization
+        let authPromise = null;
+        async function ensureAuth() {
+            if (!authPromise) {
+                authPromise = (async () => {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (err) {
+                        console.warn("Auth fallback to anonymous:", err);
+                        await signInAnonymously(auth);
+                    }
+                })();
+            }
+            return authPromise;
+        }
+
+        // Helper to get safe Document Reference following security rule requirements
+        function getDocRef() {
+            const safeKey = encodeURIComponent(currentPasskey).replace(/\./g, '%2E');
+            return doc(db, 'artifacts', appId, 'public', 'data', 'pda_gamifier', safeKey);
+        }
+
+        // JS Array for Categories & Actions (Edit directly in code to add/edit items!)
+        const CATEGORIES = [
+            {
+                id: "cat_selfcare",
+                name: "Self-Care & Regulate",
+                desc: "Gentle grounding, nervous system care, and sensory reset.",
+                actions: [
+                    { id: "sc_1", title: "Take 3 slow deep breaths", xp: 5 },
+                    { id: "sc_2", title: "Drink a glass of water", xp: 10 },
+                    { id: "sc_3", title: "Wash face or hands with warm water", xp: 15 },
+                    { id: "sc_4", title: "Take medication / supplements", xp: 15 },
+                    { id: "sc_5", title: "Gentle stretch for 1 minute", xp: 10 },
+                    { id: "sc_6", title: "Rest under a cozy/weighted blanket", xp: 10 }
+                ]
+            },
+            {
+                id: "cat_space",
+                name: "Environment & Space",
+                desc: "Micro-tidying without pressure. Pick 1 tiny item.",
+                actions: [
+                    { id: "sp_1", title: "Toss 1 piece of trash in bin", xp: 5 },
+                    { id: "sp_2", title: "Pick up 3 items off floor", xp: 10 },
+                    { id: "sp_3", title: "Open a window for 2 mins of fresh air", xp: 10 },
+                    { id: "sp_4", title: "Wipe down 1 small surface area", xp: 20 },
+                    { id: "sp_5", title: "Clear 1 small corner of desk", xp: 15 },
+                    { id: "sp_6", title: "Change bed linen or pillowcase", xp: 35 }
+                ]
+            },
+            {
+                id: "cat_nourish",
+                name: "Nourishment & Body",
+                desc: "Fueling your body smoothly with minimal friction.",
+                actions: [
+                    { id: "no_1", title: "Eat a quick zero-prep snack", xp: 10 },
+                    { id: "no_2", title: "Eat a fruit or piece of veg", xp: 15 },
+                    { id: "no_3", title: "Sit down comfortably while eating", xp: 5 },
+                    { id: "no_4", title: "Refill water bottle for later", xp: 10 }
+                ]
+            },
+            {
+                id: "cat_exec",
+                name: "Executive Function",
+                desc: "Bite-sized micro-wins for admin & hyperfocus overwhelm.",
+                actions: [
+                    { id: "ef_1", title: "Write down 1 thought or memory focus", xp: 10 },
+                    { id: "ef_2", title: "Open and read 1 important email/mail", xp: 15 },
+                    { id: "ef_3", title: "Send a 1-sentence reply message", xp: 20 },
+                    { id: "ef_4", title: "Set a gentle reminder timer", xp: 5 },
+                    { id: "ef_5", title: "Work on 1 admin task for 5 minutes", xp: 25 },
+                    { id: "ef_6", title: "File or delete 5 clutter files", xp: 15 },
+                    { id: "ef_7", title: "Complete 1 overdue phone call/task", xp: 40 }
+                ]
+            },
+            {
+                id: "cat_joy",
+                name: "Joy & Hyperfocus Reset",
+                desc: "Honoring hyperfixations, rest, and sensory pleasure.",
+                actions: [
+                    { id: "jy_1", title: "Listen to 1 favorite song with full focus", xp: 10 },
+                    { id: "jy_2", title: "10 mins hyperfocus on special interest", xp: 20 },
+                    { id: "jy_3", title: "Step outside or look at trees for 2 mins", xp: 15 },
+                    { id: "jy_4", title: "Doodle, fidget, or stem freely", xp: 10 }
+                ]
+            }
+        ];
+
+        let currentPasskey = localStorage.getItem('kindle_pda_passkey') || '';
+        let userData = null;
+        let activeTab = 'quests';
+        let selectedCategoryIdx = 0;
+        let activeRandomAction = null;
+        let unsubscribe = null;
+
+        // Display error message modal
+        const showError = (msg) => {
+            const p = document.getElementById('error-popup');
+            p.textContent = msg; 
+            p.style.display = 'block';
+            setTimeout(() => { p.style.display = 'none'; }, 6000);
+        };
+
+        /* 
+           LEVELING FORMULA ENGINE:
+           Requirement for passing Level L is 2^(L+4) XP.
+           Level 1: 2^(1+4) = 32 XP
+           Level 2: 2^(2+4) = 64 XP
+           Level 3: 2^(3+4) = 128 XP
+           Level 4: 2^(4+4) = 256 XP
+        */
+        const getXPRequiredForLevel = (level) => {
+            return Math.pow(2, level + 4);
+        };
+
+        const calculateLevelData = (totalXP) => {
+            let lvl = 1;
+            let remainingXP = totalXP || 0;
+            let currentLevelReq = getXPRequiredForLevel(lvl);
+
+            while (remainingXP >= currentLevelReq) {
+                remainingXP -= currentLevelReq;
+                lvl++;
+                currentLevelReq = getXPRequiredForLevel(lvl);
+            }
+
+            return {
+                level: lvl,
+                xpInCurrentLevel: remainingXP,
+                xpTargetForCurrentLevel: currentLevelReq,
+                percent: Math.min(100, Math.floor((remainingXP / currentLevelReq) * 100))
+            };
+        };
+
+        window.switchTab = (tab) => {
+            activeTab = tab;
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            const targetNav = document.getElementById(`nav-${tab}`);
+            if (targetNav) targetNav.classList.add('active');
+
+            document.querySelectorAll('.view-panel').forEach(el => el.classList.add('hidden'));
+            const targetView = document.getElementById(`view-${tab}`);
+            if (targetView) targetView.classList.remove('hidden');
+
+            if (tab === 'quests') renderQuestDeck();
+            if (tab === 'log') renderHistoryLog();
+            if (tab === 'random' && !activeRandomAction) generateRandomAction();
+        };
+
+        async function startApp(key) {
+            currentPasskey = key.toLowerCase().trim();
+            localStorage.setItem('kindle_pda_passkey', currentPasskey);
+            
+            document.getElementById('passkey-display').textContent = currentPasskey;
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+
+            document.getElementById('sync-status').textContent = "Connecting...";
+
+            try {
+                await ensureAuth();
+
+                const docRef = getDocRef();
+
+                if (unsubscribe) unsubscribe();
+
+                unsubscribe = onSnapshot(docRef, (snap) => {
+                    document.getElementById('sync-status').textContent = "Synced";
+                    if (snap.exists()) {
+                        userData = snap.data();
+                    } else {
+                        userData = {
+                            totalXP: 0,
+                            logs: []
+                        };
+                        setDoc(docRef, userData);
+                    }
+                    renderAll();
+                }, (err) => {
+                    console.error("Firestore Snapshot Error:", err);
+                    document.getElementById('sync-status').textContent = "Sync Error";
+                    showError("Firestore Error: " + err.message);
+                });
+            } catch (err) {
+                console.error("Start App Error:", err);
+                document.getElementById('sync-status').textContent = "Auth Error";
+                showError("Auth Error: " + err.message);
+            }
+        }
+
+        function renderAll() {
+            if (!userData) return;
+
+            const levelInfo = calculateLevelData(userData.totalXP || 0);
+
+            const oldLevel = parseInt(document.getElementById('player-level').textContent || '1');
+            if (levelInfo.level > oldLevel && oldLevel > 0) {
+                document.getElementById('new-level-num').textContent = levelInfo.level;
+                document.getElementById('level-up-banner').classList.remove('hidden');
+            }
+
+            document.getElementById('player-level').textContent = levelInfo.level;
+            document.getElementById('player-total-xp').textContent = (userData.totalXP || 0).toLocaleString();
+            document.getElementById('level-current-xp').textContent = levelInfo.xpInCurrentLevel;
+            document.getElementById('level-target-xp').textContent = levelInfo.xpTargetForCurrentLevel;
+            document.getElementById('level-percent').textContent = `${levelInfo.percent}%`;
+            document.getElementById('xp-progress-bar').style.width = `${levelInfo.percent}%`;
+            
+            const nextLvlCost = getXPRequiredForLevel(levelInfo.level + 1);
+            document.getElementById('next-level-req').textContent = `Level ${levelInfo.level + 1}: ${nextLvlCost} XP`;
+
+            if (activeTab === 'quests') renderQuestDeck();
+            if (activeTab === 'log') renderHistoryLog();
+        }
+
+        window.dismissLevelUp = () => {
+            document.getElementById('level-up-banner').classList.add('hidden');
+        };
+
+        function renderQuestDeck() {
+            const catTabContainer = document.getElementById('category-tabs');
+            catTabContainer.innerHTML = '';
+
+            CATEGORIES.forEach((cat, idx) => {
+                const btn = document.createElement('div');
+                const isSelected = idx === selectedCategoryIdx;
+                btn.className = `category-tab cat-bg-${idx % 5} ${isSelected ? 'active' : ''}`;
+                btn.textContent = cat.name;
+                btn.onclick = () => {
+                    selectedCategoryIdx = idx;
+                    renderQuestDeck();
+                };
+                catTabContainer.appendChild(btn);
+            });
+
+            const currentCat = CATEGORIES[selectedCategoryIdx] || CATEGORIES[0];
+            document.getElementById('current-category-title').textContent = currentCat.name;
+            document.getElementById('category-action-count').textContent = `${currentCat.actions.length} options`;
+
+            const deckContainer = document.getElementById('action-deck-container');
+            deckContainer.innerHTML = '';
+
+            if (!currentCat.actions || currentCat.actions.length === 0) {
+                deckContainer.innerHTML = `<div class="kindle-border p-3 text-center italic text-xs">No actions in this realm. Add items to the CATEGORIES array in the JS code!</div>`;
+                return;
+            }
+
+            currentCat.actions.forEach(action => {
+                const card = document.createElement('div');
+                card.className = `kindle-border p-3 flex justify-between items-center space-x-2 bg-white`;
+                
+                card.innerHTML = `
+                    <div class="flex-1">
+                        <div class="font-black text-sm uppercase leading-tight">${action.title}</div>
+                        <div class="text-xs font-bold text-gray-600 mt-0.5">Worth: <span class="font-black text-black">+${action.xp} XP</span></div>
+                    </div>
+                    <button onclick="window.completeAction('${currentCat.id}', '${action.id}', ${action.xp}, '${escapeQuotes(action.title)}')" class="kindle-btn kindle-btn-sm bg-black text-white px-3 font-black">
+                        +${action.xp} XP
+                    </button>
+                `;
+                deckContainer.appendChild(card);
+            });
+        }
+
+        function escapeQuotes(str) {
+            return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        window.completeAction = async (catId, actionId, xpAmount, actionTitle) => {
+            if (!userData) return;
+
+            const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const today = new Date().toISOString().split('T')[0];
+
+            const newTotalXP = (userData.totalXP || 0) + xpAmount;
+            const logEntry = {
+                title: actionTitle,
+                xp: xpAmount,
+                time: time,
+                date: today
+            };
+
+            const docRef = getDocRef();
+
+            try {
+                await updateDoc(docRef, {
+                    totalXP: newTotalXP,
+                    logs: arrayUnion(logEntry)
+                });
+            } catch (err) {
+                console.error(err);
+                showError("Save error: " + err.message);
+            }
+        };
+
+        window.generateRandomAction = () => {
+            const allActions = [];
+            CATEGORIES.forEach((cat, cIdx) => {
+                cat.actions.forEach(act => {
+                    allActions.push({ ...act, catName: cat.name, catIdx: cIdx, catId: cat.id });
+                });
+            });
+
+            if (allActions.length === 0) return;
+
+            const randomChoice = allActions[Math.floor(Math.random() * allActions.length)];
+            activeRandomAction = randomChoice;
+
+            document.getElementById('random-cat-badge').textContent = `Realm: ${randomChoice.catName}`;
+            document.getElementById('random-action-title').textContent = randomChoice.title;
+            document.getElementById('random-xp-tag').textContent = `+${randomChoice.xp} XP`;
+            document.getElementById('do-random-btn').classList.remove('hidden');
+        };
+
+        window.completeRandomAction = () => {
+            if (!activeRandomAction) return;
+            window.completeAction(activeRandomAction.catId, activeRandomAction.id, activeRandomAction.xp, activeRandomAction.title);
+            activeRandomAction = null;
+            document.getElementById('random-action-title').textContent = "Awesome Job logged!";
+            document.getElementById('random-xp-tag').textContent = "-- XP";
+            document.getElementById('do-random-btn').classList.add('hidden');
+        };
+
+        function renderHistoryLog() {
+            const list = document.getElementById('history-log-list');
+            list.innerHTML = '';
+
+            if (!userData || !userData.logs || userData.logs.length === 0) {
+                list.innerHTML = `<div class="kindle-border p-4 text-center italic text-xs">No accomplishments logged yet today. Everything at your pace!</div>`;
+                return;
+            }
+
+            [...userData.logs].reverse().forEach(log => {
+                const item = document.createElement('div');
+                item.className = 'kindle-border p-2 flex justify-between items-center bg-white';
+                item.innerHTML = `
+                    <div>
+                        <div class="font-black text-xs uppercase">${log.title}</div>
+                        <div class="text-[10px] font-bold text-gray-500">${log.date || ''} at ${log.time}</div>
+                    </div>
+                    <div class="font-black text-sm bg-black text-white px-2 py-0.5">+${log.xp} XP</div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        window.clearTodayLogPrompt = async () => {
+            if (confirm("Reset logged history items? Total XP will remain untouched.")) {
+                const docRef = getDocRef();
+                await updateDoc(docRef, { logs: [] }).catch(err => showError(err.message));
+            }
+        };
+
+        window.logout = () => { 
+            if (confirm("Logout from this passkey?")) { 
+                localStorage.removeItem('kindle_pda_passkey'); 
+                location.reload(); 
+            } 
+        };
+
+        document.getElementById('enter-btn').onclick = () => {
+            const v = document.getElementById('passkey-input').value;
+            if (v.length >= 3) {
+                startApp(v);
+            } else {
+                showError("Passkey must be at least 3 characters.");
+            }
+        };
+
+        if (currentPasskey) {
+            startApp(currentPasskey);
+        }
+
+        setInterval(() => {
+            const clockEl = document.getElementById('clock');
+            if (clockEl) {
+                clockEl.textContent = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
