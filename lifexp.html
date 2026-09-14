@@ -356,11 +356,10 @@
                 name: "Self-Care & Regulate",
                 desc: "Gentle grounding, nervous system care, and sensory reset.",
                 actions: [
-                    { title: "Take 3 slow deep breaths", xp: 5 },
-                    { title: "Drink a glass of water", xp: 10 },
-                    { title: "Wash face or hands with warm water", xp: 15 },
-                    { title: "Take medication / supplements", xp: 15 },
-                    { title: "Gentle stretch for 1 minute", xp: 10 },
+                    { title: "Take 3 slow deep breaths", xp: 8 },
+                    { title: "Drink a glass of water", xp: 8 },
+                    { title: "Wash face or hands with warm water", xp: 12 },
+                    { title: "Take medication / supplements", xp: 5 },
                     { title: "Rest under a cozy/weighted blanket", xp: 10 },
                     { title: "Utilize a sensory swing", xp: 20 }
                 ]
@@ -370,11 +369,11 @@
                 desc: "Micro-tidying without pressure. Pick 1 tiny item.",
                 actions: [
                     { title: "Toss 1 piece of trash in bin", xp: 5 },
-                    { title: "Pick up 3 items off floor", xp: 10 },
-                    { title: "Open a window for 2 mins of fresh air", xp: 10 },
+                    { title: "Pick up 3 items off floor", xp: 16 },
                     { title: "Wipe down 1 small surface area", xp: 20 },
-                    { title: "Clear 1 small corner of desk", xp: 15 },
-                    { title: "Change bed linen or pillowcase", xp: 35 }
+                    { title: "Clear 1 small corner of windowsill", xp: 15 },
+                    { title: "Change bed linen or pillowcase", xp: 60 },
+                    { title: "Bag up dirty laundry", xp: 35 }
                 ]
             },
             {
@@ -382,9 +381,9 @@
                 desc: "Fueling your body smoothly with minimal friction.",
                 actions: [
                     { title: "Eat a quick zero-prep snack", xp: 10 },
-                    { title: "Eat a fruit or piece of veg", xp: 15 },
+                    { title: "Eat a fruit or piece of veg", xp: 18 },
                     { title: "Sit down comfortably while eating", xp: 5 },
-                    { title: "Refill water bottle for later", xp: 10 }
+                    { title: "Refill water bottle for later", xp: 2 }
                 ]
             },
             {
@@ -406,7 +405,7 @@
                     { title: "Listen to 1 favorite song with full focus", xp: 10 },
                     { title: "10 mins hyperfocus on special interest", xp: 20 },
                     { title: "Step outside or look at trees for 2 mins", xp: 15 },
-                    { title: "Doodle, fidget, or stem freely", xp: 10 }
+                    { title: "Doodle, fidget, or stim freely", xp: 10 }
                 ]
             },
             {
@@ -452,7 +451,17 @@
                     { title: "Keep 1 2-day Yom Tov", xp: 4000 },
                     { title: "Keep 1 3-day Yom Tov", xp: 7500 }
                 ]
-            }
+            },
+            {
+            		name: "Creativity",
+                desc: "Crative activities",
+                actions: [
+                		{ title: "Practice keyboard for 5 minutes", xp: 14 },
+                    { title: "Practice keyboard for 10 minutes", xp: 32 },
+                    { title: "Practice keyboard for 15 minutes", xp: 50 },
+                    { title: "Practice keyboard for 20 minutes", xp: 72 },
+                    { title: "Sing a nigun", xp: 8 },
+                    { title: "Try singing in an unfamilliar EDO", xp: 30 }
         ];
 
         let currentPasskey = localStorage.getItem('kindle_pda_passkey') || '';
