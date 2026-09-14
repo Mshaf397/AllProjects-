@@ -7,11 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
-            --color-cat1: blue; 
-            --color-cat2: black; 
-            --color-cat3: red; 
-            --color-cat4: purple; 
-            --color-cat5: gold; 
+            --color-cat1: slate; /* Slate Blue - Dark contrast on e-ink */
+            --color-cat2: teal; /* Emerald Teal - Medium dark pattern */
+            --color-cat3: amber; /* Warm Amber/Rust */
+            --color-cat4: purple; /* Plum/Purple */
+            --color-cat5: rose; /* Deep Rose */
         }
 
         body { 
@@ -353,65 +353,59 @@
         // JS Array for Categories & Actions (Edit directly in code to add/edit items!)
         const CATEGORIES = [
             {
-                id: "cat_selfcare",
                 name: "Self-Care & Regulate",
                 desc: "Gentle grounding, nervous system care, and sensory reset.",
                 actions: [
-                    { id: "sc_1", title: "Take 3 slow deep breaths", xp: 5 },
-                    { id: "sc_2", title: "Drink a glass of water", xp: 10 },
-                    { id: "sc_3", title: "Wash face or hands with warm water", xp: 15 },
-                    { id: "sc_4", title: "Take medication / supplements", xp: 15 },
-                    { id: "sc_5", title: "Gentle stretch for 1 minute", xp: 10 },
-                    { id: "sc_6", title: "Rest under a cozy/weighted blanket", xp: 10 }
+                    { title: "Take 3 slow deep breaths", xp: 5 },
+                    { title: "Drink a glass of water", xp: 10 },
+                    { title: "Wash face or hands with warm water", xp: 15 },
+                    { title: "Take medication / supplements", xp: 15 },
+                    { title: "Gentle stretch for 1 minute", xp: 10 },
+                    { title: "Rest under a cozy/weighted blanket", xp: 10 }
                 ]
             },
             {
-                id: "cat_space",
                 name: "Environment & Space",
                 desc: "Micro-tidying without pressure. Pick 1 tiny item.",
                 actions: [
-                    { id: "sp_1", title: "Toss 1 piece of trash in bin", xp: 5 },
-                    { id: "sp_2", title: "Pick up 3 items off floor", xp: 10 },
-                    { id: "sp_3", title: "Open a window for 2 mins of fresh air", xp: 10 },
-                    { id: "sp_4", title: "Wipe down 1 small surface area", xp: 20 },
-                    { id: "sp_5", title: "Clear 1 small corner of desk", xp: 15 },
-                    { id: "sp_6", title: "Change bed linen or pillowcase", xp: 35 }
+                    { title: "Toss 1 piece of trash in bin", xp: 5 },
+                    { title: "Pick up 3 items off floor", xp: 10 },
+                    { title: "Open a window for 2 mins of fresh air", xp: 10 },
+                    { title: "Wipe down 1 small surface area", xp: 20 },
+                    { title: "Clear 1 small corner of desk", xp: 15 },
+                    { title: "Change bed linen or pillowcase", xp: 35 }
                 ]
             },
             {
-                id: "cat_nourish",
                 name: "Nourishment & Body",
                 desc: "Fueling your body smoothly with minimal friction.",
                 actions: [
-                    { id: "no_1", title: "Eat a quick zero-prep snack", xp: 10 },
-                    { id: "no_2", title: "Eat a fruit or piece of veg", xp: 15 },
-                    { id: "no_3", title: "Sit down comfortably while eating", xp: 5 },
-                    { id: "no_4", title: "Refill water bottle for later", xp: 10 }
+                    { title: "Eat a quick zero-prep snack", xp: 10 },
+                    { title: "Eat a fruit or piece of veg", xp: 15 },
+                    { title: "Sit down comfortably while eating", xp: 5 },
+                    { title: "Refill water bottle for later", xp: 10 }
                 ]
             },
             {
-                id: "cat_exec",
                 name: "Executive Function",
                 desc: "Bite-sized micro-wins for admin & hyperfocus overwhelm.",
                 actions: [
-                    { id: "ef_1", title: "Write down 1 thought or memory focus", xp: 10 },
-                    { id: "ef_2", title: "Open and read 1 important email/mail", xp: 15 },
-                    { id: "ef_3", title: "Send a 1-sentence reply message", xp: 20 },
-                    { id: "ef_4", title: "Set a gentle reminder timer", xp: 5 },
-                    { id: "ef_5", title: "Work on 1 admin task for 5 minutes", xp: 25 },
-                    { id: "ef_6", title: "File or delete 5 clutter files", xp: 15 },
-                    { id: "ef_7", title: "Complete 1 overdue phone call/task", xp: 40 }
+                    { title: "Write down 1 thought or memory focus", xp: 10 },
+                    { title: "Open and read 1 important email/mail", xp: 15 },
+                    { title: "Send a 1-sentence reply message", xp: 20 },
+                    { title: "Set a gentle reminder timer", xp: 5 },
+                    { title: "Work on 1 admin task for 5 minutes", xp: 25 },
+                    { title: "File or delete 5 clutter files", xp: 15 }
                 ]
             },
             {
-                id: "cat_joy",
                 name: "Joy & Hyperfocus Reset",
                 desc: "Honoring hyperfixations, rest, and sensory pleasure.",
                 actions: [
-                    { id: "jy_1", title: "Listen to 1 favorite song with full focus", xp: 10 },
-                    { id: "jy_2", title: "10 mins hyperfocus on special interest", xp: 20 },
-                    { id: "jy_3", title: "Step outside or look at trees for 2 mins", xp: 15 },
-                    { id: "jy_4", title: "Doodle, fidget, or stem freely", xp: 10 }
+                    { title: "Listen to 1 favorite song with full focus", xp: 10 },
+                    { title: "10 mins hyperfocus on special interest", xp: 20 },
+                    { title: "Step outside or look at trees for 2 mins", xp: 15 },
+                    { title: "Doodle, fidget, or stem freely", xp: 10 }
                 ]
             }
         ];
@@ -584,7 +578,7 @@
                         <div class="font-black text-sm uppercase leading-tight">${action.title}</div>
                         <div class="text-xs font-bold text-gray-600 mt-0.5">Worth: <span class="font-black text-black">+${action.xp} XP</span></div>
                     </div>
-                    <button onclick="window.completeAction('${currentCat.id}', '${action.id}', ${action.xp}, '${escapeQuotes(action.title)}')" class="kindle-btn kindle-btn-sm bg-black text-white px-3 font-black">
+                    <button onclick="window.completeAction(${action.xp}, '${escapeQuotes(action.title)}')" class="kindle-btn kindle-btn-sm bg-black text-white px-3 font-black">
                         +${action.xp} XP
                     </button>
                 `;
@@ -596,7 +590,7 @@
             return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         }
 
-        window.completeAction = async (catId, actionId, xpAmount, actionTitle) => {
+        window.completeAction = async (xpAmount, actionTitle) => {
             if (!userData) return;
 
             const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -625,9 +619,9 @@
 
         window.generateRandomAction = () => {
             const allActions = [];
-            CATEGORIES.forEach((cat, cIdx) => {
+            CATEGORIES.forEach((cat) => {
                 cat.actions.forEach(act => {
-                    allActions.push({ ...act, catName: cat.name, catIdx: cIdx, catId: cat.id });
+                    allActions.push({ ...act, catName: cat.name });
                 });
             });
 
@@ -644,7 +638,7 @@
 
         window.completeRandomAction = () => {
             if (!activeRandomAction) return;
-            window.completeAction(activeRandomAction.catId, activeRandomAction.id, activeRandomAction.xp, activeRandomAction.title);
+            window.completeAction(activeRandomAction.xp, activeRandomAction.title);
             activeRandomAction = null;
             document.getElementById('random-action-title').textContent = "Awesome Job logged!";
             document.getElementById('random-xp-tag').textContent = "-- XP";
