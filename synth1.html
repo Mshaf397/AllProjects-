@@ -2901,8 +2901,19 @@ function applyTheme(isDark) {
         darkModeToggle.textContent = 'Enable Dark Mode';
         localStorage.setItem('theme', 'light');
     }
-    renderGrid();
-}
+document.getElementById('colorModalApply').addEventListener('click', () => {
+  const colorInputs = document.querySelectorAll('#colorGrid input[type="color"]');
+
+  colorInputs.forEach(input => {
+    const step = Number(input.dataset.step);
+    if (!Number.isNaN(step)) {
+      gridState.pitchColors[step] = input.value;
+    }
+  });
+
+  document.getElementById('colorPickerModal').style.display = 'none';
+  renderGrid();
+});
 
 function toggleDarkMode() {
     const isDark = !body.classList.contains('dark-mode');
