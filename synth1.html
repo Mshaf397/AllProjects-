@@ -2674,7 +2674,6 @@ function drawKeyActive(idx, isActive) {
   const isRoot = idx === rootIdx0;
   
   const keyActive = getComputedStyle(document.documentElement).getPropertyValue('--key-active').trim();
-  const keyInactive = getComputedStyle(document.documentElement).getPropertyValue('--key-inactive').trim();
   const keyTextColor = getComputedStyle(document.documentElement).getPropertyValue('--key-text-color').trim();
 
   const { subsetIndex } = calculateGridMapping(idx);
