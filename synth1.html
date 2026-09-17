@@ -533,6 +533,30 @@
         </div>
     </div>
 </div>
+
+<!-- KEY COLOR PICKER MODAL -->
+<div id="colorPickerModal" class="modal-overlay">
+  <div class="modal-content">
+    <h3>Key Color Palette Configuration</h3>
+    <p class="small">Customize colors for each pitch class in your <strong id="colorModalEdoTitle">12-EDO</strong> tuning.</p>
+
+    <div class="preset-bar">
+      <span class="small" style="font-weight:600;">Presets:</span>
+      <button id="colorPresetRainbow" style="font-size:0.75rem; padding:4px 8px;">Rainbow</button>
+      <button id="colorPresetMonochrome" style="font-size:0.75rem; padding:4px 8px;">Alternating</button>
+      <button id="colorPresetWarm" style="font-size:0.75rem; padding:4px 8px;">Warm</button>
+      <button id="colorPresetCool" style="font-size:0.75rem; padding:4px 8px;">Cool</button>
+      <button id="colorPresetReset" style="font-size:0.75rem; padding:4px 8px;">Reset Default</button>
+    </div>
+
+    <div id="colorGrid" class="color-grid"></div>
+
+    <div class="modal-controls">
+        <button id="colorModalClose" style="background:#4b5563; color:#fff;">Cancel</button>
+        <button id="colorModalApply">Apply Color Scheme</button>
+    </div>
+  </div>
+</div>
 <!-- /MODAL -->
 
 <script>
