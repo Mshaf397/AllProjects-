@@ -2641,9 +2641,6 @@ function renderGrid(){
       const isRoot = idx === rootIdx0;
 
       // Draw key background: light gray/white, or yellow if active
-      const { subsetIndex } = calculateGridMapping(idx);
-const pc = mod(subsetPattern[subsetIndex], getScaleSize());
-
 let bgColor = getKeyColorForPitchClass(pc);
 
 if (activeVoices.has(idx)) {
