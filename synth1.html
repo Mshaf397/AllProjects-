@@ -2695,20 +2695,29 @@ function drawKeyActive(idx, isActive) {
   const keyActive = getComputedStyle(document.documentElement).getPropertyValue('--key-active').trim();
   const keyTextColor = getComputedStyle(document.documentElement).getPropertyValue('--key-text-color').trim();
 
-  const { subsetIndex } = calculateGridMapping(idx);
-const pc = mod(subsetPattern[subsetIndex], getScaleSize());
+const mapping = calculateGridMapping(idx);
+const subsetIndex = mapping.subsetIndex;
 
-let bgColor = getKeyColorForPitchClass(pc);
+const scaleStep =
+  gridState.subsetPattern[subsetIndex] ?? 0;
+
+const pitchClass = mod(
+  scaleStep,
+  getScaleSize()
+);
+
+let bgColor = getKeyColorForPitchClass(pitchClass);
 
 if (activeVoices.has(idx)) {
-  bgColor = keyActive;
+  bgColor = getComputedStyle(document.documentElement)
+    .getPropertyValue('--key-active')
+    .trim();
 } else if (isRoot) {
   bgColor = 'rgba(255, 100, 100, 0.3)';
 }
 
-  ctx.fillStyle = bgColor; 
-  
-  ctx.fillRect(x,y,ks,ks); 
+ctx.fillStyle = bgColor;
+ctx.fillRect(x, y, keySize, keySize); 
   ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1; ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1); 
   let label = nameForIndex(idx); 
   ctx.fillStyle=keyTextColor; 
