@@ -2641,13 +2641,18 @@ function renderGrid(){
       const isRoot = idx === rootIdx0;
 
       // Draw key background: light gray/white, or yellow if active
-      let bgColor = keyInactive;
-      if (activeVoices.has(idx)) {
-        bgColor = getComputedStyle(document.documentElement).getPropertyValue('--key-active').trim();
-      } else if (isRoot) {
-        // Highlight the root key position slightly
-        bgColor = 'rgba(255, 100, 100, 0.3)'; 
-      }
+      const { subsetIndex } = calculateGridMapping(idx);
+const pc = mod(subsetPattern[subsetIndex], getScaleSize());
+
+let bgColor = getKeyColorForPitchClass(pc);
+
+if (activeVoices.has(idx)) {
+  bgColor = getComputedStyle(document.documentElement)
+    .getPropertyValue('--key-active')
+    .trim();
+} else if (isRoot) {
+  bgColor = 'rgba(255, 100, 100, 0.3)';
+}
       
       ctx.fillStyle = bgColor; 
       
