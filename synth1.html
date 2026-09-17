@@ -2658,6 +2658,17 @@ function renderGrid(){
       const isRoot = idx === rootIdx0;
 
       // Draw key background: light gray/white, or yellow if active
+const mapping = calculateGridMapping(idx);
+const subsetIndex = mapping.subsetIndex;
+
+const scaleStep =
+  gridState.subsetPattern[subsetIndex] ?? 0;
+
+const pitchClass = mod(
+  scaleStep,
+  getScaleSize()
+);
+
 let bgColor = getKeyColorForPitchClass(pitchClass);
 
 if (activeVoices.has(idx)) {
@@ -2667,10 +2678,9 @@ if (activeVoices.has(idx)) {
 } else if (isRoot) {
   bgColor = 'rgba(255, 100, 100, 0.3)';
 }
-      
-      ctx.fillStyle = bgColor; 
-      
-      ctx.fillRect(x,y,ks,ks); 
+
+ctx.fillStyle = bgColor;
+ctx.fillRect(x, y, ks, ks); 
       ctx.strokeRect(x+0.5,y+0.5,ks-1,ks-1); 
       
       let label = nameForIndex(idx); 
