@@ -1,4 +1,4 @@
-(<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -2902,19 +2902,8 @@ function applyTheme(isDark) {
         localStorage.setItem('theme', 'light');
     }
     
-document.getElementById('colorModalApply').addEventListener('click', () => {
-  const colorInputs = document.querySelectorAll('#colorGrid input[type="color"]');
-
-  colorInputs.forEach(input => {
-    const step = Number(input.dataset.step);
-    if (!Number.isNaN(step)) {
-      gridState.pitchColors[step] = input.value;
-    }
-  });
-
-  document.getElementById('colorPickerModal').style.display = 'none';
   renderGrid();
-}};
+}
 
 function toggleDarkMode() {
     const isDark = !body.classList.contains('dark-mode');
@@ -2922,7 +2911,7 @@ function toggleDarkMode() {
 }
 
 darkModeToggle.addEventListener('click', toggleDarkMode);
-}};
+
 // --- EVENT LISTENERS ---
 applyBtn.addEventListener('click', () => { 
     if (audioCtx.state !== 'running') { audioCtx.resume(); } 
