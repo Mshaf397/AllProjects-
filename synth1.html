@@ -2641,7 +2641,7 @@ function renderGrid(){
       const isRoot = idx === rootIdx0;
 
       // Draw key background: light gray/white, or yellow if active
-let bgColor = getKeyColorForPitchClass(pc);
+let bgColor = keyInactive;
 
 if (activeVoices.has(idx)) {
   bgColor = getComputedStyle(document.documentElement)
