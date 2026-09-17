@@ -564,6 +564,7 @@ let gridState = {
   rootFreq: 261.6256, rootName: 'C4',
   edoNameTable: null, nonoInfo: null, jiRatios: null,
   subsetPattern: [], // Initially populated in buildStateFromUI
+	pitchColors: {}
 };
 
 // --- WEB AUDIO API SETUP ---
@@ -2672,12 +2673,16 @@ function drawKeyActive(idx, isActive) {
   const keyInactive = getComputedStyle(document.documentElement).getPropertyValue('--key-inactive').trim();
   const keyTextColor = getComputedStyle(document.documentElement).getPropertyValue('--key-text-color').trim();
 
-  let bgColor = keyInactive;
-  if (isActive) {
-      bgColor = keyActive;
-  } else if (isRoot) {
-      bgColor = 'rgba(255, 100, 100, 0.3)'; 
-  }
+  const { subsetIndex } = calculateGridMapping(idx);
+const pc = mod(subsetPattern[subsetIndex], getScaleSize());
+
+let bgColor = getKeyColorForPitchClass(pc);
+
+if (activeVoices.has(idx)) {
+  bgColor = keyActive;
+} else if (isRoot) {
+  bgColor = 'rgba(255, 100, 100, 0.3)';
+}
 
   ctx.fillStyle = bgColor; 
   
