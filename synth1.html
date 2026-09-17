@@ -2973,7 +2973,6 @@ function applyTheme(isDark) {
 }
 
 document.getElementById('colorModalApply').addEventListener('click', () => {
-  alert('Apply handler is running');
 
   const inputs = document.querySelectorAll(
     '#colorGrid input[type="color"]'
@@ -2987,10 +2986,6 @@ document.getElementById('colorModalApply').addEventListener('click', () => {
     }
   });
 
-  alert(
-    'Saved colors: ' +
-    JSON.stringify(gridState.pitchColors)
-  );
 
   document.getElementById('colorPickerModal').style.display = 'none';
   renderGrid();
