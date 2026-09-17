@@ -2058,6 +2058,23 @@ document.getElementById('colorPresetReset')?.addEventListener('click', () => {
   });
 });
 
+document.getElementById('colorModalApply').addEventListener('click', () => {
+  const inputs = document.querySelectorAll(
+    '#colorGrid input[type="color"]'
+  );
+
+  inputs.forEach(input => {
+    const step = Number(input.dataset.step);
+
+    if (Number.isInteger(step)) {
+      gridState.pitchColors[step] = input.value;
+    }
+  });
+
+  document.getElementById('colorPickerModal').style.display = 'none';
+  renderGrid();
+});
+
 
 // --- CORE HELPER FUNCTIONS (Tuning/Grid) ---
 
