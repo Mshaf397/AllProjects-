@@ -2638,7 +2638,6 @@ function resizeCanvas(){
 function renderGrid(){ 
   const ks = gridState.keySize, rows = gridState.rows, cols = gridState.cols; 
   const keyColor = getComputedStyle(document.documentElement).getPropertyValue('--key-color').trim();
-  const keyInactive = getComputedStyle(document.documentElement).getPropertyValue('--key-inactive').trim();
   const keyTextColor = getComputedStyle(document.documentElement).getPropertyValue('--key-text-color').trim();
   
   ctx.fillStyle=keyColor; ctx.fillRect(0,0,canvas.width,canvas.height); 
