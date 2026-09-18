@@ -587,6 +587,55 @@
     </div>
   </div>
 </div>
+
+<div id="scalaNamingModal" class="modal-overlay">
+  <div class="modal-content" style="max-width: 650px;">
+    <h3>Scala Scale Configuration & Note Naming</h3>
+    <p id="scalaModalDesc" class="small" style="color:#38bdf8;">Loaded scale information</p>
+
+    <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; margin: 10px 0;">
+      <div class="small" style="font-weight:bold; margin-bottom:4px; color:#facc15;">Allowed Note Naming Notation:</div>
+      <div class="small" style="color:#d1d5db;">
+        Note letters <strong style="color:#fff;">A-G</strong>, flats (<strong style="color:#fff;">b</strong>), sharps (<strong style="color:#fff;">#</strong>), double flats (<strong style="color:#fff;">bb</strong>), double sharps (<strong style="color:#fff;">x</strong>), carets (<strong style="color:#fff;">^</strong>), and down-carets (<strong style="color:#fff;">v</strong>).
+      </div>
+      <div class="flex flex-wrap gap-1 mt-2 items-center">
+        <span class="small mr-1" style="color:#aaa;">Quick symbol insertion:</span>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('A')">A</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('B')">B</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('C')">C</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('D')">D</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('E')">E</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('F')">F</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('G')">G</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('#')">#</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('b')">b</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('bb')">bb</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('x')">x</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('^')">^</button>
+        <button class="symbol-btn" onclick="insertSymbolIntoScalaFocus('v')">v</button>
+      </div>
+    </div>
+
+    <div id="scalaNoteList" class="scala-grid"></div>
+
+    <div id="scalaErrorMsg" class="small" style="color:#f87171; margin-top:8px; display:none;"></div>
+
+    <div class="modal-controls">
+        <button id="scalaModalCancel" style="background:#4b5563; color:#fff;">Cancel</button>
+        <button id="scalaModalApply" style="background:#10b981; color:#fff;">Apply Scala Scale</button>
+    </div>
+  </div>
+</div>
+
+<div id="customNoticeModal" class="modal-overlay">
+  <div class="modal-content" style="max-width: 400px; text-align:center;">
+    <h3 id="noticeTitle">Notice</h3>
+    <p id="noticeMessage" style="margin: 16px 0; font-size:14px; color:#e5e7eb;"></p>
+    <div class="modal-controls" style="justify-content:center;">
+      <button id="noticeCloseBtn">OK</button>
+    </div>
+  </div>
+</div>
 <!-- /MODAL -->
 
 <script>
