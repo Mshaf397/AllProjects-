@@ -2821,6 +2821,9 @@ function buildStateFromUI(){
   if (!baseSubsetPattern || baseSubsetPattern.length === 0) {
     baseSubsetPattern = Array.from({ length: count }, (_, i) => i);
   }
+  
+  tuningTextContent = 'Scala: ${gridState.scalaData.description} (${count} degrees)';
+  }
 
   
   const fullStepsResult = generateFullScaleSteps(
