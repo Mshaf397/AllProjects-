@@ -2370,8 +2370,8 @@ function validateAndApplyScala() {
 // 2. FREQUENCY CALCULATION ENGINE
 // ==========================================
 
-function getFreqForIndex(stepIndex) {
-  const rootFreq = gridState.rootFreq || 261.63; // Default C4
+function frequencyForIndex(Idx) {
+  const rootFreq = gridState.rootFreq || 261.6256; // Default C4
 
   if (gridState.tuning.type === 'edo') {
     const N = gridState.tuning.edo || 12;
