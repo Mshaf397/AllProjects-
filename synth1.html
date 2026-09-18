@@ -2158,6 +2158,10 @@ document.getElementById('colorModalApply').addEventListener('click', () => {
   renderGrid();
 });
 
+// ==========================================
+// 1. SCALA PARSER & MODAL HANDLING
+// ==========================================
+
 function parseScalaFile(text) {
   const lines = text
     .split(/\r?\n/)
@@ -2256,14 +2260,13 @@ function openScalaNamingModal(parsed) {
   scalaErrorMsg.style.display = 'none';
   scalaNoteList.innerHTML = '';
 
-  const centsList = [0];
-  for (let i = 0; i < parsed.count - 1; i++) {
-    centsList.push(parsed.pitches[i].cents);
-  }
+  // Correct Scala mapping: Index 0 is implicit 1/1 root (0 cents)
+  // Indices 1 to parsed.count are the explicit intervals in parsed.pitches
+  const fullDegreeList = [{ cents: 0, ratio: 1.0, raw: '1/1 (Root)' }, ...parsed.pitches];
 
-  for (let i = 0; i < parsed.count; i++) {
-    const degreeCents = centsList[i];
-    const rawDesc = (i === 0) ? '1/1 (Root)' : parsed.pitches[i - 1].raw;
+  for (let i = 0; i < fullDegreeList.length; i++) {
+    const degreeCents = fullDegreeList[i].cents;
+    const rawDesc = fullDegreeList[i].raw;
     const suggestedName = autoSuggestScalaName(degreeCents, i, parsed.count);
     const defaultColor = getDefaultColorForStep(i, parsed.count);
 
@@ -2337,16 +2340,15 @@ function validateAndApplyScala() {
     colors[i] = cinp.value;
   });
 
-  const centsList = [0];
-  for (let i = 0; i < pendingScalaData.count - 1; i++) {
-    centsList.push(pendingScalaData.pitches[i].cents);
-  }
+  // Calculate pre-computed frequency multipliers relative to root (1.0)
+  // Scale steps go from step 1 up to step N (the period)
+  const multipliers = pendingScalaData.pitches.map(p => p.ratio);
 
   gridState.scalaData = {
     description: pendingScalaData.description,
-    count: pendingScalaData.count,
-    pitches: pendingScalaData.pitches,
-    centsList: centsList,
+    count: pendingScalaData.count,           // Degrees per octave/period
+    periodRatio: multipliers[multipliers.length - 1], // Octave value (e.g. 2.0)
+    multipliers: multipliers,               // Step multipliers [step1, step2, ... period]
     names: names
   };
 
@@ -2356,7 +2358,7 @@ function validateAndApplyScala() {
   scalaOption.disabled = false;
   scalaOption.textContent = `Scala: ${pendingScalaData.description.slice(0, 20)}...`;
   tuningType.value = 'scala';
-  edoParams.style.display = 'none';
+  if (typeof edoParams !== 'undefined') edoParams.style.display = 'none';
 
   scalaNamingModal.style.display = 'none';
 
@@ -2364,6 +2366,38 @@ function validateAndApplyScala() {
   showNotice("Scala Tuning Applied", `Successfully loaded scale "${pendingScalaData.description}" (${pendingScalaData.count} degrees).`);
 }
 
+// ==========================================
+// 2. FREQUENCY CALCULATION ENGINE
+// ==========================================
+
+function getFreqForIndex(stepIndex) {
+  const rootFreq = gridState.rootFreq || 261.63; // Default C4
+
+  if (gridState.tuning.type === 'edo') {
+    const N = gridState.tuning.edo || 12;
+    return rootFreq * Math.pow(2, stepIndex / N);
+  }
+
+  if (gridState.tuning.type === 'scala' && gridState.scalaData) {
+    const { count, periodRatio, multipliers } = gridState.scalaData;
+
+    // Determine octave offset and position within single period
+    const octave = Math.floor(stepIndex / count);
+    let degree = stepIndex % count;
+    if (degree < 0) degree += count;
+
+    // Root offset ratio (Degree 0 = 1.0)
+    const stepMultiplier = degree === 0 ? 1.0 : multipliers[degree - 1];
+
+    // Total frequency = root * (period ^ octave) * stepRatio
+    return rootFreq * Math.pow(periodRatio, octave) * stepMultiplier;
+  }
+
+  // Fallback to 12-EDO standard
+  return rootFreq * Math.pow(2, stepIndex / 12);
+}
+
+// Event Listeners
 scalaModalCancel.addEventListener('click', () => {
   scalaNamingModal.style.display = 'none';
 });
@@ -2389,6 +2423,7 @@ scalaFileInput.addEventListener('change', (e) => {
   };
   reader.readAsText(file);
 });
+
 
 
 // --- CORE HELPER FUNCTIONS (Tuning/Grid) ---
