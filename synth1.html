@@ -2815,7 +2815,7 @@ function buildStateFromUI(){
     tuningTextContent = `${N}-EDO (names generated from chain-of-fifths)`;
   } 
   
-  if (type === 'scala' && gridState.scalaData) {
+  else if (type === 'scala' && gridState.scalaData) {
   const count = gridState.scalaData.count;
   // Default base pattern to all degrees of the Scala file if not set
   if (!baseSubsetPattern || baseSubsetPattern.length === 0) {
