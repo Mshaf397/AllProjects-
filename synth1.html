@@ -2898,6 +2898,24 @@ function frequencyForIndex(idx){
     return root * Math.pow(2, effectiveStep / t.edo);
   }
   return root;
+  if (t.type === 'scala' && gridState.scalaScale) {
+    const scale = gridState.scalaScale; // Array of multipliers/ratios from the .scl file
+    const scaleSize = scale.length;
+    
+    // Calculate octave (octave/formal period) and step position within scale
+    const period = scale[scaleSize - 1] || 2; // Formal period (usually 2/1 for octave)
+    const octave = Math.floor(stepIndex / scaleSize);
+    let noteInOctave = stepIndex % scaleSize;
+    if (noteInOctave < 0) noteInOctave += scaleSize;
+
+    // Index 0 is root (multiplier 1.0)
+    const intervalRatio = noteInOctave === 0 ? 1.0 : scale[noteInOctave - 1];
+
+    return rootFreq * Math.pow(period, octave) * intervalRatio;
+  }
+
+  // Fallback to 12-EDO
+  return rootFreq * Math.pow(2, stepIndex / 12);
 }
 
 function nameForIndex(idx){
