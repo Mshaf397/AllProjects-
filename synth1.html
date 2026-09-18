@@ -2157,6 +2157,238 @@ document.getElementById('colorModalApply').addEventListener('click', () => {
   renderGrid();
 });
 
+function parseScalaFile(text) {
+  const lines = text
+    .split(/\r?\n/)
+    .map(line => {
+      const commentIdx = line.indexOf('!');
+      const cleanLine = commentIdx !== -1 ? line.slice(0, commentIdx) : line;
+      return cleanLine.trim();
+    })
+    .filter(line => line.length > 0);
+
+  if (lines.length < 2) {
+    throw new Error("Invalid Scala file structure. File is too short.");
+  }
+
+  const description = lines[0];
+  const count = parseInt(lines[1], 10);
+
+  if (isNaN(count) || count <= 0) {
+    throw new Error("Invalid Scala degree count in file header.");
+  }
+
+  const pitches = [];
+  let lineIdx = 2;
+
+  while (pitches.length < count && lineIdx < lines.length) {
+    const currentLine = lines[lineIdx++];
+    const token = currentLine.split(/\s+/)[0];
+
+    if (!token) continue;
+
+    if (token.includes('/')) {
+      const parts = token.split('/');
+      const num = parseFloat(parts[0]);
+      const den = parseFloat(parts[1]);
+
+      if (isNaN(num) || isNaN(den) || den === 0) {
+        throw new Error(`Invalid ratio on line ${lineIdx}: ${token}`);
+      }
+
+      const ratio = num / den;
+      const cents = 1200 * Math.log2(ratio);
+      pitches.push({ type: 'ratio', cents, ratio, raw: token });
+
+    } else if (token.includes('.')) {
+      const cents = parseFloat(token);
+
+      if (isNaN(cents)) {
+        throw new Error(`Invalid cents value on line ${lineIdx}: ${token}`);
+      }
+
+      const ratio = Math.pow(2, cents / 1200);
+      pitches.push({ type: 'cents', cents, ratio, raw: token });
+
+    } else {
+      const num = parseInt(token, 10);
+
+      if (isNaN(num)) {
+        throw new Error(`Invalid step value on line ${lineIdx}: ${token}`);
+      }
+
+      const ratio = num;
+      const cents = 1200 * Math.log2(ratio);
+      pitches.push({ type: 'ratio', cents, ratio, raw: `${num}/1` });
+    }
+  }
+
+  if (pitches.length < count) {
+    throw new Error(`Scala file header specified ${count} degrees, but only ${pitches.length} were found.`);
+  }
+
+  return { description, count, pitches };
+}
+
+function autoSuggestScalaName(cents, index, total) {
+  if (index === 0 && cents === 0) return 'C';
+
+  const rawStep = Math.round((cents / 1200) * 12);
+  const approx12 = ((rawStep % 12) + 12) % 12;
+
+  const standard12Names = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'];
+  const baseName = standard12Names[approx12];
+
+  const targetCents = rawStep * 100;
+  const diff = cents - targetCents;
+
+  if (diff > 15) return `^${baseName}`;
+  if (diff < -15) return `v${baseName}`;
+  return baseName;
+}
+
+let pendingScalaData = null;
+
+function openScalaNamingModal(parsed) {
+  pendingScalaData = parsed;
+  scalaModalDesc.textContent = `File: "${parsed.description}" (${parsed.count} scale degrees)`;
+  scalaErrorMsg.style.display = 'none';
+  scalaNoteList.innerHTML = '';
+
+  const centsList = [0];
+  for (let i = 0; i < parsed.count - 1; i++) {
+    centsList.push(parsed.pitches[i].cents);
+  }
+
+  for (let i = 0; i < parsed.count; i++) {
+    const degreeCents = centsList[i];
+    const rawDesc = (i === 0) ? '1/1 (Root)' : parsed.pitches[i - 1].raw;
+    const suggestedName = autoSuggestScalaName(degreeCents, i, parsed.count);
+    const defaultColor = getDefaultColorForStep(i, parsed.count);
+
+    const row = document.createElement('div');
+    row.style.cssText = `background:#111827; padding:10px; border-radius:6px; border:1px solid #374151; display:flex; align-items:center; gap:10px; flex-wrap:wrap;`;
+    
+    row.innerHTML = `
+      <div style="min-width:110px; font-weight:bold; font-size:13px; color:#bb86fc;">
+        Step ${i} <span style="font-size:11px; color:#aaa; font-weight:normal;">(${rawDesc})</span>
+      </div>
+      <div style="font-size:12px; color:#9ca3af; width:80px;">${degreeCents.toFixed(1)} ¢</div>
+      <div style="flex:1; min-width:140px;">
+        <input type="text" class="scala-note-input" data-index="${i}" value="${suggestedName}" placeholder="e.g. C, F#, ^G, vBb, xD" style="margin-bottom:0; font-family:monospace; font-weight:bold;" />
+      </div>
+      <div style="display:flex; align-items:center; gap:4px;">
+        <span style="font-size:11px; color:#aaa;">Color:</span>
+        <input type="color" class="scala-color-input" data-index="${i}" value="${defaultColor}" style="width:28px; height:28px; border:none; cursor:pointer; background:none;" />
+      </div>
+    `;
+
+    scalaNoteList.appendChild(row);
+  }
+
+  scalaNoteList.querySelectorAll('.scala-note-input').forEach(inp => {
+    inp.addEventListener('focus', (e) => { lastFocusedScalaInput = e.target; });
+  });
+
+  scalaNamingModal.style.display = 'flex';
+}
+
+function insertSymbolIntoScalaFocus(symbol) {
+  if (!lastFocusedScalaInput) {
+    lastFocusedScalaInput = scalaNoteList.querySelector('.scala-note-input');
+  }
+  if (lastFocusedScalaInput) {
+    const start = lastFocusedScalaInput.selectionStart || 0;
+    const end = lastFocusedScalaInput.selectionEnd || 0;
+    const val = lastFocusedScalaInput.value;
+    lastFocusedScalaInput.value = val.substring(0, start) + symbol + val.substring(end);
+    lastFocusedScalaInput.focus();
+    lastFocusedScalaInput.setSelectionRange(start + symbol.length, start + symbol.length);
+  }
+}
+
+const scalaNameRegex = /^[v^]*[A-G](bb|x|b|#)?$/i;
+
+function validateAndApplyScala() {
+  if (!pendingScalaData) return;
+
+  const inputs = scalaNoteList.querySelectorAll('.scala-note-input');
+  const colorInputs = scalaNoteList.querySelectorAll('.scala-color-input');
+  const names = [];
+  const colors = {};
+
+  let invalidInput = null;
+
+  inputs.forEach((inp, i) => {
+    const val = inp.value.trim();
+    if (!val || !scalaNameRegex.test(val)) {
+      invalidInput = val;
+    }
+    names.push(val || `S${i}`);
+  });
+
+  if (invalidInput) {
+    scalaErrorMsg.textContent = `Warning: "${invalidInput}" contains non-standard note symbols. Accepted symbols: A-G, b, #, bb, x, ^, v.`;
+    scalaErrorMsg.style.display = 'block';
+  }
+
+  colorInputs.forEach((cinp, i) => {
+    colors[i] = cinp.value;
+  });
+
+  const centsList = [0];
+  for (let i = 0; i < pendingScalaData.count - 1; i++) {
+    centsList.push(pendingScalaData.pitches[i].cents);
+  }
+
+  gridState.scalaData = {
+    description: pendingScalaData.description,
+    count: pendingScalaData.count,
+    pitches: pendingScalaData.pitches,
+    centsList: centsList,
+    names: names
+  };
+
+  gridState.pitchColors = colors;
+  gridState.tuning.type = 'scala';
+
+  scalaOption.disabled = false;
+  scalaOption.textContent = `Scala: ${pendingScalaData.description.slice(0, 20)}...`;
+  tuningType.value = 'scala';
+  edoParams.style.display = 'none';
+
+  scalaNamingModal.style.display = 'none';
+
+  buildStateFromUI();
+  showNotice("Scala Tuning Applied", `Successfully loaded scale "${pendingScalaData.description}" (${pendingScalaData.count} degrees).`);
+}
+
+scalaModalCancel.addEventListener('click', () => {
+  scalaNamingModal.style.display = 'none';
+});
+scalaModalApply.addEventListener('click', validateAndApplyScala);
+
+importScalaBtn.addEventListener('click', () => {
+  scalaFileInput.value = '';
+  scalaFileInput.click();
+});
+
+scalaFileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const parsed = parseScalaFile(event.target.result);
+      openScalaNamingModal(parsed);
+    } catch (err) {
+      showNotice("Scala Import Error", err.message || "Failed to parse Scala file.");
+    }
+  };
+  reader.readAsText(file);
+});
+
 
 // --- CORE HELPER FUNCTIONS (Tuning/Grid) ---
 
