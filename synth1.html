@@ -2917,41 +2917,41 @@ function calculateGridMapping(idx) {
 }
 
 
-function frequencyForIndex(idx){
+function frequencyForIndex(idx) {
   const t = gridState.tuning; 
   const root = gridState.rootFreq;
   const subset = gridState.subsetPattern; 
-  if (subset.length === 0) return root; 
+  if (!subset || subset.length === 0) return root; 
 
   const { subsetIndex, octaveShift } = calculateGridMapping(idx);
+  const intervalStep = subset[subsetIndex]; 
 
-  const intervalStep = subset[subsetIndex]; // The EDO step index from the 0 of the mode
-
-  if(t.type === 'edo'){
-    // The final effective step from the *full* EDO 0 (the tuning's 0)
+  // Handle EDO Tuning
+  if (t.type === 'edo') {
     const effectiveStep = intervalStep + (octaveShift * t.edo);
     return root * Math.pow(2, effectiveStep / t.edo);
   }
-  return root;
-  if (t.type === 'scala' && gridState.scalaScale) {
-    const scale = gridState.scalaScale; // Array of multipliers/ratios from the .scl file
-    const scaleSize = scale.length;
-    
-    // Calculate octave (octave/formal period) and step position within scale
-    const period = scale[scaleSize - 1] || 2; // Formal period (usually 2/1 for octave)
-    const octave = Math.floor(stepIndex / scaleSize);
-    let noteInOctave = stepIndex % scaleSize;
-    if (noteInOctave < 0) noteInOctave += scaleSize;
 
-    // Index 0 is root (multiplier 1.0)
-    const intervalRatio = noteInOctave === 0 ? 1.0 : scale[noteInOctave - 1];
+  // Handle Scala Tuning
+  if (t.type === 'scala' && gridState.scalaData) {
+    const { count, periodRatio, multipliers } = gridState.scalaData;
 
-    return rootFreq * Math.pow(period, octave) * intervalRatio;
+    // Calculate effective step across octaves/periods
+    const totalStep = intervalStep + (octaveShift * count);
+    const octave = Math.floor(totalStep / count);
+    let degree = totalStep % count;
+    if (degree < 0) degree += count;
+
+    // Index 0 is root (1.0)
+    const stepMultiplier = degree === 0 ? 1.0 : multipliers[degree - 1];
+
+    return root * Math.pow(periodRatio, octave) * stepMultiplier;
   }
 
-  // Fallback to 12-EDO
-  return rootFreq * Math.pow(2, stepIndex / 12);
+  // Fallback to 12-EDO standard
+  return root * Math.pow(2, intervalStep / 12);
 }
+
 
 function nameForIndex(idx){
   const t = gridState.tuning;
