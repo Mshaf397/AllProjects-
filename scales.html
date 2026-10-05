@@ -3,128 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Binary Scale Calculator</title>
+    <title>Binary Scale Calculator with Mode Matrix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
-        
         body {
-            background: radial-gradient(circle at top center, #1e293b 0%, #0f172a 100%);
-            color: #f8fafc;
-            font-family: ui-sans-serif, system-ui, sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            font-family: monospace, sans-serif;
         }
 
-        .glass {
-            background: rgba(30, 41, 59, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        .eink-card {
+            background: #ffffff;
+            border: 2px solid #000000;
+            border-radius: 8px;
+            box-shadow: none !important;
         }
 
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
+        .eink-button {
+            background: #000000;
+            color: #ffffff;
+            border: 2px solid #000000;
+            font-weight: bold;
+            border-radius: 6px;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 10px;
+        .eink-button:active {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .eink-chip {
+            background: #f0f0f0;
+            border: 1px solid #000000;
+            color: #000000;
+            font-weight: bold;
+            border-radius: 4px;
         }
 
         .bit-active {
-            text-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+            font-weight: bold;
+            text-decoration: underline;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        textarea {
+            border: 2px solid #000000 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
         }
-        .animate-results { animation: fadeIn 0.4s ease-out forwards; }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid #000000;
+            padding: 4px 6px;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        th {
+            background-color: #e5e5e5;
+        }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+<body class="min-h-screen p-4 flex flex-col items-center">
 
-    <div class="max-w-3xl w-full space-y-6">
-        <header class="text-center space-y-2 mb-8">
-            <h1 class="text-5xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-indigo-400">
-                Binary Scale
+    <div class="max-w-2xl w-full space-y-6">
+        <header class="text-center space-y-2 mb-4 border-b-2 border-black pb-4">
+            <h1 class="text-3xl font-black tracking-tighter uppercase">
+                Binary Scale & Mode Matrix
             </h1>
-            <p class="text-slate-400 font-medium">Map large integers to EDO microtonal structures.</p>
+            <p class="text-sm font-semibold">Map large integers to EDO microtonal structures and modal rotations (E-Ink Edition).</p>
         </header>
 
-        <section class="glass rounded-3xl p-6 shadow-2xl border border-white/10">
-            <div class="space-y-4">
-                <div class="flex justify-between items-end">
-                    <label for="numberInput" class="text-sm font-semibold text-slate-400 ml-1 uppercase tracking-widest">Input Integer</label>
-                    <button onclick="clearInput()" class="text-xs text-slate-500 hover:text-sky-400 transition-colors">Clear</button>
-                </div>
-                <textarea 
-                    id="numberInput" 
-                    placeholder="Enter number (separators like , and . are ignored)" 
-                    class="w-full bg-slate-950/50 border border-slate-700 rounded-2xl p-5 text-sky-300 font-mono focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 outline-none transition-all resize-none h-32 text-lg"
-                ></textarea>
-                
-                <button 
-                    onclick="calculateScale()"
-                    class="w-full bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg hover:shadow-sky-500/20 active:scale-[0.98] flex items-center justify-center gap-2"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                    </svg>
-                    Generate Scale
-                </button>
+        <section class="eink-card p-4 space-y-4">
+            <div class="flex justify-between items-end">
+                <label for="numberInput" class="text-xs font-bold uppercase tracking-wider">Input Integer</label>
+                <button onclick="clearInput()" class="text-xs font-bold underline cursor-pointer">Clear</button>
             </div>
+            <textarea 
+                id="numberInput" 
+                placeholder="Enter positive integer..." 
+                class="w-full p-3 rounded text-sm font-mono outline-none resize-none h-24"
+            ></textarea>
+            
+            <button 
+                onclick="calculateScale()"
+                class="eink-button w-full py-3 px-4 text-sm flex items-center justify-center gap-2 cursor-pointer"
+            >
+                Generate Scale & Mode Matrix
+            </button>
         </section>
 
-        <div id="errorMessage" class="hidden animate-results bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-2xl text-sm text-center"></div>
+        <div id="errorMessage" class="hidden border-2 border-black p-3 text-sm text-center font-bold"></div>
 
-        <main id="results" class="hidden space-y-6 animate-results">
-            <div class="grid grid-cols-2 gap-4">
-                <div class="glass p-5 rounded-2xl ring-1 ring-white/5">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Tuning System</span>
-                    <p id="edoValue" class="text-2xl md:text-3xl font-bold text-white mt-1"></p>
+        <main id="results" class="hidden space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+                <div class="eink-card p-3">
+                    <span class="text-[10px] font-bold uppercase tracking-wider block">Tuning System</span>
+                    <p id="edoValue" class="text-xl font-black mt-1"></p>
                 </div>
-                <div class="glass p-5 rounded-2xl ring-1 ring-white/5">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Bit Complexity</span>
-                    <p id="bitLength" class="text-2xl md:text-3xl font-bold text-white mt-1"></p>
+                <div class="eink-card p-3">
+                    <span class="text-[10px] font-bold uppercase tracking-wider block">Bit Complexity</span>
+                    <p id="bitLength" class="text-xl font-black mt-1"></p>
                 </div>
             </div>
 
-            <div class="glass p-6 rounded-3xl space-y-4 relative overflow-hidden">
+            <div class="eink-card p-4 space-y-3">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-lg font-bold text-sky-300 flex items-center gap-2">
-                        Scale Degrees
-                        <span class="text-[10px] bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full uppercase tracking-tighter">Unique Steps</span>
-                    </h2>
-                    <button id="copyBtn" onclick="copyToClipboard()" class="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl text-slate-300 transition-all border border-white/5">
+                    <h2 class="text-sm font-black uppercase">Scale Degrees</h2>
+                    <button id="copyBtn" onclick="copyToClipboard()" class="eink-button text-xs px-3 py-1.5 cursor-pointer">
                         Copy Steps
                     </button>
                 </div>
-                <div id="stepsContainer" class="flex flex-wrap gap-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                    </div>
+                <div id="stepsContainer" class="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-1"></div>
             </div>
 
-            <div class="glass p-5 rounded-2xl">
-                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] block mb-3">Binary Sequence Map</span>
-                <div id="binaryVisual" class="font-mono text-xs break-all text-slate-600 leading-relaxed tracking-widest bg-black/20 p-4 rounded-xl"></div>
+            <div class="eink-card p-4 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-sm font-black uppercase">Auto-Generated Mode Matrix</h2>
+                    <span id="matrixInfo" class="text-[10px] font-bold uppercase"></span>
+                </div>
+                <div class="overflow-x-auto max-h-64">
+                    <table id="matrixTable">
+                        <tbody id="matrixBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="eink-card p-4">
+                <span class="text-[10px] font-bold uppercase block mb-2">Binary Sequence Map</span>
+                <div id="binaryVisual" class="font-mono text-xs break-all leading-relaxed p-2 border border-black bg-gray-50"></div>
             </div>
         </main>
     </div>
 
     <script>
         function calculateScale() {
-            // Clean input by removing commas and periods
             const rawInput = document.getElementById('numberInput').value.trim();
-            const cleanedInput = rawInput.replace(/[,.]/g, '');
+            const cleanedInput = rawInput.replace(/[,.\s]/g, '');
             
             const errorDiv = document.getElementById('errorMessage');
             const resultsDiv = document.getElementById('results');
             const stepsContainer = document.getElementById('stepsContainer');
             const binaryVisual = document.getElementById('binaryVisual');
+            const matrixBody = document.getElementById('matrixBody');
+            const matrixInfo = document.getElementById('matrixInfo');
             
             errorDiv.classList.add('hidden');
             
             try {
                 if (!cleanedInput) throw new Error("Please enter a numerical value.");
-                
-                // Validate if the result is actually a number string
                 if (!/^\d+$/.test(cleanedInput)) throw new Error("Input contains invalid non-numeric characters.");
 
                 const num = BigInt(cleanedInput);
@@ -149,19 +179,62 @@
 
                     if (bit === '1') {
                         steps.push(edoStep);
-                        visualHtml += `<span class="text-sky-400 font-bold bit-active">${bit}</span>`;
+                        visualHtml += `<span class="bit-active">${bit}</span>`;
                     } else {
                         visualHtml += `<span>${bit}</span>`;
                     }
                 }
 
                 stepsContainer.innerHTML = steps.map(s => `
-                    <div class="step-chip bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 px-3 py-1.5 rounded-lg text-sm font-mono text-sky-200 transition-all">
+                    <div class="eink-chip px-2.5 py-1 text-xs font-mono">
                         ${s}
                     </div>
                 `).join('');
 
                 binaryVisual.innerHTML = visualHtml;
+
+                // Memory-efficient Mode Matrix Generation (Rotations of active step intervals)
+                if (steps.length === 0) {
+                    matrixBody.innerHTML = '<tr><td class="p-2 text-xs">No active notes found.</td></tr>';
+                    matrixInfo.innerText = '';
+                } else {
+                    let matrixHtml = '';
+                    const numModes = steps.length;
+                    matrixInfo.innerText = `${numModes} Rotations`;
+
+                    // Table Header
+                    matrixHtml += '<tr><th>Mode</th>';
+                    for (let i = 0; i < numModes; i++) {
+                        matrixHtml += `<th>Deg ${i+1}</th>`;
+                    }
+                    matrixHtml += '<th>Interval Intervals</th></tr>';
+
+                    // Compute intervals between scale degrees for each mode rotation
+                    for (let m = 0; m < numModes; m++) {
+                        matrixHtml += `<tr><td class="font-bold">M${m+1}</td>`;
+                        
+                        let rotatedSteps = [];
+                        for (let i = 0; i < numModes; i++) {
+                            rotatedSteps.push(steps[(i + m) % numModes]);
+                        }
+
+                        // Normalize relative to rotation root (Root = 0)
+                        const rootVal = rotatedSteps[0];
+                        let normalizedIntervals = [];
+                        
+                        for (let i = 0; i < numModes; i++) {
+                            let diff = rotatedSteps[i] - rootVal;
+                            if (diff < 0) diff += edo;
+                            normalizedIntervals.push(diff);
+                            matrixHtml += `<td>${rotatedSteps[i]}</td>`;
+                        }
+
+                        matrixHtml += `<td class="font-mono text-[10px]">[${normalizedIntervals.join(', ')}]</td></tr>`;
+                    }
+
+                    matrixBody.innerHTML = matrixHtml;
+                }
+
                 resultsDiv.classList.remove('hidden');
 
             } catch (e) {
@@ -171,27 +244,36 @@
             }
         }
 
-        async function copyToClipboard() {
+        function copyToClipboard() {
             const btn = document.getElementById('copyBtn');
-            // Target only the inner text of the chips to avoid duplication
-            const chips = Array.from(document.querySelectorAll('.step-chip'));
+            const chips = Array.from(document.querySelectorAll('.eink-chip'));
             const text = chips.map(el => el.innerText.trim()).join(', ');
             
             if (!text) return;
 
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
             try {
-                await navigator.clipboard.writeText(text);
-                const originalText = btn.innerText;
-                btn.innerText = "Copied!";
-                btn.classList.add('bg-emerald-600', 'text-white');
-                
-                setTimeout(() => {
-                    btn.innerText = originalText;
-                    btn.classList.remove('bg-emerald-600', 'text-white');
-                }, 2000);
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    const originalText = btn.innerText;
+                    btn.innerText = "Copied!";
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                    }, 2000);
+                } else {
+                    console.error("Copy command failed.");
+                }
             } catch (err) {
-                console.error('Failed to copy: ', err);
+                console.error('Fallback copy failed', err);
             }
+
+            document.body.removeChild(textArea);
         }
 
         function clearInput() {
