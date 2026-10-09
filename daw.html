@@ -42,7 +42,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">Xenharmonic Multi-Part Sequencer</h1>
-                    <p class="text-xs text-slate-400">Up to 64 independent microtonal tracks sharing master tempo (C4 = 261.63Hz anchor)</p>
+                    <p class="text-xs text-slate-400">Up to 64 independent microtonal tracks sharing master tempo (C4 = 261.6256Hz Anchor)</p>
                 </div>
             </div>
             
@@ -72,13 +72,10 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 py-6 w-full flex-grow flex flex-col space-y-6">
-        
-        <!-- Tracks Container -->
         <div id="tracksContainer" class="space-y-4">
             <!-- Dynamically populated parts will appear here -->
         </div>
 
-        <!-- Master Global Analysis / Log Card -->
         <div class="bg-cardbg border border-slate-800 rounded-2xl p-5 shadow-xl">
             <h3 class="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-2 flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -88,7 +85,6 @@
                 <span class="text-slate-500">System ready. Add up to 64 parts, configure individual tunings & timbres, and press Play...</span>
             </div>
         </div>
-
     </main>
 
     <footer class="border-t border-slate-800 py-4 bg-cardbg/30 text-center text-xs text-slate-500">
@@ -96,13 +92,22 @@
     </footer>
 
     <script>
-        // Global Audio Context and State
         let audioCtx = null;
         let isPlaying = false;
         let activeTimeouts = [];
         let activeSources = [];
 
-        // Built-in Timbre Profiles (Array for partials, gain, ADSR)
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContextClass();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
         const TIMBRE_PROFILES = {
             timbre1: {
                 name: "Harmonic Rich",
@@ -138,7 +143,6 @@
             }
         };
 
-        // Chain of fifths reference array (35 elements, C is index 15)
         const fifthsOrder = [
             "Fbb", "Cbb", "Gbb", "Dbb", "Abb", "Ebb", "Bbb",
             "Fb", "Cb", "Gb", "Db", "Ab", "Eb", "Bb",
@@ -146,34 +150,33 @@
             "F#", "C#", "G#", "D#", "A#", "E#", "B#",
             "Fx", "Cx", "Gx", "Dx", "Ax", "Ex", "Bx"
         ];
-        const rootFifthsIndex = 15; // C is index 15 in fifthsOrder
+        const cFifthsIndex = 15; // C is index 15 in fifthsOrder
 
-        // State for up to 64 parts
         let parts = [
             {
                 id: 1,
-                name: "Lead Track (12ed2)",
+                name: "Lead Melody (12ed2)",
                 tuning: "12ed2",
-                sequence: "(C4 E4 G4)(4) (D4 F#4 A4)(4) (^^C5 E5 G5)(2)\nR(4) (0 4 7)(8) (2 5 9)(8) (3 7 10)(2)"
+                timbre: "timbre1",
+                sequence: "(C4 E4 G4)(4) (D4 F#4 A4)(4) (E4 G#4 B4)(2)\nR(4) (C5 E5 G5)(8) (B4 D5 F#5)(8) (C5 E5 G5)(2)"
             },
             {
                 id: 2,
                 name: "Bass Drone (12ed2)",
                 tuning: "12ed2",
+                timbre: "timbre2",
                 sequence: "C3(2) R(2) G3(2) R(2) (C3 G3)(1)"
             }
         ];
 
         let nextPartId = 3;
 
-        // Render Tracks in DOM
         function renderTracks() {
             const container = document.getElementById('tracksContainer');
             document.getElementById('trackCountLabel').textContent = parts.length;
 
             container.innerHTML = parts.map((part, index) => `
                 <div class="bg-cardbg border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row gap-5" data-part-id="${part.id}">
-                    <!-- Left: Part Parameters -->
                     <div class="w-full md:w-1/3 space-y-4 flex flex-col justify-between">
                         <div>
                             <div class="flex items-center justify-between mb-3">
@@ -205,11 +208,10 @@
                         </div>
                     </div>
 
-                    <!-- Right: Track Note Sequence Input -->
                     <div class="w-full md:w-2/3 flex flex-col">
                         <div class="flex items-center justify-between mb-1.5">
                             <label class="text-[11px] font-semibold tracking-wider text-indigo-400 uppercase">Part Sequence Input</label>
-                            <span class="text-[10px] text-slate-500">Supports polyphony e.g. (C4 E4 G4)(4) or steps (0 4 7)(8)</span>
+                            <span class="text-[10px] text-slate-500">Polyphony supported e.g. (C4 E4 G4)(4) or step offsets e.g. (0 4 7)(8)</span>
                         </div>
                         <textarea onchange="updatePartProp(${part.id}, 'sequence', this.value)" oninput="updatePartProp(${part.id}, 'sequence', this.value)" class="w-full flex-grow min-h-[110px] bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-purple-200 focus:outline-none focus:border-purple-500 transition-colors leading-relaxed resize-y" placeholder="Enter notes here...">${part.sequence}</textarea>
                     </div>
@@ -219,7 +221,6 @@
             updateMasterAnalysis();
         }
 
-        // Update Part property
         window.updatePartProp = function(id, prop, val) {
             const part = parts.find(p => p.id === id);
             if (part) {
@@ -228,12 +229,8 @@
             }
         };
 
-        // Add New Track (up to 64)
         document.getElementById('addPartBtn').addEventListener('click', () => {
-            if (parts.length >= 64) {
-                alert("Maximum limit of 64 parts reached.");
-                return;
-            }
+            if (parts.length >= 64) return;
             parts.push({
                 id: nextPartId++,
                 name: `Track ${parts.length + 1} (12ed2)`,
@@ -244,14 +241,12 @@
             renderTracks();
         });
 
-        // Remove Track
         window.removePart = function(id) {
             if (parts.length <= 1) return;
             parts = parts.filter(p => p.id !== id);
             renderTracks();
         };
 
-        // Tuning Parsers & Converters with C4=261.6256Hz Anchor
         function parseTuning(tuningStr) {
             tuningStr = tuningStr.trim().toLowerCase();
             const match = tuningStr.match(/^(\d+(?:\.\d+)?)\s*ed\s*(.+)$/);
@@ -279,7 +274,7 @@
             const fifthCents = (fifthOffset / t) * 1200;
 
             for (let i = 0; i < fifthsOrder.length; i++) {
-                const fifthsFromC = i - rootFifthsIndex;
+                const fifthsFromC = i - cFifthsIndex;
                 let step = (fifthsFromC * fifthOffset) % t;
                 if (step < 0) step += t;
                 const noteName = fifthsOrder[i];
@@ -291,8 +286,11 @@
 
         function parseSingleNote(token, t, edoSuit) {
             token = token.trim();
-            if (!token) return { isRest: true, step: 0 };
-            if (/^-?\d+(\.\d+)?$/.test(token)) return { isRest: false, step: parseFloat(token) };
+            if (!token) return { isRest: true, absoluteStep: 0 };
+            if (/^-?\d+(\.\d+)?$/.test(token)) {
+                // If pure number step offset relative to C4
+                return { isRest: false, absoluteStep: parseFloat(token) };
+            }
 
             let signCount = 0;
             let cleanToken = token;
@@ -303,7 +301,7 @@
             }
 
             const octaveMatch = cleanToken.match(/^(-?[A-Za-z#bx]+)(-?\d+)$/);
-            if (!octaveMatch) return { isRest: false, step: signCount };
+            if (!octaveMatch) return { isRest: false, absoluteStep: signCount };
 
             const baseName = octaveMatch[1];
             const statedOctave = parseInt(octaveMatch[2], 10);
@@ -315,18 +313,18 @@
                     break;
                 }
             }
-            if (foundIndex === -1) return { isRest: false, step: signCount };
+            if (foundIndex === -1) return { isRest: false, absoluteStep: signCount };
 
-            const fifthsFromC = foundIndex - rootFifthsIndex;
-            const fifthOffset = edoSuit.fifthOffset;
-            let step = (fifthsFromC * fifthOffset) % t;
-            if (step < 0) step += t;
+            const fifthsFromC = foundIndex - cFifthsIndex;
+            const fifthOffset = edoSuit.fifthOffset || computeEDOFifth(t);
+            let stepInPeriod = (fifthsFromC * fifthOffset) % t;
+            if (stepInPeriod < 0) stepInPeriod += t;
 
             let effectiveOctave = statedOctave;
             const bName = baseName.toLowerCase();
-            const fifthCents = edoSuit.fifthCents || 700;
+            const fifthCents = edoSuit.fifthCents || ((fifthOffset / t) * 1200);
 
-            // Strict C-boundary octave adjustments
+            // Strict octave boundary rules at C
             if (bName === 'cb' || bName === 'cbb') {
                 effectiveOctave = statedOctave - 1;
             } else if ((bName === 'c#' || bName === 'c##' || bName === 'cx') && fifthCents < 685.714) {
@@ -337,8 +335,10 @@
                 effectiveOctave = statedOctave + 1;
             }
 
+            // Calculate absolute step number relative to C4 (where C4 = 0 steps)
             const octaveDiff = effectiveOctave - 4;
-            return { isRest: false, step: step + (octaveDiff * t) + signCount };
+            const absoluteStep = stepInPeriod + (octaveDiff * t) + signCount;
+            return { isRest: false, absoluteStep };
         }
 
         function parseDurations(durStrList) {
@@ -374,7 +374,7 @@
                         const parsed = parseSingleNote(st, t, edoSuit);
                         if (!parsed.isRest) {
                             allRests = false;
-                            chordNotes.push(parsed.step);
+                            chordNotes.push(parsed.absoluteStep);
                         }
                     }
                     if (!allRests && chordNotes.length > 0) {
@@ -387,21 +387,22 @@
                         steps.push({ isRest: true, steps: [], durationFraction });
                     } else {
                         const parsed = parseSingleNote(notePart, t, edoSuit);
-                        steps.push({ isRest: parsed.isRest, steps: parsed.isRest ? [] : [parsed.step], durationFraction });
+                        steps.push({ isRest: parsed.isRest, steps: parsed.isRest ? [] : [parsed.absoluteStep], durationFraction });
                     }
                 }
             }
             return steps;
         }
 
-        // Frequency Calculation anchored with C4 = 261.6256 Hz
         const C4_FREQ = 261.6256;
-        function calculateFrequency(n, stepsPerPeriod, baseRatio) {
-            return C4_FREQ * Math.pow(baseRatio, n / stepsPerPeriod);
+
+        function calculateFrequency(absoluteStep, stepsPerPeriod, baseRatio) {
+            // absoluteStep 0 corresponds precisely to C4 = 261.6256 Hz.
+            return C4_FREQ * Math.pow(baseRatio, absoluteStep / stepsPerPeriod);
         }
 
         function updateMasterAnalysis() {
-            let logHtml = `<div class="text-purple-400 font-bold">Active Tracks: ${parts.length} / 64 (C4 Anchor = ${C4_FREQ}Hz)</div><hr class="border-slate-800 my-1">`;
+            let logHtml = `<div class="text-purple-400 font-bold">Active Tracks: ${parts.length} / 64 (C4 Anchor = 261.6256Hz)</div><hr class="border-slate-800 my-1">`;
             parts.forEach((part, idx) => {
                 const tuning = parseTuning(part.tuning);
                 let edoSuit = { fifthOffset: Math.round(tuning.stepsPerPeriod * Math.log2(1.5)) };
@@ -412,7 +413,6 @@
             document.getElementById('analysisLog').innerHTML = logHtml;
         }
 
-        // Sound Synthesis Engine
         function playTone(ctx, destNode, freq, durationSec, timbreConfig, startTimeOffset = 0) {
             const masterGain = ctx.createGain();
             masterGain.gain.setValueAtTime(0.15, ctx.currentTime + startTimeOffset);
@@ -454,14 +454,15 @@
             });
         }
 
-        // Playback All Parts Concurrently
         async function startPlayback() {
             if (isPlaying) return;
             isPlaying = true;
             document.getElementById('playBtn').classList.add('opacity-50', 'cursor-not-allowed');
 
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') await audioCtx.resume();
+            const ctx = getAudioContext();
+            if (ctx.state === 'suspended') {
+                await ctx.resume();
+            }
 
             const masterTempo = parseFloat(document.getElementById('masterTempoInput').value) || 120;
             const secondsPerWholeNote = (60 / masterTempo) * 4;
@@ -487,9 +488,9 @@
                 track.steps.forEach(stepItem => {
                     const durationSec = stepItem.durationFraction * secondsPerWholeNote;
                     if (!stepItem.isRest) {
-                        stepItem.steps.forEach(nStep => {
-                            const freq = calculateFrequency(nStep, track.tuning.stepsPerPeriod, track.tuning.baseRatio);
-                            playTone(audioCtx, audioCtx.destination, freq, durationSec * 0.9, track.timbreConfig, currentTime);
+                        stepItem.steps.forEach(absStep => {
+                            const freq = calculateFrequency(absStep, track.tuning.stepsPerPeriod, track.tuning.baseRatio);
+                            playTone(ctx, ctx.destination, freq, durationSec * 0.9, track.timbreConfig, currentTime);
                         });
                     }
                     currentTime += durationSec;
@@ -515,7 +516,6 @@
             activeSources = [];
         }
 
-        // Offline Export to Audio File (.wav)
         async function exportAudioFile() {
             const exportBtn = document.getElementById('exportBtn');
             const exportText = document.getElementById('exportText');
@@ -550,8 +550,8 @@
                     track.steps.forEach(stepItem => {
                         const durationSec = stepItem.durationFraction * secondsPerWholeNote;
                         if (!stepItem.isRest) {
-                            stepItem.steps.forEach(nStep => {
-                                const freq = calculateFrequency(nStep, track.tuning.stepsPerPeriod, track.tuning.baseRatio);
+                            stepItem.steps.forEach(absStep => {
+                                const freq = calculateFrequency(absStep, track.tuning.stepsPerPeriod, track.tuning.baseRatio);
                                 playTone(offlineCtx, offlineCtx.destination, freq, durationSec * 0.9, track.timbreConfig, currentTime);
                             });
                         }
@@ -623,7 +623,6 @@
             return new Blob([out.buffer], { type: 'audio/wav' });
         }
 
-        // Event Listeners
         document.getElementById('playBtn').addEventListener('click', startPlayback);
         document.getElementById('stopBtn').addEventListener('click', stopPlayback);
         document.getElementById('exportBtn').addEventListener('click', exportAudioFile);
@@ -631,6 +630,11 @@
 
         window.onload = () => {
             renderTracks();
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            });
         };
     </script>
 
