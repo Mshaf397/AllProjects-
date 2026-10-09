@@ -1,1556 +1,488 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Polyphonic Microtonal Workstation</title>
-    <!-- Load Tailwind CSS -->
+    <title>Xenharmonic Text Sequencer</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0f172a',
+                        cardbg: '#1e293b',
+                        accent: '#8b5cf6',
+                        accenthover: '#7c3aed'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        #current-sequence-input {
-            overflow-x: auto;
-            white-space: pre; 
-            font-family: monospace;
-            caret-color: #4f46e5;
-        }
-        .note-key {
-            @apply inline-block px-2 py-0.5 m-0.5 text-xs font-semibold rounded-full bg-silver-900 text-indigo-300;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            @apply bg-silver-500;
-        }
-        input[type="range"]::-moz-range-thumb {
-            @apply bg-indigo-500;
-        }
-        
-        /* Styles for the dynamic tabs and delete buttons */
-        .tab-wrapper {
-            @apply flex items-center mr-1 mb-1;
-        }
-        .tab-button {
-            @apply py-2 px-3 font-semibold rounded-t-lg transition hover:bg-gray-700 text-gray-300 border-b-2 border-transparent;
-        }
-        .tab-button.active {
-            @apply bg-gray-700 text-white border-indigo-500;
-        }
-        .delete-button {
-            @apply text-red-400 hover:text-silver-300 p-1 ml-1 rounded-full text-xs font-bold transition h-6 w-6 flex items-center justify-center;
-            line-height: 1; /* Adjust alignment for the 'x' */
-        }
-        .tab-wrapper.active .delete-button {
-            @apply bg-gray-700;
-        }
-        .note-map-display {
-            @apply bg-orange-700 p-3 rounded-lg shadow-inner overflow-x-auto whitespace-nowrap text-sm font-mono text-green-400;
-            max-height: 200px;
-        }
-        .note-map-item {
-            @apply inline-block px-2 py-1 m-1 bg-gray-800 rounded-md;
-        }
-
+        .font-mono { font-family: 'Fira Code', monospace; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
 </head>
-<body class="bg-lime-500 min-h-screen p-4 sm:p-8 text-gray-100">
+<body class="bg-darkbg text-slate-100 min-h-screen flex flex-col justify-between selection:bg-accent selection:text-white">
 
-    <div id="main-container" class="max-w-5xl mx-auto">
-        <header class="mb-8">
-            <h1 class="text-3xl sm:text-4xl font-extrabold text-white mb-2">Polyphonic Microtonal Workstation</h1>
-            <p class="text-blue-400">Manage up to 256 independent parts with unique EDOs, roots, and custom scales.</p>
-        </header>
-
-        <!-- Global Controls -->
-        <div class="bg-green-800 p-6 rounded-xl shadow-2xl mb-6 border border-gray-700">
-            <h2 class="text-xl font-semibold mb-4 text-white">Global Transport & EQ</h2>
-            
-            <!-- Global Tempo Control - UPDATED MIN AND MAX -->
-            <div class="mb-6 flex items-center justify-between">
-                <label for="tempo-slider" class="text-sm font-medium text-emerald-300 w-3/5">Global Tempo (BPM):</label>
-                <!-- Slider max set to 1000 for functionality, number input has no max -->
-                <input type="range" id="tempo-slider" min="40" max="240" value="120" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg">
-                <!-- Number input min set to 1, max attribute removed for no max limit -->
-                <input type="number" id="tempo-input" min="1" value="120" class="ml-4 w-20 p-2 border border-gray-600 bg-gray-700 rounded-lg text-center font-medium">
-            </div>
-
-            <!-- Action Buttons and Status -->
-            <div class="grid grid-cols-4 gap-3 mb-6 border-t border-gray-700 pt-4">
-                <div class="col-span-2">
-                    <button id="play-button"
-                            class="w-full py-3 px-4 bg-cyan-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow-md transition duration-200 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 text-base">
-                        Start All Parts
-                    </button>
+    <header class="border-b border-slate-800 bg-cardbg/50 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                    </svg>
                 </div>
                 <div>
-                    <button id="loop-button"
-                            class="w-full py-3 px-4 bg-green-600 hover:bg-green-200 text-white font-bold rounded-lg shadow-md transition duration-200 focus:outline-none focus:ring-4 focus:ring-green-800 focus:ring-opacity-50 text-sm">
-                        Loop: ON
-                    </button>
-                </div>
-                <div>
-<button id="export-button" class="w-full py-3 px-4 bg-orange-600 hover:bg-gray-500 text-white font-bold rounded-lg shadow-md transition duration-200 focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-opacity-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-    Export Audio (WAV)
-</button>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">Xenharmonic Text Sequencer</h1>
+                    <p class="text-xs text-slate-400">Microtonal music creation via text input & EDO chain of fifths</p>
                 </div>
             </div>
-
-            <!-- Playback Status -->
-            <div class="mb-2">
-                <label class="block text-sm font-medium text-gray-300 mb-2">Status:</label>
-                <div id="current-status" class="text-xl font-arial text-center bg-gray-700 p-3 rounded-lg shadow-inner text-indigo-400">Stopped</div>
-            </div
-
-
-        <!-- PART CONTROLS -->
-        <div class="bg-teal-500 p-6 rounded-xl shadow-2xl border border-teal-700">
             
-            <!-- Dynamic Tab Container and Add Button -->
-            <div class="flex flex-wrap items-end justify-between border-b border-gray-700 mb-4">
-                <div id="part-tabs" class="flex flex-wrap">
-                    <!-- Dynamic tabs will be generated here by JS -->
-                </div>
-                <button id="add-part-button" 
-                        class="py-1 px-3 mb-1 ml-2 bg-indigo-700 hover:bg-indigo-600 text-white font-medium rounded-lg text-sm transition disabled:opacity-50"
-                        onclick="addPart()">
-                    + Add Part (1/16)
+            <div class="flex items-center gap-3">
+                <button id="playBtn" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2 transform active:scale-95">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <span>Play Sequence</span>
+                </button>
+                <button id="stopBtn" class="px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 font-semibold text-white transition-all flex items-center gap-2 transform active:scale-95">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+                    <span>Stop</span>
                 </button>
             </div>
-
-            <div id="part-settings">
-                
-                <!-- EDO & Timbre Input -->
-                <div class="mb-4 grid grid-cols-2 gap-4">
-                    <div>
-                        <label for="current-edo-input" class="block text-sm font-medium text-gray-300 mb-2">EDO (Steps per Octave):</label>
-                        <input type="number" id="current-edo-input" min="5" value="31"
-                               class="w-full border border-gray-600 bg-gray-700 focus:border-indigo-500 rounded-lg p-3 text-lg transition shadow-inner text-center font-medium">
-                    </div>
-                    <div>
-                         <label for="current-timbre-select" class="block text-sm font-medium text-gray-300 mb-2">Timbre (Instrument):</label>
-                         <select id="current-timbre-select" class="w-full border border-gray-600 bg-gray-700 focus:border-indigo-500 rounded-lg p-3 text-lg transition shadow-inner font-medium">
-                            <!-- Options filled by JS -->
-                         </select>
-                    </div>
-                </div>
-
-                <!-- Root Note & Frequency Input -->
-                <div class="mb-6 grid grid-cols-3 gap-4">
-                    <div class="col-span-1">
-                         <label for="root-note-select" class="block text-sm font-medium text-gray-300 mb-2">Root Note Name:</label>
-                         <select id="root-note-select" class="w-full border border-gray-600 bg-gray-700 focus:border-indigo-500 rounded-lg p-3 text-lg transition shadow-inner font-medium">
-                             <option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option><option value="A">A</option><option value="B">B</option>
-                         </select>
-                    </div>
-                     <div class="col-span-1">
-                         <label for="root-octave-input" class="block text-sm font-medium text-gray-300 mb-2">Root Octave:</label>
-                         <input type="number" id="root-octave-input" min="-10" max="10" value="4"
-                               class="w-full border border-gray-600 bg-gray-700 focus:border-indigo-500 rounded-lg p-3 text-lg transition shadow-inner text-center font-medium">
-                    </div>
-                    <div class="col-span-1">
-                        <label for="current-root-freq-input" class="block text-sm font-medium text-gray-300 mb-2">Root Freq (Hz):</label>
-                        <input type="number" id="current-root-freq-input" min="20" max="20000" step="0.000001" value="261.6256"
-                               class="w-full border border-gray-600 bg-gray-700 focus:border-indigo-500 rounded-lg p-3 text-lg transition shadow-inner text-center font-medium">
-                    </div>
-                    
-                </div>
-                
-                <!-- Note Mapping Display -->
-                <div class="mb-6 border-t border-gray-700 pt-4">
-                    <h3 class="block text-sm font-medium text-gray-300 mb-2">
-                        Current Note Mapping (EDO steps $\to$ Note Name)
-                    </h3>
-                    <div id="note-map-display" class="note-map-display">
-                        <!-- Mapping details updated by JS -->
-                    </div>
-                    <p id="edo-fifth-status" class="text-xs text-gray-500 mt-1"></p>
-                </div>
-
-
-                <!-- Sequence Input (Textarea) -->
-                <div class="mb-6 border-t border-gray-700 pt-4">
-                    <label for="current-sequence-input" class="block text-sm font-medium text-gray-300 mb-2">
-                        Sequence (Part <span id="current-part-label" class="font-bold text-indigo-400">1</span>):
-                    </label>
-                    <textarea id="current-sequence-input" rows="4"
-                           class="w-full border border-gray-600 bg-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg p-3 text-lg transition duration-150 shadow-inner"
-                           placeholder="e.g., C4 Eb4 G4(2), ^A4 vB4 (4), 0 4 7 (4), 1 3 5(8)"></textarea>
-                    <p id="part-error-message" class="text-sm text-red-400 mt-2 font-medium hidden"></p>
-                    <p class="text-xs text-gray-500 mt-2">
-                        Enter **Note Names** (e.g., C4, F#5, Cb3) or **EDO Steps** (e.g., 0, 4, 7). Prefix with **multiple** `^` or `v` for microtonal adjustment by 1 EDO step per symbol (e.g., **<span class="font-mono">^^C4</span>**).
-                    </p>
-                </div>
-
-                <!-- Custom Scale Input (Moved below Note Mapping as it's less prioritized now) -->
-                <div class="mb-6 border-t border-gray-700 pt-4">
-                    <label for="current-scale-input" class="block text-sm font-medium text-gray-300 mb-2">
-                        Custom Scale Definition (EDO Steps):
-                    </label>
-                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                        <input type="text" id="current-scale-input" 
-                            class="w-full border border-gray-600 bg-gray-700 focus:border-indigo-500 rounded-lg p-3 text-lg transition shadow-inner font-mono"
-                            placeholder="e.g., 0 5 10 15 20 25 30 (for 31edo)">
-                        <button id="apply-scale-button" 
-                                class="flex-shrink-0 py-3 px-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition">
-                            Apply Scale
-                        </button>
-                        <button id="clear-scale-button" 
-                                class="flex-shrink-0 py-3 px-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition">
-                            Clear Scale
-                        </button>
-                    </div>
-                    <p id="scale-status-message" class="text-sm mt-2 font-medium text-gray-400">
-                         Sequence is currently in **Note Name Mode** or **EDO Step Mode**.
-                    </p>
-                    <p class="text-xs text-gray-500 mt-1">Note: If a scale is applied, sequence steps (e.g., 0, 1, 2) refer to scale degrees instead of EDO steps/Note Names.</p>
-                </div>
-
-
-            </div>
-            
-            <div class="border-t border-gray-700 pt-4">
-                <h2 class="text-xl font-semibold mb-4 text-white">Notation Guide</h2>
-                <ul class="list-disc list-inside text-gray-300 space-y-1 text-sm">
-                    <li><span class="font-mono">Note Name</span>: Use standard names (C, Db, F#, Bbb) plus octave number (e.g., **<span class="font-mono">C4</span>**, **<span class="font-mono">F#5</span>**, **<span class="font-mono">Bb-1</span>**).</li>
-                    <li><span class="font-mono">Micro Accidental</span>: Use **<span class="note-key">^</span>** to raise or **<span class="note-key">v</span>** to lower a note by 1 EDO step per symbol (e.g., **<span class="font-mono">^^C4</span>** for 2 steps up).</li>
-                    <li><span class="font-mono">0 4 7</span> or <span class="font-mono">C4 E4 G4</span>: Space indicates simultaneous notes (a chord).</li>
-                    <li><span class="font-mono">... (N)</span>: Rhythm code. N is the denominator of a fraction of a whole note (4=quarter, 8=eighth, etc.).</li>
-                    <li><span class="font-mono">... (N1)(N2)</span>: Tied attacks. Chained rhythm codes back-to-back combine their durations.</li>
-                    <li><span class="note-key">a</span>: **Accent**. Increases volume for the step. <span class="note-key">s</span>: **Staccato**. <span class="note-key">r</span>: **Rest**.</li>
-                </ul>
-            </div>
         </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 w-full flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-    </div>
+        <div class="space-y-6 flex flex-col">
+            
+            <div class="bg-cardbg border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                <h2 class="text-sm font-semibold tracking-wider text-purple-400 uppercase flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                    Tuning & Tempo Parameters
+                </h2>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Tempo (BPM)</label>
+                        <input type="number" id="tempoInput" value="120" min="20" max="300" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Tuning (xedY)</label>
+                        <input type="text" id="tuningInput" value="12ed2" placeholder="e.g. 12ed2, 19ed2, 31ed2, 12ed(3/2)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition-colors font-mono">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Root Frequency (Hz)</label>
+                    <input type="text" id="rootFreqInput" value="293.3333" placeholder="e.g. 293.3333" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-purple-500 transition-colors font-mono">
+                    <p class="text-[11px] text-slate-500 mt-1">Note: For Y=2 (EDO), root defaults to D4 = 293.3333 Hz unless overridden.</p>
+                </div>
+            </div>
+
+            <div class="bg-cardbg border border-slate-800 rounded-2xl p-5 shadow-xl flex-grow flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-sm font-semibold tracking-wider text-pink-400 uppercase flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"/></svg>
+                            Timbre Profiles
+                        </h2>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">Select active synthesized timbre profile configured in the system code.</p>
+                    
+                    <div class="space-y-3">
+                        <label class="block text-xs font-medium text-slate-400">Active Timbre</label>
+                        <select id="activeTimbreSelect" class="w-full bg-slate-900 border border-slate-700 text-sm text-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500">
+                            <option value="piano">Piano</option>
+                            <option value="timbre2">Sub-Bass & Sparkle (timbre2)</option>
+                            <option value="timbre3">Xenharmonic Bell (timbre3)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-6 bg-slate-900/60 border border-slate-800 rounded-xl p-3 text-[11px] text-slate-400 leading-relaxed">
+                    <span class="text-purple-400 font-semibold">Tip:</span> Each timbre defines an array of partials with individualized gain and ADSR envelopes <code class="text-slate-300">[attack, decay, sustain, release]</code>.
+                </div>
+            </div>
+
+        </div>
+
+        <div class="lg:col-span-2 flex flex-col space-y-6">
+            
+            <div class="bg-cardbg border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col flex-grow">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-sm font-semibold tracking-wider text-indigo-400 uppercase flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        Note Sequencer Input
+                    </h2>
+                </div>
+                <p class="text-xs text-slate-400 mb-3">
+                    Input notes as steps (e.g. <code class="text-purple-300 font-mono">0(4)</code>, <code class="text-purple-300 font-mono">-2(8)</code>) or chain-of-fifths note names for EDO (e.g. <code class="text-purple-300 font-mono">D4(4)</code>, <code class="text-purple-300 font-mono">F#(8)(16)</code>, <code class="text-purple-300 font-mono">^^A(4)</code>, <code class="text-purple-300 font-mono">R(4)</code> for rest).
+                </p>
+
+                <div class="relative flex-grow flex flex-col">
+                    <textarea id="sequenceInput" class="w-full flex-grow min-h-[200px] bg-slate-900 border border-slate-700 rounded-xl p-4 text-sm font-mono text-purple-200 focus:outline-none focus:border-purple-500 transition-colors leading-relaxed resize-y" placeholder="Enter your note sequence here...">D4(4) E#4(8) ^F#(8) G4(2) 
+R(4) 0(8) 2(8) 3(2)
+^^A(4) vB(4) C#(2)</textarea>
+                </div>
+            </div>
+
+            <div class="bg-cardbg border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <h3 class="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-2 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Tuning Analysis & Note Resolution Log
+                </h3>
+                <div id="analysisLog" class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-300 h-32 overflow-y-auto space-y-1">
+                    <span class="text-slate-500">System initialized. Click 'Play Sequence' or edit parameters to update tuning analysis...</span>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="border-t border-slate-800 py-4 bg-cardbg/30 text-center text-xs text-slate-500">
+        Xenharmonic Text Sequencer &bull; Powered by Web Audio API & Custom Microtonal Engine
+    </footer>
 
     <script>
-        // --- 1. Global Constants and State ---
-        const MAX_PARTS = 256;
-        const DEFAULT_ROOT_FREQ = 261.6256; 
-        
-        // Initial Part State: Added note naming properties
-        let partStates = [
-            { 
-                edo: 31, 
-                timbre: 'triangle', 
-                sequence: 'C4 Eb4 G4(1)', 
-                customScale: [], 
-                isScaleMode: false, 
-                scaleInputText: '',
-                rootFreq: DEFAULT_ROOT_FREQ,
-                rootNoteName: 'C',
-                rootOctave: 4,
-                noteMap: null // Will hold the EDO-specific note mapping
-            },
-        ];
-        let currentPartIndex = 0;
-
-        let audioContext;
+        // Global Audio Context and State
+        let audioCtx = null;
         let isPlaying = false;
-        let isLooping = true;
-        let tempoBPM = 120; // Default tempo initialized here
-        
-        let schedulingInterval;
-        let sequenceStartTime = 0;
-        let globalLoopDuration = 0;
-        
-        // Audio Chain Nodes
-        let lowFilter, midFilter, highFilter;
-        let masterGain;
-        
-        // Recording State
-        let mediaRecorder;
-        let recordedChunks = [];
-        let destination; 
-        let isRendering = false;
+        let activeTimeouts = [];
+        let activeSources = [];
 
-        const TIMBRES = [
-            'sine', 'triangle', 'sawtooth', 'square', 
-            'piano', 'violin', 'viola', 'cello', 
-            'acoustic guitar', 'classical guitar', 'electric guitar', 'bass guitar', 
-            'saxophone', 'flute', 'trumpet', 'tuba', 'accordion',
-            // Drums
-            'kick', 'snare', 'open hi-hat', 'ride cymbal' 
-        ];
-        
-        const DEFAULT_NEW_PART = {
-            edo: 12,
-            timbre: 'triangle',
-            sequence: 'C4 Eb4 G4(1)',
-            customScale: [],
-            isScaleMode: false,
-            scaleInputText: '',
-            rootFreq: 261.6256,
-            rootNoteName: 'C',
-            rootOctave: 4,
-            noteMap: null
+        // Built-in Timbre Profiles (Easily editable in code)
+        // Each partial contains: ratio (frequency multiplier), gain (amplitude), adsr: [attack, decay, sustain, release] in seconds
+        const TIMBRE_PROFILES = {
+            piano: [
+                { ratio: 1, gain: 1, adsr: [0.05, 0.1, 0.6, 0.2] },
+                { ratio: 2.0005, gain: 0.5, adsr: [0.05, 0.1, 0.4, 0.2] },
+                { ratio: 3.001, gain: 0.5, adsr: [0.03, 0.1, 0.2, 0.15] }
+            ],
+            timbre2: [
+                { ratio: 0.5, gain: 0.5, adsr: [0.1, 0.2, 0.7, 0.4] },
+                { ratio: 1.0, gain: 0.7, adsr: [0.02, 0.1, 0.5, 0.2] },
+                { ratio: 3.01, gain: 0.2, adsr: [0.01, 0.05, 0.1, 0.1] }
+            ],
+            timbre3: [
+                { ratio: 1.0, gain: 0.9, adsr: [0.01, 0.2, 0.3, 0.3] },
+                { ratio: 2.76, gain: 0.4, adsr: [0.01, 0.15, 0.2, 0.25] },
+                { ratio: 5.4, gain: 0.2, adsr: [0.005, 0.1, 0.1, 0.15] }
+            ]
         };
 
-        // --- 2. DOM Element Selectors ---
-        const $playButton = document.getElementById('play-button');
-        const $loopButton = document.getElementById('loop-button');
-        const $exportButton = document.getElementById('export-button');
-        const $tempoSlider = document.getElementById('tempo-slider');
-        const $tempoInput = document.getElementById('tempo-input');
-        const $status = document.getElementById('current-status');
-        
-        const $lowGain = document.getElementById('low-gain');
-        const $midGain = document.getElementById('mid-gain');
-        const $highGain = document.getElementById('high-gain');
-        const $lowValue = document.getElementById('low-value');
-        const $midValue = document.getElementById('mid-value');
-        const $highValue = document.getElementById('high-value');
-        
-        const $partTabsContainer = document.getElementById('part-tabs');
-        const $addPartButton = document.getElementById('add-part-button');
-        const $currentEdoInput = document.getElementById('current-edo-input');
-        const $rootNoteSelect = document.getElementById('root-note-select');
-        const $rootOctaveInput = document.getElementById('root-octave-input');
-        const $currentRootFreqInput = document.getElementById('current-root-freq-input'); 
-        const $currentTimbreSelect = document.getElementById('current-timbre-select');
-        const $currentScaleInput = document.getElementById('current-scale-input');
-        const $applyScaleButton = document.getElementById('apply-scale-button');
-        const $clearScaleButton = document.getElementById('clear-scale-button');
-        const $scaleStatusMessage = document.getElementById('scale-status-message');
-        const $currentSequenceInput = document.getElementById('current-sequence-input');
-        const $partErrorMessage = document.getElementById('part-error-message');
-        const $currentPartLabel = document.getElementById('current-part-label');
-        const $noteMapDisplay = document.getElementById('note-map-display');
-        const $edoFifthStatus = document.getElementById('edo-fifth-status');
+        // Chain of fifths reference array (35 elements, D is index 17)
+        const fifthsOrder = [
+            "Fbb", "Cbb", "Gbb", "Dbb", "Abb", "Ebb", "Bbb",
+            "Fb", "Cb", "Gb", "Db", "Ab", "Eb", "Bb",
+            "F", "C", "G", "D", "A", "E", "B",
+            "F#", "C#", "G#", "D#", "A#", "E#", "B#",
+            "Fx", "Cx", "Gx", "Dx", "Ax", "Ex", "Bx"
+        ];
+        const rootFifthsIndex = 17; // D is at index 17
 
-
-        // --- 3. Note Mapping Logic (Circle of Fifths to EDO) ---
-
-        /**
-         * Generates the note name to EDO step mapping for a given EDO.
-         * The mapping is based on the closest EDO step to the Pythagorean Perfect Fifth (701.955 cents).
-         * Note steps (0 to EDO-1) are relative to **C-natural** (C-natural = 0).
-         * * NOTE: This function is simplified to only map standard enharmonic names.
-         * Micro-accidentals (^ and v) are now handled dynamically in parseNoteName.
-         */
-        function mapCircleOfFifthsToEDO(edo) { 
-            const result = {
-                edo: edo,
-                fifthSteps: 0,
-                noteToStep: {}, 
-                stepToNote: {}, 
-            };
-
-            if (edo < 5) return result; 
-
-            // 1. Calculate the EDO steps for the Pythagorean Perfect Fifth (P5)
-            const fifthCents = 701.955;
-            const stepCents = 1200 / edo;
-            const fifthSteps = Math.round(fifthCents / stepCents);
-            result.fifthSteps = fifthSteps;
-
-            // Base notes and their index in the circle of fifths (C=0). Covers Fbb (-15) to Bx (+19).
-            const fifthsIndex = {
-                'Fbbbb': -31, 'Cbbbb': -30, 'Gbbbb': -29, 'Dbbbb': -28, 'Abbbb': -27, 'Ebbbb': -26, 'Bbbbb': -25,
-                'Fbbb': -24, 'Cbbb': -23, 'Gbbb': -22, 'Dbbb': -21, 'Abbb': -20, 'Ebbb': -19, 'Bbbb': -18,
-                'Fbb': -17, 'Cbb': -16, 'Gbb': -15, 'Dbb': -14, 'Abb': -13, 'Ebb': -12, 'Bbb': -11, 'Fb': -10,
-                'Cb': -9, 'Gb': -8, 'Db': -7, 'Ab': -6, 'Eb': -5, 'Bb': -4, 'F': -3, 'C': -2, 'G': -1, 
-                'D': 0, 'A': 1, 'E': 2, 'B': 3, 'F#': 4, 'C#': 5, 'G#': 6, 'D#': 7, 'A#': 8, 
-                'E#': 9, 'B#': 10, 'Fx': 11, 'Cx': 12, 'Gx': 13, 'Dx': 14, 'Ax': 15, 'Ex': 16, 'Bx': 17,
-                'Fx#': 18, 'Cx#': 19, 'Gx#': 20, 'Dx#': 21, 'Ax#': 22, 'Ex#': 23, 'Bx#': 24,
-                'Fxx': 25, 'Cxx': 26, 'Gxx': 27, 'Dxx': 28, 'Axx': 29, 'Exx': 30, 'Bxx': 31
-            };
-            
-            // 2. Map all note names to EDO steps relative to C-natural (0 to EDO-1)
-            Object.entries(fifthsIndex).forEach(([name, fifths]) => {
-                const cStep = (fifths * fifthSteps) % edo;
-                
-                // Ensure step is positive (0 to EDO-1)
-                let step = (cStep < 0 ? cStep + edo : cStep);
-                result.noteToStep[name] = step;
-                
-                // For stepToNote, prefer the name with the fewest accidentals (shortest string)
-                if (!result.stepToNote[step] || name.length < result.stepToNote[step].length) {
-                    result.stepToNote[step] = name;
-                }
-            });
-
-            // The previous logic for assigning ^ / v to unassigned steps is removed 
-            // because multi-step micro-accidentals are now handled in parseNoteName.
-            
-            return result;
+        // Helper: Parse tuning string like "12ed2" or "12ed(3/2)" or improper fraction / decimal
+        function parseTuning(tuningStr) {
+            tuningStr = tuningStr.trim().toLowerCase();
+            const match = tuningStr.match(/^(\d+(?:\.\d+)?)\s*ed\s*(.+)$/);
+            if (!match) {
+                return { stepsPerPeriod: 12, baseRatio: 2 };
+            }
+            const stepsPerPeriod = parseFloat(match[1]);
+            let baseRatioStr = match[2].trim();
+            let baseRatio = 2;
+            if (baseRatioStr.includes('/')) {
+                const parts = baseRatioStr.split('/');
+                baseRatio = parseFloat(parts[0]) / parseFloat(parts[1]);
+            } else {
+                baseRatio = parseFloat(baseRatioStr);
+            }
+            return { stepsPerPeriod, baseRatio: isNaN(baseRatio) ? 2 : baseRatio };
         }
 
-        // --- 4. Note Parsing Helper (Updated for multiple micro-accidentals) ---
-
-        /**
-         * Converts a note name string (e.g., 'C#5', '^^vDb3') to an absolute EDO step value
-         * relative to the instrument's root note (part.rootNoteName at part.rootOctave).
-         */
-        function parseNoteName(noteString, part) {
-    const map = part.noteMap;
-    if (!map) return null;
-
-    const noteRegex = /^([v\^]*)([A-G])([b#x]*)([+-]?\d+)$/i;
-    const match = noteString.match(noteRegex);
-    if (!match) return null;
-    
-    const microAccidentals = match[1] || '';
-    const letter = match[2].toUpperCase();
-    const accidentals = match[3] || '';
-    const octave = parseInt(match[4], 10);
-
-    // 1. Determine the Chromatic Semitone (Distance from C to C#)
-    // We use the map to find the difference, regardless of D-relative indexing
-    const cStep = map.noteToStep['C'];
-    const cSharpStep = map.noteToStep['C#'];
-    const chromaticSemitone = cSharpStep - cStep;
-
-    // 2. Map Natural Notes relative to C = 0
-    const naturalMap = {};
-    ['C','D','E','F','G','A','B'].forEach(l => {
-        let step = map.noteToStep[l] - cStep;
-        // Ensure steps are wrapped within one octave relative to C
-        while (step < 0) step += part.edo;
-        naturalMap[l] = step % part.edo;
-    });
-
-    // 3. Calculate Accidental Shift
-    let accidentalShift = 0;
-    for (let char of accidentals) {
-        if (char === '#') accidentalShift += chromaticSemitone;
-        if (char === 'b') accidentalShift -= chromaticSemitone;
-        if (char === 'x') accidentalShift += (2 * chromaticSemitone);
-    }
-
-    // 4. Calculate Micro-tonal Shifts (^/v)
-    let microShift = 0;
-    for (let char of microAccidentals) {
-        if (char === '^') microShift++;
-        if (char === 'v') microShift--;
-    }
-
-    // 5. Absolute Step relative to C0
-    // (octave * EDO) anchors us to the C-boundary. 
-    // naturalMap[letter] handles the gap from C to the base note (D, E, etc.)
-    // accidentalShift handles the sharp/flat displacement.
-    const absoluteStep = (octave * part.edo) + naturalMap[letter] + accidentalShift + microShift;
-
-    // 6. Calculate Root Absolute Step (Root is also anchored to C0 for consistency)
-    const rootLetter = part.rootNoteName.charAt(0).toUpperCase();
-    const rootNaturalPos = naturalMap[rootLetter] || 0;
-    
-    // Note: If your root freq input is for a specific note (like A440), 
-    // this math ensures the relative interval is correct.
-    const absoluteRootStep = (part.rootOctave * part.edo) + rootNaturalPos;
-
-    return absoluteStep - absoluteRootStep;
-}
-
-
-
-
-        // --- 5. Part State Management ---
-
-        function updateNoteMapUI(part) {
-            const edo = part.edo;
-            const map = part.noteMap;
-            if (!map) {
-                if ($noteMapDisplay) $noteMapDisplay.innerHTML = 'Mapping error. Check EDO.';
-                if ($edoFifthStatus) $edoFifthStatus.textContent = '';
-                return;
-            }
-
-            // Display mapping
-            let html = '';
-            // Only show the base note names 
-            const namedSteps = Object.keys(map.stepToNote).map(s => parseInt(s, 10)).sort((a, b) => a - b);
-            
-            namedSteps.forEach(step => {
-                const name = map.stepToNote[step];
-                const displayStep = (step < 10) ? `0${step}` : step;
-                html += `<span class="note-map-item">${displayStep}: ${name}</span>`;
-            });
-
-            if ($noteMapDisplay) $noteMapDisplay.innerHTML = html;
-
-            // Display fifth status
-            const fifthCents = 701.955;
-            const actualFifthCents = map.fifthSteps * (1200 / edo);
-            const deviation = actualFifthCents - fifthCents;
-
-            if ($edoFifthStatus) {
-                $edoFifthStatus.textContent = `P5 is ${map.fifthSteps} EDO steps (${actualFifthCents.toFixed(3)} cents, ${deviation.toFixed(3)} cents deviation from Pythagorean).`;
-            }
+        // Compute Perfect Fifth step offset for EDO where Y=2
+        function computeEDOFifth(t) {
+            const val = t * Math.log2(1.5);
+            return Math.round(val);
         }
 
-        // --- 6. Sequence Parsing (Refactored) ---
+        // Build mapping from step index to note name for EDO
+        function buildEDONoteMap(t) {
+            const fifthOffset = computeEDOFifth(t);
+            const map = {};
+            const reverseMap = {};
 
-        function parseSequence(sequenceString, bpm, part) {
-            const steps = sequenceString.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            const scheduledEvents = [];
-            let currentTimeSeconds = 0; 
-            
-            const wholeNoteDuration = (60 / bpm) * 4; 
-            const rhythmRegex = /\((\d+)\)/g;
-            // Updated stepRegex to handle both EDO steps (numeric) and Note Names (alphanumeric, including multiple micro-acc.)
-            const stepRegex = /^([asr]?)\s*([\-\s\d\w\^v#b]*)\s*((\(\d+\))+)$/;
-            let maxDuration = 0;
-
-            for (const step of steps) {
-                const partsMatch = step.match(stepRegex);
-
-                if (!partsMatch) {
-                    throw new Error(`Invalid step format: "${step}". Expected '[mod] [steps](N1)(N2)...', e.g., 'a C4 F#4(4)' or 'r(8)'.`);
+            for (let i = 0; i < fifthsOrder.length; i++) {
+                const fifthsFromD = i - rootFifthsIndex;
+                let step = (fifthsFromD * fifthOffset) % t;
+                if (step < 0) step += t;
+                
+                const noteName = fifthsOrder[i];
+                if (map[step] === undefined) {
+                    map[step] = noteName;
                 }
+                reverseMap[noteName] = step;
+            }
+            return { map, reverseMap, fifthOffset };
+        }
 
-                const modifier = partsMatch[1] || '';
-                const stepsString = partsMatch[2].trim();
-                
-                let sequenceSteps = stepsString.split(/\s+/)
-                    .filter(s => s.length > 0);
+        // Parse note token into step number relative to root (step 0)
+        function parseNoteToken(token, t, edoSuit) {
+            if (!token || token.toUpperCase() === 'R' || token.toUpperCase() === 'REST') {
+                return { isRest: true, step: 0 };
+            }
 
-                const rhythmGroupsString = partsMatch[3].trim();
-                let match;
-                let totalStepDuration = 0;
-                rhythmRegex.lastIndex = 0; 
-                
-                while ((match = rhythmRegex.exec(rhythmGroupsString)) !== null) {
-                    const rhythmCode = parseInt(match[1], 10);
-                    if (isNaN(rhythmCode) || rhythmCode < 1) {
-                         throw new Error(`Invalid rhythm code in step "${step}". Codes must be positive whole numbers.`);
-                    }
-                    totalStepDuration += wholeNoteDuration / rhythmCode;
+            if (/^-?\d+(\.\d+)?$/.test(token)) {
+                return { isRest: false, step: parseFloat(token) };
+            }
+
+            let signCount = 0;
+            let cleanToken = token;
+            while (cleanToken.startsWith('^') || cleanToken.startsWith('v')) {
+                if (cleanToken.startsWith('^')) signCount += 1;
+                if (cleanToken.startsWith('v')) signCount -= 1;
+                cleanToken = cleanToken.substring(1);
+            }
+
+            let octave = 4;
+            const octaveMatch = cleanToken.match(/^(-?[A-Za-z#bx]+)(-?\d+)$/);
+            let baseName = cleanToken;
+            if (octaveMatch) {
+                baseName = octaveMatch[1];
+                octave = parseInt(octaveMatch[2], 10);
+            }
+
+            let foundIndex = -1;
+            for (let i = 0; i < fifthsOrder.length; i++) {
+                if (fifthsOrder[i].toLowerCase() === baseName.toLowerCase()) {
+                    foundIndex = i;
+                    break;
                 }
-                
-                if (totalStepDuration === 0) {
-                    throw new Error(`Invalid or missing rhythm code in step "${step}". Codes must be positive whole numbers.`);
-                }
+            }
 
-                if (modifier === 'r') {
-                    if (sequenceSteps.length > 0) {
-                        throw new Error(`Rest ('r') must not be followed by note steps in step "${step}".`);
-                    }
-                } else if (sequenceSteps.length === 0) {
-                    throw new Error(`Missing note steps in step "${step}". Notes (or 'r') are required.`);
-                }
-                
-                let actualEdoSteps = [];
-                
-                // --- Logic: EDO Step or Note Name or Scale Degree ---
-                
-                if (part.isScaleMode) {
-                     // 1. Scale Degree Mode
-                    const scale = part.customScale;
-                    if (scale.length === 0) {
-                         throw new Error("Scale Degree Mode is active but scale is empty. Clear scale or define steps.");
-                    }
-                    
-                    for (const degree of sequenceSteps) {
-                        const numericDegree = parseInt(degree, 10);
-                        if (isNaN(numericDegree)) {
-                             throw new Error(`Invalid scale degree: "${degree}". Must be an integer index.`);
-                        }
-                        
-                        const scaleLength = scale.length;
-                        const octaveShift = Math.floor(numericDegree / scaleLength);
-                        let scaleIndex = numericDegree % scaleLength;
-                        if (scaleIndex < 0) {
-                            scaleIndex = scaleLength + (numericDegree % scaleLength); 
-                            if (scaleIndex === scaleLength) scaleIndex = 0; 
-                        }
-                        
-                        const baseEdoStep = scale[scaleIndex];
-                        const finalEdoStep = baseEdoStep + (octaveShift * part.edo);
-                        actualEdoSteps.push(finalEdoStep);
-                    }
+            if (foundIndex === -1) {
+                return { isRest: false, step: signCount };
+            }
 
+            const fifthsFromD = foundIndex - rootFifthsIndex;
+            const fifthOffset = edoSuit.fifthOffset;
+            let step = (fifthsFromD * fifthOffset) % t;
+            if (step < 0) step += t;
+
+            const octaveDiff = octave - 4;
+            let totalStep = step + (octaveDiff * t) + signCount;
+            return { isRest: false, step: totalStep };
+        }
+
+        // Parse duration numbers in parentheses: e.g. E4(8)(16) -> 1/8 + 1/16
+        function parseDurations(durStrList) {
+            if (!durStrList || durStrList.length === 0) return 0.25;
+            let totalDuration = 0;
+            for (let durStr of durStrList) {
+                const denom = parseFloat(durStr);
+                if (denom > 0) {
+                    totalDuration += 1 / denom;
+                }
+            }
+            return totalDuration > 0 ? totalDuration : 0.25;
+        }
+
+        // Tokenize sequence text into note objects
+        function tokenizeSequence(text, t, edoSuit) {
+            const tokensRaw = text.trim().split(/\s+/);
+            const notes = [];
+
+            for (let raw of tokensRaw) {
+                if (!raw) continue;
+                const match = raw.match(/^([^\(\)]+)([\s\S]*)$/);
+                if (!match) continue;
+
+                const notePart = match[1];
+                const parenPart = match[2];
+
+                const durMatches = [...parenPart.matchAll(/\((\d+)\)/g)].map(m => m[1]);
+                const durationFraction = parseDurations(durMatches);
+
+                const parsed = parseNoteToken(notePart, t, edoSuit);
+                notes.push({
+                    token: raw,
+                    isRest: parsed.isRest,
+                    step: parsed.step,
+                    durationFraction: durationFraction
+                });
+            }
+            return notes;
+        }
+
+        // Frequency calculation: frequency = rootFreq * (baseRatio)^(n / stepsPerPeriod)
+        function calculateFrequency(n, rootFreq, stepsPerPeriod, baseRatio) {
+            return rootFreq * Math.pow(baseRatio, n / stepsPerPeriod);
+        }
+
+        // Update Analysis Log
+        function updateAnalysis() {
+            const tuningStr = document.getElementById('tuningInput').value;
+            const tuning = parseTuning(tuningStr);
+            const t = tuning.stepsPerPeriod;
+            const baseRatio = tuning.baseRatio;
+
+            let rootFreqInput = document.getElementById('rootFreqInput').value.trim();
+            let rootFreq = parseFloat(rootFreqInput);
+            if (isNaN(rootFreq)) rootFreq = 293.3333;
+
+            let edoSuit = { fifthOffset: Math.round(t * Math.log2(1.5)) };
+            if (Math.abs(baseRatio - 2) < 1e-5) {
+                edoSuit = buildEDONoteMap(t);
+            }
+
+            const seqText = document.getElementById('sequenceInput').value;
+            const notes = tokenizeSequence(seqText, t, edoSuit);
+
+            let logHtml = `<div class="text-purple-400 font-bold">Tuning: ${t} steps per period, Base Ratio: ${baseRatio}</div>`;
+            logHtml += `<div class="text-slate-400">Root Freq: ${rootFreq.toFixed(4)} Hz | Fifth Offset: ${edoSuit.fifthOffset} steps</div><hr class="border-slate-800 my-1">`;
+
+            notes.forEach((note, idx) => {
+                if (note.isRest) {
+                    logHtml += `<div>#${idx+1}: <span class="text-yellow-400">REST</span> | Duration: ${note.durationFraction}w</div>`;
                 } else {
-                    // 2. Note Name or Raw EDO Step Mode
-                    for (const noteStep of sequenceSteps) {
-                        // Check if the step contains any letter (A-G), #, b, x, ^, or v. If so, treat as Note Name.
-                        const isNoteName = /[a-zA-Z#bx\^v]/.test(noteStep);
-                        
-                        if (isNoteName) {
-                            // Try to parse as a Note Name (which now supports multiple ^/v)
-                            const stepValue = parseNoteName(noteStep, part);
-                            if (stepValue !== null) {
-                                actualEdoSteps.push(stepValue);
-                            } else {
-                                throw new Error(`Invalid note name or EDO step format: "${noteStep}".`);
-                            }
-                        } else {
-                             // Try to parse as a raw EDO Step (numeric)
-                            const stepValue = parseInt(noteStep, 10);
-                            if (!isNaN(stepValue)) {
-                                actualEdoSteps.push(stepValue);
-                            } else {
-                                throw new Error(`Invalid note name or EDO step format: "${noteStep}".`);
-                            }
-                        }
-                    }
+                    const freq = calculateFrequency(note.step, rootFreq, t, baseRatio);
+                    logHtml += `<div>#${idx+1}: <span class="text-emerald-400">Step ${note.step > 0 ? '+'+note.step : note.step}</span> &rarr; <span class="text-cyan-400">${freq.toFixed(2)} Hz</span> | Dur: ${note.durationFraction}w</div>`;
                 }
-                // --- End Logic ---
+            });
 
-                if (modifier !== 'r') {
-                    scheduledEvents.push({
-                        time: currentTimeSeconds, 
-                        steps: actualEdoSteps, // Absolute EDO steps (relative to base 1Hz)
-                        duration: totalStepDuration,
-                        modifier: modifier,
-                        edo: part.edo,
-                        rootFreq: part.rootFreq 
-                    });
-                }
-
-                currentTimeSeconds += totalStepDuration;
-                maxDuration = Math.max(maxDuration, currentTimeSeconds);
-            }
-            
-            return { events: scheduledEvents, duration: maxDuration };
+            document.getElementById('analysisLog').innerHTML = logHtml;
         }
-        
-        // --- 7. Playback and Scheduling Logic (Unchanged) ---
 
-        let scheduledParts = [];
-        let nextEventIndex = [];
+        // Sound Synthesis Engine with individualized Partial ADSR
+        function playTone(freq, durationSec, timbreConfig) {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const masterGain = audioCtx.createGain();
+            masterGain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            masterGain.connect(audioCtx.destination);
+            activeSources.push(masterGain);
+
+            const now = audioCtx.currentTime;
+
+            timbreConfig.forEach(partial => {
+                const pFreq = freq * partial.ratio;
+                const pGain = partial.gain;
+                const [attack, decay, sustain, release] = partial.adsr;
+
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(pFreq, now);
+
+                const startTime = now;
+                const peakTime = startTime + attack;
+                const decayTime = peakTime + decay;
+                const stopTime = startTime + durationSec;
+                const releaseEndTime = stopTime + release;
+
+                gainNode.gain.setValueAtTime(0, startTime);
+                gainNode.gain.linearRampToValueAtTime(pGain, peakTime);
+                gainNode.gain.exponentialRampToValueAtTime(Math.max(pGain * sustain, 0.0001), decayTime);
+                gainNode.gain.setValueAtTime(Math.max(pGain * sustain, 0.0001), stopTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, releaseEndTime);
+
+                osc.connect(gainNode);
+                gainNode.connect(masterGain);
+
+                osc.start(startTime);
+                osc.stop(releaseEndTime + 0.05);
+
+                activeSources.push(osc);
+            });
+        }
+
+        // Sequencer Playback Loop
+        async function startPlayback() {
+            if (isPlaying) return;
+            isPlaying = true;
+            document.getElementById('playBtn').classList.add('opacity-50', 'cursor-not-allowed');
+
+            const tempo = parseFloat(document.getElementById('tempoInput').value) || 120;
+            const secondsPerWholeNote = (60 / tempo) * 4;
+
+            const tuningStr = document.getElementById('tuningInput').value;
+            const tuning = parseTuning(tuningStr);
+            const t = tuning.stepsPerPeriod;
+            const baseRatio = tuning.baseRatio;
+
+            let rootFreq = parseFloat(document.getElementById('rootFreqInput').value);
+            if (isNaN(rootFreq)) rootFreq = 293.3333;
+
+            let edoSuit = { fifthOffset: Math.round(t * Math.log2(1.5)) };
+            if (Math.abs(baseRatio - 2) < 1e-5) edoSuit = buildEDONoteMap(t);
+
+            const seqText = document.getElementById('sequenceInput').value;
+            const notes = tokenizeSequence(seqText, t, edoSuit);
+
+            const activeTimbreKey = document.getElementById('activeTimbreSelect').value;
+            const timbreConfig = TIMBRE_PROFILES[activeTimbreKey] || TIMBRE_PROFILES.timbre1;
+
+            for (let i = 0; i < notes.length && isPlaying; i++) {
+                const note = notes[i];
+                const noteDurationSec = note.durationFraction * secondsPerWholeNote;
+
+                if (!note.isRest) {
+                    const freq = calculateFrequency(note.step, rootFreq, t, baseRatio);
+                    playTone(freq, noteDurationSec * 0.9, timbreConfig);
+                }
+
+                await new Promise(resolve => {
+                    const timeoutId = setTimeout(resolve, noteDurationSec * 1000);
+                    activeTimeouts.push(timeoutId);
+                });
+            }
+
+            stopPlayback();
+        }
 
         function stopPlayback() {
-            if (!isPlaying) return;
-            
-            clearInterval(schedulingInterval);
-            if (audioContext && audioContext.state === 'running') {
-                audioContext.suspend();
-            }
             isPlaying = false;
+            document.getElementById('playBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            activeTimeouts.forEach(id => clearTimeout(id));
+            activeTimeouts = [];
             
-            if ($status) $status.textContent = 'Stopped';
-            if ($playButton) {
-                $playButton.textContent = 'Start All Parts';
-                $playButton.classList.replace('bg-red-600', 'bg-indigo-600');
-                $playButton.classList.replace('hover:bg-red-500', 'hover:bg-indigo-500');
-            }
-            if ($exportButton) $exportButton.disabled = false;
-        }
-
-        function startPlayback() {
-            if (isRendering) return;
-
-             // 1. Initialize/Resume Audio Context and Setup EQ
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const messageEl = document.getElementById('audio-context-message');
-                if (messageEl) messageEl.classList.add('hidden');
-                setupAudioChain(); 
-            }
-            audioContext.resume();
-
-            // 2. Parse sequences and validate
-            if (!reparseSequences()) return;
-
-            // 3. Start the scheduler
-            sequenceStartTime = audioContext.currentTime;
-            nextEventIndex = Array(partStates.length).fill(0);
-            schedulingInterval = setInterval(scheduler, 25); 
-
-            isPlaying = true;
-            if ($status) $status.textContent = `Playing ${partStates.length} Parts (${tempoBPM} BPM)`;
-            if ($playButton) {
-                $playButton.textContent = 'Stop All Parts';
-                $playButton.classList.replace('bg-indigo-600', 'bg-red-600');
-                $playButton.classList.replace('hover:bg-indigo-500', 'hover:bg-red-500');
-            }
-            if ($exportButton) $exportButton.disabled = false;
-        }
-        
-        function reparseSequences() {
-            // Update global tempo with defensive check
-            tempoBPM = parseInt($tempoInput ? $tempoInput.value : 120, 10) || 120;
-            
-            scheduledParts = [];
-            globalLoopDuration = 0;
-            let validationError = false;
-
-            partStates.forEach((part, index) => {
+            // Stop any active Web Audio sources gracefully
+            activeSources.forEach(src => {
                 try {
-                    // CRITICAL: Ensure the note map is generated before parsing the sequence
-                    part.noteMap = mapCircleOfFifthsToEDO(part.edo); 
-                    if (index === currentPartIndex) updateNoteMapUI(part);
-
-                    const cleanedSequence = part.sequence.replace(/[\r\n]+/g, ' ').trim();
-                    const result = parseSequence(cleanedSequence, tempoBPM, part); 
-                    scheduledParts.push({ 
-                        events: result.events, 
-                        duration: result.duration 
-                    });
-                    globalLoopDuration = Math.max(globalLoopDuration, result.duration);
-                    
-                } catch (error) {
-                    console.error(`Part ${index + 1} Error:`, error.message);
-                    if (index === currentPartIndex && $partErrorMessage) {
-                        $partErrorMessage.textContent = `Error in Part ${index + 1}: ${error.message}`;
-                        $partErrorMessage.classList.remove('hidden');
-                    }
-                    validationError = true;
-                }
+                    if (typeof src.stop === 'function') src.stop();
+                } catch (e) {}
             });
-
-            if (validationError) return false;
-
-            if ($partErrorMessage) $partErrorMessage.classList.add('hidden');
-
-            if (globalLoopDuration === 0) {
-                if (partStates[currentPartIndex].sequence.trim() !== '' && $partErrorMessage) {
-                    $partErrorMessage.textContent = `Warning: All parts are empty or contain only rests.`;
-                    $partErrorMessage.classList.remove('hidden');
-                }
-                return false;
-            }
-            return true;
-        }
-        
-        function calculateFrequency(step, edo, rootFreq) {
-            // step is now an ABSOLUTE step (relative to the base octave where rootFreq sits)
-            return rootFreq * Math.pow(2, step / edo);
+            activeSources = [];
         }
 
-        // --- 8. UI State Management and Handlers (Unchanged) ---
-        
-        function updateScaleStatusUI(isScaleMode, scaleLength = 0) {
-            const currentPart = partStates[currentPartIndex];
-            const currentScaleInputText = $currentScaleInput ? $currentScaleInput.value.trim() : '';
-            const storedScaleInputText = currentPart.scaleInputText.trim();
-            
-            // Logic for Apply Button
-            const inputChanged = currentScaleInputText !== storedScaleInputText;
-            if ($applyScaleButton) $applyScaleButton.disabled = isScaleMode && !inputChanged;
-            
-            // Logic for Clear Button
-            if ($clearScaleButton) $clearScaleButton.disabled = !isScaleMode;
+        // Event Listeners
+        document.getElementById('playBtn').addEventListener('click', startPlayback);
+        document.getElementById('stopBtn').addEventListener('click', stopPlayback);
 
-            if ($scaleStatusMessage && $currentPartLabel) {
-                if (isScaleMode) {
-                    let statusText = `Sequence is in **Scale Degree Mode** (${scaleLength} steps).`;
-                    if (inputChanged) {
-                        statusText += ` <span class="text-yellow-400 font-bold">(Scale input modified - Apply to use new scale)</span>`;
-                        $scaleStatusMessage.classList.replace('text-green-400', 'text-yellow-400');
-                    } else {
-                        $scaleStatusMessage.classList.replace('text-yellow-400', 'text-green-400');
-                    }
-                    $scaleStatusMessage.innerHTML = statusText;
-                    $scaleStatusMessage.classList.replace('text-red-400', 'text-green-400');
-                    $currentPartLabel.textContent = `${currentPartIndex + 1} (Scale Degree)`;
-                } else {
-                    $scaleStatusMessage.innerHTML = `Sequence is currently in **Note Name/EDO Step Mode**.`;
-                    $scaleStatusMessage.classList.replace('text-green-400', 'text-gray-400');
-                    $scaleStatusMessage.classList.replace('text-red-400', 'text-gray-400');
-                    $currentPartLabel.textContent = `${currentPartIndex + 1} (Note/EDO)`;
-                }
-            }
-        }
-
-        function applyScale() {
-            saveCurrentPart(); 
-            
-            const part = partStates[currentPartIndex];
-            const scaleString = $currentScaleInput ? $currentScaleInput.value.trim() : '';
-            const edo = part.edo;
-            
-            const scaleSteps = scaleString.split(/\s+/).filter(s => s.length > 0)
-                .map(s => parseInt(s.trim(), 10));
-
-            if (scaleSteps.length === 0 || scaleSteps.some(isNaN)) {
-                console.error("Scale error: Please enter a valid scale as space-separated integers (EDO steps).");
-                return;
-            }
-            
-            const uniqueScale = [...new Set(scaleSteps)].sort((a, b) => a - b);
-            
-            if (uniqueScale[0] !== 0) {
-                console.error("Scale error: The custom scale must start with 0 (the root).");
-                return;
-            }
-
-            if (uniqueScale.some(step => step < 0 || step >= edo)) {
-                console.error(`Scale error: Scale steps must be non-negative and less than the current EDO (${edo}). Please check your scale.`);
-                return;
-            }
-            
-            // Update Part State
-            part.customScale = uniqueScale;
-            part.isScaleMode = true;
-            part.scaleInputText = scaleString; 
-            
-            // Update UI
-            updateScaleStatusUI(true, uniqueScale.length);
-            if (isPlaying) { stopPlayback(); startPlayback(); }
-        }
-
-        function clearScale() {
-            saveCurrentPart();
-            const part = partStates[currentPartIndex];
-            
-            // Clear Part State
-            part.customScale = [];
-            part.isScaleMode = false;
-            part.scaleInputText = ''; 
-            
-            // Update UI
-            updateScaleStatusUI(false);
-            
-            if (isPlaying) { stopPlayback(); startPlayback(); }
-        }
-        
-        function updateTabsUI() {
-            if (!$partTabsContainer) return;
-
-            $partTabsContainer.innerHTML = ''; 
-            const partCount = partStates.length;
-
-            partStates.forEach((_, index) => {
-                const isActive = index === currentPartIndex;
-                const tabWrapper = document.createElement('div');
-                tabWrapper.className = `tab-wrapper ${isActive ? 'active' : ''}`;
-                
-                const tabButton = document.createElement('button');
-                tabButton.className = `tab-button ${isActive ? 'active' : ''}`;
-                tabButton.textContent = `Part ${index + 1}`;
-                tabButton.onclick = () => changePart(index);
-
-                tabWrapper.appendChild(tabButton);
-
-                if (partCount > 1) {
-                    const deleteButton = document.createElement('button');
-                    deleteButton.className = 'delete-button';
-                    deleteButton.innerHTML = '&times;';
-                    deleteButton.onclick = (e) => {
-                        e.stopPropagation();
-                        deletePart(index);
-                    };
-                    tabWrapper.appendChild(deleteButton);
-                }
-
-                $partTabsContainer.appendChild(tabWrapper);
-            });
-
-            if ($addPartButton) {
-                $addPartButton.textContent = `+ Add Part (${partCount}/${MAX_PARTS})`;
-                $addPartButton.disabled = partCount >= MAX_PARTS;
-            }
-        }
-
-        function saveCurrentPart() {
-            if (currentPartIndex < partStates.length) {
-                const part = partStates[currentPartIndex];
-                
-                // Save general settings with defensive checks
-                if ($currentEdoInput) part.edo = parseInt($currentEdoInput.value, 10) || 12;
-                if ($currentTimbreSelect) part.timbre = $currentTimbreSelect.value || 'sine';
-                if ($currentSequenceInput) part.sequence = $currentSequenceInput.value || '';
-                
-                // Save Root Note/Octave/Freq
-                if ($rootNoteSelect) part.rootNoteName = $rootNoteSelect.value || 'C';
-                if ($rootOctaveInput) part.rootOctave = parseInt($rootOctaveInput.value, 10) || 4;
-                const newRootFreq = parseFloat($currentRootFreqInput ? $currentRootFreqInput.value : DEFAULT_ROOT_FREQ);
-                part.rootFreq = isNaN(newRootFreq) || newRootFreq <= 0 ? DEFAULT_ROOT_FREQ : newRootFreq;
-                
-                // Re-calculate note map (C-relative) and update UI
-                part.noteMap = mapCircleOfFifthsToEDO(part.edo); 
-                updateNoteMapUI(part);
-
-                if ($currentScaleInput) part.scaleInputText = $currentScaleInput.value; 
-                
-                // Attempt to re-parse the sequence to catch errors early
-                try {
-                    const cleanedSequence = part.sequence.replace(/[\r\n]+/g, ' ').trim();
-                    parseSequence(cleanedSequence, tempoBPM, part);
-                    if ($partErrorMessage) $partErrorMessage.classList.add('hidden');
-                } catch (error) {
-                    if ($partErrorMessage) {
-                        $partErrorMessage.textContent = `Warning in Part ${currentPartIndex + 1}: ${error.message}`;
-                        $partErrorMessage.classList.remove('hidden');
-                    }
-                }
-            }
-        }
-
-        function loadCurrentPart() {
-            const part = partStates[currentPartIndex];
-            
-            if ($currentEdoInput) $currentEdoInput.value = part.edo;
-            if ($currentTimbreSelect) $currentTimbreSelect.value = part.timbre;
-            if ($currentSequenceInput) $currentSequenceInput.value = part.sequence;
-            if ($currentScaleInput) $currentScaleInput.value = part.scaleInputText || ''; 
-            
-            // Load Root Note/Octave/Freq
-            if ($rootNoteSelect) $rootNoteSelect.value = part.rootNoteName;
-            if ($rootOctaveInput) $rootOctaveInput.value = part.rootOctave;
-            if ($currentRootFreqInput) $currentRootFreqInput.value = part.rootFreq; 
-            
-            // Generate and load note map UI
-            part.noteMap = mapCircleOfFifthsToEDO(part.edo); 
-            updateNoteMapUI(part);
-
-            updateScaleStatusUI(part.isScaleMode, part.customScale.length); 
-            updateTabsUI(); 
-            
-            // Re-validate the sequence when loading a part
-             try {
-                const cleanedSequence = part.sequence.replace(/[\r\n]+/g, ' ').trim();
-                parseSequence(cleanedSequence, tempoBPM, part);
-                if ($partErrorMessage) $partErrorMessage.classList.add('hidden');
-            } catch (error) {
-                if ($partErrorMessage) {
-                    $partErrorMessage.textContent = `Warning in Part ${currentPartIndex + 1}: ${error.message}`;
-                    $partErrorMessage.classList.remove('hidden');
-                }
-            }
-        }
-
-        function changePart(index) {
-            if (index === currentPartIndex) return;
-
-            saveCurrentPart();
-            currentPartIndex = index;
-            loadCurrentPart();
-        }
-
-        function addPart() {
-            if (partStates.length >= MAX_PARTS) return;
-            
-            saveCurrentPart(); 
-            
-            partStates.push({ ...DEFAULT_NEW_PART, rootFreq: DEFAULT_ROOT_FREQ, edo: partStates[currentPartIndex].edo }); 
-            currentPartIndex = partStates.length - 1;
-            loadCurrentPart();
-        }
-
-        function deletePart(indexToDelete) {
-            if (partStates.length <= 1) {
-                console.warn("Cannot delete the last remaining part.");
-                return;
-            }
-
-            partStates.splice(indexToDelete, 1);
-
-            if (indexToDelete === currentPartIndex) {
-                currentPartIndex = Math.max(0, indexToDelete - 1);
-            } else if (indexToDelete < currentPartIndex) {
-                currentPartIndex -= 1;
-            }
-            
-            loadCurrentPart(); 
-        }
-
-        // --- Event Listeners and Init ---
-
-        // Attach listeners to EDO, Root Note Name, Octave, and Freq inputs
-        const noteMappingInputs = [$currentEdoInput, $rootNoteSelect, $rootOctaveInput, $currentRootFreqInput];
-        noteMappingInputs.forEach(input => {
-            if (input) input.addEventListener('change', () => {
-                saveCurrentPart();
-                // If a relevant parameter changes, force re-parse
-                if (isPlaying) { stopPlayback(); startPlayback(); }
-            });
+        ['tuningInput', 'rootFreqInput', 'sequenceInput', 'tempoInput', 'activeTimbreSelect'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateAnalysis);
+            document.getElementById(id).addEventListener('change', updateAnalysis);
         });
 
-        if ($tempoSlider) $tempoSlider.addEventListener('input', (e) => updateTempo(parseInt(e.target.value, 10)));
-        if ($tempoInput) $tempoInput.addEventListener('change', (e) => updateTempo(parseInt(e.target.value, 10)));
-        if ($currentTimbreSelect) $currentTimbreSelect.addEventListener('change', saveCurrentPart);
-        if ($currentSequenceInput) $currentSequenceInput.addEventListener('input', saveCurrentPart); 
-        if ($applyScaleButton) $applyScaleButton.addEventListener('click', applyScale);
-        if ($clearScaleButton) $clearScaleButton.addEventListener('click', clearScale);
-        if ($playButton) $playButton.addEventListener('click', togglePlayback);
-        if ($loopButton) $loopButton.addEventListener('click', () => toggleLooping(false)); 
-        if ($exportButton) $exportButton.addEventListener('click', exportAudio);
-
-
-        // --- INSTRUMENT SYNTHESIS AND AUDIO CHAIN (Replicated from V10) ---
-        
-        function setupAudioChain() {
-            if (masterGain) return;
-            
-            masterGain = audioContext.createGain();
-
-            // Setup EQ Filters (BiquadFilterNode)
-            lowFilter = audioContext.createBiquadFilter();
-            midFilter = audioContext.createBiquadFilter();
-            highFilter = audioContext.createBiquadFilter();
-            
-            // Set filter types and frequencies
-            lowFilter.type = 'lowshelf'; lowFilter.frequency.setValueAtTime(300, 0); 
-            midFilter.type = 'peaking'; midFilter.frequency.setValueAtTime(1500, 0); midFilter.Q.setValueAtTime(1.0, 0); 
-            highFilter.type = 'highshelf'; highFilter.frequency.setValueAtTime(4000, 0); 
-
-            // Connect nodes
-            masterGain.connect(lowFilter);
-            lowFilter.connect(midFilter);
-            midFilter.connect(highFilter);
-            
-            // Connect the final EQ output to the speakers
-            highFilter.connect(audioContext.destination);
-
-            console.log("Master Audio chain (with EQ) initialized.");
-        }
-
-        function connectNoteToMix(gainNode) {
-            if (highFilter) {
-                gainNode.connect(masterGain);
-            } else {
-                gainNode.connect(audioContext.destination);
-            }
-        }
-
-        function updateEQ() {
-            if (!lowFilter || !$lowGain) return;
-            
-            const lowGain = parseFloat($lowGain.value);
-            const midGain = parseFloat($midGain.value);
-            const highGain = parseFloat($highGain.value);
-            
-            if (audioContext && lowFilter) {
-                const now = audioContext.currentTime;
-                lowFilter.gain.linearRampToValueAtTime(lowGain, now + 0.01);
-                midFilter.gain.linearRampToValueAtTime(midGain, now + 0.01);
-                highFilter.gain.linearRampToValueAtTime(highGain, now + 0.01);
-            }
-
-            $lowValue.textContent = `${lowGain} dB`;
-            $midValue.textContent = `${midGain} dB`;
-            $highValue.textContent = `${highGain} dB`;
-        }
-        
-        function createWhiteNoise(durationSeconds) {
-            const bufferSize = audioContext.sampleRate * durationSeconds;
-            const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                 data[i] = Math.random() * 2 - 1; 
-            }
-            return buffer;
-        }
-
-        function createPluckNoise(frequency) {
-            const bufferSize = audioContext.sampleRate * 2;
-            const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                 data[i] = Math.random() * 0.02 - 0.01; 
-            }
-            return buffer;
-        }
-
-        function createInstrument(timbre, time, frequency, partDuration, modifier) {
-            const output = { nodes: [], cleanup: () => {} };
-            const gain = audioContext.createGain();
-            connectNoteToMix(gain);
-            output.nodes.push(gain);
-            
-            let osc;
-            let auxNode = null;
-            let actualDuration = partDuration;
-            let peakVolume = 0.5;
-            const stopOffset = 0.05; 
-
-            let attack = 0.01;
-            let decay = partDuration * 1;
-            let release = partDuration;
-            let isDrum = false;
-
-            if (modifier === 'a') { peakVolume = 1; }
-            if (modifier === 's') { actualDuration = Math.min(partDuration, 0.05); }
-            
-            switch (timbre) {
-                case 'kick':
-                    isDrum = true;
-                    peakVolume = 1.0;
-                    
-                    const kickOsc = audioContext.createOscillator();
-                    kickOsc.type = 'sine';
-                    output.nodes.push(kickOsc);
-                    
-                    kickOsc.frequency.setValueAtTime(100, time); 
-                    kickOsc.frequency.exponentialRampToValueAtTime(40, time + 0.1); 
-                    
-                    attack = 0.001;
-                    decay = 0.25; 
-                    release = decay; 
-                    
-                    kickOsc.connect(gain);
-                    kickOsc.start(time);
-                    kickOsc.stop(time + decay + stopOffset); 
-                    break;
-                    
-                case 'snare':
-                    isDrum = true;
-                    peakVolume = 1.2;
-                    
-                    // 1. Body (Tone) - Fixed frequency Triangle
-                    const snareOsc = audioContext.createOscillator();
-                    snareOsc.type = 'triangle';
-                    snareOsc.frequency.setValueAtTime(800, time); 
-                    snareOsc.start(time);
-                    snareOsc.stop(time + 0.015 + stopOffset); 
-                    output.nodes.push(snareOsc);
-                    
-                    const bodyGain = audioContext.createGain();
-                    bodyGain.gain.setValueAtTime(0.7, time);
-                    snareOsc.connect(bodyGain).connect(gain);
-                    output.nodes.push(bodyGain);
-                    
-                    // 2. Snare Wires (Noise) - Highpass for brighter snap
-                    const noiseBuffer = createWhiteNoise(1);
-                    const noise = audioContext.createBufferSource();
-                    noise.buffer = noiseBuffer;
-                    noise.loop = true; 
-                    noise.start(time);
-                    noise.stop(time + 0.05 + stopOffset); 
-                    output.nodes.push(noise); 
-                    
-                    const noiseFilter = audioContext.createBiquadFilter();
-                    noiseFilter.type = 'highpass'; 
-                    noiseFilter.frequency.setValueAtTime(5000, time); 
-                    noiseFilter.Q.setValueAtTime(1, time);
-                    output.nodes.push(noiseFilter);
-                    
-                    const noiseGain = audioContext.createGain();
-                    noiseGain.gain.setValueAtTime(0.5, time);
-                    output.nodes.push(noiseGain);
-                    
-                    noise.connect(noiseFilter).connect(noiseGain).connect(gain);
-                    
-                    // Volume Envelope: Ultra-fast decay
-                    attack = 0.001;
-                    decay = 0.04; 
-                    release = decay;
-                    break;
-
-                case 'open hi-hat':
-                case 'ride cymbal':
-                    isDrum = true;
-                    let cymbalDecay = 0.05; 
-                    let cymbalFilterFreq = 7000; 
-
-                    if (timbre === 'ride cymbal') {
-                        cymbalDecay = 0.1; 
-                        cymbalFilterFreq = 8500;
-                        peakVolume = 0.7;
-                    } else { // open hi-hat
-                        cymbalDecay = 0.075;
-                        peakVolume = 0.8;
-                    }
-
-                    const cymbalBuffer = createWhiteNoise(2);
-                    const cymbalNoise = audioContext.createBufferSource();
-                    cymbalNoise.buffer = cymbalBuffer;
-                    cymbalNoise.loop = true; 
-                    cymbalNoise.start(time);
-                    output.nodes.push(cymbalNoise); 
-                    
-                    const cymbalFilter = audioContext.createBiquadFilter();
-                    cymbalFilter.type = 'highpass';
-                    cymbalFilter.frequency.setValueAtTime(cymbalFilterFreq, time); 
-                    output.nodes.push(cymbalFilter);
-                    
-                    cymbalNoise.connect(cymbalFilter).connect(gain);
-                    
-                    attack = 0.005;
-                    decay = cymbalDecay; 
-                    release = decay;
-                    break;
-
-                case 'sine': case 'triangle': case 'sawtooth': case 'square':
-                    osc = audioContext.createOscillator();
-                    osc.type = timbre;
-                    peakVolume = (timbre === 'square' || timbre === 'sawtooth') ? 0.3 : 0.5;
-                    break;
-
-                case 'piano':
-                    osc = audioContext.createOscillator();
-                    osc.type = 'sawtooth';
-                    attack = 0.001; 
-                    decay = actualDuration * 0.45;
-                    release = actualDuration * 0.5;
-                    peakVolume = 0.7;
-                    break;
-
-                case 'violin': case 'viola': case 'cello':
-                    osc = audioContext.createOscillator();
-                    osc.type = 'sawtooth';
-                    attack = 0.1; 
-                    decay = actualDuration * 0.95;
-                    peakVolume = 0.6;
-                    
-                    const lfo = audioContext.createOscillator();
-                    lfo.frequency.setValueAtTime(5, time); 
-                    const lfoGain = audioContext.createGain();
-                    lfoGain.gain.setValueAtTime(1.5, time); 
-                    lfo.connect(lfoGain).connect(osc.frequency);
-                    lfo.start(time);
-                    output.nodes.push(lfo, lfoGain);
-                    break;
-
-                case 'acoustic guitar': case 'classical guitar':
-                    const noiseSrc = audioContext.createBufferSource();
-                    noiseSrc.buffer = createPluckNoise(frequency);
-                    
-                    const delay = audioContext.createDelay(1.0 / frequency); 
-                    delay.delayTime.setValueAtTime(1.0 / frequency, time);
-                    
-                    const feedback = audioContext.createGain();
-                    feedback.gain.setValueAtTime(0.9999, time); 
-
-                    noiseSrc.connect(delay);
-                    delay.connect(feedback).connect(delay);
-                    delay.connect(gain);
-                    
-                    noiseSrc.start(time);
-                    
-                    attack = 0.001; 
-                    decay = actualDuration * 0.5; 
-                    release = actualDuration * 0.5;
-                    peakVolume = 0.6;
-                    
-                    output.nodes.push(noiseSrc, delay, feedback);
-                    break;
-
-                case 'electric guitar': case 'bass guitar':
-                    osc = audioContext.createOscillator();
-                    osc.type = (timbre === 'bass guitar') ? 'square' : 'sawtooth'; 
-                    
-                    const shaper = audioContext.createWaveShaper();
-                    const curve = new Float32Array(256); 
-                    for (let i = 0; i < 256; i++) {
-                        const x = i * 2 / 255 - 1;
-                        curve[i] = (x > 0 ? 1 : -1) * (1 - Math.exp(-6 * Math.abs(x))); 
-                    }
-                    shaper.curve = curve;
-                    auxNode = shaper;
-                    
-                    osc.connect(shaper).connect(gain);
-                    output.nodes.push(shaper);
-                    
-                    attack = 0.001;
-                    decay = actualDuration * 0.9;
-                    peakVolume = 0.6;
-                    break;
-
-                case 'saxophone':
-                    osc = audioContext.createOscillator();
-                    osc.type = 'sawtooth';
-                    const saxFilter = audioContext.createBiquadFilter();
-                    saxFilter.type = 'bandpass'; saxFilter.frequency.setValueAtTime(800, time); 
-                    saxFilter.Q.setValueAtTime(6, time); 
-                    auxNode = saxFilter;
-                    osc.connect(saxFilter).connect(gain);
-                    output.nodes.push(saxFilter);
-                    attack = 0.05; 
-                    decay = actualDuration * 0.8;
-                    peakVolume = 0.6;
-                    break;
-
-                case 'flute':
-                    osc = audioContext.createOscillator();
-                    osc.type = 'sine';
-                    attack = 0.15; 
-                    decay = actualDuration * 0.95;
-                    peakVolume = 0.4;
-                    break;
-
-                case 'trumpet': case 'tuba':
-                    osc = audioContext.createOscillator();
-                    osc.type = 'square';
-                    const brassFilter = audioContext.createBiquadFilter();
-                    brassFilter.type = 'bandpass'; 
-                    brassFilter.frequency.setValueAtTime(1200, time);
-                    brassFilter.Q.setValueAtTime(4, time);
-                    auxNode = brassFilter;
-                    osc.connect(brassFilter).connect(gain);
-                    output.nodes.push(brassFilter);
-
-                    attack = 0.03; 
-                    decay = actualDuration * 0.9;
-                    peakVolume = 0.7;
-                    break;
-
-                case 'accordion':
-                    const osc2 = audioContext.createOscillator();
-                    osc2.type = 'sawtooth';
-                    osc2.frequency.setValueAtTime(frequency * 1.005, time); 
-                    osc2.connect(gain);
-                    osc2.start(time);
-                    output.nodes.push(osc2);
-
-                    osc = audioContext.createOscillator();
-                    osc.type = 'sawtooth';
-                    peakVolume = 0.5;
-                    attack = 0.05;
-                    decay = actualDuration * 0.98;
-                    break;
-            }
-
-            if (osc) {
-                if (!isDrum) {
-                    osc.frequency.setValueAtTime(frequency, time);
-                }
-                
-                if (!auxNode && !isDrum) { 
-                    osc.connect(gain);
-                } else if (!auxNode && isDrum && osc.context) { 
-                    osc.connect(gain);
-                }
-
-                osc.start(time);
-                osc.stop(time + partDuration + stopOffset);
-                output.nodes.push(osc);
-            }
-
-                        // --- Apply Envelope ---
-            const env = gain.gain;
-            env.cancelScheduledValues(time);
-            env.setValueAtTime(0.0001, time); 
-            
-            const finalDuration = isDrum ? decay : Math.max(attack, release); 
-            const endTime = time + Math.max(partDuration, finalDuration) + stopOffset;
-
-            env.linearRampToValueAtTime(peakVolume, time + attack); 
-            env.linearRampToValueAtTime(peakVolume * 0.9, time + decay); 
-            env.exponentialRampToValueAtTime(0.0001, endTime); 
-
-            // Use the oscillator's onended event instead of setTimeout for cleanup
-            // This is more reliable for long exports and background rendering
-            if (osc) {
-                osc.onended = () => {
-                    output.nodes.forEach(node => {
-                        try { node.disconnect(); } catch (e) {}
-                    });
-                };
-            } else {
-                // Fallback for buffer-based instruments (like guitar/drums)
-                setTimeout(() => {
-                    output.nodes.forEach(node => {
-                        try { node.disconnect(); } catch (e) {}
-                    });
-                }, (endTime - time + 0.5) * 1000);
-            }
-
-            return output;
-        }
-
-        
-        function playNote(partIndex, frequency, time, duration, modifier) {
-            const timbre = partStates[partIndex].timbre;
-            createInstrument(timbre, time, frequency, duration, modifier);
-        }
-        
-        // --- Export & Other utility functions (Replicated) ---
-
-        function bufferToWav(abuffer) {
-    const numOfChan = abuffer.numberOfChannels;
-    const length = abuffer.length * numOfChan * 8 + 44; // 8 bytes for 64-bit
-    const buffer = new ArrayBuffer(length);
-    const view = new DataView(buffer);
-    const channels = [];
-    let pos = 0;
-
-    const setUint16 = (data) => { view.setUint16(pos, data, true); pos += 2; };
-    const setUint32 = (data) => { view.setUint32(pos, data, true); pos += 4; };
-
-    setUint32(0x46464952);                         // "RIFF"
-    setUint32(length - 8);                         // file length - 8
-    setUint32(0x45564157);                         // "WAVE"
-    setUint32(0x20746d66);                         // "fmt " chunk
-    setUint32(16);                                 // length = 16
-    // Change format tag from 3 (32-bit float) to 3 (standard float) but ensure bits are set
-setUint16(3);                                  // 3 = IEEE Float
-setUint16(numOfChan);
-setUint32(abuffer.sampleRate);
-setUint32(abuffer.sampleRate * 8 * numOfChan); // 8 bytes per sample for 64-bit
-setUint16(numOfChan * 8);                      // 8 bytes per sample
-setUint16(64);                                 // 64-bit depth
-    setUint32(0x61746164);                         // "data"
-    setUint32(length - pos - 4);
-
-    for (let i = 0; i < numOfChan; i++) channels.push(abuffer.getChannelData(i));
-    
-    let offset = 0;
-while (pos < length) {
-    for (let i = 0; i < numOfChan; i++) {
-        // Use setFloat64 for the 64-bit floating point standard
-        view.setFloat64(pos, channels[i][offset], true);
-        pos += 8;
-    }
-    offset++;
-}
-    return new Blob([buffer], { type: "audio/wav" });
-}
-
-
-
-        
-        async function exportAudio() {
-    if (isRendering || !$exportButton) return;
-
-    // Use current hardware sample rate for best fidelity
-    const sampleRate = audioContext ? audioContext.sampleRate : 96000;
-    if (isPlaying) stopPlayback();
-    if (!reparseSequences() || globalLoopDuration === 0) return;
-
-    isRendering = true;
-    $exportButton.textContent = 'Rendering High-Res...';
-    $exportButton.disabled = true;
-
-    // 1. Create the Offline Context with matching sample rate
-    const offlineCtx = new OfflineAudioContext(2, Math.ceil(sampleRate * globalLoopDuration), sampleRate);
-    
-    // 2. Temporarily redirect global state
-    const liveCtx = audioContext;
-    const liveMasterGain = masterGain;
-    const liveFilters = { low: lowFilter, mid: midFilter, high: highFilter };
-    
-    audioContext = offlineCtx;
-    masterGain = null; // Forces setupAudioChain to rebuild on offlineCtx
-    
-    setupAudioChain();
-    
-    // Copy EQ settings from UI to the offline filters
-    lowFilter.gain.setValueAtTime(parseFloat($lowGain.value), 0);
-    midFilter.gain.setValueAtTime(parseFloat($midGain.value), 0);
-    highFilter.gain.setValueAtTime(parseFloat($highGain.value), 0);
-
-    // 3. Schedule events
-    partStates.forEach((part) => {
-        const result = parseSequence(part.sequence.replace(/[\r\n]+/g, ' ').trim(), tempoBPM, part);
-        result.events.forEach(event => {
-            event.steps.forEach(step => {
-                const freq = calculateFrequency(step, event.edo, event.rootFreq);
-                createInstrument(part.timbre, event.time, freq, event.duration, event.modifier);
-            });
-        });
-    });
-
-    // 4. Render
-    const renderedBuffer = await offlineCtx.startRendering();
-    
-    // 5. Restore live environment
-    audioContext = liveCtx;
-    masterGain = liveMasterGain;
-    lowFilter = liveFilters.low;
-    midFilter = liveFilters.mid;
-    highFilter = liveFilters.high;
-
-    const wavBlob = bufferToWav(renderedBuffer);
-    const url = URL.createObjectURL(wavBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `high_quality_render_${new Date().getTime()}.wav`;
-    a.click();
-
-    isRendering = false;
-    $exportButton.textContent = 'Export Audio (WAV)';
-    $exportButton.disabled = false;
-    if ($status) $status.textContent = 'High-Res Export Complete';
-}
-
-
-
-        function toggleLooping(forceUpdate = false) {
-            if (!forceUpdate) {
-               isLooping = !isLooping;
-            }
-            if ($loopButton) {
-                $loopButton.textContent = `Loop: ${isLooping ? 'ON' : 'OFF'}`;
-                $loopButton.classList.toggle('bg-green-600', isLooping);
-                $loopButton.classList.toggle('bg-gray-500', !isLooping);
-                $loopButton.classList.toggle('hover:bg-green-500', isLooping);
-                $loopButton.classList.toggle('hover:bg-gray-600', !isLooping);
-            }
-        }
-
-        function updateTempo(bpm) {
-            bpm = Math.max(1, bpm); 
-            tempoBPM = bpm;
-            if ($tempoSlider) $tempoSlider.value = bpm;
-            if ($tempoInput) $tempoInput.value = bpm;
-            if (isPlaying) { stopPlayback(); startPlayback(); }
-        }
-        
-        function togglePlayback() {
-            if (isPlaying) {
-                stopPlayback();
-            } else {
-                startPlayback();
-            }
-        }
-
-        function initTimbreSelect() {
-            if (!$currentTimbreSelect) return;
-            $currentTimbreSelect.innerHTML = '';
-            TIMBRES.forEach(timbre => {
-                const option = document.createElement('option');
-                option.value = timbre;
-                option.textContent = timbre.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                $currentTimbreSelect.appendChild(option);
-            });
-        }
-        
-        // --- Scheduler (Replicated) ---
-        function scheduler() {
-            if (!audioContext || audioContext.state === 'suspended' || audioContext.state === 'closed') return;
-            
-            const currentTime = audioContext.currentTime;
-            const lookahead = 0.1; 
-            
-            if (currentTime >= sequenceStartTime + globalLoopDuration) {
-                if (isLooping && !isRendering) {
-                    sequenceStartTime += globalLoopDuration;
-                    nextEventIndex.fill(0);
-                } else {
-                    if (isRendering) {
-                        if (mediaRecorder && mediaRecorder.state === 'recording') {
-                             mediaRecorder.stop();
-                        }
-                        clearInterval(schedulingInterval); 
-                        return;
-                    }
-                    stopPlayback();
-                    return;
-                }
-            }
-
-            for (let partIndex = 0; partIndex < partStates.length; partIndex++) {
-                const part = scheduledParts[partIndex];
-
-                if (!part || part.events.length === 0) continue;
-
-                while (
-                    nextEventIndex[partIndex] < part.events.length && 
-                    part.events[nextEventIndex[partIndex]].time < currentTime + lookahead - sequenceStartTime
-                ) {
-                    const event = part.events[nextEventIndex[partIndex]];
-                    const scheduleTime = sequenceStartTime + event.time;
-                    
-                    event.steps.forEach(step => {
-                        const freq = calculateFrequency(step, event.edo, event.rootFreq); 
-                        playNote(partIndex, freq, scheduleTime, event.duration, event.modifier);
-                    });
-
-                    nextEventIndex[partIndex]++;
-                }
-            }
-        }
-
-        // --- Window Load ---
-        window.onload = function() {
-            if (!$currentEdoInput || !$partTabsContainer || !$tempoSlider) {
-                console.error("CRITICAL ERROR: One or more key DOM elements are missing. Application initialization aborted.");
-                return;
-            }
-
-            initTimbreSelect();
-            // Initial load of the first part and tab setup
-            loadCurrentPart(); 
-            // Update tempo UI after loading default value, using the updated function
-            updateTempo(parseInt($tempoSlider.value, 10)); 
-            toggleLooping(true); // Initialize loop button UI
-            updateEQ(); 
-            console.log("Polyphonic Microtonal Workstation ready (V12.2).");
-        }
-
+        // Initial render on load
+        window.onload = () => {
+            updateAnalysis();
+        };
     </script>
+
 </body>
 </html>
-
