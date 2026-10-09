@@ -100,7 +100,7 @@
                     <div class="space-y-3">
                         <label class="block text-xs font-medium text-slate-400">Active Timbre</label>
                         <select id="activeTimbreSelect" class="w-full bg-slate-900 border border-slate-700 text-sm text-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500">
-                            <option value="piano">Piano</option>
+                            <option value="timbre1">Harmonic Rich (timbre1)</option>
                             <option value="timbre2">Sub-Bass & Sparkle (timbre2)</option>
                             <option value="timbre3">Xenharmonic Bell (timbre3)</option>
                         </select>
@@ -120,16 +120,16 @@
                 <div class="flex items-center justify-between mb-2">
                     <h2 class="text-sm font-semibold tracking-wider text-indigo-400 uppercase flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                        Note Sequencer Input
+                        Note Sequencer Input (Polyphony Supported)
                     </h2>
                 </div>
                 <p class="text-xs text-slate-400 mb-3">
-                    Input notes as steps (e.g. <code class="text-purple-300 font-mono">0(4)</code>, <code class="text-purple-300 font-mono">-2(8)</code>) or chain-of-fifths note names for EDO (e.g. <code class="text-purple-300 font-mono">D4(4)</code>, <code class="text-purple-300 font-mono">F#(8)(16)</code>, <code class="text-purple-300 font-mono">^^A(4)</code>, <code class="text-purple-300 font-mono">R(4)</code> for rest).
+                    Input steps or notes. For polyphony, group notes in parentheses followed by duration(s), e.g. <code class="text-purple-300 font-mono">(D4 F#4 A4)(5)</code> or <code class="text-purple-300 font-mono">(0 4 7)(4)</code>.
                 </p>
 
                 <div class="relative flex-grow flex flex-col">
-                    <textarea id="sequenceInput" class="w-full flex-grow min-h-[200px] bg-slate-900 border border-slate-700 rounded-xl p-4 text-sm font-mono text-purple-200 focus:outline-none focus:border-purple-500 transition-colors leading-relaxed resize-y" placeholder="Enter your note sequence here...">D4(4) E#4(8) ^F#(8) G4(2) 
-R(4) 0(8) 2(8) 3(2)
+                    <textarea id="sequenceInput" class="w-full flex-grow min-h-[200px] bg-slate-900 border border-slate-700 rounded-xl p-4 text-sm font-mono text-purple-200 focus:outline-none focus:border-purple-500 transition-colors leading-relaxed resize-y" placeholder="Enter your note sequence here...">(D4 F#4 A4)(4) (E#4 G#4 B4)(8) (^^A C#5 E5)(2)
+R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
 ^^A(4) vB(4) C#(2)</textarea>
                 </div>
             </div>
@@ -162,10 +162,10 @@ R(4) 0(8) 2(8) 3(2)
         // Built-in Timbre Profiles (Easily editable in code)
         // Each partial contains: ratio (frequency multiplier), gain (amplitude), adsr: [attack, decay, sustain, release] in seconds
         const TIMBRE_PROFILES = {
-            piano: [
-                { ratio: 1, gain: 1, adsr: [0.05, 0.1, 0.6, 0.2] },
-                { ratio: 2.0005, gain: 0.5, adsr: [0.05, 0.1, 0.4, 0.2] },
-                { ratio: 3.001, gain: 0.5, adsr: [0.03, 0.1, 0.2, 0.15] }
+            timbre1: [
+                { ratio: 1.0, gain: 0.8, adsr: [0.05, 0.1, 0.6, 0.2] },
+                { ratio: 2.0, gain: 0.3, adsr: [0.05, 0.1, 0.4, 0.2] },
+                { ratio: 3.0, gain: 0.15, adsr: [0.03, 0.1, 0.2, 0.15] }
             ],
             timbre2: [
                 { ratio: 0.5, gain: 0.5, adsr: [0.1, 0.2, 0.7, 0.4] },
@@ -234,11 +234,10 @@ R(4) 0(8) 2(8) 3(2)
             return { map, reverseMap, fifthOffset };
         }
 
-        // Parse note token into step number relative to root (step 0)
-        function parseNoteToken(token, t, edoSuit) {
-            if (!token || token.toUpperCase() === 'R' || token.toUpperCase() === 'REST') {
-                return { isRest: true, step: 0 };
-            }
+        // Parse a single note token (e.g. "D4", "^^A", "-2", "0") into a step index
+        function parseSingleNote(token, t, edoSuit) {
+            token = token.trim();
+            if (!token) return { isRest: true, step: 0 };
 
             if (/^-?\d+(\.\d+)?$/.test(token)) {
                 return { isRest: false, step: parseFloat(token) };
@@ -282,7 +281,7 @@ R(4) 0(8) 2(8) 3(2)
             return { isRest: false, step: totalStep };
         }
 
-        // Parse duration numbers in parentheses: e.g. E4(8)(16) -> 1/8 + 1/16
+        // Parse duration numbers in parentheses: e.g. (8)(16) -> 1/8 + 1/16
         function parseDurations(durStrList) {
             if (!durStrList || durStrList.length === 0) return 0.25;
             let totalDuration = 0;
@@ -295,31 +294,60 @@ R(4) 0(8) 2(8) 3(2)
             return totalDuration > 0 ? totalDuration : 0.25;
         }
 
-        // Tokenize sequence text into note objects
+        // Tokenize sequence text into polyphonic step/chord items
+        // Supports both single notes (e.g. D4(8)) and chord groups (e.g. (D4 F#4 A4)(5))
         function tokenizeSequence(text, t, edoSuit) {
-            const tokensRaw = text.trim().split(/\s+/);
-            const notes = [];
+            const regex = /\s*(\([^\)]+\)|[^\s\(\)]+)((?:\(\d+\))*)(\s*)/g;
+            let match;
+            const steps = [];
 
-            for (let raw of tokensRaw) {
-                if (!raw) continue;
-                const match = raw.match(/^([^\(\)]+)([\s\S]*)$/);
-                if (!match) continue;
-
-                const notePart = match[1];
-                const parenPart = match[2];
+            while ((match = regex.exec(text)) !== null) {
+                let notePart = match[1].trim();
+                let parenPart = match[2].trim();
 
                 const durMatches = [...parenPart.matchAll(/\((\d+)\)/g)].map(m => m[1]);
                 const durationFraction = parseDurations(durMatches);
 
-                const parsed = parseNoteToken(notePart, t, edoSuit);
-                notes.push({
-                    token: raw,
-                    isRest: parsed.isRest,
-                    step: parsed.step,
-                    durationFraction: durationFraction
-                });
+                if (notePart.startsWith('(') && notePart.endsWith(')')) {
+                    // Chord / Polyphonic group
+                    const innerContent = notePart.substring(1, notePart.length - 1).trim();
+                    const subTokens = innerContent.split(/\s+/);
+                    const chordNotes = [];
+                    let allRests = true;
+
+                    for (let st of subTokens) {
+                        if (!st) continue;
+                        if (st.toUpperCase() === 'R' || st.toUpperCase() === 'REST') {
+                            continue;
+                        }
+                        const parsed = parseSingleNote(st, t, edoSuit);
+                        if (!parsed.isRest) {
+                            allRests = false;
+                            chordNotes.push(parsed.step);
+                        }
+                    }
+
+                    if (allRests || chordNotes.length === 0) {
+                        steps.push({ isRest: true, steps: [], durationFraction });
+                    } else {
+                        steps.push({ isRest: false, steps: chordNotes, durationFraction });
+                    }
+                } else {
+                    // Single note or rest
+                    if (notePart.toUpperCase() === 'R' || notePart.toUpperCase() === 'REST') {
+                        steps.push({ isRest: true, steps: [], durationFraction });
+                    } else {
+                        const parsed = parseSingleNote(notePart, t, edoSuit);
+                        steps.push({
+                            token: notePart,
+                            isRest: parsed.isRest,
+                            steps: parsed.isRest ? [] : [parsed.step],
+                            durationFraction: durationFraction
+                        });
+                    }
+                }
             }
-            return notes;
+            return steps;
         }
 
         // Frequency calculation: frequency = rootFreq * (baseRatio)^(n / stepsPerPeriod)
@@ -344,17 +372,20 @@ R(4) 0(8) 2(8) 3(2)
             }
 
             const seqText = document.getElementById('sequenceInput').value;
-            const notes = tokenizeSequence(seqText, t, edoSuit);
+            const steps = tokenizeSequence(seqText, t, edoSuit);
 
             let logHtml = `<div class="text-purple-400 font-bold">Tuning: ${t} steps per period, Base Ratio: ${baseRatio}</div>`;
             logHtml += `<div class="text-slate-400">Root Freq: ${rootFreq.toFixed(4)} Hz | Fifth Offset: ${edoSuit.fifthOffset} steps</div><hr class="border-slate-800 my-1">`;
 
-            notes.forEach((note, idx) => {
-                if (note.isRest) {
-                    logHtml += `<div>#${idx+1}: <span class="text-yellow-400">REST</span> | Duration: ${note.durationFraction}w</div>`;
+            steps.forEach((item, idx) => {
+                if (item.isRest) {
+                    logHtml += `<div>#${idx+1}: <span class="text-yellow-400">REST</span> | Duration: ${item.durationFraction}w</div>`;
                 } else {
-                    const freq = calculateFrequency(note.step, rootFreq, t, baseRatio);
-                    logHtml += `<div>#${idx+1}: <span class="text-emerald-400">Step ${note.step > 0 ? '+'+note.step : note.step}</span> &rarr; <span class="text-cyan-400">${freq.toFixed(2)} Hz</span> | Dur: ${note.durationFraction}w</div>`;
+                    const freqsDesc = item.steps.map(s => {
+                        const f = calculateFrequency(s, rootFreq, t, baseRatio);
+                        return `Step ${s > 0 ? '+'+s : s} (${f.toFixed(2)} Hz)`;
+                    }).join(', ');
+                    logHtml += `<div>#${idx+1}: <span class="text-emerald-400">Chord [${freqsDesc}]</span> | Dur: ${item.durationFraction}w</div>`;
                 }
             });
 
@@ -371,7 +402,7 @@ R(4) 0(8) 2(8) 3(2)
             }
 
             const masterGain = audioCtx.createGain();
-            masterGain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            masterGain.gain.setValueAtTime(0.2, audioCtx.currentTime);
             masterGain.connect(audioCtx.destination);
             activeSources.push(masterGain);
 
@@ -431,22 +462,24 @@ R(4) 0(8) 2(8) 3(2)
             if (Math.abs(baseRatio - 2) < 1e-5) edoSuit = buildEDONoteMap(t);
 
             const seqText = document.getElementById('sequenceInput').value;
-            const notes = tokenizeSequence(seqText, t, edoSuit);
+            const steps = tokenizeSequence(seqText, t, edoSuit);
 
             const activeTimbreKey = document.getElementById('activeTimbreSelect').value;
             const timbreConfig = TIMBRE_PROFILES[activeTimbreKey] || TIMBRE_PROFILES.timbre1;
 
-            for (let i = 0; i < notes.length && isPlaying; i++) {
-                const note = notes[i];
-                const noteDurationSec = note.durationFraction * secondsPerWholeNote;
+            for (let i = 0; i < steps.length && isPlaying; i++) {
+                const stepItem = steps[i];
+                const durationSec = stepItem.durationFraction * secondsPerWholeNote;
 
-                if (!note.isRest) {
-                    const freq = calculateFrequency(note.step, rootFreq, t, baseRatio);
-                    playTone(freq, noteDurationSec * 0.9, timbreConfig);
+                if (!stepItem.isRest) {
+                    stepItem.steps.forEach(nStep => {
+                        const freq = calculateFrequency(nStep, rootFreq, t, baseRatio);
+                        playTone(freq, durationSec * 0.9, timbreConfig);
+                    });
                 }
 
                 await new Promise(resolve => {
-                    const timeoutId = setTimeout(resolve, noteDurationSec * 1000);
+                    const timeoutId = setTimeout(resolve, durationSec * 1000);
                     activeTimeouts.push(timeoutId);
                 });
             }
