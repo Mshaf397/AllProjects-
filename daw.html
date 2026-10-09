@@ -42,7 +42,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">Xenharmonic Multi-Part Sequencer</h1>
-                    <p class="text-xs text-slate-400">Up to 64 independent microtonal tracks sharing master tempo</p>
+                    <p class="text-xs text-slate-400">Up to 64 independent microtonal tracks sharing master tempo (C4 = 261.63Hz anchor)</p>
                 </div>
             </div>
             
@@ -102,7 +102,7 @@
         let activeTimeouts = [];
         let activeSources = [];
 
-        // Built-in Timbre Profiles
+        // Built-in Timbre Profiles (Array for partials, gain, ADSR)
         const TIMBRE_PROFILES = {
             timbre1: {
                 name: "Harmonic Rich",
@@ -138,7 +138,7 @@
             }
         };
 
-        // Chain of fifths reference array (35 elements, D is index 17)
+        // Chain of fifths reference array (35 elements, C is index 15)
         const fifthsOrder = [
             "Fbb", "Cbb", "Gbb", "Dbb", "Abb", "Ebb", "Bbb",
             "Fb", "Cb", "Gb", "Db", "Ab", "Eb", "Bb",
@@ -146,7 +146,7 @@
             "F#", "C#", "G#", "D#", "A#", "E#", "B#",
             "Fx", "Cx", "Gx", "Dx", "Ax", "Ex", "Bx"
         ];
-        const rootFifthsIndex = 17;
+        const rootFifthsIndex = 15; // C is index 15 in fifthsOrder
 
         // State for up to 64 parts
         let parts = [
@@ -154,17 +154,13 @@
                 id: 1,
                 name: "Lead Track (12ed2)",
                 tuning: "12ed2",
-                rootFreq: "293.3333",
-                timbre: "timbre1",
-                sequence: "(D4 F#4 A4)(4) (E#4 G#4 B4)(8) (^^A C#5 E5)(2)\nR(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)"
+                sequence: "(C4 E4 G4)(4) (D4 F#4 A4)(4) (^^C5 E5 G5)(2)\nR(4) (0 4 7)(8) (2 5 9)(8) (3 7 10)(2)"
             },
             {
                 id: 2,
-                name: "Bass Drone (19ed2)",
-                tuning: "19ed2",
-                rootFreq: "146.6666",
-                timbre: "timbre2",
-                sequence: "D3(2) R(2) A3(2) R(2) (D3 A3)(1)"
+                name: "Bass Drone (12ed2)",
+                tuning: "12ed2",
+                sequence: "C3(2) R(2) G3(2) R(2) (C3 G3)(1)"
             }
         ];
 
@@ -198,18 +194,13 @@
                                     <input type="text" value="${part.tuning}" onchange="updatePartProp(${part.id}, 'tuning', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-purple-500 font-mono">
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] font-medium text-slate-400 mb-1">Root Freq (Hz)</label>
-                                    <input type="text" value="${part.rootFreq}" onchange="updatePartProp(${part.id}, 'rootFreq', this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-purple-500 font-mono">
+                                    <label class="block text-[11px] font-medium text-slate-400 mb-1">Timbre Profile</label>
+                                    <select onchange="updatePartProp(${part.id}, 'timbre', this.value)" class="w-full bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-xl px-2.5 py-2 focus:outline-none focus:border-purple-500">
+                                        ${Object.entries(TIMBRE_PROFILES).map(([key, tObj]) => `
+                                            <option value="${key}" ${part.timbre === key ? 'selected' : ''}>${tObj.name} (${key})</option>
+                                        `).join('')}
+                                    </select>
                                 </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-[11px] font-medium text-slate-400 mb-1">Timbre Profile</label>
-                                <select onchange="updatePartProp(${part.id}, 'timbre', this.value)" class="w-full bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-xl px-2.5 py-2 focus:outline-none focus:border-purple-500">
-                                    ${Object.entries(TIMBRE_PROFILES).map(([key, tObj]) => `
-                                        <option value="${key}" ${part.timbre === key ? 'selected' : ''}>${tObj.name} (${key})</option>
-                                    `).join('')}
-                                </select>
                             </div>
                         </div>
                     </div>
@@ -218,7 +209,7 @@
                     <div class="w-full md:w-2/3 flex flex-col">
                         <div class="flex items-center justify-between mb-1.5">
                             <label class="text-[11px] font-semibold tracking-wider text-indigo-400 uppercase">Part Sequence Input</label>
-                            <span class="text-[10px] text-slate-500">Supports polyphony e.g. (D4 F#4 A4)(4) or steps (0 3 7)(8)</span>
+                            <span class="text-[10px] text-slate-500">Supports polyphony e.g. (C4 E4 G4)(4) or steps (0 4 7)(8)</span>
                         </div>
                         <textarea onchange="updatePartProp(${part.id}, 'sequence', this.value)" oninput="updatePartProp(${part.id}, 'sequence', this.value)" class="w-full flex-grow min-h-[110px] bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-purple-200 focus:outline-none focus:border-purple-500 transition-colors leading-relaxed resize-y" placeholder="Enter notes here...">${part.sequence}</textarea>
                     </div>
@@ -247,7 +238,6 @@
                 id: nextPartId++,
                 name: `Track ${parts.length + 1} (12ed2)`,
                 tuning: "12ed2",
-                rootFreq: "293.3333",
                 timbre: (parts.length % 2 === 0) ? "timbre1" : "timbre3",
                 sequence: "C4(4) E4(4) G4(4) C5(2)"
             });
@@ -261,7 +251,7 @@
             renderTracks();
         };
 
-        // Tuning Parsers & Converters
+        // Tuning Parsers & Converters with C4=261.6256Hz Anchor
         function parseTuning(tuningStr) {
             tuningStr = tuningStr.trim().toLowerCase();
             const match = tuningStr.match(/^(\d+(?:\.\d+)?)\s*ed\s*(.+)$/);
@@ -289,8 +279,8 @@
             const fifthCents = (fifthOffset / t) * 1200;
 
             for (let i = 0; i < fifthsOrder.length; i++) {
-                const fifthsFromD = i - rootFifthsIndex;
-                let step = (fifthsFromD * fifthOffset) % t;
+                const fifthsFromC = i - rootFifthsIndex;
+                let step = (fifthsFromC * fifthOffset) % t;
                 if (step < 0) step += t;
                 const noteName = fifthsOrder[i];
                 if (map[step] === undefined) map[step] = noteName;
@@ -327,15 +317,16 @@
             }
             if (foundIndex === -1) return { isRest: false, step: signCount };
 
-            const fifthsFromD = foundIndex - rootFifthsIndex;
+            const fifthsFromC = foundIndex - rootFifthsIndex;
             const fifthOffset = edoSuit.fifthOffset;
-            let step = (fifthsFromD * fifthOffset) % t;
+            let step = (fifthsFromC * fifthOffset) % t;
             if (step < 0) step += t;
 
             let effectiveOctave = statedOctave;
             const bName = baseName.toLowerCase();
             const fifthCents = edoSuit.fifthCents || 700;
 
+            // Strict C-boundary octave adjustments
             if (bName === 'cb' || bName === 'cbb') {
                 effectiveOctave = statedOctave - 1;
             } else if ((bName === 'c#' || bName === 'c##' || bName === 'cx') && fifthCents < 685.714) {
@@ -403,19 +394,20 @@
             return steps;
         }
 
-        function calculateFrequency(n, rootFreq, stepsPerPeriod, baseRatio) {
-            return rootFreq * Math.pow(baseRatio, n / stepsPerPeriod);
+        // Frequency Calculation anchored with C4 = 261.6256 Hz
+        const C4_FREQ = 261.6256;
+        function calculateFrequency(n, stepsPerPeriod, baseRatio) {
+            return C4_FREQ * Math.pow(baseRatio, n / stepsPerPeriod);
         }
 
         function updateMasterAnalysis() {
-            let logHtml = `<div class="text-purple-400 font-bold">Active Tracks: ${parts.length} / 64</div><hr class="border-slate-800 my-1">`;
+            let logHtml = `<div class="text-purple-400 font-bold">Active Tracks: ${parts.length} / 64 (C4 Anchor = ${C4_FREQ}Hz)</div><hr class="border-slate-800 my-1">`;
             parts.forEach((part, idx) => {
                 const tuning = parseTuning(part.tuning);
-                const rootFreq = parseFloat(part.rootFreq) || 293.3333;
                 let edoSuit = { fifthOffset: Math.round(tuning.stepsPerPeriod * Math.log2(1.5)) };
                 if (Math.abs(tuning.baseRatio - 2) < 1e-5) edoSuit = buildEDONoteMap(tuning.stepsPerPeriod);
                 const steps = tokenizeSequence(part.sequence, tuning.stepsPerPeriod, edoSuit);
-                logHtml += `<div><span class="text-indigo-300">#${idx+1} (${part.name}):</span> Tuning ${tuning.stepsPerPeriod}ed${tuning.baseRatio}, Root ${rootFreq}Hz, Timbre: ${part.timbre}, Parsed Steps: ${steps.length}</div>`;
+                logHtml += `<div><span class="text-indigo-300">#${idx+1} (${part.name}):</span> Tuning ${tuning.stepsPerPeriod}ed${tuning.baseRatio}, Timbre: ${part.timbre}, Parsed Steps: ${steps.length}</div>`;
             });
             document.getElementById('analysisLog').innerHTML = logHtml;
         }
@@ -474,18 +466,15 @@
             const masterTempo = parseFloat(document.getElementById('masterTempoInput').value) || 120;
             const secondsPerWholeNote = (60 / masterTempo) * 4;
 
-            // Compute compiled track data
             const compiledTracks = parts.map(part => {
                 const tuning = parseTuning(part.tuning);
-                const rootFreq = parseFloat(part.rootFreq) || 293.3333;
                 let edoSuit = { fifthOffset: Math.round(tuning.stepsPerPeriod * Math.log2(1.5)) };
                 if (Math.abs(tuning.baseRatio - 2) < 1e-5) edoSuit = buildEDONoteMap(tuning.stepsPerPeriod);
                 const steps = tokenizeSequence(part.sequence, tuning.stepsPerPeriod, edoSuit);
                 const timbreConfig = TIMBRE_PROFILES[part.timbre] || TIMBRE_PROFILES.timbre1;
-                return { steps, tuning, rootFreq, timbreConfig };
+                return { steps, tuning, timbreConfig };
             });
 
-            // Find maximum track duration to determine total playback time
             let maxDurationSec = 2.0;
             compiledTracks.forEach(track => {
                 let trackDuration = 0;
@@ -493,14 +482,13 @@
                 if (trackDuration > maxDurationSec) maxDurationSec = trackDuration;
             });
 
-            // Schedule all parts
             compiledTracks.forEach(track => {
                 let currentTime = 0;
                 track.steps.forEach(stepItem => {
                     const durationSec = stepItem.durationFraction * secondsPerWholeNote;
                     if (!stepItem.isRest) {
                         stepItem.steps.forEach(nStep => {
-                            const freq = calculateFrequency(nStep, track.rootFreq, track.tuning.stepsPerPeriod, track.tuning.baseRatio);
+                            const freq = calculateFrequency(nStep, track.tuning.stepsPerPeriod, track.tuning.baseRatio);
                             playTone(audioCtx, audioCtx.destination, freq, durationSec * 0.9, track.timbreConfig, currentTime);
                         });
                     }
@@ -540,17 +528,16 @@
 
                 const compiledTracks = parts.map(part => {
                     const tuning = parseTuning(part.tuning);
-                    const rootFreq = parseFloat(part.rootFreq) || 293.3333;
                     let edoSuit = { fifthOffset: Math.round(tuning.stepsPerPeriod * Math.log2(1.5)) };
                     if (Math.abs(tuning.baseRatio - 2) < 1e-5) edoSuit = buildEDONoteMap(tuning.stepsPerPeriod);
                     const steps = tokenizeSequence(part.sequence, tuning.stepsPerPeriod, edoSuit);
                     const timbreConfig = TIMBRE_PROFILES[part.timbre] || TIMBRE_PROFILES.timbre1;
-                    return { steps, tuning, rootFreq, timbreConfig };
+                    return { steps, tuning, timbreConfig };
                 });
 
                 let maxDurationSec = 2.0;
                 compiledTracks.forEach(track => {
-                    let trackDuration = 1.5; // tail padding
+                    let trackDuration = 1.5;
                     track.steps.forEach(s => trackDuration += s.durationFraction * secondsPerWholeNote);
                     if (trackDuration > maxDurationSec) maxDurationSec = trackDuration;
                 });
@@ -564,7 +551,7 @@
                         const durationSec = stepItem.durationFraction * secondsPerWholeNote;
                         if (!stepItem.isRest) {
                             stepItem.steps.forEach(nStep => {
-                                const freq = calculateFrequency(nStep, track.rootFreq, track.tuning.stepsPerPeriod, track.tuning.baseRatio);
+                                const freq = calculateFrequency(nStep, track.tuning.stepsPerPeriod, track.tuning.baseRatio);
                                 playTone(offlineCtx, offlineCtx.destination, freq, durationSec * 0.9, track.timbreConfig, currentTime);
                             });
                         }
