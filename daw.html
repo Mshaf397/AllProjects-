@@ -93,6 +93,8 @@
 
     <script>
         let audioCtx = null;
+        let silentGainNode = null;
+        let silentOscillator = null;
         let isPlaying = false;
         let activeTimeouts = [];
         let activeSources = [];
@@ -101,6 +103,20 @@
             if (!audioCtx) {
                 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
                 audioCtx = new AudioContextClass();
+                
+                // Establish a silent audio stream loop to prevent browser throttling / tab suspension
+                try {
+                    silentGainNode = audioCtx.createGain();
+                    silentGainNode.gain.value = 0.00001; // virtually silent
+                    silentOscillator = audioCtx.createOscillator();
+                    silentOscillator.type = 'sine';
+                    silentOscillator.frequency.value = 220;
+                    silentOscillator.connect(silentGainNode);
+                    silentGainNode.connect(audioCtx.destination);
+                    silentOscillator.start();
+                } catch(e) {
+                    console.warn("Silent keepalive stream initialization note:", e);
+                }
             }
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
@@ -288,7 +304,7 @@
             token = token.trim();
             if (!token) return { isRest: true, absoluteStep: 0 };
             if (/^-?\d+(\.\d+)?$/.test(token)) {
-                // If pure number step offset relative to C4
+                // Pure step offset relative to C4 = 0
                 return { isRest: false, absoluteStep: parseFloat(token) };
             }
 
@@ -464,27 +480,6 @@
                 await ctx.resume();
             }
 
-function startKeepAlive() {
-    if (window.keepAliveStarted) return; // Only do this once
-    
-    const silentOsc = audioCtx.createOscillator();
-    const silentGain = audioCtx.createGain();
-    
-    // 0.0001 is low enough to be inaudible but high enough for the browser to see "activity"
-    silentGain.gain.value = 0.0001; 
-    
-    silentOsc.connect(silentGain);
-    silentGain.connect(audioCtx.destination);
-    
-    silentOsc.start();
-    window.keepAliveStarted = true;
-    
-    // Also tell the browser this is an active media session
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.playbackState = 'playing';
-    }
-}
-
             const masterTempo = parseFloat(document.getElementById('masterTempoInput').value) || 120;
             const secondsPerWholeNote = (60 / masterTempo) * 4;
 
@@ -651,6 +646,15 @@ function startKeepAlive() {
 
         window.onload = () => {
             renderTracks();
+            // Automatically initialize audio context on first user gesture or window load
+            const initHandler = () => {
+                getAudioContext();
+                window.removeEventListener('click', initHandler);
+                window.removeEventListener('keydown', initHandler);
+            };
+            window.addEventListener('click', initHandler);
+            window.addEventListener('keydown', initHandler);
+
             document.addEventListener('visibilitychange', () => {
                 if (!document.hidden && audioCtx && audioCtx.state === 'suspended') {
                     audioCtx.resume();
