@@ -100,7 +100,7 @@
                     <div class="space-y-3">
                         <label class="block text-xs font-medium text-slate-400">Active Timbre</label>
                         <select id="activeTimbreSelect" class="w-full bg-slate-900 border border-slate-700 text-sm text-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500">
-                            <option value="piano"></option>
+                            <option value="timbre1">piano</option>
                         </select>
                     </div>
                 </div>
@@ -160,7 +160,7 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
         // Built-in Timbre Profiles (Easily editable in code)
         // Each partial contains: ratio (frequency multiplier), gain (amplitude), adsr: [attack, decay, sustain, release] in seconds
         const TIMBRE_PROFILES = {
-            piano: [
+            timbre1: [
                 { ratio: 1, gain: 1, adsr: [0.002, 8, 0, 0.2] },
     				{ ratio: 2.0006, gain: 0.5, adsr: [0.002, 4.9, 0, 0.2 ] },
     				{ ratio: 3.002, gain: 0.333, adsr: [0.003, 3.5, 0, 0.2] },
