@@ -464,6 +464,27 @@
                 await ctx.resume();
             }
 
+function startKeepAlive() {
+    if (window.keepAliveStarted) return; // Only do this once
+    
+    const silentOsc = audioCtx.createOscillator();
+    const silentGain = audioCtx.createGain();
+    
+    // 0.0001 is low enough to be inaudible but high enough for the browser to see "activity"
+    silentGain.gain.value = 0.0001; 
+    
+    silentOsc.connect(silentGain);
+    silentGain.connect(audioCtx.destination);
+    
+    silentOsc.start();
+    window.keepAliveStarted = true;
+    
+    // Also tell the browser this is an active media session
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'playing';
+    }
+}
+
             const masterTempo = parseFloat(document.getElementById('masterTempoInput').value) || 120;
             const secondsPerWholeNote = (60 / masterTempo) * 4;
 
