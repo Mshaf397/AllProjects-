@@ -46,14 +46,18 @@
                 </div>
             </div>
             
-            <div class="flex items-center gap-3">
-                <button id="playBtn" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2 transform active:scale-95">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    <span>Play Sequence</span>
+            <div class="flex items-center flex-wrap gap-3">
+                <button id="playBtn" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2 transform active:scale-95 text-sm">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <span>Play</span>
                 </button>
-                <button id="stopBtn" class="px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 font-semibold text-white transition-all flex items-center gap-2 transform active:scale-95">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+                <button id="stopBtn" class="px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 font-semibold text-white transition-all flex items-center gap-2 transform active:scale-95 text-sm">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
                     <span>Stop</span>
+                </button>
+                <button id="exportBtn" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 transform active:scale-95 text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span id="exportText">Export Audio</span>
                 </button>
             </div>
         </div>
@@ -100,7 +104,9 @@
                     <div class="space-y-3">
                         <label class="block text-xs font-medium text-slate-400">Active Timbre</label>
                         <select id="activeTimbreSelect" class="w-full bg-slate-900 border border-slate-700 text-sm text-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-purple-500">
-                            <option value="timbre1">piano</option>
+                            <option value="timbre1">Harmonic Rich (timbre1)</option>
+                            <option value="timbre2">Sub-Bass & Sparkle (timbre2)</option>
+                            <option value="timbre3">Xenharmonic Bell (timbre3)</option>
                         </select>
                     </div>
                 </div>
@@ -161,14 +167,19 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
         // Each partial contains: ratio (frequency multiplier), gain (amplitude), adsr: [attack, decay, sustain, release] in seconds
         const TIMBRE_PROFILES = {
             timbre1: [
-                { ratio: 1, gain: 1, adsr: [0.002, 8, 0, 0.2] },
-    				{ ratio: 2.0006, gain: 0.5, adsr: [0.002, 4.9, 0, 0.2 ] },
-    				{ ratio: 3.002, gain: 0.333, adsr: [0.003, 3.5, 0, 0.2] },
-    				{ ratio: 4.0048, gain: 0.25, adsr: [0.003, 2, 0, 0.2] },
-    				{ ratio: 5.0093, gain: 0.2, adsr: [0.004, 1.2, 0, 0.2] },
-    				{ ratio: 6.016, gain: 0.167, adsr: [0.004, 1.2, 0, 0.2] },
-    				{ ratio: 7.0253, gain: 0.0142857, adsr: [0.005, 1.2, 0, 0.2 ] },
-    				{ ratio: 8.0375, gain: 0.125, adsr: [0.005, 1.2, 0, 0.2] }
+                { ratio: 1.0, gain: 0.8, adsr: [0.05, 0.1, 0.6, 0.2] },
+                { ratio: 2.0, gain: 0.3, adsr: [0.05, 0.1, 0.4, 0.2] },
+                { ratio: 3.0, gain: 0.15, adsr: [0.03, 0.1, 0.2, 0.15] }
+            ],
+            timbre2: [
+                { ratio: 0.5, gain: 0.5, adsr: [0.1, 0.2, 0.7, 0.4] },
+                { ratio: 1.0, gain: 0.7, adsr: [0.02, 0.1, 0.5, 0.2] },
+                { ratio: 3.01, gain: 0.2, adsr: [0.01, 0.05, 0.1, 0.1] }
+            ],
+            timbre3: [
+                { ratio: 1.0, gain: 0.9, adsr: [0.01, 0.2, 0.3, 0.3] },
+                { ratio: 2.76, gain: 0.4, adsr: [0.01, 0.15, 0.2, 0.25] },
+                { ratio: 5.4, gain: 0.2, adsr: [0.005, 0.1, 0.1, 0.15] }
             ]
         };
 
@@ -207,13 +218,12 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
             return Math.round(val);
         }
 
-        // Build mapping from step index to note name for EDO
+        // Build mapping from step index to note name for EDO and compute fifth cents
         function buildEDONoteMap(t) {
             const fifthOffset = computeEDOFifth(t);
             const map = {};
             const reverseMap = {};
 
-            // Perfect fifth in cents
             const fifthCents = (fifthOffset / t) * 1200;
 
             for (let i = 0; i < fifthsOrder.length; i++) {
@@ -230,7 +240,7 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
             return { map, reverseMap, fifthOffset, fifthCents };
         }
 
-        // Parse a single note token with precise C-boundary octave and accidental rules for EDOs
+        // Parse a single note token with strict C-boundary and Fifth-dependent Octave rules
         function parseSingleNote(token, t, edoSuit) {
             token = token.trim();
             if (!token) return { isRest: true, step: 0 };
@@ -249,14 +259,12 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
 
             const octaveMatch = cleanToken.match(/^(-?[A-Za-z#bx]+)(-?\d+)$/);
             if (!octaveMatch) {
-                // Octave number required for EDO notes
                 return { isRest: false, step: signCount };
             }
 
             const baseName = octaveMatch[1];
             const statedOctave = parseInt(octaveMatch[2], 10);
 
-            // Find base name in fifths order
             let foundIndex = -1;
             for (let i = 0; i < fifthsOrder.length; i++) {
                 if (fifthsOrder[i].toLowerCase() === baseName.toLowerCase()) {
@@ -274,24 +282,19 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
             let step = (fifthsFromD * fifthOffset) % t;
             if (step < 0) step += t;
 
-            // Determine base octave offset relative to D4 (which is at octave 4)
-            // Octave numbers change at C.
-            // Rule implementation:
-            // - Cb and C# take octave of C above it, or C# when fifth < 685.714 cents.
-            // - B# and Bx take octave of B immediately below.
-            // - Extreme tunings (fifth approaching 720 cents), A# and Ax take octave of A below.
             let effectiveOctave = statedOctave;
             const bName = baseName.toLowerCase();
             const fifthCents = edoSuit.fifthCents || 700;
 
+            // Octave change boundary rules
             if (bName === 'cb' || bName === 'cbb') {
-                effectiveOctave = statedOctave - 1; // Cb takes the octave number of the C above it (meaning stated octave represents the higher C block)
-            } else if (bName === 'c#' && fifthCents < 685.714) {
+                effectiveOctave = statedOctave - 1;
+            } else if ((bName === 'c#' || bName === 'c##' || bName === 'cx') && fifthCents < 685.714) {
                 effectiveOctave = statedOctave - 1;
             } else if (bName === 'b#' || bName === 'bx') {
-                effectiveOctave = statedOctave + 1; // B# and Bx take octave of B immediately below
+                effectiveOctave = statedOctave + 1;
             } else if ((bName === 'a#' || bName === 'ax') && fifthCents >= 715) {
-                effectiveOctave = statedOctave + 1; // Extreme tuning: A# and Ax take octave of A immediately below
+                effectiveOctave = statedOctave + 1;
             }
 
             const octaveDiff = effectiveOctave - 4;
@@ -299,7 +302,7 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
             return { isRest: false, step: totalStep };
         }
 
-        // Parse duration numbers in parentheses: e.g. (8)(16) -> 1/8 + 1/16
+        // Parse duration numbers in parentheses
         function parseDurations(durStrList) {
             if (!durStrList || durStrList.length === 0) return 0.25;
             let totalDuration = 0;
@@ -312,8 +315,7 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
             return totalDuration > 0 ? totalDuration : 0.25;
         }
 
-        // Tokenize sequence text into polyphonic step/chord items
-        // Supports both single notes (e.g. D4(8)) and chord groups (e.g. (D4 F#4 A4)(5))
+        // Tokenize sequence text supporting polyphonic groups e.g. (D4 F#4 A4)(5)
         function tokenizeSequence(text, t, edoSuit) {
             const regex = /\s*(\([^\)]+\)|[^\s\(\)]+)((?:\(\d+\))*)(\s*)/g;
             let match;
@@ -327,7 +329,6 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
                 const durationFraction = parseDurations(durMatches);
 
                 if (notePart.startsWith('(') && notePart.endsWith(')')) {
-                    // Chord / Polyphonic group
                     const innerContent = notePart.substring(1, notePart.length - 1).trim();
                     const subTokens = innerContent.split(/\s+/);
                     const chordNotes = [];
@@ -335,9 +336,7 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
 
                     for (let st of subTokens) {
                         if (!st) continue;
-                        if (st.toUpperCase() === 'R' || st.toUpperCase() === 'REST') {
-                            continue;
-                        }
+                        if (st.toUpperCase() === 'R' || st.toUpperCase() === 'REST') continue;
                         const parsed = parseSingleNote(st, t, edoSuit);
                         if (!parsed.isRest) {
                             allRests = false;
@@ -351,7 +350,6 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
                         steps.push({ isRest: false, steps: chordNotes, durationFraction });
                     }
                 } else {
-                    // Single note or rest
                     if (notePart.toUpperCase() === 'R' || notePart.toUpperCase() === 'REST') {
                         steps.push({ isRest: true, steps: [], durationFraction });
                     } else {
@@ -368,7 +366,7 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
             return steps;
         }
 
-        // Frequency calculation: frequency = rootFreq * (baseRatio)^(n / stepsPerPeriod)
+        // Frequency calculation
         function calculateFrequency(n, rootFreq, stepsPerPeriod, baseRatio) {
             return rootFreq * Math.pow(baseRatio, n / stepsPerPeriod);
         }
@@ -410,29 +408,22 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
             document.getElementById('analysisLog').innerHTML = logHtml;
         }
 
-        // Sound Synthesis Engine with individualized Partial ADSR
-        function playTone(freq, durationSec, timbreConfig) {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+        // Sound Synthesis Engine for Live Playback
+        function playTone(ctx, destNode, freq, durationSec, timbreConfig, startTimeOffset = 0) {
+            const masterGain = ctx.createGain();
+            masterGain.gain.setValueAtTime(0.2, ctx.currentTime + startTimeOffset);
+            masterGain.connect(destNode);
+            if (ctx === audioCtx) activeSources.push(masterGain);
 
-            const masterGain = audioCtx.createGain();
-            masterGain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-            masterGain.connect(audioCtx.destination);
-            activeSources.push(masterGain);
-
-            const now = audioCtx.currentTime;
+            const now = ctx.currentTime + startTimeOffset;
 
             timbreConfig.forEach(partial => {
                 const pFreq = freq * partial.ratio;
                 const pGain = partial.gain;
                 const [attack, decay, sustain, release] = partial.adsr;
 
-                const osc = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
+                const osc = ctx.createOscillator();
+                const gainNode = ctx.createGain();
 
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(pFreq, now);
@@ -455,15 +446,22 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
                 osc.start(startTime);
                 osc.stop(releaseEndTime + 0.05);
 
-                activeSources.push(osc);
+                if (ctx === audioCtx) activeSources.push(osc);
             });
         }
 
-        // Sequencer Playback Loop
+        // Sequencer Live Playback Loop
         async function startPlayback() {
             if (isPlaying) return;
             isPlaying = true;
             document.getElementById('playBtn').classList.add('opacity-50', 'cursor-not-allowed');
+
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+            }
 
             const tempo = parseFloat(document.getElementById('tempoInput').value) || 120;
             const secondsPerWholeNote = (60 / tempo) * 4;
@@ -492,7 +490,7 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
                 if (!stepItem.isRest) {
                     stepItem.steps.forEach(nStep => {
                         const freq = calculateFrequency(nStep, rootFreq, t, baseRatio);
-                        playTone(freq, durationSec * 0.9, timbreConfig);
+                        playTone(audioCtx, audioCtx.destination, freq, durationSec * 0.9, timbreConfig, 0);
                     });
                 }
 
@@ -511,7 +509,6 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
             activeTimeouts.forEach(id => clearTimeout(id));
             activeTimeouts = [];
             
-            // Stop any active Web Audio sources gracefully
             activeSources.forEach(src => {
                 try {
                     if (typeof src.stop === 'function') src.stop();
@@ -520,9 +517,139 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
             activeSources = [];
         }
 
+        // Offline Audio Rendering for MP3/Audio Export
+        async function exportAudioFile() {
+            const exportBtn = document.getElementById('exportBtn');
+            const exportText = document.getElementById('exportText');
+            exportBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            exportText.textContent = 'Rendering...';
+
+            try {
+                const tempo = parseFloat(document.getElementById('tempoInput').value) || 120;
+                const secondsPerWholeNote = (60 / tempo) * 4;
+
+                const tuningStr = document.getElementById('tuningInput').value;
+                const tuning = parseTuning(tuningStr);
+                const t = tuning.stepsPerPeriod;
+                const baseRatio = tuning.baseRatio;
+
+                let rootFreq = parseFloat(document.getElementById('rootFreqInput').value);
+                if (isNaN(rootFreq)) rootFreq = 293.3333;
+
+                let edoSuit = { fifthOffset: Math.round(t * Math.log2(1.5)) };
+                if (Math.abs(baseRatio - 2) < 1e-5) edoSuit = buildEDONoteMap(t);
+
+                const seqText = document.getElementById('sequenceInput').value;
+                const steps = tokenizeSequence(seqText, t, edoSuit);
+
+                const activeTimbreKey = document.getElementById('activeTimbreSelect').value;
+                const timbreConfig = TIMBRE_PROFILES[activeTimbreKey] || TIMBRE_PROFILES.timbre1;
+
+                // Calculate total duration in seconds
+                let totalDuration = 0.5; // tail padding
+                steps.forEach(step => {
+                    totalDuration += step.durationFraction * secondsPerWholeNote;
+                });
+
+                const sampleRate = 44100;
+                const offlineCtx = new OfflineAudioContext(2, Math.ceil(sampleRate * totalDuration), sampleRate);
+
+                let currentTime = 0;
+                steps.forEach(stepItem => {
+                    const durationSec = stepItem.durationFraction * secondsPerWholeNote;
+                    if (!stepItem.isRest) {
+                        stepItem.steps.forEach(nStep => {
+                            const freq = calculateFrequency(nStep, rootFreq, t, baseRatio);
+                            playTone(offlineCtx, offlineCtx.destination, freq, durationSec * 0.9, timbreConfig, currentTime);
+                        });
+                    }
+                    currentTime += durationSec;
+                });
+
+                const renderedBuffer = await offlineCtx.startRendering();
+                
+                // Convert AudioBuffer to WAV Blob
+                const wavBlob = audioBufferToWavBlob(renderedBuffer);
+                const url = URL.createObjectURL(wavBlob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `xenharmonic_sequence_${Date.now()}.wav`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                exportText.textContent = 'Export Audio';
+                exportBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } catch (err) {
+                console.error(err);
+                exportText.textContent = 'Export Audio';
+                exportBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // Helper to convert AudioBuffer to WAV format
+        function audioBufferToWavBlob(buffer) {
+            const numOfChan = buffer.numberChannels;
+            const length = buffer.length * numOfChan * 2 + 44;
+            const out = new DataView(new ArrayBuffer(length));
+            let channels = [];
+            let sampleRate = buffer.sampleRate;
+            let offset = 0;
+            let pos = 0;
+
+            function writeString(str) {
+                for (let i = 0; i < str.length; i++) {
+                    out.setUint8(pos++, str.charCodeAt(i));
+                }
+            }
+
+            function setUint16(data) {
+                out.setUint16(pos, data, true);
+                pos += 2;
+            }
+
+            function setUint32(data) {
+                out.setUint32(pos, data, true);
+                pos += 4;
+            }
+
+            writeString('RIFF');
+            setUint32(length - 8);
+            writeString('WAVE');
+            writeString('fmt ');
+            setUint32(16);
+            setUint16(1); // PCM
+            setUint16(numOfChan);
+            setUint32(sampleRate);
+            setUint32(sampleRate * 2 * numOfChan);
+            setUint16(numOfChan * 2);
+            setUint16(16); // 16-bit
+            writeString('data');
+            setUint32(length - pos - 4);
+
+            for (let i = 0; i < buffer.numberOfChannels; i++) {
+                channels.push(buffer.getChannelData(i));
+            }
+
+            while (offset < buffer.length) {
+                for (let i = 0; i < numOfChan; i++) {
+                    let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0;
+                    out.setInt16(pos, sample, true);
+                    pos += 2;
+                }
+                offset++;
+            }
+
+            return new Blob([out.buffer], { type: 'audio/wav' });
+        }
+
         // Event Listeners
         document.getElementById('playBtn').addEventListener('click', startPlayback);
         document.getElementById('stopBtn').addEventListener('click', stopPlayback);
+        document.getElementById('exportBtn').addEventListener('click', exportAudioFile);
 
         ['tuningInput', 'rootFreqInput', 'sequenceInput', 'tempoInput', 'activeTimbreSelect'].forEach(id => {
             document.getElementById(id).addEventListener('input', updateAnalysis);
@@ -536,4 +663,4 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
     </script>
 
 </body>
-</html>|
+</html>
