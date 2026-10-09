@@ -220,6 +220,9 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
             const map = {};
             const reverseMap = {};
 
+            // Perfect fifth in cents
+            const fifthCents = (fifthOffset / t) * 1200;
+
             for (let i = 0; i < fifthsOrder.length; i++) {
                 const fifthsFromD = i - rootFifthsIndex;
                 let step = (fifthsFromD * fifthOffset) % t;
@@ -231,10 +234,10 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
                 }
                 reverseMap[noteName] = step;
             }
-            return { map, reverseMap, fifthOffset };
+            return { map, reverseMap, fifthOffset, fifthCents };
         }
 
-        // Parse a single note token (e.g. "D4", "^^A", "-2", "0") into a step index
+        // Parse a single note token with precise C-boundary octave and accidental rules for EDOs
         function parseSingleNote(token, t, edoSuit) {
             token = token.trim();
             if (!token) return { isRest: true, step: 0 };
@@ -251,14 +254,16 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
                 cleanToken = cleanToken.substring(1);
             }
 
-            let octave = 4;
             const octaveMatch = cleanToken.match(/^(-?[A-Za-z#bx]+)(-?\d+)$/);
-            let baseName = cleanToken;
-            if (octaveMatch) {
-                baseName = octaveMatch[1];
-                octave = parseInt(octaveMatch[2], 10);
+            if (!octaveMatch) {
+                // Octave number required for EDO notes
+                return { isRest: false, step: signCount };
             }
 
+            const baseName = octaveMatch[1];
+            const statedOctave = parseInt(octaveMatch[2], 10);
+
+            // Find base name in fifths order
             let foundIndex = -1;
             for (let i = 0; i < fifthsOrder.length; i++) {
                 if (fifthsOrder[i].toLowerCase() === baseName.toLowerCase()) {
@@ -276,7 +281,27 @@ R(4) (0 3 7)(8) (2 5 9)(8) (3 7 10)(2)
             let step = (fifthsFromD * fifthOffset) % t;
             if (step < 0) step += t;
 
-            const octaveDiff = octave - 4;
+            // Determine base octave offset relative to D4 (which is at octave 4)
+            // Octave numbers change at C.
+            // Rule implementation:
+            // - Cb and C# take octave of C above it, or C# when fifth < 685.714 cents.
+            // - B# and Bx take octave of B immediately below.
+            // - Extreme tunings (fifth approaching 720 cents), A# and Ax take octave of A below.
+            let effectiveOctave = statedOctave;
+            const bName = baseName.toLowerCase();
+            const fifthCents = edoSuit.fifthCents || 700;
+
+            if (bName === 'cb' || bName === 'cbb') {
+                effectiveOctave = statedOctave - 1; // Cb takes the octave number of the C above it (meaning stated octave represents the higher C block)
+            } else if (bName === 'c#' && fifthCents < 685.714) {
+                effectiveOctave = statedOctave - 1;
+            } else if (bName === 'b#' || bName === 'bx') {
+                effectiveOctave = statedOctave + 1; // B# and Bx take octave of B immediately below
+            } else if ((bName === 'a#' || bName === 'ax') && fifthCents >= 715) {
+                effectiveOctave = statedOctave + 1; // Extreme tuning: A# and Ax take octave of A immediately below
+            }
+
+            const octaveDiff = effectiveOctave - 4;
             let totalStep = step + (octaveDiff * t) + signCount;
             return { isRest: false, step: totalStep };
         }
