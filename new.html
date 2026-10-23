@@ -3,138 +3,368 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chronos - Secure Vault</title>
+    <title>Chronos - Temporal Vault & Calendar</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        kindle: {
+                            bg: '#fcfcfc',
+                            card: '#ffffff',
+                            text: '#111111',
+                            muted: '#555555',
+                            border: '#111111',
+                            lightborder: '#cccccc'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f1f5f9; }
-        .mono { font-family: 'JetBrains+Mono', monospace; }
-        .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.5); }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .day-btn { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border-radius: 0.75rem; font-weight: 600; transition: all 0.2s; font-size: 0.7rem; cursor: pointer; }
-        .day-btn:hover { background: rgba(255,255,255,0.1); }
-        .day-btn.active { background: #2563eb; color: white; transform: scale(1.05); }
-        .day-btn.today { border: 2px solid #3b82f6; }
-        input { background: #1e293b; border: 1px solid #334155; color: white; padding: 0.5rem; border-radius: 0.5rem; outline: none; }
-        .tab-btn { padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; transition: all 0.2s; cursor: pointer; }
-        .tab-btn.active { background: #2563eb; color: white; }
-        .modal-overlay { background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(10px); }
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .mono {
+            font-family: 'Courier Prime', monospace;
+        }
+
+        /* E-ink optimization: crisp borders, no blur effects for better Kindle rendering */
+        .kindle-card {
+            border: 2px solid #111111;
+            background-color: #ffffff;
+            box-shadow: 3px 3px 0px #111111;
+        }
+
+        .dark .kindle-card {
+            border: 2px solid #ffffff;
+            background-color: #121212;
+            box-shadow: 3px 3px 0px #ffffff;
+        }
+
+        .day-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #111111;
+            font-weight: 700;
+            padding: 0.25rem;
+            min-height: 2.75rem;
+            cursor: pointer;
+            transition: none; /* Instant transition for e-ink */
+        }
+
+        .dark .day-btn {
+            border-color: #888888;
+        }
+
+        .day-btn.active {
+            background-color: #111111 !important;
+            color: #ffffff !important;
+        }
+
+        .dark .day-btn.active {
+            background-color: #ffffff !important;
+            color: #111111 !important;
+        }
+
+        .day-btn.today {
+            outline: 3px solid #111111;
+            outline-offset: -3px;
+        }
+
+        .dark .day-btn.today {
+            outline: 3px solid #ffffff;
+            outline-offset: -3px;
+        }
+
+        /* High contrast form inputs */
+        input, select {
+            border: 2px solid #111111 !important;
+            background: #ffffff !important;
+            color: #111111 !important;
+            border-radius: 0px !important;
+            padding: 0.4rem 0.6rem !important;
+            font-weight: 600 !important;
+        }
+
+        .dark input, .dark select {
+            border: 2px solid #ffffff !important;
+            background: #1e1e1e !important;
+            color: #ffffff !important;
+        }
+
+        .tab-btn {
+            border: 2px solid #111111;
+            padding: 0.5rem 1rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: #ffffff;
+            color: #111111;
+        }
+
+        .dark .tab-btn {
+            border-color: #ffffff;
+            background: #121212;
+            color: #ffffff;
+        }
+
+        .tab-btn.active {
+            background: #111111;
+            color: #ffffff;
+        }
+
+        .dark .tab-btn.active {
+            background: #ffffff;
+            color: #111111;
+        }
+
+        .btn-action {
+            border: 2px solid #111111;
+            background: #ffffff;
+            color: #111111;
+            font-weight: 800;
+            padding: 0.5rem 1rem;
+            box-shadow: 2px 2px 0px #111111;
+        }
+
+        .btn-action:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px #111111;
+        }
+
+        .dark .btn-action {
+            border-color: #ffffff;
+            background: #121212;
+            color: #ffffff;
+            box-shadow: 2px 2px 0px #ffffff;
+        }
+
+        .dark .btn-action:active {
+            box-shadow: 1px 1px 0px #ffffff;
+        }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="bg-kindle-bg text-kindle-text min-h-screen p-2 sm:p-4 md:p-6 transition-colors duration-200">
 
-    <!-- Auth Modal -->
-    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-overlay p-4">
-        <div class="glass p-8 rounded-[2.5rem] w-full max-w-md text-center space-y-6">
-            <div class="mx-auto w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-white"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    <!-- Auth / Passkey Modal -->
+    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+        <div class="kindle-card p-6 md:p-8 w-full max-w-md text-center space-y-6">
+            <div class="mx-auto w-12 h-12 border-2 border-current flex items-center justify-center font-black text-xl">
+                🔒
             </div>
             <div>
-                <h2 class="text-2xl font-black tracking-tight">Temporal Vault</h2>
-                <p class="text-slate-400 text-sm mt-1">Enter your passkey to sync with Firebase</p>
+                <h2 class="text-2xl font-black uppercase tracking-tight">Temporal Vault</h2>
+                <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1 font-semibold">Enter sync key to connect with Firebase</p>
             </div>
             <div class="space-y-3">
-                <input type="password" id="passkey-input" placeholder="Passkey" class="w-full text-center text-lg tracking-widest font-black py-3">
-                <button onclick="unlockVault()" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold">Unlock Library</button>
+                <input type="password" id="passkey-input" placeholder="Enter Passkey" class="w-full text-center text-lg mono font-bold">
+                <div class="flex gap-2">
+                    <button onclick="unlockVault()" class="flex-1 btn-action uppercase text-sm">Unlock Vault</button>
+                    <button onclick="closeAuthModal()" class="btn-action uppercase text-sm">Offline</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="max-w-4xl mx-auto space-y-6">
-        <header class="glass p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-4">
-                <div class="p-3 bg-slate-800 rounded-2xl">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                </div>
+    <div class="max-w-5xl mx-auto space-y-4">
+        
+        <!-- HEADER -->
+        <header class="kindle-card p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
                 <div>
-                    <h1 class="text-xl font-extrabold tracking-tight">CHRONOS VAULT</h1>
-                    <p class="text-[10px] text-blue-400 font-bold uppercase tracking-[0.2em]" id="vault-status">Vault Locked</p>
+                    <h1 class="text-2xl font-black tracking-wider uppercase">CHRONOS VAULT</h1>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[11px] font-black uppercase tracking-widest px-1 bg-black text-white dark:bg-white dark:text-black" id="vault-status">OFFLINE MODE</span>
+                        <span id="leap-indicator" class="text-[11px] font-bold border border-current px-1">COMMON YEAR</span>
+                    </div>
                 </div>
+                <!-- E-INK / KINDLE TOGGLE MODE -->
+                <button onclick="toggleDarkMode()" class="btn-action text-xs px-2 py-1 font-bold">🌓 Theme</button>
             </div>
-            <nav class="flex gap-2 bg-slate-900/80 p-1 rounded-xl">
-                <button onclick="switchTab('clock')" id="tab-clock" class="tab-btn active">Clock</button>
-                <button onclick="switchTab('calendar')" id="tab-calendar" class="tab-btn">Calendar</button>
-                <button onclick="switchTab('config')" id="tab-config" class="tab-btn">Vault</button>
+
+            <!-- NAVIGATION TABS -->
+            <nav class="flex flex-wrap gap-2 w-full md:w-auto justify-center">
+                <button onclick="switchTab('clock')" id="tab-clock" class="tab-btn text-xs active">Clock</button>
+                <button onclick="switchTab('calendar')" id="tab-calendar" class="tab-btn text-xs">Calendar</button>
+                <button onclick="switchTab('config')" id="tab-config" class="tab-btn text-xs">Settings</button>
             </nav>
         </header>
 
+        <!-- MAIN CONTENT AREA -->
         <main id="main-content">
-            <section id="content-clock" class="space-y-6">
-                <div class="glass p-12 rounded-[3rem] border-blue-500/20 text-center relative overflow-hidden">
-                    <div id="big-clock" class="text-6xl md:text-8xl font-black tracking-tighter tabular-nums mb-4">00:00:00</div>
-                    <div id="big-date" class="text-blue-400 font-bold tracking-widest uppercase text-sm">Year 0 • Day 0</div>
+            
+            <!-- CLOCK SECTION -->
+            <section id="content-clock" class="space-y-4">
+                <div class="kindle-card p-6 md:p-10 text-center space-y-2">
+                    <div id="big-clock" class="text-5xl sm:text-7xl md:text-8xl font-black tracking-tighter mono">00:00:00</div>
+                    <div id="big-date" class="text-lg md:text-xl font-bold uppercase tracking-widest border-t-2 border-black dark:border-white pt-3 max-w-lg mx-auto">
+                        Year 0 • Month 1, Day 1
+                    </div>
                 </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="glass p-6 rounded-3xl">
-                        <h3 class="text-xs font-bold text-orange-400 uppercase tracking-widest mb-4">Solar Events (24h)</h3>
-                        <div class="space-y-3">
-                            <div class="flex justify-between border-b border-slate-800 pb-2">
-                                <span class="text-slate-400 text-sm">Sunrise</span>
-                                <span id="today-sunrise" class="font-bold">--:--:--</span>
+                    <!-- Solar Events -->
+                    <div class="kindle-card p-5 space-y-3">
+                        <h3 class="text-xs font-black uppercase tracking-widest border-b-2 border-black dark:border-white pb-1">Solar Events (24h)</h3>
+                        <div class="space-y-2 text-sm font-bold">
+                            <div class="flex justify-between border-b border-neutral-300 dark:border-neutral-700 pb-1">
+                                <span class="text-neutral-600 dark:text-neutral-400">Sunrise</span>
+                                <span id="today-sunrise" class="mono">--:--:--</span>
                             </div>
-                            <div class="flex justify-between border-b border-slate-800 pb-2">
-                                <span class="text-slate-400 text-sm">Sunset</span>
-                                <span id="today-sunset" class="font-bold">--:--:--</span>
+                            <div class="flex justify-between border-b border-neutral-300 dark:border-neutral-700 pb-1">
+                                <span class="text-neutral-600 dark:text-neutral-400">Sunset</span>
+                                <span id="today-sunset" class="mono">--:--:--</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-slate-400 text-sm">Earth Local (24h)</span>
-                                <span id="earth-time" class="font-medium text-slate-500">--:--:--</span>
+                                <span class="text-neutral-600 dark:text-neutral-400">Earth Local Time</span>
+                                <span id="earth-time" class="mono">--:--:--</span>
                             </div>
                         </div>
                     </div>
-                    <div class="glass p-6 rounded-3xl flex flex-col justify-center items-center text-center">
-                        <div class="text-3xl font-black text-blue-500" id="percent-day">0.0%</div>
-                        <div class="text-[10px] text-slate-500 uppercase font-bold mt-1">Solar Cycle</div>
+
+                    <!-- Progress Stats -->
+                    <div class="kindle-card p-5 flex flex-col justify-center items-center text-center">
+                        <div class="text-4xl sm:text-5xl font-black mono" id="percent-day">0.0%</div>
+                        <div class="text-xs font-black uppercase tracking-widest mt-2 border-t border-black dark:border-white pt-1 px-4">Solar Cycle Progress</div>
                     </div>
                 </div>
             </section>
 
-            <section id="content-calendar" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 glass p-6 rounded-3xl">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-xl font-bold" id="cal-year-label">Year 0</h2>
-                        <div class="flex gap-2">
-                            <button onclick="changeCalYear(-1)" class="p-2 hover:bg-slate-800 rounded-lg">←</button>
-                            <button onclick="changeCalYear(1)" class="p-2 hover:bg-slate-800 rounded-lg">→</button>
+            <!-- CALENDAR SECTION -->
+            <section id="content-calendar" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <!-- Calendar View -->
+                <div class="lg:col-span-2 kindle-card p-4 space-y-4">
+                    <div class="flex items-center justify-between border-b-2 border-black dark:border-white pb-2">
+                        <div>
+                            <h2 class="text-xl font-black uppercase" id="cal-year-label">Year 0</h2>
+                            <p class="text-xs font-bold text-neutral-600 dark:text-neutral-400" id="cal-leap-status">Days in Year: 365</p>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="changeCalYear(-1)" class="btn-action text-sm font-black px-3">← Prev</button>
+                            <button onclick="changeCalYear(1)" class="btn-action text-sm font-black px-3">Next →</button>
                         </div>
                     </div>
-                    <div id="calendar-body" class="calendar-grid"></div>
+
+                    <!-- Month Navigation Selector -->
+                    <div id="month-selector" class="flex flex-wrap gap-1 pb-2 border-b border-neutral-300 dark:border-neutral-700"></div>
+
+                    <!-- Month Body -->
+                    <div id="month-header-info" class="text-sm font-black uppercase tracking-wide border-l-4 border-black dark:border-white pl-2"></div>
+                    <div id="calendar-body" class="grid grid-cols-7 gap-1"></div>
                 </div>
-                <div class="glass p-6 rounded-3xl border-blue-500/30">
-                    <h3 id="details-title" class="font-bold text-lg mb-4">Day Details</h3>
-                    <div id="det-sun-range" class="text-lg font-black text-orange-400 bg-slate-800/50 p-4 rounded-xl text-center mb-4">--:--:-- → --:--:--</div>
-                    <div id="twilight-list" class="space-y-2"></div>
+
+                <!-- Day Details & Twilight -->
+                <div class="kindle-card p-4 space-y-4">
+                    <h3 id="details-title" class="font-black text-base uppercase border-b-2 border-black dark:border-white pb-1">Day Details</h3>
+                    
+                    <div class="p-3 border-2 border-black dark:border-white text-center">
+                        <div class="text-xs font-bold uppercase text-neutral-600 dark:text-neutral-400">Daylight Window</div>
+                        <div id="det-sun-range" class="text-base font-black mono mt-1">--:--:-- → --:--:--</div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="text-xs font-black uppercase border-b border-black dark:border-white pb-1">Twilight Events</div>
+                        <div id="twilight-list" class="space-y-2"></div>
+                    </div>
                 </div>
             </section>
 
-            <section id="content-config" class="hidden space-y-6">
-                <div class="glass p-6 rounded-3xl">
-                    <h2 class="text-sm font-bold text-blue-400 uppercase tracking-widest mb-4">Vault Management</h2>
-                    <div id="fb-status" class="text-[10px] mb-2 text-slate-500 font-bold uppercase">Auth Status: Initializing...</div>
-                    <div class="flex gap-2 mb-4">
+            <!-- CONFIG / VAULT SETTINGS SECTION -->
+            <section id="content-config" class="hidden space-y-4">
+                
+                <!-- Cloud Vault Management -->
+                <div class="kindle-card p-5 space-y-3">
+                    <h2 class="text-xs font-black uppercase tracking-widest border-b-2 border-black dark:border-white pb-1">Cloud Vault Storage</h2>
+                    <div id="fb-status" class="text-xs font-bold uppercase text-neutral-600 dark:text-neutral-400">Auth Status: Initializing...</div>
+                    <div class="flex flex-col sm:flex-row gap-2">
                         <input type="text" id="save-name" placeholder="Configuration name..." class="flex-1 text-sm">
-                        <button onclick="saveCurrentConfig()" id="btn-save" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50" disabled>Save</button>
+                        <button onclick="saveCurrentConfig()" id="btn-save" class="btn-action text-xs uppercase" disabled>Save Config</button>
                     </div>
-                    <div id="saved-configs-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+                    <div id="saved-configs-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2"></div>
                 </div>
-                <div class="glass p-8 rounded-3xl">
-                    <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Engine Parameters</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8" id="params-container"></div>
-                    <div class="mt-8 pt-6 border-t border-slate-800">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Epoch Start (ISO)</label>
+
+                <!-- Leap Year & Month Engine Rules -->
+                <div class="kindle-card p-5 space-y-4">
+                    <h2 class="text-xs font-black uppercase tracking-widest border-b-2 border-black dark:border-white pb-1">Leap Year & Month Distribution Rules</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Leap Year Rules -->
+                        <div class="p-3 border-2 border-black dark:border-white space-y-3">
+                            <h3 class="text-xs font-black uppercase">Leap Year Rule (Days / Years)</h3>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase">Total Days</label>
+                                    <input type="number" id="input-leap-days" value="1461" onchange="updateLeapSettings()" class="w-full text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase">In Years</label>
+                                    <input type="number" id="input-leap-years" value="4" onchange="updateLeapSettings()" class="w-full text-xs">
+                                </div>
+                            </div>
+                            <div id="leap-calc-output" class="text-xs font-bold p-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-400">
+                                Output: Calculating...
+                            </div>
+                        </div>
+
+                        <!-- Month Rules -->
+                        <div class="p-3 border-2 border-black dark:border-white space-y-3">
+                            <h3 class="text-xs font-black uppercase">Maximally Even Month Division</h3>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase">Number of Months in Year</label>
+                                <input type="number" id="input-months-per-year" value="12" min="1" max="60" onchange="updateConfig('monthsPerYear', this.value)" class="w-full text-xs">
+                            </div>
+                            <div id="month-calc-output" class="text-xs font-bold p-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-400">
+                                Month Breakdown: Calculating...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Twilight Config -->
+                <div class="kindle-card p-5 space-y-4">
+                    <h2 class="text-xs font-black uppercase tracking-widest border-b-2 border-black dark:border-white pb-1">User-Defined Twilight Stages</h2>
+                    <p class="text-xs text-neutral-600 dark:text-neutral-400 font-semibold">Specify custom solar depression angles (degrees below horizon).</p>
+
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <input type="text" id="twilight-name" placeholder="Stage Name (e.g. Civil)" class="text-xs flex-1 min-w-[120px]">
+                        <input type="number" id="twilight-deg" placeholder="Degrees (°)" step="0.5" class="text-xs w-24">
+                        <button onclick="addCustomTwilight()" class="btn-action text-xs uppercase">+ Add Stage</button>
+                    </div>
+
+                    <div id="twilight-custom-list" class="space-y-2"></div>
+                </div>
+
+                <!-- Planetary Engine Parameters -->
+                <div class="kindle-card p-5 space-y-4">
+                    <h2 class="text-xs font-black uppercase tracking-widest border-b-2 border-black dark:border-white pb-1">Time & Solar Cycle Parameters</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="params-container"></div>
+                    <div class="pt-4 border-t-2 border-black dark:border-white">
+                        <label class="block text-xs font-black uppercase mb-1">Epoch Start (ISO)</label>
                         <input type="datetime-local" id="input-epoch" class="w-full" onchange="updateConfig('epoch', new Date(this.value).getTime())">
                     </div>
                 </div>
+
             </section>
         </main>
     </div>
 
+    <!-- FIREBASE MODULE & CORE LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CONFIGURATION
+        // CONFIGURATION & GLOBAL STATE
         const firebaseConfig = {
             apiKey: "AIzaSyC-UIB5l1bo_apccqskT6LAHvliQoc-U-s",
             authDomain: "all-my-projects-3cf20.firebaseapp.com",
@@ -144,7 +374,7 @@
             appId: "1:245058314875:web:1b9fead1655343416838de"
         };
 
-        const appId = "my-chronos-project"; 
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'my-chronos-project'; 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -153,12 +383,38 @@
         let configs = {};
         let currentVaultId = null;
         let currentConfigId = null;
+
+        // Base Configuration State
         let activeConfig = {
-            name: 'Earth Standard', msPerSec: 1000, secPerMin: 60, minPerHour: 60, hourPerDay: 24, dayPerYear: 365,
-            epoch: new Date('2024-01-01T00:00:00Z').getTime(), sunriseWinterPct: 35, sunriseSummerPct: 15, secPerDegEquinox: 240, secPerDegSolstice: 300
+            name: 'Earth Standard', 
+            msPerSec: 1000, 
+            secPerMin: 60, 
+            minPerHour: 60, 
+            hourPerDay: 24, 
+            dayPerYear: 365,
+            monthsPerYear: 12,
+            leapDaysInput: 1461,
+            leapYearsInput: 4,
+            epoch: new Date('2024-01-01T00:00:00Z').getTime(), 
+            sunriseWinterPct: 35, 
+            sunriseSummerPct: 15, 
+            secPerDegEquinox: 240, 
+            secPerDegSolstice: 300,
+            twilightStages: [
+                { name: 'Civil Twilight', deg: 6 },
+                { name: 'Nautical Twilight', deg: 12 },
+                { name: 'Astronomical Twilight', deg: 18 }
+            ]
         };
+
         let viewYear = 0;
+        let viewMonth = 0;
         let selectedDay = 0;
+
+        // KINDLE / DARK MODE TOGGLE
+        window.toggleDarkMode = () => {
+            document.documentElement.classList.toggle('dark');
+        };
 
         async function hashPasskey(key) {
             const encoder = new TextEncoder();
@@ -167,23 +423,22 @@
             return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        // WAIT FOR AUTH BEFORE ALLOWING ACTIONS
+        // AUTH & FIREBASE SYNC
         onAuthStateChanged(auth, (u) => {
             user = u;
             if (u) {
-                document.getElementById('fb-status').textContent = `Auth Status: Connected (${u.uid.substring(0,6)})`;
+                document.getElementById('fb-status').textContent = `AUTH CONNECTED (${u.uid.substring(0,6)})`;
                 document.getElementById('btn-save').disabled = false;
                 if (currentVaultId) initVaultListener();
             } else {
-                document.getElementById('fb-status').textContent = `Auth Status: Disconnected`;
+                document.getElementById('fb-status').textContent = `AUTH DISCONNECTED`;
                 document.getElementById('btn-save').disabled = true;
             }
         });
 
-        // Trigger Anonymous Login immediately
         signInAnonymously(auth).catch(err => {
             console.error("Auth failed:", err);
-            document.getElementById('fb-status').textContent = `Auth Status: ERROR - Check Console`;
+            document.getElementById('fb-status').textContent = `AUTH ERROR - OFFLINE`;
         });
 
         window.unlockVault = async () => {
@@ -192,8 +447,12 @@
             const hash = await hashPasskey(passkey);
             currentVaultId = `vault_${hash}`;
             document.getElementById('auth-modal').classList.add('hidden');
-            document.getElementById('vault-status').textContent = `Syncing: ${passkey.substring(0,2)}***`;
+            document.getElementById('vault-status').textContent = `CLOUD SYNC: ${passkey.substring(0,2)}***`;
             if (user) initVaultListener();
+        };
+
+        window.closeAuthModal = () => {
+            document.getElementById('auth-modal').classList.add('hidden');
         };
 
         const initVaultListener = () => {
@@ -201,23 +460,24 @@
             onSnapshot(q, (snapshot) => {
                 const list = document.getElementById('saved-configs-list');
                 list.innerHTML = '';
-                snapshot.forEach(doc => {
-                    configs[doc.id] = doc.data();
+                snapshot.forEach(docSnap => {
+                    configs[docSnap.id] = docSnap.data();
                     const item = document.createElement('div');
-                    item.className = `flex justify-between items-center p-3 rounded-xl text-xs cursor-pointer border ${currentConfigId === doc.id ? 'bg-blue-600/20 border-blue-500' : 'bg-slate-800 border-slate-700'}`;
-                    item.onclick = () => applyConfig(doc.id);
-                    item.innerHTML = `<span class="font-bold truncate">${configs[doc.id].name}</span><button onclick="deleteConfig('${doc.id}', event)" class="text-slate-500 p-1 hover:text-red-400">×</button>`;
+                    item.className = `flex justify-between items-center p-2 text-xs border-2 ${currentConfigId === docSnap.id ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-neutral-400'}`;
+                    item.onclick = () => applyConfig(docSnap.id);
+                    item.innerHTML = `<span class="font-black truncate cursor-pointer">${configs[docSnap.id].name}</span>
+                        <button onclick="deleteConfig('${docSnap.id}', event)" class="font-bold px-1 hover:text-red-500">✕</button>`;
                     list.appendChild(item);
                 });
             }, (error) => {
                 console.error("Firestore error:", error);
-                document.getElementById('fb-status').textContent = `Firestore Error: ${error.code}`;
+                document.getElementById('fb-status').textContent = `STORAGE ERROR`;
             });
         };
 
         window.saveCurrentConfig = async () => {
             if (!user || !currentVaultId) {
-                alert("Wait for sync or enter passkey first!");
+                alert("Please unlock vault with passkey first!");
                 return;
             }
             const name = document.getElementById('save-name').value.trim() || 'New Epoch';
@@ -229,101 +489,417 @@
                 currentConfigId = id;
             } catch (e) {
                 console.error("Save Error:", e);
-                alert("Failed to save. Check Firestore Rules.");
+                alert("Failed to save to cloud storage.");
             }
         };
 
-        // UI HELPERS
+        // --- LEAP YEAR CALCULATIONS ---
+        // Computes base year length, remainder, and whether leap year has +1 or -1 day.
+        window.getLeapYearStats = (year) => {
+            const totalDays = Number(activeConfig.leapDaysInput) || 1461;
+            const totalYears = Number(activeConfig.leapYearsInput) || 4;
+
+            if (totalYears <= 0) return { isLeap: false, daysInYear: activeConfig.dayPerYear, commonDays: activeConfig.dayPerYear, leapDays: activeConfig.dayPerYear };
+
+            const avgDaysPerYear = totalDays / totalYears;
+            const remainder = avgDaysPerYear - Math.floor(avgDaysPerYear);
+
+            let commonDays = Math.floor(avgDaysPerYear);
+            let leapDays = commonDays;
+            let leapCycle = totalYears;
+
+            if (remainder > 0) {
+                if (remainder < 0.5) {
+                    // Remainder < 0.5: Leap years have 1 MORE day than common years
+                    leapDays = commonDays + 1;
+                } else {
+                    // Remainder >= 0.5: Leap years have 1 FEWER day compared to common years
+                    commonDays = Math.ceil(avgDaysPerYear);
+                    leapDays = commonDays - 1;
+                }
+            }
+
+            // Maximally even distribution of leap years in a cycle
+            const leapCountInCycle = Math.round(Math.abs(avgDaysPerYear - commonDays) * totalYears);
+            
+            // Maximally even leap year placement using Bresenham algorithm
+            let isLeap = false;
+            if (leapCountInCycle > 0) {
+                const normYear = ((year % totalYears) + totalYears) % totalYears;
+                const prevAcc = Math.floor((normYear * leapCountInCycle) / totalYears);
+                const currAcc = Math.floor(((normYear + 1) * leapCountInCycle) / totalYears);
+                isLeap = (currAcc > prevAcc);
+            }
+
+            const daysInYear = isLeap ? leapDays : commonDays;
+            return { isLeap, daysInYear, commonDays, leapDays, remainder, avgDaysPerYear };
+        };
+
+        // --- MAXIMALLY EVEN MONTH DIVISION ---
+        // Distributes days of the year across user-defined months as evenly as possible.
+        window.getMonthDistribution = (daysInYear, monthCount) => {
+            const mCount = Math.max(1, Number(monthCount) || 12);
+            const months = [];
+            for (let i = 0; i < mCount; i++) {
+                const prevDays = Math.floor((i * daysInYear) / mCount);
+                const currDays = Math.floor(((i + 1) * daysInYear) / mCount);
+                const length = currDays - prevDays;
+                months.push({
+                    monthIndex: i,
+                    name: `Month ${i + 1}`,
+                    length: length,
+                    startDayOfYear: prevDays,
+                    endDayOfYear: currDays - 1
+                });
+            }
+            return months;
+        };
+
+        // --- TIME COMPUTATION ENGINE ---
         window.getCustomTime = (earthMs) => {
             const totalEarthSecs = (earthMs - activeConfig.epoch) / 1000;
             const customSecsTotal = totalEarthSecs / (activeConfig.msPerSec / 1000);
             const secsInDay = activeConfig.secPerMin * activeConfig.minPerHour * activeConfig.hourPerDay;
-            const secsInYear = secsInDay * activeConfig.dayPerYear;
             const secsInHour = activeConfig.secPerMin * activeConfig.minPerHour;
-            return { 
-                year: Math.floor(customSecsTotal / secsInYear), 
-                dayOfYear: Math.floor((customSecsTotal % secsInYear) / secsInDay), 
-                hour: Math.floor((customSecsTotal % secsInDay) / secsInHour), 
-                min: Math.floor((customSecsTotal % secsInHour) / activeConfig.secPerMin), 
-                sec: Math.floor(customSecsTotal % activeConfig.secPerMin), 
-                pct: ((customSecsTotal % secsInDay) / secsInDay) * 100 
-            };
+
+            let currentDayTotal = Math.floor(customSecsTotal / secsInDay);
+            if (customSecsTotal < 0 && customSecsTotal % secsInDay !== 0) {
+                currentDayTotal -= 1;
+            }
+
+            // Calculate current year and day in year accounting for leap years
+            let year = 0;
+            let remainingDays = currentDayTotal;
+
+            if (remainingDays >= 0) {
+                while (true) {
+                    const stats = getLeapYearStats(year);
+                    if (remainingDays < stats.daysInYear) break;
+                    remainingDays -= stats.daysInYear;
+                    year++;
+                }
+            } else {
+                while (remainingDays < 0) {
+                    year--;
+                    const stats = getLeapYearStats(year);
+                    remainingDays += stats.daysInYear;
+                }
+            }
+
+            const dayOfYear = remainingDays;
+            const stats = getLeapYearStats(year);
+            const months = getMonthDistribution(stats.daysInYear, activeConfig.monthsPerYear);
+            
+            // Find current month
+            let currentMonth = months[0];
+            let dayInMonth = 0;
+            for (const m of months) {
+                if (dayOfYear >= m.startDayOfYear && dayOfYear <= m.endDayOfYear) {
+                    currentMonth = m;
+                    dayInMonth = dayOfYear - m.startDayOfYear;
+                    break;
+                }
+            }
+
+            const daySecs = ((customSecsTotal % secsInDay) + secsInDay) % secsInDay;
+            const hour = Math.floor(daySecs / secsInHour);
+            const min = Math.floor((daySecs % secsInHour) / activeConfig.secPerMin);
+            const sec = Math.floor(daySecs % activeConfig.secPerMin);
+            const pct = (daySecs / secsInDay) * 100;
+
+            return { year, dayOfYear, month: currentMonth, dayInMonth, hour, min, sec, pct, daysInYear: stats.daysInYear, isLeap: stats.isLeap };
         };
 
         window.formatTime = (s) => {
+            const totalSecsInDay = activeConfig.hourPerDay * activeConfig.minPerHour * activeConfig.secPerMin;
             const h = Math.floor(s / (activeConfig.minPerHour * activeConfig.secPerMin));
             const m = Math.floor((s % (activeConfig.minPerHour * activeConfig.secPerMin)) / activeConfig.secPerMin);
             const sc = Math.floor(s % activeConfig.secPerMin);
             return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sc).padStart(2, '0')}`;
         };
 
-        window.getSolarStats = (dayIndex) => {
-            const L = activeConfig.dayPerYear;
+        // --- SOLAR & TWILIGHT ENGINE WITH OVERFLOW HANDLING ---
+        window.getSolarStats = (dayIndex, year = viewYear) => {
+            const stats = getLeapYearStats(year);
+            const L = stats.daysInYear;
+            const totalDaySecs = activeConfig.hourPerDay * activeConfig.minPerHour * activeConfig.secPerMin;
+
+            // Seasonal solar arc calculation
             const sunrisePct = 25 + (activeConfig.sunriseWinterPct - 25) * Math.cos((2 * Math.PI * dayIndex) / L);
             const sunsetPct = 100 - sunrisePct;
-            const totalDaySecs = activeConfig.hourPerDay * activeConfig.minPerHour * activeConfig.secPerMin;
+
             const sRise = (sunrisePct / 100) * totalDaySecs;
             const sSet = (sunsetPct / 100) * totalDaySecs;
-            const secPerDeg = ((activeConfig.secPerDegEquinox + activeConfig.secPerDegSolstice) / 2) + ((activeConfig.secPerDegSolstice - activeConfig.secPerDegEquinox) / 2) * Math.cos((4 * Math.PI * dayIndex) / L);
-            return { sunrise: formatTime(sRise), sunset: formatTime(sSet), twilights: [{n:'Civil',d:6},{n:'Nautical',d:12},{n:'Astro',d:18}].map(t => ({ name: t.n, start: formatTime(sRise - (t.d * secPerDeg)), end: formatTime(sSet + (t.d * secPerDeg)) })) };
+
+            const secPerDeg = ((activeConfig.secPerDegEquinox + activeConfig.secPerDegSolstice) / 2) + 
+                              ((activeConfig.secPerDegSolstice - activeConfig.secPerDegEquinox) / 2) * Math.cos((4 * Math.PI * dayIndex) / L);
+
+            // Compute custom twilight stages
+            const twilights = (activeConfig.twilightStages || []).map(stage => {
+                const offsetSecs = stage.deg * secPerDeg;
+                const twiStartSecs = sRise - offsetSecs;
+                const twiEndSecs = sSet + offsetSecs;
+
+                let startStr = "";
+                let endStr = "";
+                let isOverflow = false;
+
+                // Overflow Rule: If twilight extends into prev/next day
+                if (twiStartSecs < 0 || twiEndSecs > totalDaySecs) {
+                    isOverflow = true;
+                } else {
+                    startStr = formatTime(twiStartSecs);
+                    endStr = formatTime(twiEndSecs);
+                }
+
+                return {
+                    name: stage.name,
+                    deg: stage.deg,
+                    start: startStr,
+                    end: endStr,
+                    isOverflow: isOverflow
+                };
+            });
+
+            return { 
+                sunrise: formatTime(sRise), 
+                sunset: formatTime(sSet), 
+                twilights 
+            };
         };
 
-        window.applyConfig = (id) => { if (configs[id]) { activeConfig = { ...configs[id] }; currentConfigId = id; refreshParameterInputs(); renderCalendar(); updateDetails(); } };
-        window.deleteConfig = async (id, e) => { e.stopPropagation(); await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', currentVaultId, id)); };
+        // --- UI RENDER & CONTROLS ---
+        window.applyConfig = (id) => { 
+            if (configs[id]) { 
+                activeConfig = { ...configs[id] }; 
+                currentConfigId = id; 
+                refreshParameterInputs(); 
+                renderCalendar(); 
+                updateDetails(); 
+            } 
+        };
+
+        window.deleteConfig = async (id, e) => { 
+            e.stopPropagation(); 
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', currentVaultId, id)); 
+        };
 
         window.updateClock = () => {
             const ct = getCustomTime(Date.now());
             document.getElementById('big-clock').textContent = `${String(ct.hour).padStart(2, '0')}:${String(ct.min).padStart(2, '0')}:${String(ct.sec).padStart(2, '0')}`;
-            document.getElementById('big-date').textContent = `Year ${ct.year} • Day ${ct.dayOfYear}`;
+            document.getElementById('big-date').textContent = `Year ${ct.year} • ${ct.month.name}, Day ${ct.dayInMonth + 1} (Day ${ct.dayOfYear})`;
             document.getElementById('percent-day').textContent = ct.pct.toFixed(2) + '%';
             document.getElementById('earth-time').textContent = new Date().toLocaleTimeString('en-GB', { hour12: false });
-            const solar = getSolarStats(ct.dayOfYear);
+            
+            document.getElementById('leap-indicator').textContent = ct.isLeap ? "LEAP YEAR" : "COMMON YEAR";
+
+            const solar = getSolarStats(ct.dayOfYear, ct.year);
             document.getElementById('today-sunrise').textContent = solar.sunrise;
             document.getElementById('today-sunset').textContent = solar.sunset;
         };
 
         window.renderCalendar = () => {
             const container = document.getElementById('calendar-body');
+            const monthSelector = document.getElementById('month-selector');
+            const monthHeader = document.getElementById('month-header-info');
+
             container.innerHTML = '';
+            monthSelector.innerHTML = '';
+
+            const leapStats = getLeapYearStats(viewYear);
             document.getElementById('cal-year-label').textContent = `Year ${viewYear}`;
-            const ct = getCustomTime(Date.now());
-            for (let i = 0; i < activeConfig.dayPerYear; i++) {
+            document.getElementById('cal-leap-status').textContent = `${leapStats.isLeap ? 'Leap Year' : 'Common Year'} (${leapStats.daysInYear} Days Total)`;
+
+            const months = getMonthDistribution(leapStats.daysInYear, activeConfig.monthsPerYear);
+            
+            // Ensure viewMonth is in range
+            if (viewMonth >= months.length) viewMonth = 0;
+
+            // Render Month Selector Tabs
+            months.forEach((m, idx) => {
                 const btn = document.createElement('button');
-                btn.className = `day-btn ${selectedDay === i ? 'active' : 'bg-slate-800/40 text-slate-500'} ${i === ct.dayOfYear && viewYear === ct.year ? 'today' : ''}`;
-                btn.textContent = i;
-                btn.onclick = () => { selectedDay = i; renderCalendar(); updateDetails(); };
+                btn.className = `px-2 py-1 text-xs font-bold border ${idx === viewMonth ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-neutral-400'}`;
+                btn.textContent = `M${idx + 1}`;
+                btn.onclick = () => { viewMonth = idx; renderCalendar(); };
+                monthSelector.appendChild(btn);
+            });
+
+            const currentM = months[viewMonth];
+            monthHeader.textContent = `${currentM.name} — ${currentM.length} Days (Day ${currentM.startDayOfYear} to ${currentM.endDayOfYear})`;
+
+            const ct = getCustomTime(Date.now());
+
+            // Render Days for current Month
+            for (let d = 0; d < currentM.length; d++) {
+                const dayIndex = currentM.startDayOfYear + d;
+                const btn = document.createElement('button');
+                const isSelected = (selectedDay === dayIndex);
+                const isToday = (dayIndex === ct.dayOfYear && viewYear === ct.year);
+
+                btn.className = `day-btn ${isSelected ? 'active' : ''} ${isToday ? 'today' : ''}`;
+                btn.innerHTML = `<span class="text-xs">${d + 1}</span><span class="text-[9px] opacity-75">D${dayIndex}</span>`;
+                btn.onclick = () => { selectedDay = dayIndex; renderCalendar(); updateDetails(); };
                 container.appendChild(btn);
             }
         };
 
         window.updateDetails = () => {
-            const stats = getSolarStats(selectedDay);
+            const stats = getSolarStats(selectedDay, viewYear);
+            document.getElementById('details-title').textContent = `Year ${viewYear} • Day ${selectedDay}`;
             document.getElementById('det-sun-range').textContent = `${stats.sunrise} → ${stats.sunset}`;
-            document.getElementById('twilight-list').innerHTML = stats.twilights.map(t => `
-                <div class="flex justify-between items-center p-3 rounded-xl bg-slate-800/30 text-[11px] border border-slate-800">
-                    <span class="font-bold text-slate-400">${t.name}</span>
-                    <div class="text-right mono"><div class="text-blue-400">${t.start}</div><div class="text-orange-400">${t.end}</div></div>
-                </div>`).join('');
+
+            document.getElementById('twilight-list').innerHTML = stats.twilights.map(t => {
+                if (t.isOverflow) {
+                    return `
+                        <div class="p-2 border-2 border-black dark:border-white text-xs">
+                            <div class="font-black">${t.name} (${t.deg}°)</div>
+                            <div class="font-bold text-neutral-600 dark:text-neutral-400 italic mt-0.5">Twilight lasts all night</div>
+                        </div>`;
+                }
+                return `
+                    <div class="p-2 border border-neutral-400 text-xs flex justify-between items-center">
+                        <div>
+                            <div class="font-black">${t.name}</div>
+                            <div class="text-[10px] text-neutral-500 font-bold">${t.deg}° below horizon</div>
+                        </div>
+                        <div class="text-right mono font-bold">
+                            <div>${t.start}</div>
+                            <div>${t.end}</div>
+                        </div>
+                    </div>`;
+            }).join('');
         };
 
         window.refreshParameterInputs = () => {
-            const params = { units: ['msPerSec', 'secPerMin', 'minPerHour', 'hourPerDay', 'dayPerYear'], solar: ['sunriseWinterPct', 'sunriseSummerPct', 'secPerDegEquinox', 'secPerDegSolstice'] };
+            // Leap year display inputs
+            document.getElementById('input-leap-days').value = activeConfig.leapDaysInput || 1461;
+            document.getElementById('input-leap-years').value = activeConfig.leapYearsInput || 4;
+            document.getElementById('input-months-per-year').value = activeConfig.monthsPerYear || 12;
+
+            updateLeapSettings();
+
+            // Solar/Time parameters
+            const params = { 
+                units: ['msPerSec', 'secPerMin', 'minPerHour', 'hourPerDay', 'dayPerYear'], 
+                solar: ['sunriseWinterPct', 'sunriseSummerPct', 'secPerDegEquinox', 'secPerDegSolstice'] 
+            };
             const cont = document.getElementById('params-container');
             cont.innerHTML = '';
             Object.entries(params).forEach(([group, keys]) => {
                 const div = document.createElement('div');
                 div.className = 'space-y-2';
-                div.innerHTML = `<h4 class="text-[10px] font-bold text-slate-500 uppercase mb-2">${group}</h4>`;
-                keys.forEach(k => { div.innerHTML += `<div class="flex justify-between items-center"><label class="text-[11px] text-slate-500 capitalize">${k.replace(/([A-Z])/g, ' $1')}</label><input type="number" value="${activeConfig[k]}" onchange="updateConfig('${k}', this.value)" class="w-20 text-xs"></div>`; });
+                div.innerHTML = `<h4 class="text-xs font-black uppercase tracking-widest border-b border-black dark:border-white pb-1">${group}</h4>`;
+                keys.forEach(k => { 
+                    div.innerHTML += `
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-bold capitalize">${k.replace(/([A-Z])/g, ' $1')}</label>
+                            <input type="number" value="${activeConfig[k]}" onchange="updateConfig('${k}', this.value)" class="w-24 text-xs mono">
+                        </div>`; 
+                });
                 cont.appendChild(div);
             });
+            
             document.getElementById('input-epoch').value = new Date(activeConfig.epoch).toISOString().slice(0, 16);
+            renderCustomTwilightList();
         };
 
-        window.updateConfig = (k, v) => { activeConfig[k] = Number(v); renderCalendar(); updateDetails(); };
-        window.switchTab = (id) => { ['clock', 'calendar', 'config'].forEach(t => { document.getElementById(`content-${t}`).classList.add('hidden'); document.getElementById(`tab-${t}`).classList.remove('active'); }); document.getElementById(`content-${id}`).classList.remove('hidden'); document.getElementById(`tab-${id}`).classList.add('active'); if(id === 'calendar') renderCalendar(); };
-        window.changeCalYear = (d) => { viewYear += d; renderCalendar(); };
+        window.updateLeapSettings = () => {
+            const days = Number(document.getElementById('input-leap-days').value) || 1461;
+            const years = Number(document.getElementById('input-leap-years').value) || 4;
+            
+            activeConfig.leapDaysInput = days;
+            activeConfig.leapYearsInput = years;
 
+            const stats = getLeapYearStats(viewYear);
+            const remainder = stats.remainder;
+
+            let ruleDesc = "";
+            if (remainder === 0) {
+                ruleDesc = "Exact integer year average. No leap year variance.";
+            } else if (remainder < 0.5) {
+                ruleDesc = `Remainder = ${remainder.toFixed(3)} (< 0.5): Leap years have +1 day (${stats.leapDays}d) vs Common years (${stats.commonDays}d).`;
+            } else {
+                ruleDesc = `Remainder = ${remainder.toFixed(3)} (> 0.5): Leap years have -1 day (${stats.leapDays}d) vs Common years (${stats.commonDays}d).`;
+            }
+
+            document.getElementById('leap-calc-output').innerHTML = `
+                <div>Avg Year: <b>${stats.avgDaysPerYear.toFixed(4)} days</b></div>
+                <div class="mt-1">${ruleDesc}</div>
+            `;
+
+            // Update month outputs
+            const months = getMonthDistribution(stats.daysInYear, activeConfig.monthsPerYear);
+            const minM = Math.min(...months.map(m => m.length));
+            const maxM = Math.max(...months.map(m => m.length));
+            document.getElementById('month-calc-output').innerHTML = `
+                <div>Months: <b>${activeConfig.monthsPerYear}</b></div>
+                <div>Month Sizes: <b>${minM === maxM ? `${minM} days each` : `${minM} to ${maxM} days`}</b> (Maximally Even)</div>
+            `;
+
+            renderCalendar();
+            updateDetails();
+        };
+
+        window.addCustomTwilight = () => {
+            const name = document.getElementById('twilight-name').value.trim();
+            const deg = parseFloat(document.getElementById('twilight-deg').value);
+
+            if (!name || isNaN(deg)) {
+                alert("Please specify a valid stage name and degree value.");
+                return;
+            }
+
+            if (!activeConfig.twilightStages) activeConfig.twilightStages = [];
+            activeConfig.twilightStages.push({ name, deg });
+            document.getElementById('twilight-name').value = '';
+            document.getElementById('twilight-deg').value = '';
+
+            renderCustomTwilightList();
+            updateDetails();
+        };
+
+        window.removeCustomTwilight = (index) => {
+            activeConfig.twilightStages.splice(index, 1);
+            renderCustomTwilightList();
+            updateDetails();
+        };
+
+        const renderCustomTwilightList = () => {
+            const container = document.getElementById('twilight-custom-list');
+            if (!activeConfig.twilightStages) activeConfig.twilightStages = [];
+
+            container.innerHTML = activeConfig.twilightStages.map((t, idx) => `
+                <div class="flex justify-between items-center p-2 border border-neutral-400 text-xs">
+                    <div><span class="font-black">${t.name}</span> — <span class="mono">${t.deg}°</span></div>
+                    <button onclick="removeCustomTwilight(${idx})" class="font-black text-red-600 px-2">✕ Remove</button>
+                </div>
+            `).join('');
+        };
+
+        window.updateConfig = (k, v) => { 
+            activeConfig[k] = Number(v); 
+            if (k === 'monthsPerYear') updateLeapSettings();
+            renderCalendar(); 
+            updateDetails(); 
+        };
+
+        window.switchTab = (id) => { 
+            ['clock', 'calendar', 'config'].forEach(t => { 
+                document.getElementById(`content-${t}`).classList.add('hidden'); 
+                document.getElementById(`tab-${t}`).classList.remove('active'); 
+            }); 
+            document.getElementById(`content-${id}`).classList.remove('hidden'); 
+            document.getElementById(`tab-${id}`).classList.add('active'); 
+            if(id === 'calendar') renderCalendar(); 
+        };
+
+        window.changeCalYear = (d) => { 
+            viewYear += d; 
+            renderCalendar(); 
+            updateDetails();
+        };
+
+        // INITIALIZATION
         setInterval(updateClock, 100);
         refreshParameterInputs();
         updateDetails();
