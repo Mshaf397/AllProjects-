@@ -169,7 +169,7 @@
 
     <div class="search-container">
         <div class="search-bar">
-            <input type="text" id="locationInput" placeholder="Location...">
+            <input type="text" id="locationInput" placeholder="Location..." oninput="handleInput()">
             <button class="clear-btn" onclick="clearSearch()" id="clearBtn">×</button>
             <button class="search-btn" onclick="searchLocation()">Go</button>
         </div>
@@ -189,14 +189,52 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let map;
+        let updateTimer = null;
+        let activeMarker = null;
+
+        // Expanded popular/preset locations list for instant robust search results
+        const PRESET_LOCATIONS = [
+            { name: "Mohegan Lake, NY", lat: 41.3259, lon: -73.8504 },
+            { name: "New York City, NY", lat: 40.7128, lon: -74.0060 },
+            { name: "White Plains, NY", lat: 41.0340, lon: -73.7629 },
+            { name: "Peekskill, NY", lat: 41.2901, lon: -73.9174 },
+            { name: "Yorktown Heights, NY", lat: 41.2754, lon: -73.7840 },
+            { name: "Boston, MA", lat: 42.3601, lon: -71.0589 },
+            { name: "Washington, D.C.", lat: 38.9072, lon: -77.0369 },
+            { name: "San Francisco, CA", lat: 37.7749, lon: -122.4194 },
+            { name: "London, United Kingdom", lat: 51.5074, lon: -0.1278 },
+            { name: "Paris, France", lat: 48.8566, lon: 2.3522 },
+            { name: "Tokyo, Japan", lat: 35.6762, lon: 139.6503 },
+            { name: "Sydney, Australia", lat: -33.8688, lon: 151.2093 }
+        ];
 
         function initMap() {
-            // Default center: Mohegan Lake, NY
+            // Check URL hash for initial coordinates and zoom: #lat,lon,zoom
+            let initialLat = 41.3259;
+            let initialLon = -73.8504;
+            let initialZoom = 14;
+
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                const parts = hash.split(',');
+                if (parts.length >= 2) {
+                    const parsedLat = parseFloat(parts[0]);
+                    const parsedLon = parseFloat(parts[1]);
+                    const parsedZoom = parts[2] ? parseInt(parts[2], 10) : 14;
+                    if (!isNaN(parsedLat) && !isNaN(parsedLon)) {
+                        initialLat = parsedLat;
+                        initialLon = parsedLon;
+                        if (!isNaN(parsedZoom)) initialZoom = parsedZoom;
+                    }
+                }
+            }
+
+            // Initialize map with resolved or default view
             map = L.map('map', {
                 zoomControl: false,
                 tap: true,
                 attributionControl: false
-            }).setView([41.3259, -73.8504], 14);
+            }).setView([initialLat, initialLon], initialZoom);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19
@@ -210,6 +248,18 @@
 
             updateTime();
             setInterval(updateTime, 60000);
+
+            // Throttle URL hash updates on map movement to preserve smooth scrolling
+            map.on('moveend', () => {
+                if (updateTimer) clearTimeout(updateTimer);
+                updateTimer = setTimeout(() => {
+                    const center = map.getCenter();
+                    const zoom = map.getZoom();
+                    const newHash = `${center.lat.toFixed(4)},${center.lon.toFixed(4)},${zoom}`;
+                    // Use replaceState to update URL seamlessly without cluttering browser history stack
+                    history.replaceState(null, null, `#${newHash}`);
+                }, 300); // 300ms debounce ensures smooth scrolling without performance drag
+            });
 
             map.on('mousedown', () => {
                 document.getElementById('resultsList').style.display = 'none';
@@ -230,17 +280,63 @@
             document.getElementById('resultsList').style.display = 'none';
         }
 
+        function handleInput() {
+            const query = document.getElementById('locationInput').value.trim();
+            if (query.length >= 2) {
+                showPresetMatches(query);
+            } else {
+                document.getElementById('resultsList').style.display = 'none';
+            }
+        }
+
+        function showPresetMatches(query) {
+            const resultsDiv = document.getElementById('resultsList');
+            const lowerQuery = query.toLowerCase();
+            
+            // Filter presets
+            const matchedPresets = PRESET_LOCATIONS.filter(item => 
+                item.name.toLowerCase().includes(lowerQuery)
+            );
+
+            if (matchedPresets.length > 0) {
+                resultsDiv.innerHTML = '';
+                matchedPresets.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'result-item';
+                    div.textContent = item.name;
+                    div.onclick = () => {
+                        map.setView([item.lat, item.lon], 15);
+                        resultsDiv.style.display = 'none';
+                        document.getElementById('locationInput').value = item.name;
+                    };
+                    resultsDiv.appendChild(div);
+                });
+                resultsDiv.style.display = 'block';
+            } else {
+                resultsDiv.style.display = 'none';
+            }
+        }
+
         async function searchLocation() {
-            const query = document.getElementById('locationInput').value;
+            const query = document.getElementById('locationInput').value.trim();
             const resultsDiv = document.getElementById('resultsList');
             
             if (!query) return;
+
+            // First check preset matches for instant feedback
+            const lowerQuery = query.toLowerCase();
+            const exactPreset = PRESET_LOCATIONS.find(item => item.name.toLowerCase() === lowerQuery);
+            if (exactPreset) {
+                map.setView([exactPreset.lat, exactPreset.lon], 15);
+                resultsDiv.style.display = 'none';
+                return;
+            }
 
             resultsDiv.innerHTML = '<div class="result-item">Searching...</div>';
             resultsDiv.style.display = 'block';
 
             try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=800`);
                 const data = await response.json();
                 
                 resultsDiv.innerHTML = '';
@@ -266,7 +362,20 @@
         }
 
         function locateUser() {
-            map.locate({setView: true, maxZoom: 16});
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        map.setView([lat, lon], 16);
+                    },
+                    (error) => {
+                        alert("Unable to retrieve your location.");
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by your browser.");
+            }
         }
 
         window.onload = initMap;
