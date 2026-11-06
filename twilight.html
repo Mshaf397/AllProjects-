@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planetary Hour Angle & Time Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-full flex flex-col">
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">PlanetTime Calculator</h1>
+                <p class="text-xs text-slate-400">Hour angle & planetary time solver for custom celestial bodies</p>
+            </div>
+        </div>
+        <button onclick="resetDefaults()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition">
+            Reset Defaults
+        </button>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="flex-1 overflow-y-auto p-4 md:p-6 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Inputs -->
+        <section class="lg:col-span-5 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+            <div class="space-y-5">
+                <h2 class="text-lg font-semibold text-indigo-400 border-b border-slate-800 pb-3 flex items-center justify-between">
+                    <span>Planetary Parameters</span>
+                    <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-1 rounded-md">Customizable</span>
+                </h2>
+
+                <!-- Axial Tilt -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-sm font-medium text-slate-300">Axial Tilt (°)</label>
+                        <span id="val-tilt" class="text-sm font-mono text-indigo-300 font-semibold">23.44</span>
+                    </div>
+                    <input type="range" id="tilt" min="0" max="90" step="0.1" value="23.44" oninput="updateInput('tilt')"
+                           class="w-full accent-indigo-500 bg-slate-800 rounded-lg cursor-pointer">
+                    <p class="text-[11px] text-slate-500 mt-1">Obliquity of the ecliptic (Earth: 23.44°)</p>
+                </div>
+
+                <!-- Orbital Eccentricity -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-sm font-medium text-slate-300">Orbital Eccentricity (e)</label>
+                        <span id="val-ecc" class="text-sm font-mono text-indigo-300 font-semibold">0.0167</span>
+                    </div>
+                    <input type="range" id="ecc" min="0" max="0.9" step="0.001" value="0.0167" oninput="updateInput('ecc')"
+                           class="w-full accent-indigo-500 bg-slate-800 rounded-lg cursor-pointer">
+                    <p class="text-[11px] text-slate-500 mt-1">Orbit shape (0 = circular, Earth: 0.0167)</p>
+                </div>
+
+                <!-- Orbital Period -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-sm font-medium text-slate-300">Orbital Period (Earth Days)</label>
+                        <input type="number" id="period" min="0.1" step="0.1" value="365.25" onchange="calculate()"
+                               class="bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1 w-28 text-right focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <p class="text-[11px] text-slate-500">Length of one full planetary year in Earth 24-hr days.</p>
+                </div>
+
+                <!-- Day of Year -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-sm font-medium text-slate-300">Day of Year (Anomalistic/Solar)</label>
+                        <input type="number" id="day" min="1" max="1000" step="1" value="80" onchange="calculate()"
+                               class="bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1 w-28 text-right focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <p class="text-[11px] text-slate-500">Current day in the planetary year (e.g., Vernal Equinox ≈ 80 on Earth).</p>
+                </div>
+
+                <!-- Rotation Period -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-sm font-medium text-slate-300">Rotation Period (Earth Hours)</label>
+                        <input type="number" id="rotation" min="0.1" step="0.01" value="24.0" onchange="calculate()"
+                               class="bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1 w-28 text-right focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <p class="text-[11px] text-slate-500">Sidereal or solar rotation length in standard Earth hours.</p>
+                </div>
+
+                <!-- Number of Planetary Hours -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-sm font-medium text-slate-300">Planetary Hours per Rotation</label>
+                        <input type="number" id="planetary_hours_count" min="1" max="100" step="1" value="24" onchange="calculate()"
+                               class="bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1 w-28 text-right focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <p class="text-[11px] text-slate-500">Equal divisions of the rotation period (e.g. 24 hours).</p>
+                </div>
+
+                <!-- Target Hour Angle -->
+                <div class="pt-2 border-t border-slate-800">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-sm font-medium text-indigo-300">Target Hour Angle (°)</label>
+                        <span id="val-target-ha" class="text-sm font-mono text-indigo-300 font-semibold">0.0° (Solar Noon)</span>
+                    </div>
+                    <input type="range" id="target_ha" min="-180" max="180" step="0.5" value="0" oninput="updateInput('target_ha')"
+                           class="w-full accent-emerald-500 bg-slate-800 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
+                        <span>-180° (Midnight)</span>
+                        <span>0° (Noon)</span>
+                        <span>+180° (Midnight)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calculate Button -->
+            <button onclick="calculate()" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                <span>Compute Target Time</span>
+            </button>
+        </section>
+
+        <!-- Right Column: Results & Visualizer -->
+        <section class="lg:col-span-7 flex flex-col space-y-6">
+            
+            <!-- Result Output Card -->
+            <div class="bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h2 class="text-lg font-semibold text-emerald-400 border-b border-slate-800 pb-3 mb-4 flex items-center justify-between">
+                    <span>Computed Results</span>
+                    <span id="status-indicator" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-950 text-emerald-400 border border-emerald-800">
+                        Ready
+                    </span>
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Primary Result: Planetary Hour & Time -->
+                    <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Planetary Clock Time</span>
+                            <div id="res-clock-time" class="text-2xl md:text-3xl font-bold font-mono text-emerald-300 mt-2">--:--:--</div>
+                            <div id="res-planetary-hour-num" class="text-xs text-indigo-400 mt-1 font-medium">Planetary Hour --</div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-900 text-xs text-slate-400">
+                            Based on <span id="res-hours-count-lbl" class="text-slate-200">24</span> equal planetary divisions.
+                        </div>
+                    </div>
+
+                    <!-- Secondary Result: Equation of Time & Offsets -->
+                    <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between space-y-2">
+                        <div>
+                            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Orbital Diagnostics</span>
+                            <div class="mt-2 space-y-1 text-xs font-mono">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">Equation of Time (EoT):</span>
+                                    <span id="res-eot" class="text-slate-200">0.00 min</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">True Solar Anomaly (ν):</span>
+                                    <span id="res-anomaly" class="text-slate-200">0.0°</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">Solar Declination (δ):</span>
+                                    <span id="res-declination" class="text-slate-200">0.0°</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">Time Offset from Noon:</span>
+                                    <span id="res-time-offset" class="text-slate-200">+0.00 hrs</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Breakdown Box -->
+                <div class="mt-4 bg-indigo-950/20 border border-indigo-900/40 rounded-xl p-4 text-xs text-indigo-200/90 leading-relaxed">
+                    <span class="font-semibold text-indigo-300 block mb-1">Calculation Breakdown:</span>
+                    <p id="res-breakdown">Adjust the sliders and parameters on the left to compute exact local solar/planetary time when a specific hour angle is reached.</p>
+                </div>
+            </div>
+
+            <!-- Visualization Canvas -->
+            <div class="bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl p-6 shadow-xl flex-1 flex flex-col">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-semibold text-indigo-400">Hour Angle & Meridian Alignment</h2>
+                    <span class="text-xs text-slate-400">Top-down polar view (North Pole)</span>
+                </div>
+                <div class="relative flex-1 w-full min-h-[260px] bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-center overflow-hidden">
+                    <canvas id="simCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+                </div>
+                <div class="flex items-center justify-between mt-3 text-[11px] text-slate-400 px-1">
+                    <div class="flex items-center space-x-4">
+                        <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span><span>Sun Vector</span></span>
+                        <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block"></span><span>Target Meridian</span></span>
+                        <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block"></span><span>Prime Meridian</span></span>
+                    </div>
+                    <span>Interactive visualizer</span>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Footer Note -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-3 px-6 text-center text-xs text-slate-500 shrink-0">
+        Planetary Hour Angle Engine • Computes solar position via Keplerian orbital approximation & kepler's equation.
+    </footer>
+
+    <!-- Core Calculation & Rendering Logic -->
+    <script>
+        // DOM Elements mapping
+        const inputs = {
+            tilt: document.getElementById('tilt'),
+            ecc: document.getElementById('ecc'),
+            period: document.getElementById('period'),
+            day: document.getElementById('day'),
+            rotation: document.getElementById('rotation'),
+            planetary_hours_count: document.getElementById('planetary_hours_count'),
+            target_ha: document.getElementById('target_ha')
+        };
+
+        const valLabels = {
+            tilt: document.getElementById('val-tilt'),
+            ecc: document.getElementById('val-ecc'),
+            target_ha: document.getElementById('val-target-ha')
+        };
+
+        function updateInput(key) {
+            if (valLabels[key]) {
+                if (key === 'target_ha') {
+                    let val = parseFloat(inputs[key].value);
+                    let labelTxt = `${val > 0 ? '+' : ''}${val}°`;
+                    if (val === 0) labelTxt += ' (Solar Noon)';
+                    else if (Math.abs(val) === 180) labelTxt += ' (Midnight)';
+                    else if (val > 0) labelTxt += ' (Afternoon)';
+                    else labelTxt += ' (Morning)';
+                    valLabels[key].textContent = labelTxt;
+                } else {
+                    valLabels[key].textContent = inputs[key].value;
+                }
+            }
+            calculate();
+        }
+
+        function resetDefaults() {
+            inputs.tilt.value = 23.44;
+            inputs.ecc.value = 0.0167;
+            inputs.period.value = 365.25;
+            inputs.day.value = 80;
+            inputs.rotation.value = 24.0;
+            inputs.planetary_hours_count.value = 24;
+            inputs.target_ha.value = 0;
+            
+            Object.keys(valLabels).forEach(k => updateInput(k));
+            calculate();
+        }
+
+        // Solve Kepler's Equation for eccentric anomaly M = E - e*sin(E)
+        function solveKepler(M, e, tol = 1e-6) {
+            let E = M;
+            let delta = 1;
+            let iter = 0;
+            while (Math.abs(delta) > tol && iter < 100) {
+                delta = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+                E -= delta;
+                iter++;
+            }
+            return E;
+        }
+
+        function calculate() {
+            // Retrieve parameters
+            const axialTiltDeg = parseFloat(inputs.tilt.value);
+            const e = parseFloat(inputs.ecc.value);
+            const P_days = parseFloat(inputs.period.value);
+            const d = parseFloat(inputs.day.value);
+            const rotHours = parseFloat(inputs.rotation.value);
+            const N_hours = parseInt(inputs.planetary_hours_count.value);
+            const targetHAGrad = parseFloat(inputs.target_ha.value);
+
+            // 1. Orbital calculations
+            // Mean anomaly M in radians
+            const M = 2 * Math.PI * ((d % P_days) / P_days);
+            const E = solveKepler(M, e);
+            
+            // True anomaly nu
+            const nu = 2 * Math.atan2(
+                Math.sqrt(1 + e) * Math.sin(E / 2),
+                Math.sqrt(1 - e) * Math.cos(E / 2)
+            );
+
+            // Approximate longitude in orbit (relative to periapsis, assuming periapsis at vernal equinox for simplicity or standard offset)
+            const longOrbit = nu; 
+
+            // Axial tilt in radians
+            const eps = axialTiltDeg * (Math.PI / 180);
+
+            // Solar declination (delta_sun) and Right Ascension / Equation of time approximations
+            // sin(delta) = sin(eps) * sin(longOrbit)
+            const sinDelta = Math.sin(eps) * Math.sin(longOrbit);
+            const deltaSun = Math.asin(sinDelta);
+
+            // Equation of time approximation in radians / hours
+            // Using standard Keplerian difference between mean anomaly and true longitude
+            // EoT ≈ y * sin(2*M) - 2*e * sin(M) where y = tan^2(eps/2) roughly
+            const y = Math.tan(eps / 2) * Math.tan(eps / 2);
+            const eotRadians = y * Math.sin(2 * M) - 2 * e * Math.sin(M);
+            const eotHours = (eotRadians / (2 * Math.PI)) * rotHours;
+
+            // Target Hour Angle given by user in radians
+            const targetHARad = targetHAGrad * (Math.PI / 180);
+
+            // The hour angle of the sun relative to the local meridian is targetHARad.
+            // Solar noon occurs when Hour Angle = 0.
+            // Time elapsed since solar noon (in rotation hours):
+            // Since rotation is 360 degrees (2*PI rad) per rotHours:
+            // 1 hour = 2*PI / rotHours radians of rotation.
+            const hoursFromNoon = targetHAGrad / (360 / rotHours);
+
+            // Total time from midnight or absolute clock time
+            // Standard solar noon in a N-hour planetary system:
+            // If day is divided into N equal hours, solar noon occurs at hour index N / 2 (or N/2 offset).
+            // Let's define standard midnight as the start of the planetary day (00:00:00).
+            // At solar noon, hour angle = 0.
+            // In a standard 24-hour clock where noon is 12:00:00, noon is N / 2 hours from midnight.
+            const noonHourIndex = N_hours / 2.0;
+            const targetHourFloat = noonHourIndex + hoursFromNoon - eotHours * (N_hours / rotHours);
+
+            // Normalize planetary hour into [0, N_hours) range
+            let normalizedHour = targetHourFloat % N_hours;
+            if (normalizedHour < 0) normalizedHour += N_hours;
+
+            // Convert to hours, minutes, seconds in equal planetary units
+            const pHour = Math.floor(normalizedHour);
+            const remainderMin = (normalizedHour - pHour) * 60;
+            const pMin = Math.floor(remainderMin);
+            const pSec = Math.round((remainderMin - pMin) * 60);
+
+            // Formatting output clock string
+            const pad = (n) => String(n).padStart(2, '0');
+            const clockStr = `${pad(pHour)}:${pad(pMin)}:${pad(pSec)}`;
+
+            // Update UI elements
+            document.getElementById('res-clock-time').textContent = clockStr;
+            document.getElementById('res-planetary-hour-num').textContent = `Planetary Hour #${pHour + 1} of ${N_hours}`;
+            document.getElementById('res-hours-count-lbl').textContent = N_hours;
+            
+            document.getElementById('res-eot').textContent = `${(eotHours * 60).toFixed(2)} min`;
+            document.getElementById('res-anomaly').textContent = `${(nu * (180 / Math.PI)).toFixed(1)}°`;
+            document.getElementById('res-declination').textContent = `${(deltaSun * (180 / Math.PI)).toFixed(1)}°`;
+            document.getElementById('res-time-offset').textContent = `${hoursFromNoon >= 0 ? '+' : ''}${hoursFromNoon.toFixed(2)} hrs`;
+
+            document.getElementById('res-breakdown').innerHTML = 
+                `At Day <b>${d}</b> of <b>${P_days}</b>, the orbital true anomaly is <b>${(nu * 180 / Math.PI).toFixed(1)}°</b>. ` +
+                `With an Equation of Time shift of <b>${(eotHours * 60).toFixed(1)} minutes</b> and target hour angle <b>${targetHAGrad}°</b>, ` +
+                `the planetary clock reaches this exact angle at <b>${clockStr}</b> (${N_hours}-hour system, ${rotHours}-hour rotation).`;
+
+            // Draw visualizer
+            drawCanvas(targetHARad, eotRadians, axialTiltDeg, nu);
+        }
+
+        // Canvas Visualizer
+        function drawCanvas(targetHARad, eotRadians, axialTiltDeg, trueAnomaly) {
+            const canvas = document.getElementById('simCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Handle high-DPI scaling
+            const width = canvas.parentElement.clientWidth;
+            const height = canvas.parentElement.clientHeight || 260;
+            canvas.width = width * window.devicePixelRatio;
+            canvas.height = height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            ctx.clearRect(0, 0, width, height);
+
+            const cx = width / 2;
+            const cy = height / 2;
+            const radius = Math.min(cx, cy) - 35;
+
+            // Draw background circle (Planet body equator view)
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = '#090d16';
+            ctx.fill();
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw latitude/longitude grid lines
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.66, 0, 2 * Math.PI);
+            ctx.arc(cx, cy, radius * 0.33, 0, 2 * Math.PI);
+            ctx.moveTo(cx, cy - radius); ctx.lineTo(cx, cy + radius);
+            ctx.moveTo(cx - radius, cy); ctx.lineTo(cx + radius, cy);
+            ctx.stroke();
+
+            // Prime Meridian (0° local reference) pointing Up (North/Zenith reference)
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx, cy - radius);
+            ctx.stroke();
+
+            // Draw Sun vector direction based on Hour Angle
+            // Hour angle is measured westward from South/Meridian or relative to local noon.
+            // Let's position Sun angle: Target HA = 0 is straight up (Noon). Positive HA is afternoon (Sun to the right/West).
+            const sunAngle = targetHARad - Math.PI / 2; // -PI/2 puts HA=0 at top
+            const sunX = cx + radius * 0.85 * Math.cos(sunAngle);
+            const sunY = cy + radius * 0.85 * Math.sin(sunAngle);
+
+            // Sun vector line
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(sunX, sunY);
+            ctx.stroke();
+            ctx.setLineDash([]); // reset
+
+            // Draw Sun icon/circle
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, 12, 0, 2 * Math.PI);
+            ctx.fillStyle = '#f59e0b';
+            ctx.fill();
+            ctx.shadowColor = '#fbbf24';
+            ctx.shadowBlur = 15;
+            ctx.fill();
+            ctx.shadowBlur = 0; // reset shadow
+
+            // Target Meridian vector (where the observer is pointing)
+            // Observer local meridian is fixed pointing straight up (0°)
+            const obsX = cx;
+            const obsY = cy - radius;
+            ctx.fillStyle = '#818cf8';
+            ctx.beginPath();
+            ctx.arc(obsX, obsY, 6, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Center Planet dot
+            ctx.beginPath();
+            ctx.arc(cx, cy, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fill();
+
+            // Labels on canvas
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '11px Inter, sans-serif';
+            ctx.fillText('Prime Meridian (0°)', cx + 8, cy - radius + 10);
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillText('Sun position (Hour Angle)', sunX + 16, sunY + 4);
+        }
+
+        // Window resize listener to redraw canvas cleanly
+        window.addEventListener('resize', () => {
+            calculate();
+        });
+
+        // Initial run on load
+        window.onload = function() {
+            calculate();
+        };
+    </script>
+</body>
+</html>
