@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Microtonal Micro-Synth</title>
+    <!-- Tailwind CSS for modern responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        synth: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                            dark: '#0f172a',
+                            panel: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar and touch action enhancements */
+        body {
+            touch-action: manipulation;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        input[type="range"] {
+            accent-color: #22c55e;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-full flex flex-col overflow-x-hidden selection:bg-emerald-500 selection:text-white">
+
+    <!-- Top Navigation Bar / Header -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between shadow-md shrink-0">
+        <div class="flex items-center space-x-2">
+            <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+            <h1 class="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">
+                µ-Synth <span class="text-xs uppercase px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-mono">EDO 32-bit</span>
+            </h1>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="toggle-settings" class="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded-lg border border-slate-700 transition flex items-center space-x-1">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span>Config</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+        
+        <!-- Controls & Settings Panel (Collapsible on mobile via toggle, always visible on lg) -->
+        <div id="settings-panel" class="w-full lg:w-80 bg-slate-900/95 lg:bg-slate-900 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col shrink-0 overflow-y-auto max-h-[60vh] lg:max-h-none transition-all duration-300 z-20">
+            <div class="p-4 space-y-4 text-sm">
+                
+                <!-- EDO & Tuning Foundation -->
+                <div class="bg-slate-800/60 rounded-xl p-3.5 border border-slate-700/60 shadow-inner">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-3 flex items-center justify-between">
+                        <span>EDO & Root Reference</span>
+                        <span class="text-[10px] font-mono bg-slate-900 px-1.5 py-0.5 rounded text-slate-400">Up to $2^{32}$</span>
+                    </h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">EDO (Divisions per Period)</label>
+                            <input type="number" id="input-edo" value="12" min="1" max="4294967295" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 font-mono text-sm focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Anchor Notation</label>
+                                <div class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-emerald-300 font-mono text-xs flex items-center justify-between">
+                                    <span>0_0 =</span>
+                                    <span id="label-anchor-name" class="text-slate-300">A440</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Anchor Freq (Hz)</label>
+                                <input type="number" id="input-anchor-freq" value="440" step="0.1" min="1" max="20000" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 font-mono text-sm focus:outline-none focus:border-emerald-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Anchor EDO Step Index</label>
+                            <input type="number" id="input-anchor-step" value="0" min="-4294967295" max="4294967295" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 font-mono text-sm focus:outline-none focus:border-emerald-500">
+                            <p class="text-[10px] text-slate-400 mt-1">Default 0_0 maps to this frequency.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scale Generator Config -->
+                <div class="bg-slate-800/60 rounded-xl p-3.5 border border-slate-700/60 shadow-inner">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-3">Scale Generator (Temperament)</h2>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Gen (EDO steps)</label>
+                                <input type="number" id="input-gen-steps" value="7" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 font-mono text-sm focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Period (Fraction)</label>
+                                <input type="text" id="input-period-fraction" value="1/1" placeholder="e.g., 1/1 or 3/2" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 font-mono text-sm focus:outline-none focus:border-emerald-500">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Steps Up</label>
+                                <input type="number" id="input-gen-up" value="6" min="0" max="1000" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 font-mono text-sm focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Steps Down</label>
+                                <input type="number" id="input-gen-down" value="5" min="0" max="1000" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 font-mono text-sm focus:outline-none focus:border-emerald-500">
+                            </div>
+                        </div>
+                        <button id="btn-apply-scale" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-medium rounded-lg text-xs tracking-wide uppercase transition shadow-lg shadow-emerald-900/20">
+                            Generate & Sort Scale
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Keyboard Grid Layout (Row/Col Step intervals) -->
+                <div class="bg-slate-800/60 rounded-xl p-3.5 border border-slate-700/60 shadow-inner">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-3">Matrix Key Layout</h2>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Row Step (EDO)</label>
+                                <input type="number" id="input-row-step" value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 font-mono text-sm focus:outline-none focus:border-emerald-500">
+                                <span class="text-[10px] text-slate-400">Vertical offset</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Col Step (EDO)</label>
+                                <input type="number" id="input-col-step" value="7" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 font-mono text-sm focus:outline-none focus:border-emerald-500">
+                                <span class="text-[10px] text-slate-400">Horizontal offset</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Grid Rows</label>
+                                <input type="number" id="input-grid-rows" value="5" min="1" max="16" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 font-mono text-sm focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Grid Cols</label>
+                                <input type="number" id="input-grid-cols" value="7" min="1" max="24" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 font-mono text-sm focus:outline-none focus:border-emerald-500">
+                            </div>
+                        </div>
+                        <div class="pt-1">
+                            <label class="block text-xs text-slate-400 mb-1">Base Key Offset (Top-Left 0_0)</label>
+                            <input type="number" id="input-matrix-base" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 font-mono text-sm focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Synth Voice & Waveform Settings -->
+                <div class="bg-slate-800/60 rounded-xl p-3.5 border border-slate-700/60 shadow-inner space-y-3">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Synthesizer Engine</h2>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Waveform</label>
+                        <select id="select-waveform" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 text-xs focus:outline-none focus:border-emerald-500">
+                            <option value="sine">Sine</option>
+                            <option value="triangle" selected>Triangle</option>
+                            <option value="sawtooth">Sawtooth</option>
+                            <option value="square">Square</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Attack (s)</label>
+                            <input type="range" id="range-attack" min="0.001" max="0.5" step="0.005" value="0.02" class="w-full">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Release (s)</label>
+                            <input type="range" id="range-release" min="0.05" max="2.0" step="0.05" value="0.3" class="w-full">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Master Volume</label>
+                        <input type="range" id="range-volume" min="0" max="1" step="0.01" value="0.5" class="w-full">
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Performance / Playing Area -->
+        <div class="flex-1 flex flex-col bg-slate-950 overflow-hidden relative">
+            
+            <!-- Active Note / Status Banner -->
+            <div class="bg-slate-900/80 border-b border-slate-800/80 px-4 py-2.5 flex items-center justify-between text-xs sm:text-sm shrink-0">
+                <div class="flex items-center space-x-3">
+                    <span class="text-slate-400">Active Note:</span>
+                    <span id="active-notation" class="font-mono font-bold text-emerald-400 text-base">--</span>
+                    <span id="active-freq" class="font-mono text-slate-300">-- Hz</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span id="scale-status" class="text-[11px] text-slate-400 font-mono bg-slate-800 px-2 py-0.5 rounded border border-slate-700">12-EDO Equal</span>
+                </div>
+            </div>
+
+            <!-- Keyboard Matrix Viewport -->
+            <div id="keyboard-container" class="flex-1 p-3 sm:p-6 overflow-auto flex items-center justify-center">
+                <!-- Dynamic Matrix Grid gets injected here -->
+                <div id="keyboard-grid" class="grid gap-2 w-full h-full max-w-5xl items-center justify-center">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Scale Quick-Select Bar (Bottom) -->
+            <div class="bg-slate-900 border-t border-slate-800 p-2.5 flex items-center space-x-2 overflow-x-auto shrink-0 scrollbar-none">
+                <span class="text-[11px] font-bold text-slate-400 uppercase whitespace-nowrap px-1">Presets:</span>
+                <button class="preset-btn px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-xs font-mono rounded border border-slate-700 whitespace-nowrap transition" data-edo="12" data-gen="7" data-up="6" data-down="5" data-period="1/1" data-row="1" data-col="7">12-EDO (Std)</button>
+                <button class="preset-btn px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-xs font-mono rounded border border-slate-700 whitespace-nowrap transition" data-edo="19" data-gen="11" data-up="9" data-down="9" data-period="1/1" data-row="1" data-col="11">19-EDO</button>
+                <button class="preset-btn px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-xs font-mono rounded border border-slate-700 whitespace-nowrap transition" data-edo="31" data-gen="18" data-up="15" data-down="15" data-period="1/1" data-row="1" data-col="18">31-EDO (Huygens)</button>
+                <button class="preset-btn px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-xs font-mono rounded border border-slate-700 whitespace-nowrap transition" data-edo="22" data-gen="13" data-up="11" data-down="10" data-period="1/1" data-row="1" data-col="13">22-EDO</button>
+                <button class="preset-btn px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-xs font-mono rounded border border-slate-700 whitespace-nowrap transition" data-edo="53" data-gen="31" data-up="26" data-down="26" data-period="1/1" data-row="1" data-col="31">53-EDO (Mercator)</button>
+                <button class="preset-btn px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-xs font-mono rounded border border-slate-700 whitespace-nowrap transition" data-edo="41" data-gen="24" data-up="20" data-down="20" data-period="1/1" data-row="1" data-col="24">41-EDO</button>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Audio & Notation Engine Script -->
+    <script>
+        // --- State Management ---
+        const state = {
+            edo: 12,
+            anchorFreq: 440.0,
+            anchorStep: 0, // 0-indexed EDO step that equals anchorFreq
+            
+            // Generator Scale parameters
+            genSteps: 7,
+            periodFraction: 1.0, // multiplier of an octave (e.g., 1/1 = 1.0)
+            genUp: 6,
+            genDown: 5,
+            
+            // Matrix Grid parameters
+            rowStep: 1,
+            colStep: 7,
+            gridRows: 5,
+            gridCols: 7,
+            matrixBase: 0, // EDO step at top-left corner
+            
+            // Synth parameters
+            waveform: 'triangle',
+            attack: 0.02,
+            release: 0.3,
+            volume: 0.5,
+            
+            // Generated Scale List (sorted unique EDO steps)
+            scaleSteps: []
+        };
+
+        // --- Audio Context & Synth Nodes ---
+        let audioCtx = null;
+        let masterGain = null;
+        const activeVoices = new Map(); // frequency -> { osc, gain }
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContextClass();
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = state.volume;
+                masterGain.connect(audioCtx.destination);
+            } else if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(freq, notationStr) {
+            initAudio();
+            if (!audioCtx) return;
+
+            // Stop existing voice on same frequency if any
+            stopTone(freq);
+
+            const now = audioCtx.currentTime;
+            
+            // Oscillator
+            const osc = audioCtx.createOscillator();
+            osc.type = state.waveform;
+            osc.frequency.setValueAtTime(freq, now);
+
+            // Gain / Envelope
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(state.volume, now + state.attack);
+
+            osc.connect(gainNode);
+            gainNode.connect(masterGain);
+
+            osc.start(now);
+            activeVoices.set(freq, { osc, gainNode, startTime: now });
+
+            // Update UI display
+            document.getElementById('active-notation').textContent = notationStr;
+            document.getElementById('active-freq').textContent = freq.toFixed(2) + ' Hz';
+        }
+
+        function stopTone(freq) {
+            if (!audioCtx || !activeVoices.has(freq)) return;
+            const voice = activeVoices.get(freq);
+            const now = audioCtx.currentTime;
+
+            voice.gainNode.gain.cancelScheduledValues(now);
+            voice.gainNode.gain.setValueAtTime(voice.gainNode.gain.value, now);
+            voice.gainNode.gain.linearRampToValueAtTime(0.0001, now + state.release);
+
+            setTimeout(() => {
+                try {
+                    voice.osc.stop();
+                    voice.osc.disconnect();
+                    voice.gainNode.disconnect();
+                } catch (e) {}
+            }, state.release * 1000 + 50);
+
+            activeVoices.delete(freq);
+        }
+
+        function stopAllTones() {
+            if (!audioCtx) return;
+            activeVoices.forEach((voice, freq) => {
+                try {
+                    voice.osc.stop();
+                    voice.osc.disconnect();
+                    voice.gainNode.disconnect();
+                } catch(e) {}
+            });
+            activeVoices.clear();
+        }
+
+        // --- Math & Microtonal Math Engine ---
+        
+        // Parses period fraction string like "1/1", "3/2", "2.0"
+        function parseFraction(str) {
+            if (!str) return 1.0;
+            if (str.includes('/')) {
+                const parts = str.split('/');
+                const num = parseFloat(parts[0]);
+                const den = parseFloat(parts[1]);
+                if (!isNaN(num) && !isNaN(den) && den !== 0) {
+                    return num / den;
+                }
+            }
+            const val = parseFloat(str);
+            return isNaN(val) ? 1.0 : val;
+        }
+
+        // Calculate exact frequency for a given EDO step index
+        function calculateFrequency(edoStepIndex) {
+            // EDO step 0_0 corresponds to state.anchorStep (default 0)
+            const relativeStep = edoStepIndex - state.anchorStep;
+            
+            // Period multiplier factor: (periodFraction)^(1/EDO) per step
+            // frequency = anchorFreq * (periodFraction ^ (relativeStep / EDO))
+            const exponent = relativeStep / state.edo;
+            const factor = Math.pow(state.periodFraction, exponent);
+            return state.anchorFreq * factor;
+        }
+
+        // Format step index into 0-indexed EDO step notation with subscript octave
+        // Format: Step_Octave (e.g. 0_0, 7_1, -3_-1)
+        function formatEDONotation(edoStepIndex) {
+            const edo = state.edo;
+            
+            // Mathematical modulo for negative numbers
+            let step = edoStepIndex % edo;
+            let octave = Math.floor(edoStepIndex / edo);
+            if (step < 0) {
+                step += edo;
+            }
+
+            // Return string with standard subscript representation or text fallback
+            return `${step}<sub>${octave}</sub>`;
+        }
+
+        // Build array of scale steps using generator parameters
+        function generateScale() {
+            const steps = new Set();
+            steps.add(0); // Always include root 0
+
+            const gen = state.genSteps;
+            
+            // Generators Up
+            for (let i = 1; i <= state.genUp; i++) {
+                steps.add(i * gen);
+            }
+            
+            // Generators Down
+            for (let i = 1; i <= state.genDown; i++) {
+                steps.add(-i * gen);
+            }
+
+            // Convert to sorted array
+            state.scaleSteps = Array.from(steps).sort((a, b) => a - b);
+            updateScaleStatusLabel();
+        }
+
+        function updateScaleStatusLabel() {
+            const totalGen = state.genUp + state.genDown + 1;
+            const statusEl = document.getElementById('scale-status');
+            statusEl.textContent = `${state.edo}-EDO | ${totalGen} Notes Scale`;
+        }
+
+        // --- Dynamic Keyboard Matrix Generation ---
+        function renderKeyboard() {
+            const gridEl = document.getElementById('keyboard-grid');
+            gridEl.innerHTML = '';
+
+            const rows = state.gridRows;
+            const cols = state.gridCols;
+
+            // Configure CSS Grid dynamically
+            gridEl.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+
+            // Build set of relative scale steps (modulo EDO) for highlighting scale degrees
+            const scaleModuloSet = new Set(
+                state.scaleSteps.map(s => {
+                    let m = s % state.edo;
+                    return m < 0 ? m + state.edo : m;
+                })
+            );
+
+            // Populate rows top-to-bottom
+            for (let r = 0; r < rows; r++) {
+                // Invert row index so higher pitches are at the top rows
+                const rowIndexFromBottom = (rows - 1 - r);
+                
+                for (let c = 0; c < cols; c++) {
+                    // Step index calculation based on row & col offsets
+                    const stepIndex = state.matrixBase + (rowIndexFromBottom * state.rowStep) + (c * state.colStep);
+                    const freq = calculateFrequency(stepIndex);
+                    
+                    // Modulo step for scale membership check
+                    let stepMod = stepIndex % state.edo;
+                    if (stepMod < 0) stepMod += state.edo;
+                    
+                    const inScale = scaleModuloSet.has(stepMod);
+                    const isRoot = (stepMod === 0);
+
+                    // Create key element
+                    const keyBtn = document.createElement('button');
+                    keyBtn.className = `relative flex flex-col items-center justify-center p-2 rounded-xl transition-all transform active:scale-95 select-none touch-none cursor-pointer border shadow-md h-16 sm:h-20 ${
+                        isRoot 
+                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400 font-bold ring-2 ring-emerald-400/50' 
+                            : inScale 
+                                ? 'bg-slate-800 hover:bg-slate-700 text-emerald-300 border-slate-700' 
+                                : 'bg-slate-900/90 hover:bg-slate-800 text-slate-500 border-slate-800/80 opacity-60'
+                    }`;
+
+                    const notationHTML = formatEDONotation(stepIndex);
+                    
+                    keyBtn.innerHTML = `
+                        <span class="text-sm sm:text-base font-mono font-bold leading-tight">${notationHTML}</span>
+                        <span class="text-[9px] sm:text-[10px] opacity-75 font-mono mt-0.5">${freq.toFixed(1)}Hz</span>
+                    `;
+
+                    // Handle interaction events for both touch and mouse
+                    const triggerPlay = (e) => {
+                        e.preventDefault();
+                        keyBtn.classList.add('bg-emerald-400', 'text-slate-950', 'ring-4', 'ring-emerald-300');
+                        // Strip HTML tags for clean notification string
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = notationHTML;
+                        const cleanNotation = tempDiv.textContent || tempDiv.innerText || '';
+                        playTone(freq, cleanNotation);
+                    };
+
+                    const triggerStop = (e) => {
+                        e.preventDefault();
+                        keyBtn.classList.remove('bg-emerald-400', 'text-slate-950', 'ring-4', 'ring-emerald-300');
+                        stopTone(freq);
+                    };
+
+                    // Mouse Events
+                    keyBtn.addEventListener('mousedown', triggerPlay);
+                    keyBtn.addEventListener('mouseup', triggerStop);
+                    keyBtn.addEventListener('mouseleave', triggerStop);
+
+                    // Touch Events
+                    keyBtn.addEventListener('touchstart', triggerPlay, { passive: false });
+                    keyBtn.addEventListener('touchend', triggerStop, { passive: false });
+                    keyBtn.addEventListener('touchcancel', triggerStop, { passive: false });
+
+                    gridEl.appendChild(keyBtn);
+                }
+            }
+        }
+
+        // --- Event Listeners & UI Binding ---
+        function bindInputs() {
+            // Settings Panel Toggle (Mobile responsive)
+            const toggleBtn = document.getElementById('toggle-settings');
+            const panel = document.getElementById('settings-panel');
+            toggleBtn.addEventListener('click', () => {
+                panel.classList.toggle('hidden');
+            });
+
+            // EDO Input
+            const inputEdo = document.getElementById('input-edo');
+            inputEdo.addEventListener('change', (e) => {
+                let val = parseInt(e.target.value);
+                if (isNaN(val) || val < 1) val = 1;
+                state.edo = val;
+                generateScale();
+                renderKeyboard();
+            });
+
+            // Anchor Frequency Input
+            const inputAnchorFreq = document.getElementById('input-anchor-freq');
+            inputAnchorFreq.addEventListener('change', (e) => {
+                let val = parseFloat(e.target.value);
+                if (isNaN(val) || val <= 0) val = 440;
+                state.anchorFreq = val;
+                renderKeyboard();
+            });
+
+            // Anchor EDO Step Index
+            const inputAnchorStep = document.getElementById('input-anchor-step');
+            inputAnchorStep.addEventListener('change', (e) => {
+                let val = parseInt(e.target.value);
+                if (isNaN(val)) val = 0;
+                state.anchorStep = val;
+                renderKeyboard();
+            });
+
+            // Scale Generator Inputs
+            const btnApplyScale = document.getElementById('btn-apply-scale');
+            btnApplyScale.addEventListener('click', () => {
+                state.genSteps = parseInt(document.getElementById('input-gen-steps').value) || 0;
+                state.periodFraction = parseFraction(document.getElementById('input-period-fraction').value);
+                state.genUp = parseInt(document.getElementById('input-gen-up').value) || 0;
+                state.genDown = parseInt(document.getElementById('input-gen-down').value) || 0;
+                
+                generateScale();
+                renderKeyboard();
+            });
+
+            // Matrix Layout Inputs
+            ['input-row-step', 'input-col-step', 'input-grid-rows', 'input-grid-cols', 'input-matrix-base'].forEach(id => {
+                document.getElementById(id).addEventListener('change', () => {
+                    state.rowStep = parseInt(document.getElementById('input-row-step').value) || 1;
+                    state.colStep = parseInt(document.getElementById('input-col-step').value) || 1;
+                    state.gridRows = Math.max(1, parseInt(document.getElementById('input-grid-rows').value) || 5);
+                    state.gridCols = Math.max(1, parseInt(document.getElementById('input-grid-cols').value) || 7);
+                    state.matrixBase = parseInt(document.getElementById('input-matrix-base').value) || 0;
+                    renderKeyboard();
+                });
+            });
+
+            // Synth Audio Controls
+            document.getElementById('select-waveform').addEventListener('change', (e) => {
+                state.waveform = e.target.value;
+            });
+            document.getElementById('range-attack').addEventListener('input', (e) => {
+                state.attack = parseFloat(e.target.value);
+            });
+            document.getElementById('range-release').addEventListener('input', (e) => {
+                state.release = parseFloat(e.target.value);
+            });
+            document.getElementById('range-volume').addEventListener('input', (e) => {
+                state.volume = parseFloat(e.target.value);
+                if (masterGain) masterGain.gain.value = state.volume;
+            });
+
+            // Preset Buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const edo = parseInt(btn.dataset.edo);
+                    const gen = parseInt(btn.dataset.gen);
+                    const up = parseInt(btn.dataset.up);
+                    const down = parseInt(btn.dataset.down);
+                    const period = btn.dataset.period;
+                    const row = parseInt(btn.dataset.row);
+                    const col = parseInt(btn.dataset.col);
+
+                    state.edo = edo;
+                    state.genSteps = gen;
+                    state.genUp = up;
+                    state.genDown = down;
+                    state.periodFraction = parseFraction(period);
+                    state.rowStep = row;
+                    state.colStep = col;
+
+                    // Update UI input values
+                    document.getElementById('input-edo').value = edo;
+                    document.getElementById('input-gen-steps').value = gen;
+                    document.getElementById('input-gen-up').value = up;
+                    document.getElementById('input-gen-down').value = down;
+                    document.getElementById('input-period-fraction').value = period;
+                    document.getElementById('input-row-step').value = row;
+                    document.getElementById('input-col-step').value = col;
+
+                    generateScale();
+                    renderKeyboard();
+                });
+            });
+        }
+
+        // --- Application Initialization ---
+        window.addEventListener('DOMContentLoaded', () => {
+            bindInputs();
+            generateScale();
+            renderKeyboard();
+        });
+    </script>
+</body>
+</html>
