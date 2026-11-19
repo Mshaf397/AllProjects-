@@ -43,65 +43,65 @@
                 <!-- Axial Tilt -->
                 <div>
                     <label class="block text-xs font-medium text-slate-300 mb-1">Axial Tilt (°)</label>
-                    <input type="number" id="tilt" step="0.00000001" value="23.43928110" oninput="calculate()"
+                    <input type="value" id="tilt" step="0.00000001" value="23.4392811" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <p class="text-[11px] text-slate-500 mt-0.5">Obliquity of the ecliptic (Earth: 23.43928110°)</p>
+                    <p class="text-[20px] text-slate-500 mt-0.5">Obliquity of the ecliptic (Earth: 23.4392811°)</p>
                 </div>
 
                 <!-- Orbital Eccentricity -->
                 <div>
                     <label class="block text-xs font-medium text-slate-300 mb-1">Orbital Eccentricity (e)</label>
-                    <input type="number" id="ecc" step="0.00000001" min="0" max="0.99999999" value="0.01670860" oninput="calculate()"
+                    <input type="value" id="ecc" step="0.00000001" min="0" max="0.99999999" value="0.0167086" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <p class="text-[11px] text-slate-500 mt-0.5">Orbit shape (0 = circular, Earth: 0.01670860)</p>
+                    <p class="text-[20px] text-slate-500 mt-0.5">Orbit shape (0 = circular, Earth: 0.01670860)</p>
                 </div>
 
                 <!-- Orbital Period -->
                 <div>
                     <label class="block text-xs font-medium text-slate-300 mb-1">Orbital Period (Earth Days)</label>
-                    <input type="number" id="period" min="0.00000001" step="0.00000001" value="365.25636300" oninput="calculate()"
+                    <input type="value" id="period" min="0.00000001" step="0.00000001" value="365.256363" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <p class="text-[11px] text-slate-500 mt-0.5">Length of one full planetary year in Earth 24-hr days.</p>
+                    <p class="text-[20px] text-slate-500 mt-0.5">Length of one full planetary year in Earth 24-hr days.</p>
                 </div>
 
                 <!-- Day of Year -->
                 <div>
                     <label class="block text-xs font-medium text-slate-300 mb-1">Day of Year (Solar / Anomalistic)</label>
-                    <input type="number" id="day" min="0" step="0.00000001" value="80.00000000" oninput="calculate()"
+                    <input type="value" id="day" min="0" step="0.00000001" value="80" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <p class="text-[11px] text-slate-500 mt-0.5">Current day of the planetary year (0 to period).</p>
+                    <p class="text-[20px] text-slate-500 mt-0.5">Current day of the planetary year (0 to period).</p>
                 </div>
 
                 <!-- Observer Latitude -->
                 <div>
                     <label class="block text-xs font-medium text-slate-300 mb-1">Observer Latitude (°)</label>
-                    <input type="number" id="latitude" min="-90" max="90" step="0.00000001" value="45.00000000" oninput="calculate()"
+                    <input type="value" id="latitude" min="-90" max="90" step="0.00000001" value="45" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-emerald-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <p class="text-[11px] text-slate-500 mt-0.5">Latitude on planet (+ North, - South) for Solar Altitude.</p>
+                    <p class="text-[20px] text-slate-500 mt-0.5">Latitude on planet (+ North, - South) for Solar Altitude.</p>
                 </div>
 
                 <!-- Rotation Period -->
                 <div>
                     <label class="block text-xs font-medium text-slate-300 mb-1">Rotation Period (Earth Hours)</label>
-                    <input type="number" id="rotation" min="0.00000001" step="0.00000001" value="24.00000000" oninput="calculate()"
+                    <input type="value" id="rotation" min="0.00000001" step="0.00000001" value="24" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <p class="text-[11px] text-slate-500 mt-0.5">Sidereal/Solar rotation length in standard Earth hours.</p>
+                    <p class="text-[20px] text-slate-500 mt-0.5">Sidereal/Solar rotation length in standard Earth hours.</p>
                 </div>
 
                 <!-- Number of Planetary Hours -->
                 <div>
                     <label class="block text-xs font-medium text-slate-300 mb-1">Planetary Hours per Rotation</label>
-                    <input type="number" id="planetary_hours_count" min="1" step="0.00000001" value="24.00000000" oninput="calculate()"
+                    <input type="value" id="planetary_hours_count" min="1" step="1" value="24" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <p class="text-[11px] text-slate-500 mt-0.5">Equal divisions of the rotation period (e.g. 24.0).</p>
+                    <p class="text-[20px] text-slate-500 mt-0.5">Equal divisions of the rotation period (e.g. 24.0).</p>
                 </div>
 
                 <!-- Target Hour Angle -->
                 <div class="pt-2 border-t border-slate-800">
                     <label class="block text-xs font-medium text-emerald-300 mb-1">Target Hour Angle (°)</label>
-                    <input type="number" id="target_ha" min="-180" max="180" step="0.00000001" value="0.00000000" oninput="calculate()"
+                    <input type="value" id="target_ha" min="-180" max="180" step="0.00000001" value="0" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-emerald-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                    <p class="text-[11px] text-slate-500 mt-0.5">Hour angle relative to meridian (0° = Solar Noon, ±180° = Midnight).</p>
+                    <p class="text-[20px] text-slate-500 mt-0.5">Hour angle relative to meridian (0° = Solar Noon, ±180° = Midnight).</p>
                 </div>
             </div>
 
