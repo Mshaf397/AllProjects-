@@ -42,7 +42,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">Xenharmonic Multi-Part Sequencer</h1>
-                    <p class="text-xs text-slate-400">Up to 64 independent microtonal tracks sharing master tempo (C4 = 261.6256Hz Anchor)</p>
+                    <p class="text-xs text-slate-400">Up to 256 independent microtonal tracks sharing master tempo (C4 = 261.6256Hz Anchor)</p>
                 </div>
             </div>
             
@@ -380,13 +380,13 @@
         };
 
         document.getElementById('addPartBtn').addEventListener('click', () => {
-            if (parts.length >= 64) return;
+            if (parts.length >= 256) return;
             parts.push({
                 id: nextPartId++,
                 name: `Track ${parts.length + 1} (12ed2)`,
                 tuning: "12ed2",
-                timbre: (parts.length % 2 === 0) ? "timbre1" : "timbre3",
-                sequence: "C4(4) E4(4) G4(4) C5(2)"
+                timbre: "timbre1",
+                sequence: "C4(4) Eb4(4) G4(4) (C4 Eb4 G4 C5)(1)"
             });
             renderTracks();
         });
