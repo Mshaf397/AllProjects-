@@ -43,7 +43,7 @@
                 <!-- Axial Tilt -->
                 <div>
                     <label class="block text-xs font-medium text-slate-300 mb-1">Axial Tilt (°)</label>
-                    <input type="value" id="tilt" step="0.00000001" value="23.4392811" oninput="calculate()"
+                    <input type="value" id="tilt" step="0.0000000000000001" value="23.4392811" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     <p class="text-[20px] text-slate-500 mt-0.5">Obliquity of the ecliptic (Earth: 23.4392811°)</p>
                 </div>
@@ -51,15 +51,15 @@
                 <!-- Orbital Eccentricity -->
                 <div>
                     <label class="block text-xs font-medium text-slate-300 mb-1">Orbital Eccentricity (e)</label>
-                    <input type="value" id="ecc" step="0.00000001" min="0" max="0.99999999" value="0.0167086" oninput="calculate()"
+                    <input type="value" id="ecc" step="0.0000000000000001" min="0" max="0.9999999999999999" value="0.0167086" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <p class="text-[20px] text-slate-500 mt-0.5">Orbit shape (0 = circular, Earth: 0.01670860)</p>
+                    <p class="text-[20px] text-slate-500 mt-0.5">Orbit shape (0 = circular, Earth: 0.0167086)</p>
                 </div>
 
                 <!-- Orbital Period -->
                 <div>
                     <label class="block text-xs font-medium text-slate-300 mb-1">Orbital Period (Earth Days)</label>
-                    <input type="value" id="period" min="0.00000001" step="0.00000001" value="365.256363" oninput="calculate()"
+                    <input type="value" id="period" min="0.0000000000000001" step="0.0000000000000001" value="365.256363" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     <p class="text-[20px] text-slate-500 mt-0.5">Length of one full planetary year in Earth 24-hr days.</p>
                 </div>
@@ -67,7 +67,7 @@
                 <!-- Day of Year -->
                 <div>
                     <label class="block text-xs font-medium text-slate-300 mb-1">Day of Year (Solar / Anomalistic)</label>
-                    <input type="value" id="day" min="0" step="0.00000001" value="80" oninput="calculate()"
+                    <input type="value" id="day" min="0" step="0.0000000000000001" value="80" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     <p class="text-[20px] text-slate-500 mt-0.5">Current day of the planetary year (0 to period).</p>
                 </div>
@@ -75,7 +75,7 @@
                 <!-- Observer Latitude -->
                 <div>
                     <label class="block text-xs font-medium text-slate-300 mb-1">Observer Latitude (°)</label>
-                    <input type="value" id="latitude" min="-90" max="90" step="0.00000001" value="45" oninput="calculate()"
+                    <input type="value" id="latitude" min="-90" max="90" step="0.0000000000000001" value="45" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-emerald-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     <p class="text-[20px] text-slate-500 mt-0.5">Latitude on planet (+ North, - South) for Solar Altitude.</p>
                 </div>
@@ -83,7 +83,7 @@
                 <!-- Rotation Period -->
                 <div>
                     <label class="block text-xs font-medium text-slate-300 mb-1">Rotation Period (Earth Hours)</label>
-                    <input type="value" id="rotation" min="0.00000001" step="0.00000001" value="24" oninput="calculate()"
+                    <input type="value" id="rotation" min="0.0000000000000001" step="0.0000000000000001" value="24" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-indigo-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     <p class="text-[20px] text-slate-500 mt-0.5">Sidereal/Solar rotation length in standard Earth hours.</p>
                 </div>
@@ -99,7 +99,7 @@
                 <!-- Target Hour Angle -->
                 <div class="pt-2 border-t border-slate-800">
                     <label class="block text-xs font-medium text-emerald-300 mb-1">Target Hour Angle (°)</label>
-                    <input type="value" id="target_ha" min="-180" max="180" step="0.00000001" value="0" oninput="calculate()"
+                    <input type="value" id="target_ha" min="-180" max="180" step="0.0000000000000001" value="0" oninput="calculate()"
                            class="w-full bg-slate-800 border border-slate-700 text-emerald-300 font-mono text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                     <p class="text-[20px] text-slate-500 mt-0.5">Hour angle relative to meridian (0° = Solar Noon, ±180° = Midnight).</p>
                 </div>
@@ -216,20 +216,20 @@
         };
 
         function resetDefaults() {
-            inputs.tilt.value = (23.43928110).toFixed(8);
-            inputs.ecc.value = (0.01670860).toFixed(8);
-            inputs.period.value = (365.25636300).toFixed(8);
-            inputs.day.value = (80.00000000).toFixed(8);
-            inputs.latitude.value = (45.00000000).toFixed(8);
-            inputs.rotation.value = (24.00000000).toFixed(8);
-            inputs.planetary_hours_count.value = (24.00000000).toFixed(8);
-            inputs.target_ha.value = (0.00000000).toFixed(8);
+            inputs.tilt.value = (23.4392811000000000).toFixed(16);
+            inputs.ecc.value = (0.0167086000000000).toFixed(16);
+            inputs.period.value = (365.2563630000000000).toFixed(16);
+            inputs.day.value = (80.0000000000000000).toFixed(16);
+            inputs.latitude.value = (45.0000000000000000).toFixed(16);
+            inputs.rotation.value = (24.0000000000000000).toFixed(16);
+            inputs.planetary_hours_count.value = (24.0000000000000000).toFixed(16);
+            inputs.target_ha.value = (0.0000000000000000).toFixed(16);
             
             calculate();
         }
 
         // Solve Kepler's Equation for eccentric anomaly M = E - e*sin(E)
-        function solveKepler(M, e, tol = 1e-12) {
+        function solveKepler(M, e, tol = 1e-16) {
             let E = M;
             let delta = 1;
             let iter = 0;
@@ -315,19 +315,19 @@
             document.getElementById('res-planetary-hour-num').textContent = `Planetary Hour #${pHour + 1} of ${N_hours}`;
             document.getElementById('res-hours-count-lbl').textContent = N_hours;
             
-            document.getElementById('res-altitude').textContent = `${solarAltDeg >= 0 ? '+' : ''}${solarAltDeg.toFixed(8)}°`;
-            document.getElementById('res-declination').textContent = `${deltaSunDeg.toFixed(8)}°`;
-            document.getElementById('res-anomaly').textContent = `${(nu * (180 / Math.PI)).toFixed(8)}°`;
-            document.getElementById('res-eot').textContent = `${(eotHours * 60).toFixed(6)} min`;
-            document.getElementById('res-time-offset').textContent = `${hoursFromNoon >= 0 ? '+' : ''}${hoursFromNoon.toFixed(6)} hrs`;
+            document.getElementById('res-altitude').textContent = `${solarAltDeg >= 0 ? '+' : ''}${solarAltDeg.toFixed(16)}°`;
+            document.getElementById('res-declination').textContent = `${deltaSunDeg.toFixed(16)}°`;
+            document.getElementById('res-anomaly').textContent = `${(nu * (180 / Math.PI)).toFixed(16)}°`;
+            document.getElementById('res-eot').textContent = `${(eotHours * 60).toFixed(16)} min`;
+            document.getElementById('res-time-offset').textContent = `${hoursFromNoon >= 0 ? '+' : ''}${hoursFromNoon.toFixed(16)} hrs`;
 
             const altState = solarAltDeg >= 0 ? "above horizon (daylight)" : "below horizon (night/twilight)";
             document.getElementById('res-breakdown').innerHTML = 
-                `At Observer Latitude <b>${latDeg.toFixed(6)}°</b> and Day <b>${d}</b> of year, the solar declination is <b>${deltaSunDeg.toFixed(6)}°</b>. ` +
-                `At target hour angle <b>${targetHAGrad.toFixed(6)}°</b>, the calculated Solar Altitude is <b>${solarAltDeg.toFixed(6)}°</b> (${altState}). ` +
+                `At Observer Latitude <b>${latDeg.toFixed(16)}°</b> and Day <b>${d}</b> of year, the solar declination is <b>${deltaSunDeg.toFixed(16)}°</b>. ` +
+                `At target hour angle <b>${targetHAGrad.toFixed(16)}°</b>, the calculated Solar Altitude is <b>${solarAltDeg.toFixed(16)}°</b> (${altState}). ` +
                 `The exact planetary time is <b>${clockStr}</b>.`;
 
-            document.getElementById('canvas-alt-tag').textContent = `Solar Alt: ${solarAltDeg >= 0 ? '+' : ''}${solarAltDeg.toFixed(4)}°`;
+            document.getElementById('canvas-alt-tag').textContent = `Solar Alt: ${solarAltDeg >= 0 ? '+' : ''}${solarAltDeg.toFixed(16)}°`;
 
             // Draw visualizer
             drawCanvas(targetHARad, solarAltRad, latRad, deltaSunRad);
