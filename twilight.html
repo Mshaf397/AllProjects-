@@ -304,7 +304,7 @@
             const pHour = Math.floor(normalizedHour);
             const remainderMin = (normalizedHour - pHour) * 60;
             const pMin = Math.floor(remainderMin);
-            const pSec = ((remainderMin - pMin) * 60).toFixed(4);
+            const pSec = ((remainderMin - pMin) * 60).toFixed(8);
 
             // Formatting output clock string
             const pad = (n) => String(n).padStart(2, '0');
