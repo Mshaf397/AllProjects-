@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solar Horizon — Sunrise & Sunset Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            obsidian: '#090b10',
+            card: '#111520',
+            amberGlow: '#f59e0b',
+            sunsetRose: '#fb7185',
+            twilightIndigo: '#6366f1',
+          },
+          animation: {
+            'pulse-slow': 'pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-obsidian text-slate-100 font-sans antialiased min-h-screen relative overflow-x-hidden selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- Ambient Atmospheric Background Glows -->
+  <div class="pointer-events-none fixed inset-0 overflow-hidden z-0">
+    <div class="absolute -top-40 -left-24 w-96 h-96 bg-amber-500/10 rounded-full blur-[120px] animate-pulse-slow"></div>
+    <div class="absolute top-1/3 -right-24 w-96 h-96 bg-rose-500/10 rounded-full blur-[130px]"></div>
+    <div class="absolute -bottom-32 left-1/3 w-[32rem] h-[32rem] bg-indigo-600/10 rounded-full blur-[140px]"></div>
+  </div>
+
+  <!-- Main Application Container -->
+  <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+
+    <!-- Header & Quick City Presets -->
+    <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-orange-500 to-rose-600 p-[1px] shadow-lg shadow-amber-500/20">
+          <div class="w-full h-full bg-obsidian/90 rounded-2xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2.5">
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-amber-200 via-orange-200 to-rose-200 bg-clip-text text-transparent">
+              Solar Horizon
+            </h1>
+            <span class="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">API v2</span>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-400">Astronomical ephemeris, golden/blue hour, solar compass & lunar phase</p>
+        </div>
+      </div>
+
+      <!-- Preset Location Pills & Display Format Controls -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="selectPreset(36.72016, -4.42034, 'Málaga, Spain')" class="preset-btn px-3 py-2 rounded-xl text-xs font-medium bg-slate-800/70 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200 transition-all active:scale-95">
+          Málaga
+        </button>
+        <button onclick="selectPreset(40.7128, -74.0060, 'New York, USA')" class="preset-btn px-3 py-2 rounded-xl text-xs font-medium bg-slate-800/70 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200 transition-all active:scale-95">
+          New York
+        </button>
+        <button onclick="selectPreset(35.6762, 139.6503, 'Tokyo, Japan')" class="preset-btn px-3 py-2 rounded-xl text-xs font-medium bg-slate-800/70 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200 transition-all active:scale-95">
+          Tokyo
+        </button>
+        <button onclick="selectPreset(64.1466, -21.9426, 'Reykjavík, Iceland')" class="preset-btn px-3 py-2 rounded-xl text-xs font-medium bg-slate-800/70 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200 transition-all active:scale-95">
+          Reykjavík
+        </button>
+        <button onclick="selectPreset(78.2232, 15.6267, 'Longyearbyen, Svalbard')" class="preset-btn px-3 py-2 rounded-xl text-xs font-medium bg-indigo-950/60 hover:bg-indigo-900/70 border border-indigo-500/30 text-indigo-200 transition-all active:scale-95" title="Test Polar Night / Midnight Sun">
+          Svalbard (Arctic)
+        </button>
+        <button id="geoBtn" onclick="useMyLocation()" class="px-3.5 py-2 rounded-xl text-xs font-medium bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 flex items-center gap-1.5 transition-all active:scale-95">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+          </svg>
+          My Location
+        </button>
+      </div>
+    </header>
+
+    <!-- Custom Alert / Notification Banner -->
+    <div id="statusBanner" class="hidden mb-6 p-4 rounded-2xl border text-sm flex items-center justify-between transition-all">
+      <span id="statusText"></span>
+      <button onclick="hideBanner()" class="text-xs opacity-75 hover:opacity-100 px-2.5 py-1 rounded-lg bg-white/5">Dismiss</button>
+    </div>
+
+    <!-- Coordinate, Date, Timezone & Display Format Control Bar -->
+    <section class="bg-card/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-5 sm:p-6 mb-8 shadow-2xl">
+      <form id="solarForm" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+        <div class="lg:col-span-2">
+          <label for="latInput" class="block text-xs font-medium text-slate-400 mb-1.5">Latitude (-90..90)</label>
+          <input id="latInput" type="number" step="any" min="-90" max="90" value="36.72016" required
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/70 text-slate-100 text-sm font-mono focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/20 transition" />
+        </div>
+        <div class="lg:col-span-2">
+          <label for="lngInput" class="block text-xs font-medium text-slate-400 mb-1.5">Longitude (-180..180)</label>
+          <input id="lngInput" type="number" step="any" min="-180" max="180" value="-4.42034" required
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/70 text-slate-100 text-sm font-mono focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/20 transition" />
+        </div>
+        <div class="lg:col-span-2">
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="dateInput" class="block text-xs font-medium text-slate-400">Date</label>
+            <div class="flex gap-1 text-[10px]">
+              <button type="button" onclick="shiftDate(-1)" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300" title="Previous Day">−1d</button>
+              <button type="button" onclick="setToday()" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300">Today</button>
+              <button type="button" onclick="shiftDate(1)" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300" title="Next Day">+1d</button>
+            </div>
+          </div>
+          <input id="dateInput" type="date"
+            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/70 text-slate-100 text-sm focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/20 transition [color-scheme:dark]" />
+        </div>
+        <div class="lg:col-span-2">
+          <label for="tzInput" class="block text-xs font-medium text-slate-400 mb-1.5">Timezone (`tz` optional)</label>
+          <select id="tzInput"
+            class="w-full px-3 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/70 text-slate-100 text-sm focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/20 transition">
+            <option value="">Auto (Location Local)</option>
+            <option value="UTC">UTC</option>
+            <option value="America/New_York">America/New_York</option>
+            <option value="America/Los_Angeles">America/Los_Angeles</option>
+            <option value="Europe/London">Europe/London</option>
+            <option value="Europe/Madrid">Europe/Madrid</option>
+            <option value="Asia/Tokyo">Asia/Tokyo</option>
+            <option value="Australia/Sydney">Australia/Sydney</option>
+          </select>
+        </div>
+        <div class="lg:col-span-2">
+          <label for="clockFormatSelect" class="block text-xs font-medium text-slate-400 mb-1.5">Clock Display</label>
+          <select id="clockFormatSelect" onchange="reRenderCurrentData()"
+            class="w-full px-3 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/70 text-slate-100 text-sm focus:outline-none focus:border-amber-400/70 focus:ring-2 focus:ring-amber-500/20 transition">
+            <option value="24h">24-Hour (18:25:09)</option>
+            <option value="12h">12-Hour (6:25:09 PM)</option>
+            <option value="iso">ISO 8601 String</option>
+            <option value="unix">Unix Epoch (Seconds)</option>
+          </select>
+        </div>
+        <div class="lg:col-span-2">
+          <button type="submit" id="fetchBtn"
+            class="w-full py-2.5 px-4 rounded-xl font-semibold text-sm bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 shadow-lg shadow-orange-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+            <span>Update</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Main Hero Arc Visualization & Sunrise/Sunset Highlights -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+
+      <!-- Interactive Solar Arc Card -->
+      <div class="lg:col-span-7 bg-card/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden shadow-2xl">
+        <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
+          <div>
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+              <span id="locationLabel" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                Málaga, Spain (36.72°, -4.42°)
+              </span>
+              <span id="tzBadge" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-mono bg-slate-800/90 text-slate-300 border border-slate-700/70">
+                TZ: --
+              </span>
+            </div>
+            <h2 class="text-lg sm:text-xl font-semibold text-slate-100">Daylight Trajectory</h2>
+          </div>
+          <div class="text-right">
+            <p class="text-xs text-slate-400">Day Length</p>
+            <p id="dayLengthDisplay" class="text-lg sm:text-xl font-bold text-amber-300 font-mono">--h --m</p>
+          </div>
+        </div>
+
+        <!-- SVG Solar Arc Diagram -->
+        <div class="my-4 relative w-full flex items-center justify-center">
+          <svg viewBox="0 0 420 215" class="w-full max-w-md overflow-visible">
+            <defs>
+              <linearGradient id="skyArcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#f59e0b" />
+                <stop offset="50%" stop-color="#fde047" />
+                <stop offset="100%" stop-color="#fb7185" />
+              </linearGradient>
+              <linearGradient id="areaFillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.22" />
+                <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0" />
+              </linearGradient>
+              <filter id="sunGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="5" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <!-- Horizon Baseline -->
+            <line x1="20" y1="170" x2="400" y2="170" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 4" />
+            <text x="20" y="188" fill="#94a3b8" font-size="10" font-family="Inter, sans-serif">SUNRISE (<tspan id="arcSunriseAz">--°</tspan>)</text>
+            <text x="400" y="188" fill="#94a3b8" font-size="10" font-family="Inter, sans-serif" text-anchor="end">SUNSET (<tspan id="arcSunsetAz">--°</tspan>)</text>
+
+            <!-- Under-arc subtle fill -->
+            <path d="M 45 170 A 165 140 0 0 1 375 170 Z" fill="url(#areaFillGrad)" />
+
+            <!-- Background Track -->
+            <path d="M 45 170 A 165 140 0 0 1 375 170" fill="none" stroke="#1e293b" stroke-width="5" stroke-linecap="round" />
+
+            <!-- Active Solar Path -->
+            <path id="solarArcPath" d="M 45 170 A 165 140 0 0 1 375 170" fill="none" stroke="url(#skyArcGrad)" stroke-width="5" stroke-linecap="round" />
+
+            <!-- Solar Noon Marker -->
+            <line x1="210" y1="24" x2="210" y2="36" stroke="#fde047" stroke-width="1.5" stroke-opacity="0.6" />
+            <text x="210" y="14" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="Inter, sans-serif">SOLAR NOON • ALT <tspan id="arcNoonAlt">--°</tspan></text>
+
+            <!-- Sunrise & Sunset Horizon Dots -->
+            <circle cx="45" cy="170" r="5" fill="#f59e0b" />
+            <circle cx="375" cy="170" r="5" fill="#fb7185" />
+
+            <!-- Dynamic Sun Position Orb -->
+            <g id="sunOrb" transform="translate(210, 30)" filter="url(#sunGlow)">
+              <circle r="11" fill="#fef08a" fill-opacity="0.35" />
+              <circle r="6.5" fill="#fde047" stroke="#f59e0b" stroke-width="2" />
+            </g>
+          </svg>
+        </div>
+
+        <!-- Solar Noon & Status Footer -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-800/80 text-xs sm:text-sm">
+          <div class="flex items-center gap-2 text-slate-300">
+            <span class="w-2 h-2 rounded-full bg-yellow-300"></span>
+            <span>Solar Noon: <strong id="solarNoonDisplay" class="text-slate-100 font-mono">--:--</strong></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="sunStatusBadge" class="px-2.5 py-1 rounded-full text-xs font-mono uppercase bg-slate-800 text-slate-300 border border-slate-700">
+              normal
+            </span>
+            <span id="dayStatusPill" class="px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-300">
+              Calculating...
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sunrise & Sunset Primary Cards -->
+      <div class="lg:col-span-5 flex flex-col gap-6">
+
+        <!-- Sunrise Card -->
+        <div class="flex-1 bg-gradient-to-br from-card via-card to-amber-950/25 backdrop-blur-xl border border-amber-500/20 rounded-3xl p-6 sm:p-7 flex flex-col justify-between shadow-xl relative overflow-hidden group">
+          <div class="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all"></div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v6m0 0l-3-3m3 3l3-3M4.5 15.75h15M6.75 19.5h10.5M7.5 15.75a4.5 4.5 0 019 0" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-amber-400/90">Sunrise</p>
+                <p class="text-xs text-slate-400">Upper limb crosses −0.833°</p>
+              </div>
+            </div>
+            <span id="sunriseOffsetTag" class="text-xs font-mono px-2.5 py-1 rounded-lg bg-slate-900/80 text-amber-300/90 border border-slate-800">Local</span>
+          </div>
+
+          <div class="mt-5">
+            <p id="sunriseDisplay" class="text-2xl sm:text-3xl font-bold tracking-tight text-amber-100 font-mono break-all">--:--:--</p>
+            <div class="flex items-center justify-between text-xs text-slate-400 mt-2">
+              <span id="sunriseBrowserHint">Your device time: --:--</span>
+              <span id="sunriseAzimuthPill" class="font-mono text-amber-300/80">Az: --°</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sunset Card -->
+        <div class="flex-1 bg-gradient-to-br from-card via-card to-rose-950/25 backdrop-blur-xl border border-rose-500/20 rounded-3xl p-6 sm:p-7 flex flex-col justify-between shadow-xl relative overflow-hidden group">
+          <div class="absolute -right-8 -top-8 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl group-hover:bg-rose-500/20 transition-all"></div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9V3m0 6l-3-3m3 3l3-3M4.5 15.75h15M6.75 19.5h10.5M7.5 15.75a4.5 4.5 0 019 0" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-rose-400/90">Sunset</p>
+                <p class="text-xs text-slate-400">Upper limb dips below −0.833°</p>
+              </div>
+            </div>
+            <span id="sunsetOffsetTag" class="text-xs font-mono px-2.5 py-1 rounded-lg bg-slate-900/80 text-rose-300/90 border border-slate-800">Local</span>
+          </div>
+
+          <div class="mt-5">
+            <p id="sunsetDisplay" class="text-2xl sm:text-3xl font-bold tracking-tight text-rose-100 font-mono break-all">--:--:--</p>
+            <div class="flex items-center justify-between text-xs text-slate-400 mt-2">
+              <span id="sunsetBrowserHint">Your device time: --:--</span>
+              <span id="sunsetAzimuthPill" class="font-mono text-rose-300/80">Az: --°</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Photography Windows (Golden & Blue Hour) + Lunar & Solar Compass Row -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+
+      <!-- Golden Hour & Blue Hour Photography Windows -->
+      <div class="lg:col-span-5 bg-card/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-6 shadow-2xl flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="text-base sm:text-lg font-semibold text-slate-100">Photography Lighting</h3>
+            <span class="text-[11px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">Sun Angle Windows</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-5">Golden hour (−4° to +6°) & Blue hour (−6° to −4°)</p>
+
+          <div class="space-y-4">
+            <!-- Golden Hour -->
+            <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/20">
+              <div class="flex items-center justify-between mb-2.5">
+                <span class="text-xs font-semibold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-amber-400"></span> Golden Hour
+                </span>
+                <span class="text-[11px] text-slate-400">Warm soft light</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                  <span class="block text-[10px] text-slate-400 mb-0.5">MORNING</span>
+                  <span id="goldenMorning" class="text-amber-200 font-semibold">--:-- – --:--</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                  <span class="block text-[10px] text-slate-400 mb-0.5">EVENING</span>
+                  <span id="goldenEvening" class="text-amber-200 font-semibold">--:-- – --:--</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Blue Hour -->
+            <div class="p-4 rounded-2xl bg-gradient-to-r from-sky-500/10 via-indigo-500/5 to-transparent border border-sky-500/20">
+              <div class="flex items-center justify-between mb-2.5">
+                <span class="text-xs font-semibold uppercase tracking-wider text-sky-300 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-sky-400"></span> Blue Hour
+                </span>
+                <span class="text-[11px] text-slate-400">Deep twilight blue</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                  <span class="block text-[10px] text-slate-400 mb-0.5">MORNING</span>
+                  <span id="blueMorning" class="text-sky-200 font-semibold">--:-- – --:--</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                  <span class="block text-[10px] text-slate-400 mb-0.5">EVENING</span>
+                  <span id="blueEvening" class="text-sky-200 font-semibold">--:-- – --:--</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Solar Azimuth & Altitude Compass -->
+      <div class="lg:col-span-4 bg-card/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-6 shadow-2xl flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="text-base sm:text-lg font-semibold text-slate-100">Solar Position Compass</h3>
+            <span class="text-[11px] font-mono text-slate-400">Azimuth / Alt</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-3">Horizon bearing (0° N, 90° E, 180° S, 270° W)</p>
+        </div>
+
+        <!-- SVG Compass -->
+        <div class="flex items-center justify-center my-1">
+          <svg viewBox="0 0 220 220" class="w-44 h-44">
+            <circle cx="110" cy="110" r="88" fill="#0b0f19" stroke="#1e293b" stroke-width="2" />
+            <circle cx="110" cy="110" r="62" fill="none" stroke="#1e293b" stroke-width="1" stroke-dasharray="3 3" />
+            <!-- Cardinal Ticks -->
+            <text x="110" y="16" fill="#94a3b8" font-size="11" font-weight="600" text-anchor="middle">N</text>
+            <text x="206" y="114" fill="#94a3b8" font-size="11" font-weight="600" text-anchor="middle">E</text>
+            <text x="110" y="213" fill="#94a3b8" font-size="11" font-weight="600" text-anchor="middle">S</text>
+            <text x="14" y="114" fill="#94a3b8" font-size="11" font-weight="600" text-anchor="middle">W</text>
+
+            <!-- Azimuth Rays -->
+            <line id="compassSunriseRay" x1="110" y1="110" x2="110" y2="25" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" />
+            <circle id="compassSunriseDot" cx="110" cy="25" r="4.5" fill="#f59e0b" />
+
+            <line id="compassNoonRay" x1="110" y1="110" x2="110" y2="25" stroke="#fde047" stroke-width="2" stroke-dasharray="3 2" stroke-linecap="round" />
+            <circle id="compassNoonDot" cx="110" cy="25" r="4" fill="#fde047" />
+
+            <line id="compassSunsetRay" x1="110" y1="110" x2="110" y2="25" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round" />
+            <circle id="compassSunsetDot" cx="110" cy="25" r="4.5" fill="#fb7185" />
+
+            <circle cx="110" cy="110" r="4" fill="#475569" />
+          </svg>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs font-mono mt-2">
+          <div class="px-2.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 flex justify-between">
+            <span class="text-amber-400">Rise Az</span>
+            <span id="compRiseVal" class="text-slate-200">--°</span>
+          </div>
+          <div class="px-2.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 flex justify-between">
+            <span class="text-rose-400">Set Az</span>
+            <span id="compSetVal" class="text-slate-200">--°</span>
+          </div>
+          <div class="px-2.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 flex justify-between">
+            <span class="text-yellow-300">Noon Az</span>
+            <span id="compNoonAzVal" class="text-slate-200">--°</span>
+          </div>
+          <div class="px-2.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 flex justify-between">
+            <span class="text-emerald-300">Noon Alt</span>
+            <span id="compNoonAltVal" class="text-slate-200">--°</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lunar Ephemeris Card -->
+      <div class="lg:col-span-3 bg-gradient-to-b from-card to-indigo-950/25 backdrop-blur-xl border border-indigo-500/20 rounded-3xl p-6 shadow-2xl flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="text-base sm:text-lg font-semibold text-slate-100">Lunar Data</h3>
+            <span class="text-[11px] px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/25">Local Noon</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-4">Phase, illumination & rise/set</p>
+
+          <!-- Dynamic Moon Visual -->
+          <div class="flex flex-col items-center justify-center py-3">
+            <div class="w-20 h-20 rounded-full bg-slate-900 border border-indigo-400/30 shadow-inner flex items-center justify-center mb-3 relative overflow-hidden">
+              <svg id="moonSvg" viewBox="0 0 100 100" class="w-16 h-16">
+                <circle cx="50" cy="50" r="44" fill="#1e293b" />
+                <path id="moonLitPath" d="M 50 6 A 44 44 0 0 1 50 94 A 22 44 0 0 1 50 6 Z" fill="#e2e8f0" />
+              </svg>
+            </div>
+            <p id="moonPhaseName" class="text-sm font-semibold text-indigo-200 text-center">--</p>
+            <p id="moonIllumination" class="text-xs font-mono text-slate-400 mt-0.5">--% Illuminated</p>
+          </div>
+        </div>
+
+        <div class="space-y-2 text-xs font-mono pt-3 border-t border-slate-800/80">
+          <div class="flex justify-between py-1.5 px-3 rounded-xl bg-slate-950/60">
+            <span class="text-slate-400">Moonrise</span>
+            <span id="moonriseDisplay" class="text-indigo-200 font-semibold">--:--:--</span>
+          </div>
+          <div class="flex justify-between py-1.5 px-3 rounded-xl bg-slate-950/60">
+            <span class="text-slate-400">Moonset</span>
+            <span id="moonsetDisplay" class="text-indigo-200 font-semibold">--:--:--</span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Twilight Phases Breakdown Grid -->
+    <section class="bg-card/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl mb-8">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+        <div>
+          <h3 class="text-lg font-semibold text-slate-100">Twilight Phases & First / Last Light</h3>
+          <p class="text-xs text-slate-400">Exact solar center depression angles (−6°, −12°, −18°)</p>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs font-mono">
+          <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">First Light: <strong id="firstLightVal" class="text-amber-200">--:--</strong></span>
+          <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">Last Light: <strong id="lastLightVal" class="text-purple-200">--:--</strong></span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <!-- Civil Twilight -->
+        <div class="p-5 rounded-2xl bg-slate-900/75 border border-slate-800/90 hover:border-amber-500/30 transition">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+              <h4 class="text-sm font-semibold text-slate-200">Civil Twilight</h4>
+            </div>
+            <span class="text-[11px] font-mono text-slate-500">−6°</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-4 leading-relaxed">Matches <code class="text-slate-300">dawn</code> / <code class="text-slate-300">dusk</code>; bright enough outdoors without artificial light.</p>
+          <div class="space-y-2 text-xs font-mono">
+            <div class="flex justify-between py-1.5 px-3 rounded-xl bg-slate-950/60">
+              <span class="text-slate-400">Begin (Dawn)</span>
+              <span id="civilBegin" class="text-amber-200 font-semibold">--:--:--</span>
+            </div>
+            <div class="flex justify-between py-1.5 px-3 rounded-xl bg-slate-950/60">
+              <span class="text-slate-400">End (Dusk)</span>
+              <span id="civilEnd" class="text-rose-200 font-semibold">--:--:--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nautical Twilight -->
+        <div class="p-5 rounded-2xl bg-slate-900/75 border border-slate-800/90 hover:border-indigo-500/30 transition">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+              <h4 class="text-sm font-semibold text-slate-200">Nautical Twilight</h4>
+            </div>
+            <span class="text-[11px] font-mono text-slate-500">−12°</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-4 leading-relaxed">Brightest stars appear while the sea horizon remains distinguishable.</p>
+          <div class="space-y-2 text-xs font-mono">
+            <div class="flex justify-between py-1.5 px-3 rounded-xl bg-slate-950/60">
+              <span class="text-slate-400">Begin</span>
+              <span id="nauticalBegin" class="text-indigo-200 font-semibold">--:--:--</span>
+            </div>
+            <div class="flex justify-between py-1.5 px-3 rounded-xl bg-slate-950/60">
+              <span class="text-slate-400">End</span>
+              <span id="nauticalEnd" class="text-indigo-200 font-semibold">--:--:--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Astronomical Twilight -->
+        <div class="p-5 rounded-2xl bg-slate-900/75 border border-slate-800/90 hover:border-purple-500/30 transition">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
+              <h4 class="text-sm font-semibold text-slate-200">Astronomical Twilight</h4>
+            </div>
+            <span class="text-[11px] font-mono text-slate-500">−18°</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-4 leading-relaxed">Matches <code class="text-slate-300">first_light</code> / <code class="text-slate-300">last_light</code>; boundary for deep-sky astronomy.</p>
+          <div class="space-y-2 text-xs font-mono">
+            <div class="flex justify-between py-1.5 px-3 rounded-xl bg-slate-950/60">
+              <span class="text-slate-400">Begin (First)</span>
+              <span id="astroBegin" class="text-purple-200 font-semibold">--:--:--</span>
+            </div>
+            <div class="flex justify-between py-1.5 px-3 rounded-xl bg-slate-950/60">
+              <span class="text-slate-400">End (Last)</span>
+              <span id="astroEnd" class="text-purple-200 font-semibold">--:--:--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Multi-Day Ephemeris Range Explorer (date_start & date_end) -->
+    <section class="bg-card/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl mb-8">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-lg font-semibold text-slate-100">Multi-Day Solar & Lunar Forecast</h3>
+            <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">date_start / date_end</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">Batch query up to 366 days in a single API call with CSV & JSON export</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="fetchRange(7)" class="px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+            Next 7 Days
+          </button>
+          <button onclick="fetchRange(30)" class="px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+            Next 30 Days
+          </button>
+          <button id="exportCsvBtn" onclick="exportRangeCSV()" disabled class="px-3.5 py-2 rounded-xl text-xs font-medium bg-amber-500/15 hover:bg-amber-500/25 disabled:opacity-40 border border-amber-500/30 text-amber-300 transition">
+            Export CSV
+          </button>
+          <button id="copyJsonBtn" onclick="copyCurrentJson()" class="px-3.5 py-2 rounded-xl text-xs font-medium bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 transition">
+            Copy Raw JSON
+          </button>
+        </div>
+      </div>
+
+      <!-- Range Results Table -->
+      <div id="rangeContainer" class="overflow-x-auto rounded-2xl border border-slate-800/90">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-slate-900/90 text-slate-400 border-b border-slate-800 font-medium">
+              <th class="py-3 px-4">Date</th>
+              <th class="py-3 px-4">Sunrise</th>
+              <th class="py-3 px-4">Solar Noon</th>
+              <th class="py-3 px-4">Sunset</th>
+              <th class="py-3 px-4">Day Length</th>
+              <th class="py-3 px-4">Golden Hr (Eve)</th>
+              <th class="py-3 px-4">Moon Phase</th>
+            </tr>
+          </thead>
+          <tbody id="rangeTableBody" class="divide-y divide-slate-800/60 font-mono text-slate-300">
+            <tr>
+              <td colspan="7" class="py-6 px-4 text-center font-sans text-slate-500">
+                Click "Next 7 Days" or "Next 30 Days" to batch-load a multi-day schedule for the current coordinates.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Required Attribution Footer -->
+    <footer class="text-center text-xs text-slate-500 pb-6 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-800/60 pt-6">
+      <p>
+        Sun & Moon astronomical data powered by
+        <a href="https://sunrise-sunset.org" target="_blank" rel="noopener noreferrer" class="text-amber-400 hover:text-amber-300 underline underline-offset-2 font-medium">
+          Sunrise-Sunset.org
+        </a>
+      </p>
+      <p class="font-mono text-[11px] text-slate-600" id="lastRequestUrl">GET https://api.sunrise-sunset.org/v2</p>
+    </footer>
+
+  </div>
+
+  <script>
+    // Application State
+    let currentLocationName = 'Málaga, Spain';
+    let lastSingleResponse = null;
+    let lastRangeResponse = null;
+
+    // Initialize date input to today's date in YYYY-MM-DD format
+    const dateInput = document.getElementById('dateInput');
+    function getTodayISO() {
+      const now = new Date();
+      const offsetMs = now.getTimezoneOffset() * 60000;
+      return new Date(now.getTime() - offsetMs).toISOString().split('T')[0];
+    }
+    dateInput.value = getTodayISO();
+
+    function setToday() {
+      dateInput.value = getTodayISO();
+      document.getElementById('solarForm').dispatchEvent(new Event('submit'));
+    }
+
+    function shiftDate(deltaDays) {
+      const base = dateInput.value ? new Date(dateInput.value + 'T12:00:00Z') : new Date();
+      base.setUTCDate(base.getUTCDate() + deltaDays);
+      dateInput.value = base.toISOString().split('T')[0];
+      document.getElementById('solarForm').dispatchEvent(new Event('submit'));
+    }
+
+    // Status Banner Helpers (No browser alert() used)
+    function showBanner(message, isError = false) {
+      const banner = document.getElementById('statusBanner');
+      const text = document.getElementById('statusText');
+      banner.classList.remove('hidden', 'bg-rose-500/15', 'border-rose-500/30', 'text-rose-200', 'bg-amber-500/15', 'border-amber-500/30', 'text-amber-200');
+      if (isError) {
+        banner.classList.add('bg-rose-500/15', 'border-rose-500/30', 'text-rose-200');
+      } else {
+        banner.classList.add('bg-amber-500/15', 'border-amber-500/30', 'text-amber-200');
+      }
+      text.textContent = message;
+    }
+
+    function hideBanner() {
+      document.getElementById('statusBanner').classList.add('hidden');
+    }
+
+    // Format seconds into "Xh Ym"
+    function formatDayLength(seconds) {
+      if (seconds === null || seconds === undefined) return 'N/A (Transition)';
+      if (typeof seconds === 'string' && seconds.includes(':')) {
+        const [h, m] = seconds.split(':');
+        return `${parseInt(h, 10)}h ${parseInt(m, 10)}m`;
+      }
+      const totalSec = Number(seconds);
+      if (isNaN(totalSec)) return '--h --m';
+      const hours = Math.floor(totalSec / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      return `${hours}h ${mins}m`;
+    }
+
+    // Extract time portion from ISO 8601 string preserving the API's target timezone offset
+    function formatEventTime(isoStr, shortMode = false) {
+      if (!isoStr) return 'None (Polar)';
+      const formatMode = document.getElementById('clockFormatSelect').value;
+
+      if (formatMode === 'iso') {
+        return isoStr;
+      }
+
+      const dateObj = new Date(isoStr);
+      if (formatMode === 'unix') {
+        return isNaN(dateObj.getTime()) ? '--' : `${Math.floor(dateObj.getTime() / 1000)}`;
+      }
+
+      // Parse the local wall-clock time directly from ISO string (e.g., "2026-01-15T08:29:18+01:00")
+      // so it honors the location's tzid or custom `tz` parameter accurately
+      const match = isoStr.match(/T(\d{2}):(\d{2}):(\d{2})/);
+      if (!match) return isoStr;
+
+      let hh = parseInt(match[1], 10);
+      const mm = match[2];
+      const ss = match[3];
+
+      if (formatMode === '12h') {
+        const suffix = hh >= 12 ? 'PM' : 'AM';
+        const h12 = hh % 12 === 0 ? 12 : hh % 12;
+        return shortMode ? `${h12}:${mm} ${suffix}` : `${h12}:${mm}:${ss} ${suffix}`;
+      }
+
+      const hhStr = String(hh).padStart(2, '0');
+      return shortMode ? `${hhStr}:${mm}` : `${hhStr}:${mm}:${ss}`;
+    }
+
+    // Format Date object to user's local browser timezone
+    function formatBrowserLocal(isoStr) {
+      if (!isoStr) return 'Does not occur';
+      const dateObj = new Date(isoStr);
+      if (isNaN(dateObj.getTime())) return '--:--';
+      return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
+    }
+
+    // Update SVG Compass Rays for Sunrise, Noon, and Sunset Azimuths
+    function updateSolarCompass(pos) {
+      if (!pos) return;
+      const setRay = (lineId, dotId, azDeg) => {
+        const line = document.getElementById(lineId);
+        const dot = document.getElementById(dotId);
+        if (azDeg === null || azDeg === undefined || isNaN(azDeg)) {
+          line.setAttribute('opacity', '0.15');
+          dot.setAttribute('opacity', '0.15');
+          return;
+        }
+        line.setAttribute('opacity', '1');
+        dot.setAttribute('opacity', '1');
+        // 0° is North (up: -90 deg in standard SVG trig)
+        const rad = ((azDeg - 90) * Math.PI) / 180;
+        const r = 82;
+        const x2 = 110 + r * Math.cos(rad);
+        const y2 = 110 + r * Math.sin(rad);
+        line.setAttribute('x2', x2.toFixed(1));
+        line.setAttribute('y2', y2.toFixed(1));
+        dot.setAttribute('cx', x2.toFixed(1));
+        dot.setAttribute('cy', y2.toFixed(1));
+      };
+
+      setRay('compassSunriseRay', 'compassSunriseDot', pos.sunrise_azimuth);
+      setRay('compassNoonRay', 'compassNoonDot', pos.solar_noon_azimuth);
+      setRay('compassSunsetRay', 'compassSunsetDot', pos.sunset_azimuth);
+
+      const fmtDeg = (v) => (v !== null && v !== undefined ? `${Number(v).toFixed(1)}°` : '--°');
+      document.getElementById('compRiseVal').textContent = fmtDeg(pos.sunrise_azimuth);
+      document.getElementById('compSetVal').textContent = fmtDeg(pos.sunset_azimuth);
+      document.getElementById('compNoonAzVal').textContent = fmtDeg(pos.solar_noon_azimuth);
+      document.getElementById('compNoonAltVal').textContent = fmtDeg(pos.solar_noon_altitude);
+
+      document.getElementById('sunriseAzimuthPill').textContent = `Az: ${fmtDeg(pos.sunrise_azimuth)}`;
+      document.getElementById('sunsetAzimuthPill').textContent = `Az: ${fmtDeg(pos.sunset_azimuth)}`;
+      document.getElementById('arcSunriseAz').textContent = fmtDeg(pos.sunrise_azimuth);
+      document.getElementById('arcSunsetAz').textContent = fmtDeg(pos.sunset_azimuth);
+      document.getElementById('arcNoonAlt').textContent = fmtDeg(pos.solar_noon_altitude);
+    }
+
+    // Update Moon Phase Graphic & Metrics
+    function updateLunarCard(data) {
+      const phase = data.moon_phase || 'Unknown';
+      const illum = data.moon_illumination !== null && data.moon_illumination !== undefined
+        ? Number(data.moon_illumination).toFixed(1)
+        : '--';
+
+      document.getElementById('moonPhaseName').textContent = phase;
+      document.getElementById('moonIllumination').textContent = `${illum}% Illuminated`;
+      document.getElementById('moonriseDisplay').textContent = data.moonrise ? formatEventTime(data.moonrise) : 'No rise today';
+      document.getElementById('moonsetDisplay').textContent = data.moonset ? formatEventTime(data.moonset) : 'No set today';
+
+      // Render approximate SVG phase shadow
+      const pathEl = document.getElementById('moonLitPath');
+      const pct = Math.max(0, Math.min(100, Number(data.moon_illumination) || 0)) / 100;
+      const isWaning = phase.toLowerCase().includes('waning') || phase.toLowerCase().includes('last');
+
+      if (pct <= 0.02) {
+        pathEl.setAttribute('d', '');
+      } else if (pct >= 0.98) {
+        pathEl.setAttribute('d', 'M 50 6 A 44 44 0 1 1 50 94 A 44 44 0 1 1 50 6 Z');
+      } else {
+        const rx = Math.abs(44 * (1 - 2 * pct));
+        const sweepOuter = isWaning ? 0 : 1;
+        const sweepInner = pct > 0.5 ? (isWaning ? 0 : 1) : (isWaning ? 1 : 0);
+        pathEl.setAttribute('d', `M 50 6 A 44 44 0 0 ${sweepOuter} 50 94 A ${rx.toFixed(1)} 44 0 0 ${sweepInner} 50 6 Z`);
+      }
+    }
+
+    // Update Sun Orb along the SVG elliptical arc based on current timestamp
+    function updateSunPosition(data) {
+      const sunOrb = document.getElementById('sunOrb');
+      const statusPill = document.getElementById('dayStatusPill');
+      const sunStatusBadge = document.getElementById('sunStatusBadge');
+
+      const sunStatus = data.sun_status || 'normal';
+      sunStatusBadge.textContent = sunStatus.replace('_', ' ');
+
+      if (sunStatus === 'midnight_sun') {
+        sunStatusBadge.className = 'px-2.5 py-1 rounded-full text-xs font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40';
+        statusPill.textContent = '24h Daylight • Midnight Sun';
+        statusPill.className = 'px-3 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30';
+        sunOrb.setAttribute('transform', 'translate(210, 30)');
+        return;
+      }
+
+      if (sunStatus === 'polar_night') {
+        sunStatusBadge.className = 'px-2.5 py-1 rounded-full text-xs font-mono uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/40';
+        statusPill.textContent = '24h Darkness • Polar Night';
+        statusPill.className = 'px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/30';
+        sunOrb.setAttribute('transform', 'translate(45, 170)');
+        return;
+      }
+
+      sunStatusBadge.className = 'px-2.5 py-1 rounded-full text-xs font-mono uppercase bg-slate-800 text-slate-300 border border-slate-700';
+
+      if (!data.sunrise || !data.sunset) {
+        statusPill.textContent = 'Polar Transition Day';
+        sunOrb.setAttribute('transform', 'translate(210, 30)');
+        return;
+      }
+
+      const now = Date.now();
+      const start = new Date(data.sunrise).getTime();
+      const end = new Date(data.sunset).getTime();
+      let progress = (now - start) / (end - start);
+
+      if (progress < 0) {
+        progress = 0;
+        statusPill.textContent = 'Pre-Dawn • Below Horizon';
+        statusPill.className = 'px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/30';
+      } else if (progress > 1) {
+        progress = 1;
+        statusPill.textContent = 'Post-Sunset • Nighttime';
+        statusPill.className = 'px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700';
+      } else {
+        const pct = Math.round(progress * 100);
+        statusPill.textContent = `Daylight Active • ${pct}% Complete`;
+        statusPill.className = 'px-3 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30';
+      }
+
+      const angle = Math.PI * (1 - progress);
+      const x = 210 + 165 * Math.cos(angle);
+      const y = 170 - 140 * Math.sin(angle);
+      sunOrb.setAttribute('transform', `translate(${x.toFixed(1)}, ${y.toFixed(1)})`);
+    }
+
+    // Render Single-Day API v2 Response into all UI panels
+    function renderSolarData(data) {
+      if (!data) return;
+      lastSingleResponse = data;
+
+      document.getElementById('locationLabel').textContent = `${currentLocationName} (${Number(data.lat).toFixed(2)}°, ${Number(data.lng).toFixed(2)}°)`;
+      document.getElementById('tzBadge').textContent = `${data.tzid || 'Local'} (UTC${data.utc_offset || ''})`;
+      document.getElementById('sunriseOffsetTag').textContent = `UTC${data.utc_offset || ''}`;
+      document.getElementById('sunsetOffsetTag').textContent = `UTC${data.utc_offset || ''}`;
+
+      document.getElementById('sunriseDisplay').textContent = formatEventTime(data.sunrise);
+      document.getElementById('sunsetDisplay').textContent = formatEventTime(data.sunset);
+      document.getElementById('sunriseBrowserHint').textContent = `Your device time: ${formatBrowserLocal(data.sunrise)}`;
+      document.getElementById('sunsetBrowserHint').textContent = `Your device time: ${formatBrowserLocal(data.sunset)}`;
+
+      document.getElementById('solarNoonDisplay').textContent = formatEventTime(data.solar_noon);
+      document.getElementById('dayLengthDisplay').textContent = formatDayLength(data.day_length);
+
+      // Golden Hour & Blue Hour
+      if (data.golden_hour && data.golden_hour.morning) {
+        document.getElementById('goldenMorning').textContent = `${formatEventTime(data.golden_hour.morning.begin, true)} – ${formatEventTime(data.golden_hour.morning.end, true)}`;
+        document.getElementById('goldenEvening').textContent = `${formatEventTime(data.golden_hour.evening.begin, true)} – ${formatEventTime(data.golden_hour.evening.end, true)}`;
+      } else {
+        document.getElementById('goldenMorning').textContent = 'None';
+        document.getElementById('goldenEvening').textContent = 'None';
+      }
+
+      if (data.blue_hour && data.blue_hour.morning) {
+        document.getElementById('blueMorning').textContent = `${formatEventTime(data.blue_hour.morning.begin, true)} – ${formatEventTime(data.blue_hour.morning.end, true)}`;
+        document.getElementById('blueEvening').textContent = `${formatEventTime(data.blue_hour.evening.begin, true)} – ${formatEventTime(data.blue_hour.evening.end, true)}`;
+      } else {
+        document.getElementById('blueMorning').textContent = 'None';
+        document.getElementById('blueEvening').textContent = 'None';
+      }
+
+      // Twilights & First/Last Light
+      document.getElementById('firstLightVal').textContent = formatEventTime(data.first_light, true);
+      document.getElementById('lastLightVal').textContent = formatEventTime(data.last_light, true);
+
+      document.getElementById('civilBegin').textContent = formatEventTime(data.civil_twilight_begin);
+      document.getElementById('civilEnd').textContent = formatEventTime(data.civil_twilight_end);
+      document.getElementById('nauticalBegin').textContent = formatEventTime(data.nautical_twilight_begin);
+      document.getElementById('nauticalEnd').textContent = formatEventTime(data.nautical_twilight_end);
+      document.getElementById('astroBegin').textContent = formatEventTime(data.astronomical_twilight_begin);
+      document.getElementById('astroEnd').textContent = formatEventTime(data.astronomical_twilight_end);
+
+      updateSolarCompass(data.solar_position);
+      updateLunarCard(data);
+      updateSunPosition(data);
+
+      if (lastRangeResponse) {
+        renderRangeTable(lastRangeResponse.days);
+      }
+    }
+
+    function reRenderCurrentData() {
+      if (lastSingleResponse) {
+        renderSolarData(lastSingleResponse);
+      }
+    }
+
+    // Primary Fetch Function using the v2 API endpoint
+    async function fetchSolarData(lat, lng, dateStr, tzStr = '') {
+      const fetchBtn = document.getElementById('fetchBtn');
+      const originalBtnHTML = fetchBtn.innerHTML;
+      fetchBtn.disabled = true;
+      fetchBtn.innerHTML = `<span class="animate-pulse">Loading...</span>`;
+      hideBanner();
+
+      try {
+        const params = new URLSearchParams({
+          lat: String(lat),
+          lng: String(lng)
+        });
+        if (dateStr) params.set('date', dateStr);
+        if (tzStr) params.set('tz', tzStr);
+
+        const url = `https://api.sunrise-sunset.org/v2?${params.toString()}`;
+        document.getElementById('lastRequestUrl').textContent = `GET ${url}`;
+
+        const response = await fetch(url);
+        const payload = await response.json();
+
+        if (!response.ok) {
+          // Display structured API v2 error messages (e.g., invalid_tz, invalid_lat)
+          const errMsg = payload && payload.message ? `${payload.error}: ${payload.message}` : `API returned status ${response.status}`;
+          throw new Error(errMsg);
+        }
+
+        renderSolarData(payload);
+      } catch (err) {
+        console.error('Solar fetch error:', err);
+        showBanner(`API Error: ${err.message}`, true);
+      } finally {
+        fetchBtn.disabled = false;
+        fetchBtn.innerHTML = originalBtnHTML;
+      }
+    }
+
+    // Fetch Multi-Day Range (date_start & date_end)
+    async function fetchRange(numDays) {
+      const lat = parseFloat(document.getElementById('latInput').value);
+      const lng = parseFloat(document.getElementById('lngInput').value);
+      const startDateStr = document.getElementById('dateInput').value || getTodayISO();
+      const tzStr = document.getElementById('tzInput').value;
+
+      const startObj = new Date(startDateStr + 'T12:00:00Z');
+      const endObj = new Date(startObj);
+      endObj.setUTCDate(startObj.getUTCDate() + (numDays - 1));
+      const endDateStr = endObj.toISOString().split('T')[0];
+
+      const tbody = document.getElementById('rangeTableBody');
+      tbody.innerHTML = `<tr><td colspan="7" class="py-6 px-4 text-center text-amber-300 animate-pulse">Fetching ${numDays}-day ephemeris (${startDateStr} to ${endDateStr})...</td></tr>`;
+
+      try {
+        const params = new URLSearchParams({
+          lat: String(lat),
+          lng: String(lng),
+          date_start: startDateStr,
+          date_end: endDateStr
+        });
+        if (tzStr) params.set('tz', tzStr);
+
+        const url = `https://api.sunrise-sunset.org/v2?${params.toString()}`;
+        document.getElementById('lastRequestUrl').textContent = `GET ${url}`;
+
+        const response = await fetch(url);
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.message || `Status ${response.status}`);
+        }
+
+        lastRangeResponse = payload;
+        document.getElementById('exportCsvBtn').disabled = false;
+        renderRangeTable(payload.days || []);
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-6 px-4 text-center text-rose-300">Failed to load range: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderRangeTable(days) {
+      const tbody = document.getElementById('rangeTableBody');
+      if (!days || days.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-6 px-4 text-center text-slate-500">No entries returned for this range.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = days.map(day => {
+        const goldenEve = day.golden_hour && day.golden_hour.evening
+          ? `${formatEventTime(day.golden_hour.evening.begin, true)}–${formatEventTime(day.golden_hour.evening.end, true)}`
+          : '—';
+        return `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-3 px-4 text-slate-200 font-semibold">${day.date}</td>
+            <td class="py-3 px-4 text-amber-300">${formatEventTime(day.sunrise, true)}</td>
+            <td class="py-3 px-4 text-yellow-200">${formatEventTime(day.solar_noon, true)}</td>
+            <td class="py-3 px-4 text-rose-300">${formatEventTime(day.sunset, true)}</td>
+            <td class="py-3 px-4 text-slate-300">${formatDayLength(day.day_length)}</td>
+            <td class="py-3 px-4 text-amber-200/80">${goldenEve}</td>
+            <td class="py-3 px-4 text-indigo-300 font-sans">${day.moon_phase || '—'} (${day.moon_illumination ?? '--'}%)</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Export Multi-Day Range to CSV File
+    function exportRangeCSV() {
+      if (!lastRangeResponse || !lastRangeResponse.days) return;
+      const headers = ['date', 'tzid', 'sunrise', 'solar_noon', 'sunset', 'day_length_sec', 'sun_status', 'golden_hour_eve_begin', 'golden_hour_eve_end', 'moon_phase', 'moon_illumination'];
+      const rows = lastRangeResponse.days.map(d => [
+        d.date,
+        lastRangeResponse.tzid,
+        d.sunrise || '',
+        d.solar_noon || '',
+        d.sunset || '',
+        d.day_length ?? '',
+        d.sun_status || '',
+        d.golden_hour?.evening?.begin || '',
+        d.golden_hour?.evening?.end || '',
+        `"${d.moon_phase || ''}"`,
+        d.moon_illumination ?? ''
+      ].join(','));
+
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `solar-horizon-${lastRangeResponse.lat}-${lastRangeResponse.lng}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showBanner('Exported multi-day ephemeris to CSV.');
+    }
+
+    // Copy Raw API v2 JSON to Clipboard using document.execCommand('copy')
+    function copyCurrentJson() {
+      const payload = lastSingleResponse || lastRangeResponse;
+      if (!payload) return;
+      const textarea = document.createElement('textarea');
+      textarea.value = JSON.stringify(payload, null, 2);
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showBanner('Copied raw API v2 JSON response to clipboard.');
+      } catch (e) {
+        showBanner('Unable to copy JSON to clipboard.', true);
+      }
+      document.body.removeChild(textarea);
+    }
+
+    // Handle Form Submission
+    document.getElementById('solarForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const lat = parseFloat(document.getElementById('latInput').value);
+      const lng = parseFloat(document.getElementById('lngInput').value);
+      const dateStr = document.getElementById('dateInput').value || getTodayISO();
+      const tzStr = document.getElementById('tzInput').value;
+
+      if (isNaN(lat) || lat < -90 || lat > 90 || isNaN(lng) || lng < -180 || lng > 180) {
+        showBanner('Please enter valid coordinates (Latitude: -90 to 90, Longitude: -180 to 180).', true);
+        return;
+      }
+
+      fetchSolarData(lat, lng, dateStr, tzStr);
+    });
+
+    // Quick City Preset Handler
+    function selectPreset(lat, lng, name) {
+      document.getElementById('latInput').value = lat;
+      document.getElementById('lngInput').value = lng;
+      currentLocationName = name;
+      const dateStr = document.getElementById('dateInput').value || getTodayISO();
+      const tzStr = document.getElementById('tzInput').value;
+      fetchSolarData(lat, lng, dateStr, tzStr);
+    }
+
+    // Browser Geolocation Handler
+    function useMyLocation() {
+      if (!navigator.geolocation) {
+        showBanner('Geolocation is not supported by your browser.', true);
+        return;
+      }
+      showBanner('Requesting your current coordinates...');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = Number(pos.coords.latitude.toFixed(5));
+          const lng = Number(pos.coords.longitude.toFixed(5));
+          document.getElementById('latInput').value = lat;
+          document.getElementById('lngInput').value = lng;
+          currentLocationName = 'Your Location';
+          const dateStr = document.getElementById('dateInput').value || getTodayISO();
+          const tzStr = document.getElementById('tzInput').value;
+          fetchSolarData(lat, lng, dateStr, tzStr);
+        },
+        (err) => {
+          showBanner(`Location access denied or unavailable (${err.message}).`, true);
+        },
+        { timeout: 8000 }
+      );
+    }
+
+    // Initial Load with Málaga (36.72016, -4.42034)
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchSolarData(36.72016, -4.42034, getTodayISO(), '');
+    });
+  </script>
+</body>
+</html>
