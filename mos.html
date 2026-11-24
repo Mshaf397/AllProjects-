@@ -54,16 +54,6 @@
                 </div>
             </div>
 
-            <!-- Presets -->
-            <div class="flex flex-wrap items-center gap-2">
-                <span class="text-xs text-slate-400 mr-1">Presets:</span>
-                <button onclick="applyPreset(5, 2, 2, 1)" class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">Diatonic (5L 2s | 2:1)</button>
-                <button onclick="applyPreset(3, 4, 2, 1)" class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">Mavila (3L 4s | 2:1)</button>
-                <button onclick="applyPreset(4, 2, 3, 1)" class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">Hexany/2-Period (4L 2s | 3:1)</button>
-                <button onclick="applyPreset(6, 3, 2, 1)" class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">3-Period (6L 3s | 2:1)</button>
-            </div>
-        </div>
-    </header>
 
     <!-- Main Content -->
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -270,17 +260,6 @@
                 a = t;
             }
             return a || 1;
-        }
-
-        /**
-         * Applies a preset MOS signature and step size ratio
-         */
-        function applyPreset(nL, nS, sL, sS) {
-            document.getElementById('numL').value = nL;
-            document.getElementById('numS').value = nS;
-            document.getElementById('sizeL').value = sL;
-            document.getElementById('sizeS').value = sS;
-            calculateMOS();
         }
 
         /**
@@ -657,7 +636,7 @@
                 const cardBorder = item.isPeriodMultiple && periods > 1
                     ? 'border-emerald-700/60 hover:border-emerald-500/80'
                     : 'border-slate-800 hover:border-slate-700';
-                const cents = ((item.edoStep / edo) * 1200).toFixed(1);
+                const cents = ((item.edoStep / edo) * 1200).toFixed(3);
                 const genDisplay = item.isPeriodMultiple
                     ? (idx === items.length - 1 ? '0 (8ve)' : (item.periodIndex === 0 ? '0 (Unison)' : `0 (Per ${item.periodIndex})`))
                     : (item.gen > 0 ? `+${item.gen}` : `${item.gen}`);
@@ -698,7 +677,7 @@
                 const label = edo <= 36 ? step : (isMajor ? step : '');
 
                 html += `
-                    <div title="Step ${step}\\${edo} (${((step / edo) * 1200).toFixed(1)}¢)"
+                    <div title="Step ${step}\\${edo} (${((step / edo) * 1200).toFixed(3)}¢)"
                          class="flex-1 h-full rounded flex items-center justify-center text-[10px] mono transition cursor-default select-none ${bgClass}">
                         ${label}
                     </div>
@@ -728,7 +707,7 @@
                 const spellings = edoBuckets[step] || [];
                 const primary = spellings[0];
                 const fractionStr = `${step}\\${edo}`;
-                const centsStr = `${((step / edo) * 1200).toFixed(2)}¢`;
+                const centsStr = `${((step / edo) * 1200).toFixed(3)}¢`;
 
                 // Filter by search query
                 if (searchQuery) {
